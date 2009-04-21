@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+# Script to run a deployed class.
+#
+# Usage:  ./run class args
+#
+# expect classes in ../build/classes
+# expect libs in ../lib
+#
+# NOTE: uses env CLUSTER_CLASSES if defined.
+#
+
+#test -z "$JAVA_HOME" && JAVA_HOME=/etc/opt/java
+JAVA_HOME=/etc/opt/java
+JDK_HOME=$JAVA_HOME
+
+# Set default JVM_MEM to 500m if needed.
+test -z "$JVM_MEM" && JVM_MEM=500;
+
+#JAVA_OPTS="-Xmx400m -Dcom.sun.management.jmxremote"
+#JAVA_OPTS="-Xmx500m -Dcom.sun.management.jmxremote"
+#JAVA_OPTS="-Xmx800m -Dcom.sun.management.jmxremote"
+#JAVA_OPTS="-Xmx1000m -Dcom.sun.management.jmxremote"
+#JAVA_OPTS="-Xmx1500m -Dcom.sun.management.jmxremote"
+JAVA_OPTS="-Xmx${JVM_MEM}m -Dcom.sun.management.jmxremote"
+
+JAVA_OPTS="$JAVA_OPTS -DSDN_ROOT=.."
+
+classes="$CLUSTER_CLASSES";
+if test -z "$classes"; then
+  classes="build/classes";
+fi
+if ! test -e "../$classes"; then
+  classes="target/classes";
+fi
+
+CLASSPATH=../$classes;
+for lib in `ls -1 ../lib/*.jar`; do
+  CLASSPATH=$CLASSPATH:$lib
+done
+
+
+echo "java $JAVA_OPTS -cp $CLASSPATH $@"
+$JAVA_HOME/bin/java $JAVA_OPTS -cp $CLASSPATH $@

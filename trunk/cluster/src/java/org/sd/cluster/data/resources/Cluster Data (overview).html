@@ -1,0 +1,84 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>Cluster Data (overview)</title>
+</head>
+<body>
+<h1 style="text-align: center;">Cluster Data</h1>
+<h2 style="text-align: center;">(overview)</h2>
+<div style="text-align: center;"><img alt="Data Classes (UML)"
+ src="data.png" style="width: 585px; height: 555px;"><br>
+</div>
+<br>
+<table style="width: 100%; text-align: left;" border="1" cellpadding="2"
+ cellspacing="2">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;">
+      <table style="width: 100%; text-align: left;" border="1"
+ cellpadding="2" cellspacing="2">
+        <tbody>
+          <tr>
+            <td colspan="2" rowspan="1" style="vertical-align: top;">DataDescriptor</td>
+            <td style="vertical-align: top;">Describes the data.<br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;">dataID<br>
+            </td>
+            <td style="vertical-align: top;">String<br>
+            </td>
+            <td style="vertical-align: top;">An identifier for the data.<br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;">nodes<br>
+            </td>
+            <td style="vertical-align: top;">Collection&lt;String&gt;<br>
+            </td>
+            <td style="vertical-align: top;">Names of nodes that own or
+access the data.<br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;">pf<br>
+            </td>
+            <td style="vertical-align: top;">PartitionFunction<br>
+            </td>
+            <td style="vertical-align: top;">Function for partitioning
+the data.<br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;">skf<br>
+            </td>
+            <td style="vertical-align: top;">StringKeyFunction<br>
+            </td>
+            <td style="vertical-align: top;">Function for transforming
+a string into a key that can be partitioned.<br>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+Format,Distribution, ...<br>
+<br>
+Data can be partitioned on input or output.<br>
+When the stored data is unpartitioned, an input descriptor uses a
+partition function to separate the work between the nodes.<br>
+When the stored data has already been partitioned on output using an
+output data descriptor with a partition function, the data need not be
+partitioned on input.<br>
+<br>
+</body>
+</html>

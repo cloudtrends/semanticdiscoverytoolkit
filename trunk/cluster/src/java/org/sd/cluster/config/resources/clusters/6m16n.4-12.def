@@ -1,0 +1,15 @@
+(_root_
+  (gateway
+    (node1 node3-3 node4-3)
+    (node2-3 node5-3 node6-3))
+
+  (top node1-0)
+
+  (group1 node2-0 node3-0 node4-0 node5-0 node6-0)
+  (group2 node2-1 node3-1 node4-1 node5-1 node6-1)
+  (group3 node2-2 node3-2 node4-2 node5-2 node6-2)
+
+  (processor node2-0 node3-0 node4-0 node5-0 node6-0
+             node2-1 node3-1 node4-1 node5-1 node6-1
+             node2-2 node3-2 node4-2 node5-2 node6-2)
+  )

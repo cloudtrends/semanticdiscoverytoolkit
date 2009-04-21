@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# Run cluster admin deploy.
+#
+# (required)arg1: user
+# (required)arg2: clusterName
+# (optional)arg3: machines (comma separated list of machines; default empty)
+# (optional)arg4: heap size (or cluster node jvm memory in MB) default=1500
+# (optional)arg5: gateway (default=$CLUSTER_GATEWAY)
+#
+# if CLUSTER_HOME is defined, then this will override the default cluster root.
+#
+
+HEAP=1500
+test -n "$CLUSTER_GATEWAY" && GATEWAY="$CLUSTER_GATEWAY";
+test -n "$CLUSTER_HOME" && ROOT="-r $CLUSTER_HOME";
+
+USERNAME=$1;
+CLUSTERNAME=$2;
+test -n "$3" && MACHINES=$3;
+test -n "$4" && HEAP=$4;
+test -n "$5" && GATEWAY=$5;
+
+./run org.sd.cluster.config.Admin -c "$CLUSTERNAME" -m "$MACHINES" -u "$USERNAME" -h "$HEAP" -g "$GATEWAY" $ROOT -d

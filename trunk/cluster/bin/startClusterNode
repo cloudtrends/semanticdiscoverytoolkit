@@ -1,0 +1,36 @@
+#!/bin/bash
+#
+# Script to start a single cluster node (jvm).
+#
+# arg1: a unique id number to distinguish multiple jvm's logs from each other.
+#       if -1, then start a single-node cluster on the current machine.
+#
+# If CLUSTER_HOME is defined, then it will be used as the location for cluster;
+# otherwise it will default to $HOME/cluster
+#
+# If CLUSTER_PORT_RANGE is defined (value of form "lowPort:highPort") then it
+# will override the default user port.
+# 
+
+test -n "$CLUSTER_HOME" || CLUSTER_HOME="$HOME/cluster"
+
+UIDNUM=$1;
+LOGDIR="$CLUSTER_HOME/log";
+TIMESTAMP=`date +%F-%H:%M:%S`;
+
+test -e $LOGDIR || mkdir -p $LOGDIR;
+
+HEAP_SIZE_FILE=$CLUSTER_HOME/conf/active-heap-size.txt;
+test -e $HEAP_SIZE_FILE && export JVM_MEM=`cat $HEAP_SIZE_FILE`;
+
+PROPERTIES="clusterHome=$CLUSTER_HOME";
+if test -n "$CLUSTER_PORT_RANGE"; then
+  PROPERTIES="$PROPERTIES portRange=$CLUSTER_PORT_RANGE";
+fi
+
+if test $UIDNUM -eq -1; then
+  PROPERTIES="$PROPERTIES single=true";
+	UIDNUM=0;
+fi
+
+nohup ./run org.sd.cluster.config.ClusterNode $PROPERTIES $UIDNUM 2> "$LOGDIR/log-$TIMESTAMP-$UIDNUM.err" 1> "$LOGDIR/log-$TIMESTAMP-$UIDNUM.out" &

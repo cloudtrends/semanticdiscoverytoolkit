@@ -1,0 +1,4 @@
+#!/bin/bash
+
+pdsh -R ssh killall -9 java
+#pdsh -R ssh "rm -f cluster/log/log*"

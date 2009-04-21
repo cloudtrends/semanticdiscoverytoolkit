@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# deploy classes to machine as user
+#
+# arg1: user
+# arg2: machine
+#
+# NOTE: uses env CLUSTER_CLASSES if defined.
+#
+
+USER=$1;
+MACHINE=$2;
+
+classes="$CLUSTER_CLASSES";
+if test -z "$classes"; then
+  classes="build/classes";
+fi
+if ! test -e "../$classes"; then
+  classes="target/classes";
+fi
+build=`dirname $classes`;
+
+echo "rsyncing ../bin ../conf ../lib ../resources ../$build ../src/jsp $USER@$MACHINE:cluster/"
+rsync -Lavz --exclude-from=../resources/deploy/deploy-excludes.txt --delete --delete-excluded ../bin ../conf ../lib ../$build $USER@$MACHINE:cluster/
+rsync -avz --exclude='*~' --exclude='.svn' --exclude='*.jdb' --delete --delete-excluded ../resources $USER@$MACHINE:cluster/
+
+# push "src" (i.e. jsp) content except not WEB-INF (which hold symlinks to classes and lib)
+rsync -Lavz --exclude="WEB-INF" --exclude-from=../resources/deploy/deploy-excludes.txt --delete --delete-excluded ../src/jsp $USER@$MACHINE:cluster/src/
+
+# send WEB-INF dirs without dereferencing symlinks
+pushd ../src/jsp
+find . -name WEB-INF -exec ../../bin/ddeploy-sync \{\} $USER@$MACHINE cluster/src/jsp \;
+popd

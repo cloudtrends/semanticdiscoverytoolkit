@@ -1,0 +1,7 @@
+(gateway
+  (node1
+    (node3 node7 node8)
+    (node4 node9 node10))
+  (node2
+    (node5 node11 node12)
+    (node6 node13 node14)))

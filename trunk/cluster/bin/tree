@@ -1,0 +1,139 @@
+#!/bin/bash
+#
+# deploy classes to machine as user
+#
+# arg1: user
+# arg2: machine-tree
+#
+# NOTE: uses env CLUSTER_CLASSES if defined.
+#
+
+USER=$1;
+MACHINE_TREE=$2;
+
+classes="$CLUSTER_CLASSES";
+if test -z "$classes"; then
+  classes="build/classes";
+fi
+if ! test -e "../$classes"; then
+  classes="target/classes";
+fi
+build=`dirname $classes`;
+
+function sendit() {
+  MACHINE=$1;
+  echo "Sending from `uname -n` to $MACHINE";
+  echo "rsync -Laz ../bin ../lib ../$build $USER@$MACHINE:cluster/;"
+}
+
+function send_forward() {
+  FROM_MACHINE=$1;
+  TO_MACHINE=$2;
+
+  echo "Forwarding from $FROM_MACHINE to $TO_MACHINE";
+  ssh $USER@$FROM_MACHINE "cd cluster/bin; ./tree \"$USER\" \"$TO_MACHINE\";";
+}
+
+function end_paren_pos() {
+  STRING=$1;
+  NUMCHARS=$2;
+  DEPTH=$3;
+
+  ENDPOS=`expr index "$STRING" "\)"`;
+  STARTPOS=`expr index "$STRING" "\("`;
+  LEN=`expr length "$STRING"`;
+
+  if test $ENDPOS -eq 0; then
+    echo "$(($LEN + $NUMCHARS))";
+  else
+    if test $STARTPOS -gt 0; then
+      DONE=0;
+      if test $STARTPOS -lt $ENDPOS; then
+        CUR_RESULT=$(($NUMCHARS + $STARTPOS));
+        NEXT_STRING=`expr substr "$STRING" $(($STARTPOS + 1)) $(($LEN - $STARTPOS + 1))`;
+        NEXT_RESULT=`end_paren_pos "$NEXT_STRING" $CUR_RESULT $(($DEPTH + 1))`;
+        echo "$NEXT_RESULT";
+        DONE=1;
+      fi
+    fi
+
+    if test $DONE -eq 0; then
+      CUR_RESULT=$(($NUMCHARS + $ENDPOS));
+      if test $DEPTH -eq 0; then
+        echo "$CUR_RESULT";
+      else
+        NEXT_STRING=`expr substr "$STRING" $(($ENDPOS + 1)) $(($LEN - $ENDPOS + 1))`;
+        NEXT_RESULT=`end_paren_pos "$NEXT_STRING" $CUR_RESULT $(($DEPTH - 1))`;
+        echo "$NEXT_RESULT";
+      fi
+    fi
+  fi
+}
+
+function first_child_end() {
+  # if starts with "("
+  if text `expr index "$CHILDREN" "\("` -eq 0; then
+    # child is a tree
+    CHILDREN_LEN=`expr length "$CHILDREN"`;
+    ARG=`expr substr "$ARG" 2 $(($CHILDREN_LEN - 1))`; 
+    END_POS=`end_paren_pos "$ARG" 1 0`;
+
+    # grab from children up thru end_pos to send_forward; then do next child
+    END_POS=$(($END_POS + 1));
+
+    # now grab up TO end_pos
+    echo "$END_POS";
+  else
+    # child is a single machine. go up to a space
+    END_POS=`expr index "$CHILDREN" " "`;
+  fi
+
+  echo "$END_POS";
+}
+
+function forward_children() {
+  FROM_PARENT=$1;
+  CHILDREN=$2;
+  END_POS=`first_child_end "$CHILDREN"`;
+  CHILDREN_LEN=`expr length "$CHILDREN"`;
+
+  # grab 1st child (up to end_pos)
+  FIRST_CHILD_LEN=$(($END_POS - 1));
+  FIRST_CHILD=`expr substr "$CHILDREN" 1 $FIRST_CHILD_LEN`;
+
+  # forward child
+  `send_forward "$FROM_PARENT" "$FIRST_CHILD"`;
+
+  # forward next children
+  if test $CHILDREN_LEN -gt $END_POS; then
+    REMAINING_LEN=$(($CHILDREN_LEN - $END_POS));
+    REMAINING_CHILDREN=`expr substr "$CHILDREN~ $((END_POS + 1)) $REMAINING_LEN`;
+
+    `forward_children "$FROM_PARENT" "$REMAINING_CHILDREN"`;
+  fi
+}
+
+if test `expr index "$MACHINE_TREE" "\("` -ne 0; then
+  # it is a tree. send to the parent and have parent send to each child.
+  LEN=`expr length "$MACHINE_TREE"`;
+  SPACE_POS=`expr index "$MACHINE_TREE" " "`;
+  if test $SPACE_POS -ne 0; then
+    # it is a parent with children
+    PARENT=`expr substr "$MACHINE_TREE" 2 $(($SPACE_POS - 2))`;
+    CHILDREN=`expr substr "$MACHINE_TREE" $(($SPACE_POS + 1)) $(($LEN - $SPACE_POS - 1))`;
+
+    # send to parent
+    sendit "$PARENT";
+
+    # have parent send to each child.
+    forward_children "$PARENT" "$CHILDREN";
+  else
+    # it is a single machine of the form (machine).
+    MACHINE=`expr substr "$MACHINE_TREE" 2 $(($LEN - 2))`;
+    sendit "$MACHINE";
+  fi
+
+else
+  # it is a single machine. send to it.
+  sendit "$MACHINE_TREE";
+fi

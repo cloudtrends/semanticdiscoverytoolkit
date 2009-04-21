@@ -1,0 +1,154 @@
+
+Job
+- when started, check to see if a persisted form of the job exists?
+  - or does this only happen when we "resume" a "suspended" job?
+- persisted form records work that has been completed and work that has failed
+- work that has been completed is ignored for partitioning purposes so that each machine gets dif't work
+- persisted form is periodically updated (after each unit of work?)
+  - or is it manually "suspended" for later "resume"
+- job opens up data stores for input/output
+  - open with appending for output when continuing a job
+
+DataDescriptor
+
+need to preserve numLine/Object counts. (binary, text, fileset) (instead of calculating?)
+need to know what work has been done
+ - in InputDataDescriptors
+   - when counting work to be done
+   - when reading in a unit of work
+ - for rebalancing
+ - abstractDataJob notifies inputDataDescriptor?
+   - -vs- jobs have a persisted form that can be restored between jvm invocations
+          - then inputDataDescriptors need to be able to spin up beyond work already done
+          - and outputDataDescriptors need to know to append output
+          - jobs need to cleanup after themselves when finished
+ - keep track of failed work separately
+need to forward output to next job's nodes
+
+DataDescriptorMetaData
+  $HOME/cluster/jvm-jvmNum/data/input/<dataId>/<dataId>.def
+  store counts here -vs- recompute when going over directory data?  
+
+ - Formats: TEXT, BINARY, FILESET
+
+==============================================================================
+
+Job <>-- JobScope: Global (is running in all cluster nodes) -vs- Local (is running in all nodes at the same level) -vs- Single (is running in current jvm only)
+
+Job <>-- UnitOfWork
+
+Job <>-- VirtualDisk <>-- local/global(literal -vs- virtual)/tmp input/output data
+
+ - by the time processing units of work starts, all input data is in place
+ - input (and partitioning) data may change during a pause [i.e. rebalancing]
+ - output data is written during processing
+ - (appropriate) output data is forwarded after processing is complete (but before job terminates)
+
+
+note: cluster = clusterDefinition + gatewayName + machineNames
+
+Job <>-- level
+    <>-- nextJob
+
+- level-0 ==> all nodes
+- level-1 ==> top (not gateway) nodes
+-   ...
+
+- job sends data to next job before finished.
+
+==============================================================================
+
+VirtualDisk
+
+ - keeps track of input data that has been processed (handed out)
+ - keeps track of stats/sizes/processing times of input and output data (what about when job is paused?)
+ - knows about the data that others have?
+
+ - binary (dataOutput/dataInput) -vs- text (bufferedWriter/bufferedReader) data.
+
+ - input data (iterated over as units of work?)
+   - global (same data seen by all nodes running the job)
+     - literal (common mount point -- doesn't need to be copied)
+     - virtual (same data is pushed to all nodes)
+   - local (data to be entirely handled by one jvm)
+     - literal (data lives on node -- does need to be copied)
+     - virtual (common mount point -- doesn't need to be copied)
+   - temporary (doesn't have to be copied)
+
+ - output data (automatically (strategy) partitioned into chunks for "children")
+   - persistent
+     - global (same data to be seen by all nodes running future job)
+       - literal (common mount point -- doesn't need to be copied)
+       - virtual (data is pushed to all child nodes)
+     - local (data to be partitioned for handling by children)
+       - literal (data will be sent to appropriate nodes only)
+       - virtual (data is written to common mount point -- doesn't need to be copied)
+     - transient
+
+ - identification of data (output -- or input)
+   - identify by source only
+   - identify by dest only
+   - identify by both
+   - identify by neither
+
+ - stats = persistent global output data identified by source only
+
+Rebalancing
+
+ - pauses the (specified) jobs across the cluster
+ - has virtual disk instances recompute partitioning over just the remainder of work
+ - notifies jobs of the differences (for fixing up counts/progress/totals, etc.)
+ - resumes the (specified) jobs across the cluser
+
+Interrupt
+
+ - interrupt current unit of work and move on to the next,
+ - noting the unit of work that was interrupted for further analysis/processing
+
+UnitOfWork
+
+ - Thread units of work?
+ - Units of work have partitionable units of work down to leaves?
+
+
+   UnitOfWork <>-- WorkerProcess
+              <>-- InputData(Stream)
+              <>-- OutputData(Stream)
+
+==============================================================================
+
+  port=user-port-base + client-port-offset  # client-port-offset=1,2,...,max # of jvms on a machine
+
+  /listener/running-lock  // lock file that exists while a listener checks the running.csv file, preventing other listeners from reading/writing
+
+  # listener...:
+  #  on startup waits for/creates running-lock
+  #  reads in running.csv and reconciles the process ids with running processes to find own jvm's process id
+  #  cleans up and rewrites the running.csv file
+  #   - comment the replaced lines (re-use their port) and add timestamp information as to when it was replaced
+  #  checks size of physical memory; checks Runtime.maxMemory; runs in disabled mode if too many jvms are already running (reports mode on ping; other jvms can report these stats before this one is started)
+
+org.sd.cluster.listener
+  - every cluster node is (has) a listener
+org.sd.cluster.dispatcher
+  - any and every server is a dispatcher. whichever receives a message forwards it to the right place(s)
+org.sd.cluster.console
+  - a console given a cluster def knows who to send messages to
+
+org.sd.cluster.system  # system utilities; create/honor lock files; run system commands; check system type System.getProperty(os.name)
+                        # check command availability (Runtime.exec("System.which command")).
+
+org.sd.cluster.config
+  /resource/machines.csv
+
+machine-id=`uname -n`
+
+  /resources/clusters/
+    cluster-name.def   # defines cluster as a hierarchy/tree; machine-ids are: uname-jvmnum
+
+#machines-ids: (dispatcher (level.1.1 (level.1.2.1 level.1.2.2 ...)) (level.1.2 (level.1.2.1b  ...you get the idea.
+
+-analyze clusters/*.def to create summary of machine usage/overlap
+
+System.getProperty("user.name");  // user name
+System.getProperty("user.home");  // user's home directory

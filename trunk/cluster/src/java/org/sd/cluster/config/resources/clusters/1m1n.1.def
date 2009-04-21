@@ -1,0 +1,8 @@
+(_root_
+  (gateway node1-0)
+
+  (controller node1-0)
+  (querier node1-0)
+  (processor node1-0)
+  (all node1-0)
+  )

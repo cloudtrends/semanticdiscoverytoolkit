@@ -1,0 +1,28 @@
+
+Shell scripts for interacting with cluster are found in:
+
+svn: core/bin
+cluster-node: ~/cluster/bin
+
+From a development environment, can run scripts from core/bin.
+On a cluster node, can run scripts from ~/cluster/bin.
+
+Scripts:
+
+(1a) deploy -- deploys the code to the default cluster (dev-3a) [only works from dev]
+(1b) hdeploy -- deploys the code to the default cluster (dev-3a) [only works from gateway (vorta)]
+(2a) start -- deploys the code to and starts the nodes in the default cluster (dev-3a) [only works from dev]
+(2b) hstart -- starts the nodes in the default cluster (dev-3a) [only works from gateway (vorta)]
+(3) ping -- pings all cluster nodes to determine whether they are up. [doesn't work from dev]
+(4) stop -- stops the cluster gracefully. [doesn't work from dev]
+
+Other commands:
+
+(1) view information on jobs: [doesn't work from dev]
+    ./run org.sd.cluster.config.Admin -c dev-3a -u bperry -j
+
+(2) view running java processes across the cluster: [only works from gateway (vorta)]
+    pdsh ps -ealf | grep java
+
+(3) take cluster down hard: [only works from gateway (vorta)]
+    pdsh killall -9 java

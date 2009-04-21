@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# Script to mount a directory as a ramdisk.
+#
+# This keeps the original directory, x, on disk named as x.real while
+# the directory x is loaded into ram.
+#
+# Use the uramize script to reverse this process.
+#
+# maxsize is the size that will be, at most, utilized for the ramfs. default is 250MB for now
+#
+# Usage: ramize dir
+#
+
+maxsize=350m;
+dir=$1;
+
+mv $dir $dir.real;
+mkdir $dir;
+sudo mount -t tmpfs none $dir -o size=$maxsize -o nr_inodes=100000
+sudo chown -R $USER:admin $dir
+cp -r $dir.real/* $dir
