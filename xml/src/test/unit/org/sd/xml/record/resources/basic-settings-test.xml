@@ -1,0 +1,28 @@
+<xml>
+  <SettingsA>
+     <!-- getSettingValue("foo") = "Foo" -->
+     <foo>Foo</foo>
+
+     <!-- getSettingValue("bar") = properties.getProperty("baz") -->
+     <bar property="baz"/>
+
+     <!-- getSettingValue("abc") = properties.getProperty("abc") -->
+     <abc/>
+
+     <xyz>XYZ-1</xyz>
+     <xyz>XYZ-2</xyz>
+     <xyz property="xyz3"/>
+     <xyz>XYZ-4</xyz>
+
+     <sub>
+       <attr1>ATTR1-1</attr1>
+       <attr2 property="attr2-1"/>
+     </sub>
+
+     <sub>
+       <attr1>ATTR1-2</attr1>
+       <attr2 property="attr2-2"/>
+     </sub>
+
+  </SettingsA>
+</xml>

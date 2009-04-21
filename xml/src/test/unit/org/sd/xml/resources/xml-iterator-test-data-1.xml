@@ -1,0 +1,201 @@
+<?xml version="1.0"?>
+<RDF xmlns:r="http://www.w3.org/TR/1999/REC-rdf-syntax-19990222"
+     xmlns:s="http://www.w3.org/TR/2000/CR-rdf-schema-20000327"
+     xmlns:d="http://purl.org/dc/elements/1.0/"  
+     xmlns="http://chefmoz.org/rdf/elements/1.0/">
+<d:Title>Chef Moz dining guide</d:Title>
+<d:Creator>Netscape Open Directory Project</d:Creator>
+<d:Subject>restaurants, restaurant reviews, restaurant guide, restaurant links, dining guide</d:Subject>
+<d:Description>Guide to restaurant information on the web, including user-submitted reviews and links to other reviews on the web.  Chef Moz is created and maintained by volunteer editors, and the resulting data is given away for free under an open content license.  This file contains our restaurant information.</d:Description>
+<d:Publisher>Netscape Communications Corporation</d:Publisher>
+<d:Date>2006-12-12</d:Date>
+<d:Identifier>http://chefmoz.org/</d:Identifier>
+<d:Language>en</d:Language>
+<d:Rights>http://chefmoz.org/license.html</d:Rights>
+<d:Rights>http://dmoz.org/license.html</d:Rights>
+
+<Restaurant r:id="Afghanistan/Kabul/Anaar_Restaurant1046807280">
+   <Location>Afghanistan/Kabul</Location>
+   <d:Title>Anaar Restaurant</d:Title>
+   <Address>House Number 6, Street 4</Address>
+   <City>Kabul</City>
+   <Country>Afghanistan</Country>
+   <Phone>070 284 315, 070 291 857</Phone>
+   <CrossStreet>Kolola Pusta behind the UNICA guesthouse</CrossStreet>
+   <Hours>daily 11am-3pm, 7pm-11pm</Hours>
+   <ParsedHours>11-15,19-23|11-15,19-23|11-15,19-23|11-15,19-23|11-15,19-23|11-15,19-23|11-15,19-23</ParsedHours>
+   <FoodRating>6.0</FoodRating>
+   <ServiceRating>5.0</ServiceRating>
+   <AmbianceRating>7.0</AmbianceRating>
+   <OverallRating>6.0</OverallRating>
+   <RecommendedDishes>Sesame Chicken (appetizer) Tandoori Lamb Ribs </RecommendedDishes>
+   <Cuisine>Chinese</Cuisine>
+   <Cuisine>Thai</Cuisine>
+   <Cuisine>Indian / Pakistani</Cuisine>
+   <Review r:resource="Afghanistan/Kabul/Anaar_Restaurant1046807280|1071492143"/>
+   <Review r:resource="Afghanistan/Kabul/Anaar_Restaurant1046807280|1089924370"/>
+</Restaurant>
+
+<DinerReview about="Afghanistan/Kabul/Anaar_Restaurant1046807280|1071492143">
+   <d:Title>Anaar</d:Title>
+   <d:Description>While the ambience at this cozy little restaurant is great, there really is a long way to go before they can call themselves a well-run establishment. The walls look inviting and warm, covered with carpets designed by the owner (all for sale), but in the winter take your own heater.
+
+The food varies widely and while there are certainly good days, it does seem to make foreigners ill all too often. </d:Description>
+   <d:Date>2003-12-15</d:Date>
+   <FoodRating>4</FoodRating>
+   <ServiceRating>4</ServiceRating>
+   <AmbianceRating>6</AmbianceRating>
+   <OverallRating>6</OverallRating>
+   <RecommendedDishes>Sesame Chicken (appetizer)</RecommendedDishes>
+</DinerReview>
+<DinerReview about="Afghanistan/Kabul/Anaar_Restaurant1046807280|1089924370">
+   <d:Title>Anaar</d:Title>
+   <d:Description>The restaurant has a nice outdoor seating arrangement and the food is pretty good especially the Indian cuisine and they have the best chocolate mousse cake Kabul has to offer</d:Description>
+   <d:Date>2004-07-15</d:Date>
+   <FoodRating>8</FoodRating>
+   <ServiceRating>6</ServiceRating>
+   <AmbianceRating>8</AmbianceRating>
+   <OverallRating>6</OverallRating>
+   <RecommendedDishes>Tandoori Lamb Ribs</RecommendedDishes>
+</DinerReview>
+
+<Restaurant r:id="Afghanistan/Kabul/B&#039;s_Place_Restaurant1046808819">
+   <Location>Afghanistan/Kabul</Location>
+   <d:Title>B&#039;s Place Restaurant</d:Title>
+   <Address>Qali Fatullah</Address>
+   <City>Kabul</City>
+   <Country>Afghanistan</Country>
+   <Phone>070 27 6416</Phone>
+   <FoodRating>6.0</FoodRating>
+   <ServiceRating>8.0</ServiceRating>
+   <AmbianceRating>8.0</AmbianceRating>
+   <OverallRating>6.0</OverallRating>
+   <RecommendedDishes>pasta, steak, chef&#039;s dish of the day </RecommendedDishes>
+   <Cuisine>Afghan</Cuisine>
+   <Cuisine>International</Cuisine>
+   <Cuisine>Pizza</Cuisine>
+   <Review r:resource="Afghanistan/Kabul/B&#039;s_Place_Restaurant1046808819|1059312065"/>
+</Restaurant>
+
+<DinerReview about="Afghanistan/Kabul/B&#039;s_Place_Restaurant1046808819|1059312065">
+   <d:Title>B&#039;s Is Good Home Cooking</d:Title>
+   <d:Description>B&#039;s opened for business in June of 2002 -- just as the Loya Jirga that confirmed Hamid Karzai as Transitional Authority president was completed. Inside of the walled complex where this restaurant is located, there are lots of pine trees and real green grass. This is a nice break from dusty Kabul -- without having to leave Kabul. The chef&#039;s dish of the day is usually excellent. They have nice thick juicy steaks too, as well as fresh made pasta. If you&#039;re looking to escape from the repetition of endless routine of kebabs, tread bread and rice soaked in ghee with raisins and carrots, well, this is about as close to European eating that you can get in Kabul. And the idea of service also doesn&#039;t get much better than this in Afghanistan. </d:Description>
+   <d:Date>2003-07-27</d:Date>
+   <FoodRating>6</FoodRating>
+   <ServiceRating>8</ServiceRating>
+   <AmbianceRating>8</AmbianceRating>
+   <OverallRating>6</OverallRating>
+   <RecommendedDishes>pasta, steak, chef&#039;s dish of the day</RecommendedDishes>
+</DinerReview>
+
+<Restaurant r:id="Afghanistan/Kabul/Chinese_Ching_Ching1133010343">
+   <Location>Afghanistan/Kabul</Location>
+   <d:Title>Chinese Ching Ching</d:Title>
+   <Address>Wasir Akbar Khan Area</Address>
+   <City>Kabul</City>
+   <Country>Afghanistan</Country>
+   <Phone>no phone</Phone>
+   <d:Description>Located about two blocks north of Shandiz turn east ... there&#039;s a new banner across the street and a sign just above the Hendokush Guest House sign.  You can&#039;t miss the restaurant - it&#039;s got a big red gate with Chinese Lanterns hanging outside.  On the north side of the street.\nSmall dining room of perhaps 8 - 10 tables.  Friendly wait staff. </d:Description>
+   <Hours>4pm until Late</Hours>
+   <ParsedHours>||||||</ParsedHours>
+   <Alcohol>full bar</Alcohol>
+   <Smoking>permitted</Smoking>
+   <Dress>casual</Dress>
+   <Cuisine>Chinese</Cuisine>
+   <Parking>street parking</Parking>
+   <Parking>own parking lot</Parking>
+</Restaurant>
+
+
+<Restaurant r:id="Afghanistan/Kabul/Delhi_Darbar,_Indian_Restaurant1046806666">
+   <Location>Afghanistan/Kabul</Location>
+   <d:Title>Delhi Darbar, Indian Restaurant</d:Title>
+   <Address>House 91, Street 4</Address>
+   <City>Kabul</City>
+   <Country>Afghanistan</Country>
+   <Phone>070 27 7566</Phone>
+   <FoodRating>4.0</FoodRating>
+   <ServiceRating>6.7</ServiceRating>
+   <AmbianceRating>6.0</AmbianceRating>
+   <OverallRating>5.3</OverallRating>
+   <RecommendedDishes> I will recommend for the addition of South Indian dishes as well.  </RecommendedDishes>
+   <Cuisine>Indian / Pakistani</Cuisine>
+   <Review r:resource="Afghanistan/Kabul/Delhi_Darbar,_Indian_Restaurant1046806666|1071492400"/>
+   <Review r:resource="Afghanistan/Kabul/Delhi_Darbar,_Indian_Restaurant1046806666|1075135584"/>
+   <Review r:resource="Afghanistan/Kabul/Delhi_Darbar,_Indian_Restaurant1046806666|1142627394"/>
+</Restaurant>
+
+<DinerReview about="Afghanistan/Kabul/Delhi_Darbar,_Indian_Restaurant1046806666|1071492400">
+   <d:Title>Not bad at all</d:Title>
+   <d:Description>Outdoor dining in the summer with very little lighting helps overlook the lacking decor - but even in the winter when you sit inside in very basic surroundings, the food is not bad at all.
+
+With Kabul International and Anaar as the only competition for Indian food in Kabul - Delhi Darbar is miles ahead. Definitely worth a trip. And the staff is very helpful. </d:Description>
+   <d:Date>2003-12-15</d:Date>
+   <FoodRating>6</FoodRating>
+   <ServiceRating>8</ServiceRating>
+   <AmbianceRating>4</AmbianceRating>
+   <OverallRating>6</OverallRating>
+</DinerReview>
+<DinerReview about="Afghanistan/Kabul/Delhi_Darbar,_Indian_Restaurant1046806666|1075135584">
+   <d:Title>The best I ever got!</d:Title>
+   <d:Description>As far as the restaurant is concerned I&#039;m totally satisfied with the food. I mean in a country where you hardly find anything good for your mouth,it&#039;s the best ever. In short: best, good care, warm people, feels like home because it&#039;s totally Indian! Give a trip because it&#039;s worth it!</d:Description>
+   <d:Creator>The best I ever got!</d:Creator>
+   <d:ReviewerOrg>delhi</d:ReviewerOrg>
+   <d:Date>2004-01-26</d:Date>
+   <FoodRating>4</FoodRating>
+   <ServiceRating>10</ServiceRating>
+   <AmbianceRating>8</AmbianceRating>
+   <OverallRating>8</OverallRating>
+   <RecommendedDishes>I will recommend for the addition of South Indian dishes as well.</RecommendedDishes>
+</DinerReview>
+<DinerReview about="Afghanistan/Kabul/Delhi_Darbar,_Indian_Restaurant1046806666|1142627394">
+   <d:Title>Low rating</d:Title>
+   <d:Description>My encounter at the restaurant was the last one I will ever have. I went with my wife, and we recieved minimal attention. Noticed that all the attention was being given to people that were not East Indian. Ordered 2 Tandoori Roti. Maybe it was the owner that served us , he only brought us a really dry one.  I asked him three times for my second one , seemed like he did not bother to bring it. At the end I told him to cancel the second one as we had already finished our meals. It took awfully long for the food to come which was not re-heated properly. So it was re-heated food and not fresh. I&#039;ve been to many Indian restaurants and this one was not one I would even consider going to again. I don&#039;t know why but a lot of the East Indian Restaurants think they should not focus on their East Indian customers. They have the misconception that we don&#039;t tip. That day I only tipped 2 dollars as a result of my experiece, normally I give 15-20%. My message is to let owners know that if I have a good experience I will let all my multicultural friends to go their.</d:Description>
+   <d:Date>2006-03-17</d:Date>
+   <FoodRating>2</FoodRating>
+   <ServiceRating>2</ServiceRating>
+   <AmbianceRating>6</AmbianceRating>
+   <OverallRating>2</OverallRating>
+</DinerReview>
+
+<Restaurant r:id="Afghanistan/Kabul/Gandamak_Lodge1046807886">
+   <Location>Afghanistan/Kabul</Location>
+   <d:Title>The Gandamak Lodge</d:Title>
+   <Address>5 Passport Lane</Address>
+   <City>Kabul</City>
+   <Country>Afghanistan</Country>
+   <Phone>070 27 6937</Phone>
+   <FoodRating>10.0</FoodRating>
+   <ServiceRating>10.0</ServiceRating>
+   <AmbianceRating>8.0</AmbianceRating>
+   <OverallRating>10.0</OverallRating>
+   <RecommendedDishes>EVERYTHING! chicken dish </RecommendedDishes>
+   <Review r:resource="Afghanistan/Kabul/Gandamak_Lodge1046807886|1070649050"/>
+   <Review r:resource="Afghanistan/Kabul/Gandamak_Lodge1046807886|1104578208"/>
+</Restaurant>
+
+<DinerReview about="Afghanistan/Kabul/Gandamak_Lodge1046807886|1070649050">
+   <d:Title>AN OASIS IN A CITY OF RUBBLE</d:Title>
+   <d:Description>DISCOVER THE TIME TO RELAX IN KABUL-EVEN A HOT BATH CAN BE PROVIDED. AFTER SPENDING A DAY TEACHING AT AFGHANISTAN&#039;S FIRST BEAUTY SCHOOL, &quot;BEAUTY WITHOUT BORDERS&quot;, I LOOKED FORWARD TO THE QUIET SURROUNDINGS AT THE GANDAMAK LODGE. I TOOK REFUGE THERE EACH AND EVERY NIGHT! THE PILLOWS ARE DIVINE.MAKE YOUR RESERVATIONS EARLY...THEY GET BOOKED UP.</d:Description>
+   <d:Creator>AN OASIS IN A CITY OF RUBBLE</d:Creator>
+   <d:ReviewerOrg>CIRCE SALONSPA</d:ReviewerOrg>
+   <d:Date>2003-12-05</d:Date>
+   <FoodRating>10</FoodRating>
+   <ServiceRating>10</ServiceRating>
+   <AmbianceRating>10</AmbianceRating>
+   <OverallRating>10</OverallRating>
+   <RecommendedDishes>EVERYTHING!</RecommendedDishes>
+</DinerReview>
+<DinerReview about="Afghanistan/Kabul/Gandamak_Lodge1046807886|1104578208">
+   <d:Title>Outstanding Service, Food, a piece of history</d:Title>
+   <d:Description>This was reportably where Osama Bin Laden kept his forth wife before fleeing during 2001.  It is appropriate named from the last stand of the British 44th Regiment at Gandamak pass during the 1st Afghan war.  A true 5 star guest lodge and restuarant, with outstanding, interesting and engaging hosts to boot!!
+Tour the armoury and see the huge display of British antique fire arms.  If I go to Kabul again, I Gandamak will be my first choice!</d:Description>
+   <d:Date>2005-01-01</d:Date>
+   <FoodRating>10</FoodRating>
+   <ServiceRating>10</ServiceRating>
+   <AmbianceRating>6</AmbianceRating>
+   <OverallRating>10</OverallRating>
+   <RecommendedDishes>chicken dish</RecommendedDishes>
+</DinerReview>
+
+</RDF>

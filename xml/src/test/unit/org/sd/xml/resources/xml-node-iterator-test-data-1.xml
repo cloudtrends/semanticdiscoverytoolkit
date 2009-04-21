@@ -1,0 +1,19 @@
+<a>
+  <x>x</x>
+  <y>y</y>
+  <z>z</z>
+  <b>
+    <c>
+      <Foo>
+        <d>Foo-1</d>
+        <e>Bar-1</e>
+        <f>Baz-1</f>
+      </Foo>
+      <Foo>
+        <d>Foo-2</d>
+        <e>Bar-2</e>
+        <f>Baz-2</f>
+      </Foo>
+    </c>
+  </b>
+</a>
