@@ -1,0 +1,59 @@
+
+General project directories: doc; jars, ext, lib
+Specific project directories: <project>[i]
+
+doc:
+
+general documentation
+
+libraries:
+
+jars -- holds all external jars, complete with version info in names (not to be directly included in any classpath)
+ext -- holds all relevant runtime jars as (versionless) symbolic links to 'jars'
+lib -- holds all relevant project (dist) jars
+
+==============================================================================
+
+Projects
+
+<project>
+  - build.xml  (ant build script)
+  - doc  (project documentation)
+  - conf  (project configuration)
+  - resources  (project resources)
+  - lib  (versionless symbolic links to dependent runtime jars)
+    - build-only (versionless symbolic links to build/test-only jars)
+  - src
+    - java  (java source code)
+      - org
+        - sd
+          - ...
+    - test  (testing code)
+      - unit  (unit tests)
+        - org
+          - sd
+            - ...
+      - integration  (integration tests)
+        - org
+          - sd
+            - ...
+      - regression  (regression tests)
+        - org
+          - sd
+            - ...
+  - target  (compiled output)
+    - dist  (container for distribution jar(s))
+    - classes  (compiled classes)
+      - org
+        - sd
+          - ...
+    - doc (api/javadocs)
+      - index.html
+      - org
+        - sd
+          - ...
+    - reports (testing results)
+      - html
+        - org
+          - sd
+            - ...
