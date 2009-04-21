@@ -1,0 +1,110 @@
+
+senseIndex.getFileEntries(word:String):List<WordNetFile.Entry>
+...change to or add...
+senseIndex.getWordData(word:String):List<WordData>
+
+Tree<WordData>
+
+<<interface>>
+WordData
+getWord():String
+
+WordRoot --> WordData
+
+
+WordForm --> WordData
+  getWordForm():WordForm
+
+WordNode --> WordData
+  getParentPointer():WordNetFile.Pointer
+  getParentPointerIndex():Integer
+  getBackLinkPointerIndex:Integer
+
+// WordLeaf --> WordNode
+//   isLooping():boolean   // has children that loop
+//   isTerminal():boolean  // no children (other than backPointer)
+//   getLoopChildrenPointerIndeces():List<Integer>
+
+
+------
+
+input -> wordForms(dictDir)
+wordForm -> indexEntries
+indexEntry -> fileEntry
+fileEntry -> wordNode
+
+WordSenseIterator
+
+WordSenseBrowser
+  // where we are
+  +WordId
+  +WordSense
+
+  // where we came from
+  originalInput
+  prevWordSense
+
+WordSense
+  +fileEntry:WordNetFile.Entry
+
+  -pos2offset2node:Map<POS, Map<id:WordId, WordSense>>
+
+------
+
+WordNode
+  //where came from
+//  +sources
+//    +source:WordNode
+//    +sourcePointerOffset:int (gives pointerSymbolFollowed:PointerSymbol)
+//  +originalWordData:WordData
+
+  //where are
+  +POS
+  +synsetOffset
+//  +wordNum:int
+  +fileEntry:WordNetFile.Entry
+
+  //where can go
+//  +targets:List<WordNode>
+
+  -pos2offset2node:Map<POS, Map<id:WordId, WordNode>>
+
+note: id = POS + synsetOffset + wordNum identifies FileEntry and Word within
+
+WordBrowser
+  dictDir:File
+  input:String
+  
+  
+
+WordNodeBrowser
+  // where we are
+  +wordNode:WordNode
+  +wordNum:int
+
+  // where came from
+  +prevWordNode:WordNode
+  +prevPointerOffset:int
+  +originalWordData
+
+  +getNext():List<WordNodeWrapper>
+  +getNext(pointerSymbol:PointerSymbol):List<WordNodeWrapper>
+
+  -history:Map<POS, Map<id:WordId, WordNode>>
+  +back():WordNodeWalker
+
+------
+
+
+Root
+  input word
+
+WordNode
+  relationFromParent:WordNetFile.Pointer
+  wordForm:WordForm  // present only when child of root (input word only) node
+  nodeData:WordNetFile.Entry
+  loop:WordNetFile.Entry
+
+Terminals:
+  (1) looping: references 
+  (2) no more pointers
