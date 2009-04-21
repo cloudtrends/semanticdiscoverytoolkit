@@ -1,0 +1,431 @@
+
+depth=4
+numValues=2
+
+
+num endInd
+ 2   2                                  0                                           1
+ 4   6                     0                      1                    0                       1
+ 8  14             0             1       0               1      0            1         0             1
+16  30        0         1    0      1 0       1       0     1 0    1       0     1   0    1        0    1
+          
+1010          
+
+value   rowInd   blockInd   valueInd    bitInd
+1       0        0          1           1      = valueInd
+0       1        1          0           4      = endInd[rowInd-1] + numValues * blockInd
+1       2        3          1           11     = endInd[rowInd-1] + numValues * numValues * blockInd
+0       3        5          0           24     =  
+
+
+                        0                                          _1_
+            0                      1                   _0_                      1
+     0             1       0               1      0           _1_         0             1
+0         1    0      1 0       1       0     1 0    1      _0_     1   0    1        0    1
+
+
+rowInd     numRowValues    numBlocks    startBitInd     endBitInd
+0          2               1            0               1
+1          4               2            2               5
+2          8               4            6               13
+3          16              8            14              29
+                                        30
+
+1010:
+
+(102)
+0110 0110
+
+01
+10
+01
+10
+
+
+1111:
+
+(117)      (144)
+0111 0101  1001 0000
+
+01
+11
+0101
+1001
+
+
+0000:
+
+(238)      (90)       (64)
+1110 1110  0101 1010  0100 0000
+
+11
+1011
+100101
+101001
+
+1111 0101  1001 0000
+1100 1101  0110 0100
+
+
+A) numRowValues[0] = numValues; numRowValues[i] = numValues * numRowValues[i - 1]
+//numBlocks[0] = 1; numBlocks[i] = numValues * numBlocks[i - 1];
+B) startBitInd[0] = 0; startBitInd[i] = startBitInd[i - 1] + numRowValues[i - 1]   // can be cached
+
+// can't be cached
+C) bitOffsetOnRow[0] = 0; bitOffsetOnRow[i] = bitOffsetOnRow[i - 1] * numValues
+
+D) bitOffset = startBitInd[i] + bitOffsetOnRow[i] + valueSequence[i]
+
+====================
+Adjusted for Sparse Modifications
+
+// only include numValues space in next row for those present in cur row, which correspond to numValues slots for each instantiated in prior row
+A) numRowValues[0] = numValues; numRowValues[i] = numValues * bitCount[i - 1]
+B) startBitInd[0] = 0; startBitInd[i] = startBitInd[i - 1] + numRowValues[i - 1];
+
+C) bitOffsetOnRow[0] = 0; bitOffsetOnRow[i] = bitOffsetOnRow[i - 1] * numValues
+
+D) bitOffset = startBitInd[i] + bitOffsetOnRow[i] + valueSequence[i]
+
+
+
+NOTE: bit layout is 'reversed' in impl!
+
+  76543210|76543210|76543210|76543210|76543210|76543210|...
+
+As opposed to:
+  01234567|01234567|01234567|01234567|01234567|01234567|...
+
+
+Alignment
+
+  Old:   76543210|76543210|76543210|76543210|76543210|76543210|...
+  New:     76543210|76543210|76543210|76543210|76543210|76543210|...
+
+  Old:     76543210|76543210|76543210|76543210|76543210|76543210|...
+  New:   76543210|76543210|76543210|76543210|76543210|76543210|...
+
+
+As opposed to:
+  Old:  01234567|01234567|01234567|01234567|01234567|01234567|...
+  New:    012345|67012345|67012345|67012345|67012345|67012345|67...
+
+  Old:    01234567|01234567|01234567|01234567|01234567|01234567|...
+  New:  01234567|01234567|01234567|01234567|01234567|01234567|...
+
+
+==============
+
+Using java.util.BitSet
+
+sbk@sd:~/co/core$ java -Xmx640m org.sd.util.fixedtrie.HexTrie ~/tmp/blacklist.25000.txt.gz
+Fri Jan 25 15:28:21 MST 2008: loading '/home/sbk/tmp/blacklist.25000.txt.gz'...
+Fri Jan 25 15:28:21 MST 2008: processed 1 size=512
+Fri Jan 25 15:28:21 MST 2008: processed 2 size=976
+Fri Jan 25 15:28:21 MST 2008: processed 3 size=1440
+Fri Jan 25 15:28:21 MST 2008: processed 4 size=1904
+Fri Jan 25 15:28:21 MST 2008: processed 5 size=2352
+Fri Jan 25 15:28:21 MST 2008: processed 6 size=2816
+Fri Jan 25 15:28:21 MST 2008: processed 7 size=3280
+Fri Jan 25 15:28:21 MST 2008: processed 8 size=3744
+Fri Jan 25 15:28:21 MST 2008: processed 9 size=4192
+Fri Jan 25 15:28:21 MST 2008: processed 100 size=44832
+Fri Jan 25 15:28:22 MST 2008: processed 200 size=88896
+Fri Jan 25 15:28:23 MST 2008: processed 300 size=132480
+Fri Jan 25 15:28:25 MST 2008: processed 400 size=175888
+Fri Jan 25 15:28:27 MST 2008: processed 500 size=219184
+Fri Jan 25 15:28:29 MST 2008: processed 600 size=262432
+Fri Jan 25 15:28:32 MST 2008: processed 700 size=305472
+Fri Jan 25 15:28:35 MST 2008: processed 800 size=348560
+Fri Jan 25 15:28:39 MST 2008: processed 900 size=391504
+Fri Jan 25 15:28:43 MST 2008: processed 1000 size=434528
+Fri Jan 25 15:28:48 MST 2008: processed 1100 size=477296
+Fri Jan 25 15:28:53 MST 2008: processed 1200 size=520016
+Fri Jan 25 15:28:58 MST 2008: processed 1300 size=562832
+Fri Jan 25 15:29:04 MST 2008: processed 1400 size=605600
+Fri Jan 25 15:29:11 MST 2008: processed 1500 size=648304
+Fri Jan 25 15:29:17 MST 2008: processed 1600 size=691072
+Fri Jan 25 15:29:24 MST 2008: processed 1700 size=733696
+Fri Jan 25 15:29:32 MST 2008: processed 1800 size=776240
+Fri Jan 25 15:29:40 MST 2008: processed 1900 size=818816
+Fri Jan 25 15:29:48 MST 2008: processed 2000 size=861456
+Fri Jan 25 15:29:57 MST 2008: processed 2100 size=905616
+Fri Jan 25 15:30:07 MST 2008: processed 2200 size=949936
+Fri Jan 25 15:30:17 MST 2008: processed 2300 size=993632
+Fri Jan 25 15:30:27 MST 2008: processed 2400 size=1037168
+Fri Jan 25 15:30:38 MST 2008: processed 2500 size=1080416
+Fri Jan 25 15:30:49 MST 2008: processed 2600 size=1123664
+Fri Jan 25 15:31:00 MST 2008: processed 2700 size=1166816
+Fri Jan 25 15:31:12 MST 2008: processed 2800 size=1209904
+Fri Jan 25 15:31:24 MST 2008: processed 2900 size=1252752
+Fri Jan 25 15:31:37 MST 2008: processed 3000 size=1295664
+Fri Jan 25 15:31:50 MST 2008: processed 3100 size=1338560
+Fri Jan 25 15:32:03 MST 2008: processed 3200 size=1381296
+Fri Jan 25 15:32:17 MST 2008: processed 3300 size=1423952
+Fri Jan 25 15:32:31 MST 2008: processed 3400 size=1466640
+Fri Jan 25 15:32:46 MST 2008: processed 3500 size=1509280
+Fri Jan 25 15:33:01 MST 2008: processed 3600 size=1551888
+Fri Jan 25 15:33:16 MST 2008: processed 3700 size=1594656
+Fri Jan 25 15:33:32 MST 2008: processed 3800 size=1637232
+Fri Jan 25 15:33:48 MST 2008: processed 3900 size=1679776
+Fri Jan 25 15:34:05 MST 2008: processed 4000 size=1723104
+Fri Jan 25 15:34:23 MST 2008: processed 4100 size=1767504
+Fri Jan 25 15:34:41 MST 2008: processed 4200 size=1811360
+Fri Jan 25 15:35:00 MST 2008: processed 4300 size=1854992
+Fri Jan 25 15:35:18 MST 2008: processed 4400 size=1898496
+Fri Jan 25 15:35:37 MST 2008: processed 4500 size=1941680
+Fri Jan 25 15:35:57 MST 2008: processed 4600 size=1984928
+Fri Jan 25 15:36:17 MST 2008: processed 4700 size=2027920
+Fri Jan 25 15:36:38 MST 2008: processed 4800 size=2070864
+Fri Jan 25 15:36:58 MST 2008: processed 4900 size=2113744
+Fri Jan 25 15:37:19 MST 2008: processed 5000 size=2156608
+Fri Jan 25 15:37:41 MST 2008: processed 5100 size=2199424
+Fri Jan 25 15:38:02 MST 2008: processed 5200 size=2242144
+Fri Jan 25 15:38:25 MST 2008: processed 5300 size=2284848
+Fri Jan 25 15:38:47 MST 2008: processed 5400 size=2327680
+Fri Jan 25 15:39:10 MST 2008: processed 5500 size=2370384
+Fri Jan 25 15:39:34 MST 2008: processed 5600 size=2413056
+Fri Jan 25 15:39:58 MST 2008: processed 5700 size=2455712
+Fri Jan 25 15:40:23 MST 2008: processed 5800 size=2498304
+Fri Jan 25 15:40:48 MST 2008: processed 5900 size=2540880
+Fri Jan 25 15:41:14 MST 2008: processed 6000 size=2585104
+Fri Jan 25 15:41:40 MST 2008: processed 6100 size=2629200
+Fri Jan 25 15:42:08 MST 2008: processed 6200 size=2673056
+Fri Jan 25 15:42:35 MST 2008: processed 6300 size=2716640
+Fri Jan 25 15:43:03 MST 2008: processed 6400 size=2759984
+Fri Jan 25 15:43:31 MST 2008: processed 6500 size=2803136
+Fri Jan 25 15:43:59 MST 2008: processed 6600 size=2846304
+Fri Jan 25 15:44:28 MST 2008: processed 6700 size=2889248
+Fri Jan 25 15:44:57 MST 2008: processed 6800 size=2932224
+Fri Jan 25 15:45:27 MST 2008: processed 6900 size=2975264
+Fri Jan 25 15:45:57 MST 2008: processed 7000 size=3018128
+Fri Jan 25 15:46:27 MST 2008: processed 7100 size=3060848
+Fri Jan 25 15:46:58 MST 2008: processed 7200 size=3103696
+Fri Jan 25 15:47:29 MST 2008: processed 7300 size=3146544
+Fri Jan 25 15:48:01 MST 2008: processed 7400 size=3189184
+Fri Jan 25 15:48:32 MST 2008: processed 7500 size=3231952
+Fri Jan 25 15:49:04 MST 2008: processed 7600 size=3274720
+Fri Jan 25 15:49:36 MST 2008: processed 7700 size=3317280
+Fri Jan 25 15:50:09 MST 2008: processed 7800 size=3359936
+Fri Jan 25 15:50:42 MST 2008: processed 7900 size=3402448
+Fri Jan 25 15:51:18 MST 2008: processed 8000 size=3446928
+Fri Jan 25 15:51:53 MST 2008: processed 8100 size=3491008
+Fri Jan 25 15:52:28 MST 2008: processed 8200 size=3534656
+Fri Jan 25 15:53:03 MST 2008: processed 8300 size=3578224
+Fri Jan 25 15:53:39 MST 2008: processed 8400 size=3621600
+Fri Jan 25 15:54:15 MST 2008: processed 8500 size=3664704
+Fri Jan 25 15:54:51 MST 2008: processed 8600 size=3707728
+Fri Jan 25 15:55:28 MST 2008: processed 8700 size=3750512
+Fri Jan 25 15:56:06 MST 2008: processed 8800 size=3793584
+Fri Jan 25 15:56:43 MST 2008: processed 8900 size=3836368
+Fri Jan 25 15:57:21 MST 2008: processed 9000 size=3879328
+Fri Jan 25 15:57:59 MST 2008: processed 9100 size=3922160
+Fri Jan 25 15:58:38 MST 2008: processed 9200 size=3964800
+Fri Jan 25 15:59:17 MST 2008: processed 9300 size=4007600
+Fri Jan 25 15:59:57 MST 2008: processed 9400 size=4050448
+Fri Jan 25 16:00:38 MST 2008: processed 9500 size=4093264
+Fri Jan 25 16:01:19 MST 2008: processed 9600 size=4135952
+Fri Jan 25 16:02:00 MST 2008: processed 9700 size=4178448
+Fri Jan 25 16:02:42 MST 2008: processed 9800 size=4220960
+Fri Jan 25 16:03:24 MST 2008: processed 9900 size=4264160
+Fri Jan 25 16:04:10 MST 2008: processed 10000 size=4308736
+Fri Jan 25 16:04:54 MST 2008: processed 10100 size=4352624
+Fri Jan 25 16:05:38 MST 2008: processed 10200 size=4396128
+Fri Jan 25 16:06:23 MST 2008: processed 10300 size=4439632
+Fri Jan 25 16:07:09 MST 2008: processed 10400 size=4482944
+Fri Jan 25 16:07:54 MST 2008: processed 10500 size=4526080
+Fri Jan 25 16:08:40 MST 2008: processed 10600 size=4569136
+Fri Jan 25 16:09:26 MST 2008: processed 10700 size=4612112
+Fri Jan 25 16:10:13 MST 2008: processed 10800 size=4655136
+Fri Jan 25 16:10:59 MST 2008: processed 10900 size=4698128
+Fri Jan 25 16:11:46 MST 2008: processed 11000 size=4740816
+Fri Jan 25 16:12:33 MST 2008: processed 11100 size=4783536
+Fri Jan 25 16:13:21 MST 2008: processed 11200 size=4826400
+Fri Jan 25 16:14:09 MST 2008: processed 11300 size=4869152
+Fri Jan 25 16:14:57 MST 2008: processed 11400 size=4911712
+Fri Jan 25 16:15:46 MST 2008: processed 11500 size=4954384
+Fri Jan 25 16:16:35 MST 2008: processed 11600 size=4996928
+Fri Jan 25 16:17:25 MST 2008: processed 11700 size=5039520
+Fri Jan 25 16:18:15 MST 2008: processed 11800 size=5082000
+Fri Jan 25 16:19:07 MST 2008: processed 11900 size=5125888
+Fri Jan 25 16:20:01 MST 2008: processed 12000 size=5169984
+Fri Jan 25 16:20:55 MST 2008: processed 12100 size=5213984
+Fri Jan 25 16:21:48 MST 2008: processed 12200 size=5257520
+Fri Jan 25 16:22:42 MST 2008: processed 12300 size=5300976
+Fri Jan 25 16:23:35 MST 2008: processed 12400 size=5343984
+Fri Jan 25 16:24:29 MST 2008: processed 12500 size=5387232
+Fri Jan 25 16:25:24 MST 2008: processed 12600 size=5430256
+Fri Jan 25 16:26:19 MST 2008: processed 12700 size=5473200
+Fri Jan 25 16:27:13 MST 2008: processed 12800 size=5516144
+Fri Jan 25 16:28:08 MST 2008: processed 12900 size=5559104
+Fri Jan 25 16:29:04 MST 2008: processed 13000 size=5601872
+Fri Jan 25 16:29:59 MST 2008: processed 13100 size=5644656
+Fri Jan 25 16:30:55 MST 2008: processed 13200 size=5687440
+Fri Jan 25 16:31:51 MST 2008: processed 13300 size=5730144
+Fri Jan 25 16:32:48 MST 2008: processed 13400 size=5772832
+Fri Jan 25 16:33:46 MST 2008: processed 13500 size=5815440
+Fri Jan 25 16:34:44 MST 2008: processed 13600 size=5857904
+Fri Jan 25 16:35:42 MST 2008: processed 13700 size=5900624
+Fri Jan 25 16:36:42 MST 2008: processed 13800 size=5944304
+Fri Jan 25 16:37:44 MST 2008: processed 13900 size=5988656
+Fri Jan 25 16:38:46 MST 2008: processed 14000 size=6032544
+Fri Jan 25 16:39:48 MST 2008: processed 14100 size=6076160
+Fri Jan 25 16:40:50 MST 2008: processed 14200 size=6119520
+Fri Jan 25 16:41:52 MST 2008: processed 14300 size=6162800
+Fri Jan 25 16:42:55 MST 2008: processed 14400 size=6206000
+Fri Jan 25 16:43:58 MST 2008: processed 14500 size=6249072
+Fri Jan 25 16:45:00 MST 2008: processed 14600 size=6292080
+Fri Jan 25 16:46:02 MST 2008: processed 14700 size=6334944
+Fri Jan 25 16:47:05 MST 2008: processed 14800 size=6377632
+Fri Jan 25 16:48:15 MST 2008: processed 14900 size=6420448
+Fri Jan 25 16:49:22 MST 2008: processed 15000 size=6463264
+Fri Jan 25 16:50:28 MST 2008: processed 15100 size=6506272
+Fri Jan 25 16:51:33 MST 2008: processed 15200 size=6548864
+Fri Jan 25 16:52:38 MST 2008: processed 15300 size=6591536
+Fri Jan 25 16:53:43 MST 2008: processed 15400 size=6634256
+Fri Jan 25 16:54:50 MST 2008: processed 15500 size=6677008
+Fri Jan 25 16:55:56 MST 2008: processed 15600 size=6719552
+Fri Jan 25 16:57:02 MST 2008: processed 15700 size=6762160
+Fri Jan 25 16:58:10 MST 2008: processed 15800 size=6805408
+Fri Jan 25 16:59:21 MST 2008: processed 15900 size=6849952
+Fri Jan 25 17:00:32 MST 2008: processed 16000 size=6893824
+Fri Jan 25 17:01:42 MST 2008: processed 16100 size=6937440
+Fri Jan 25 17:02:53 MST 2008: processed 16200 size=6980896
+Fri Jan 25 17:04:04 MST 2008: processed 16300 size=7024224
+Fri Jan 25 17:05:15 MST 2008: processed 16400 size=7067312
+Fri Jan 25 17:06:26 MST 2008: processed 16500 size=7110384
+Fri Jan 25 17:07:37 MST 2008: processed 16600 size=7153280
+Fri Jan 25 17:08:48 MST 2008: processed 16700 size=7196112
+Fri Jan 25 17:10:00 MST 2008: processed 16800 size=7239040
+Fri Jan 25 17:11:11 MST 2008: processed 16900 size=7281712
+Fri Jan 25 17:12:24 MST 2008: processed 17000 size=7324688
+Fri Jan 25 17:13:37 MST 2008: processed 17100 size=7367504
+Fri Jan 25 17:14:50 MST 2008: processed 17200 size=7410240
+Fri Jan 25 17:16:04 MST 2008: processed 17300 size=7452928
+Fri Jan 25 17:17:18 MST 2008: processed 17400 size=7495680
+Fri Jan 25 17:18:33 MST 2008: processed 17500 size=7538304
+Fri Jan 25 17:19:48 MST 2008: processed 17600 size=7580864
+Fri Jan 25 17:21:04 MST 2008: processed 17700 size=7623488
+Fri Jan 25 17:22:23 MST 2008: processed 17800 size=7667840
+Fri Jan 25 17:23:42 MST 2008: processed 17900 size=7712048
+Fri Jan 25 17:25:01 MST 2008: processed 18000 size=7755776
+Fri Jan 25 17:26:18 MST 2008: processed 18100 size=7799216
+Fri Jan 25 17:27:37 MST 2008: processed 18200 size=7842624
+Fri Jan 25 17:28:56 MST 2008: processed 18300 size=7885616
+Fri Jan 25 17:30:15 MST 2008: processed 18400 size=7928688
+Fri Jan 25 17:31:35 MST 2008: processed 18500 size=7971680
+Fri Jan 25 17:32:54 MST 2008: processed 18600 size=8014624
+Fri Jan 25 17:34:14 MST 2008: processed 18700 size=8057568
+Fri Jan 25 17:35:34 MST 2008: processed 18800 size=8100256
+Fri Jan 25 17:36:54 MST 2008: processed 18900 size=8142928
+Fri Jan 25 17:38:16 MST 2008: processed 19000 size=8185632
+Fri Jan 25 17:39:37 MST 2008: processed 19100 size=8228224
+Fri Jan 25 17:40:59 MST 2008: processed 19200 size=8270928
+Fri Jan 25 17:42:22 MST 2008: processed 19300 size=8313616
+Fri Jan 25 17:43:44 MST 2008: processed 19400 size=8356320
+Fri Jan 25 17:45:06 MST 2008: processed 19500 size=8399088
+Fri Jan 25 17:46:30 MST 2008: processed 19600 size=8441744
+Fri Jan 25 17:47:58 MST 2008: processed 19700 size=8486320
+Fri Jan 25 17:49:25 MST 2008: processed 19800 size=8530464
+Fri Jan 25 17:50:51 MST 2008: processed 19900 size=8574128
+Fri Jan 25 17:52:18 MST 2008: processed 20000 size=8617616
+Fri Jan 25 17:53:45 MST 2008: processed 20100 size=8660896
+Fri Jan 25 17:55:12 MST 2008: processed 20200 size=8704064
+Fri Jan 25 17:56:40 MST 2008: processed 20300 size=8747136
+Fri Jan 25 17:58:07 MST 2008: processed 20400 size=8790112
+Fri Jan 25 17:59:36 MST 2008: processed 20500 size=8833104
+Fri Jan 25 18:01:05 MST 2008: processed 20600 size=8876080
+Fri Jan 25 18:02:34 MST 2008: processed 20700 size=8918944
+Fri Jan 25 18:04:03 MST 2008: processed 20800 size=8961680
+Fri Jan 25 18:05:33 MST 2008: processed 20900 size=9004544
+Fri Jan 25 18:07:03 MST 2008: processed 21000 size=9047264
+Fri Jan 25 18:08:32 MST 2008: processed 21100 size=9090128
+Fri Jan 25 18:10:01 MST 2008: processed 21200 size=9132704
+Fri Jan 25 18:11:32 MST 2008: processed 21300 size=9175328
+Fri Jan 25 18:13:01 MST 2008: processed 21400 size=9217808
+Fri Jan 25 18:14:31 MST 2008: processed 21500 size=9260416
+Fri Jan 25 18:16:06 MST 2008: processed 21600 size=9304016
+Fri Jan 25 18:17:42 MST 2008: processed 21700 size=9348320
+Fri Jan 25 18:19:18 MST 2008: processed 21800 size=9392320
+Fri Jan 25 18:20:54 MST 2008: processed 21900 size=9436032
+Fri Jan 25 18:22:30 MST 2008: processed 22000 size=9479392
+Fri Jan 25 18:24:05 MST 2008: processed 22100 size=9522640
+Fri Jan 25 18:25:41 MST 2008: processed 22200 size=9565840
+Fri Jan 25 18:27:15 MST 2008: processed 22300 size=9608976
+Fri Jan 25 18:28:50 MST 2008: processed 22400 size=9651968
+Fri Jan 25 18:30:25 MST 2008: processed 22500 size=9694768
+Fri Jan 25 18:32:00 MST 2008: processed 22600 size=9737568
+Fri Jan 25 18:33:36 MST 2008: processed 22700 size=9780368
+Fri Jan 25 18:35:13 MST 2008: processed 22800 size=9823104
+Fri Jan 25 18:36:51 MST 2008: processed 22900 size=9865824
+Fri Jan 25 18:38:30 MST 2008: processed 23000 size=9908608
+Fri Jan 25 18:40:07 MST 2008: processed 23100 size=9951264
+Fri Jan 25 18:41:45 MST 2008: processed 23200 size=9993776
+Fri Jan 25 18:43:24 MST 2008: processed 23300 size=10036480
+Fri Jan 25 18:45:02 MST 2008: processed 23400 size=10079104
+Fri Jan 25 18:46:44 MST 2008: processed 23500 size=10122704
+Fri Jan 25 18:48:30 MST 2008: processed 23600 size=10167056
+Fri Jan 25 18:50:14 MST 2008: processed 23700 size=10211136
+Fri Jan 25 18:51:58 MST 2008: processed 23800 size=10254640
+Fri Jan 25 18:53:41 MST 2008: processed 23900 size=10298112
+Fri Jan 25 18:55:23 MST 2008: processed 24000 size=10341168
+Fri Jan 25 18:57:07 MST 2008: processed 24100 size=10384400
+Fri Jan 25 18:58:50 MST 2008: processed 24200 size=10427360
+Fri Jan 25 19:00:34 MST 2008: processed 24300 size=10470208
+Fri Jan 25 19:02:17 MST 2008: processed 24400 size=10513104
+Fri Jan 25 19:04:02 MST 2008: processed 24500 size=10556000
+Fri Jan 25 19:05:48 MST 2008: processed 24600 size=10598816
+Fri Jan 25 19:07:34 MST 2008: processed 24700 size=10641584
+Fri Jan 25 19:09:20 MST 2008: processed 24800 size=10684256
+Fri Jan 25 19:11:06 MST 2008: processed 24900 size=10726928
+Fri Jan 25 19:12:52 MST 2008: processed 25000 size=10769520
+Fri Jan 25 19:12:52 MST 2008: loaded 25000.  ...Verifying
+Fri Jan 25 19:18:22 MST 2008: totalMissing= 0.
+
+
+Using org.sd.util.BitVector:
+...
+
+
+
+shift 3 from bit 3 (shiftBytes=0)
+
+0:yyyx xxxx  1:zzzz zzzz  2:aaaa aaaa
+
+0:yyy0 00xx  1:xxxz zzzz  2:zzza aaaa  3:aaa0 0000
+
+[0]&1110 0000 | ([0]>>>3 & 0000 0011)  // need to mask to get rid of y's
+             ([0]<<5) | ([1]>>>3)      // no need to mask: rolled in 0's
+                        ([1]<<5) | ([2]>>>3)
+                                        ([2]<<5)
+
+
+shift 10 from bit 3 (shiftBytes=1 = 10>>3) (shiftBits=2 = 10%3)
+
+0:yyyx xxxx  1:zzzz zzzz  2:aaaa aaaa
+
+0:yyy0 0000  1:0000 0xxx  2:xxzz zzzz  3:zzaa aaaa  4:aa00 0000
+
+[0]&1110 0000
+               [0]>>>2
+                       [0]<<6 | [1]>>>2
+                                      [1]<<6 | [2]>>>2
+                                                    [2]<<6
+
+shift 16 from bit 3
+
+0:yyyx xxxx  1:zzzz zzzz  2:aaaa aaaa
+
+0:yyy0 0000  1:0000 0000  2:000x xxxx  3:zzzz zzzz  4:aaaa aaaa
+
+  yyyx xxxx                 yyyx xxxx
+& 1110 0000               & 0001 1111
+-----------               -----------
+  yyy0 0000                 000x xxxx
+
+
+
+1111 1011  1111 0000   is
+1100 1110  1111 1100   expected
+
+1111 0011  1111 1100   got

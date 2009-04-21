@@ -1,0 +1,22 @@
+#
+# Simple mtf definitions for TestKeywordSentimentAnalyzer.
+#
+
+# Matching rules
+%(or 1 0 2)
+
+#Terms 0: positive terms
+$caseInsensitive full
+good, great, wonderful, fabulous, terrific, banker's acceptance, bang-up
+
+#Terms 1: negative terms
+$caseInsensitive full
+bad, awful, horrible, terrible, good for nothing
+
+#Terms 2: neutral terms
+$caseInsensitive full
+ok, okay
+
+#Terms 3: negating terms
+$caseInsensitive full
+not
