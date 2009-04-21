@@ -1,0 +1,18 @@
+
+# Sentence
+S <- PP * NP VP ?
+
+# Transitive and intransitive verb phrase
+VP <- ADV * V + IOBJ ? PP * NP ?
+
+# indirect objects for verb phrases
+IOBJ <- _to NP
+
+# Predicate adjective verb phrase "He 'is happy'"
+VP <- ADV * V + ADJ +
+
+# Noun phrase
+NP <- DET ? ADJ * N + PP *
+
+# Prepositional phrase
+PP <- PREP NP
