@@ -1,0 +1,87 @@
+The tag stack represents the sequence of nested tags in a single xml document path.
+While parsing a document, the tag stack is being constructed and is mutable.
+Outside the scope of building the document, an immutable copy of a tag stack is supplied.
+The underlying source tag stack will continue to change as the document is incrementally read.
+The same instance of a tag always corresponds to the same xml node and may participate in multiple paths.
+The tags in a tag stack are represented as a list ordered from the root tag at position 0 toward the leaf as position indexes increase.
+While a tag stack is built, the underlying XmlLite.Tag instances are updated with numChildren and childNum information.
+
+The class hierarchy for tag stacks is:
+
+                     <<interface>>
+                       TagStack  <>--- XmlLite.Tag
+                          ^        1 *
+                          .
+                          .
+                      <<abstract>>
+                      BaseTagStack
+                          ^
+                          |
+       +------------------+------------------+
+       |                                     |
+ MutableTagStack                     ImmutableTagStack
+       ^
+       |
+  XmlTagStack
+       ^
+       |
+  HtmlTagStack
+
+==============================================================================
+
+todo: keep track of instanceNum (in the XmlLite.Tag?) in addition to childNum?
+ - instance num tracks the occurrences of a specific tag name
+ - instance num would help keep track of col,row information in tables
+   - this differs from child num because extra tags can be present between table tags like tr, td.
+ - but what about i.e. <td colspan="3">
+   - then instance num doesn't correspond to col num anymore
+ - would instance num help with anything else?
+   - the number of a list item
+ - maybe instanceNum isn't the way to treat such few cases (which also have exceptions i.e. with colspan).
+   - maybe, use tagname trigger closures
+     - XmlLite.Tag(using name, attributes, etc) + preceding tags (from tagStack)
+       allows an ID (plus a width in case of colspan?) to be attached to the tag
+
+todo: keep track of heading weights (in the XmlLite.Tag?) in addition to childNum?
+
+update XmlLite.Tag instance String->Integer "ID" maps with info (key -> ID)
+  "table" <> "numRows", "numCols", "tableNum"?
+  "tr" <> "rowNum", "numCols"
+  "td" <> "colNum", "colWidth", "containsHeadingStrength":set when find a headingStrength under a td w/out hitting a tr or table up the stack.
+  "th" <> "colNum", "colWidth", "headingStrength"
+  "hN" <> "headingStrength"
+
+using information to (given tagStack) i.e.
+  - get cell's row heading (optionally accounting for a particular heading strength):
+
+ Method 1: relying on accessing prior (cached) tag stacks
+    - find deepest "td" tag in tagStack
+      - note the first tagStack's "tr" tag instance or compare this tagStack's "tr" instance.
+        - if "tr" instance differs, we've gone too far.
+      - get "td"'s colNum. if 0 or a deeper tag under "td" has an appropriate headingStrength, we're done.
+      - otherwise, get the prior tagStack and repeat.
+
+ Method 2: relying on caching tag instances within the tags
+    - find deepest "td" tag in tagStack,
+    - get "td" tag's prior "td" tag
+      - if no prior, then return "td" tag
+      - if a deeper tag under "td" has an appropriateStrength, we're done
+        - but we don't have the tag stack and if we keep a back reference to it, then we'll essentially always cache the full document
+        - so we would need to propagate heading strengths up to parent nodes?
+          - (not as the parent's strength but as an existing lower strength? only for "td"s?)
+        - use "containsHeadingStrength" (which is set by: ???)
+
+    - Method 2 requires a map String->XmlLite.Tag for key->tag mappings.
+        "tr" <> "lastCell", "priorRow"
+        "td" <> "priorCell"
+        "table" <> "lastRow"
+
+      - but having just the tags doesn't get us to the text or other tags above the text; we still need tag stacks
+        - html tag stack flags: keep tables, keep lists, keep headings
+        - Method 2 becomes a map String->TagStack stored in an XmlLite.Tag instance -vs- cached in the tagStack?
+
+  - get cell's column heading:
+
+  - get entire row:
+
+  - get entire column: (backward/forward/both, optionally stop at heading and optionally stop at or skip extra-wide cell?)
