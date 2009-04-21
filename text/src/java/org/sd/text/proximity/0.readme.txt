@@ -1,0 +1,58 @@
+Package for string proximity utilities
+
+- searching for strings with various attributes within ranges of other strings
+  - ranked keywords
+  - regular expressions
+  - characters and character ranges (i.e. digits)
+  - character attributes (caps, etc)
+  - heading recognition (heading:)
+
+- applying confidence rankings
+
+- text metadata
+  - original input text (substring)
+  - document position
+  - substring position
+  - heading weight
+  - heading type(s)
+  - normalized form(s)
+
+  - keyword
+    - word
+    - source
+    - rank
+
+
+- Use of headings/keywords/attributes
+  - if a heading is recognized for field text, increase confidence that text is valid for the field
+  - if a heading is recognized for a different field, reject text for field unless find a keyword or attribute
+    - note: this may indicate the need to further segment the text
+  - if a keyword is recognized for a field in the text, increase confidence that text is valid for the field based on the recognized text's rank
+  - If an attribute is recognized for a field in the text, increase confidence that text is valid for the field based on the attribute's specificity
+
+==============================================================================
+
+MetaText
+
+==============================================================================
+Case study: UK Addresses
+
+ Postcodes can be found with fairly high precision and recall, but not perfect.
+ Optional city/county information precedes the postcode.
+ (optional)Building/Street information precedes the city/county. (1-3 'lines')
+ (optional)Addressee precedes the building/street.
+
+ Each field can have a heading (or not).
+
+ We have an incomplete set of city/county names.
+ We have an incomplete set of building/street keywords.
+
+ We have an incomplete set of city headings.
+ We have an incomplete set of county headings.
+ We have an incomplete set of building headings.
+ We have an incomplete set of street headings.
+
+
+Algorithm:
+
+
