@@ -1,0 +1,22 @@
+#!/bin/sh
+
+TOP=`pwd | sed "s/^\(.*\)\/src\/.*$/\1/1"`;
+CLASSES=$TOP/build/classes;
+
+base=`expr match $1 ".*\(/com/.*\)"`
+test -z "$base" && base=`expr match $1 ".*\(/org/.*\)"`
+test -z "$base" && base=`expr match $1 ".*\(/net/.*\)"`
+test -z "$base" && base=`expr match $1 ".*/java/\(.*\)"`
+
+if test -z "$base"; then
+  base=`expr match $1 ".*/test/unit\(/.*\)"`;
+	if test -n "$base"; then
+    CLASSES=$TOP/build/unit-test-classes;
+  fi;
+fi;
+
+
+dest=`dirname $CLASSES$base`;
+echo Copying $1 to $dest
+mkdir -p $dest;
+cp -r $1 $dest;

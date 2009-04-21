@@ -1,0 +1,11 @@
+This development environment should be loaded from ~/.profile with a line like:
+
+  test -s .env/.profile.env && . .env/.profile.dev
+
+
+To configure the environment, inspect .vars and edit anything that needs to be changed for your environment.
+
+On shell startup, ~/.profile is loaded.
+
+.profile will load ~/.env/.profile.dev
+.env/.profile.dev will load .env/.vars and .env/.classpath_def

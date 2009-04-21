@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# convert a file path to a classpath.
+#
+# arg1: file path to convert (ending in .class)
+# arg2: (optional) prefix to remove from file path
+#
+# output: file path's classpath
+#
+# examples:
+#
+#  > file2class "org/apache/lucene/analysis/Token.class"
+#  org.apache.lucene.analysis.Token
+#
+#  > file2class "/home/sbk/co/search-subsys/modules/reclink/build/classes/org/familysearch/reclink/classifier/SetClassifier.class" "/home/sbk/co/search-subsys/modules/reclink/build/classes"
+#  org.familysearch.reclink.classifier.SetClassifier
+#
+#  > file2class "./SetClassifier.class" "."
+#  SetClassifier
+#
+
+file=$1;
+prefix=$2;
+
+class=`basename $file .class`;
+fullpath=`dirname $file | sed "s/\//./g"`;
+
+if ! test -z $prefix; then
+  replace=`echo "$prefix" | sed "s/\//./g"`;
+  fullpath=`echo "$fullpath" | sed "s/$replace//1"`;
+fi
+
+fullpath=`echo "$fullpath" | sed "s/^\.//1"`
+
+if [ "$fullpath" == "" ]; then
+  echo $class;
+else
+  echo "$fullpath.$class";
+fi

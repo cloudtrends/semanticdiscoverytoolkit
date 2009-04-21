@@ -1,0 +1,78 @@
+# .classpath_def
+# by Spence Koehler
+#
+# setup for auto configuring classpath for java projects using ant
+#
+# NOTE: each project must have a "print-classpath" target like the following in build.xml:
+#
+#    <path id="my.class.path">
+#      <pathelement location="${deploy}"/>
+#      <fileset dir="common/lib">
+#        <include name="**/*.jar"/>
+#      </fileset>
+#      <pathelement location="/usr/share/java/mysql-connector-java.jar"/>
+#    </path>
+#    <target name="print-classpath">
+#      <pathconvert property="classpath.property" refid="my.class.path"/>
+#      <echo message="CLASSPATH IS: ${classpath.property}"/>
+#    </target>
+#
+# to use this, add the following lines to your .vars
+#
+#   export PROJECTS="project1 project2 ..."
+#     (where project1 resides in $SANDBOX/project1, etc.)
+#   #above to be placed before
+#   test -s .env/.classpath_def && . .env/.classpath_def
+#
+
+# only do this if haven't already defined PROJECTS_CLASSPATH
+if ! test -n "$PROJECTS_CLASSPATH"; then
+
+function get_project_classpath () {
+  project=$1;
+  if test -d $SANDBOX/$project; then
+    cd $SANDBOX/$project;
+    test -z "$ANT_BUILD_NAME" && ANT_BUILD_NAME="build.xml"
+    BUP_CLASSPATH=$CLASSPATH;
+    if test -n "$ANT_PROJECTS_LIB"; then
+      ant -f "$ANT_BUILD_NAME" -lib $ANT_PROJECTS_LIB print-classpath | grep CLASSPATH | sed 's/.* \(.*\)/\1/; s/\\/\//g; s/[;:]/\n/g';
+    else
+      ant -f "$ANT_BUILD_NAME" print-classpath | grep CLASSPATH | sed 's/.* \(.*\)/\1/; s/\\/\//g; s/[;:]/\n/g';
+    fi
+  fi
+}
+
+#note: this version doesn't sort duplicates to the end
+#function dedup () {
+#  perl -e 'my %seen = (); while(<STDIN>) {if (! exists $seen{$_}) {$seen{$_}=[]; print "$_";}}';
+#}
+
+function concat () {
+  while read line; do
+    if test -n "$line"; then
+      printf "%s:" $line;
+    fi
+  done;
+}
+
+# get classpath for each project
+pcp=;
+for project in $PROJECTS; do
+  ccp=`get_project_classpath $project`;
+  pcp=`echo "$pcp"; echo "$ccp";`;
+done
+
+export PROJECTS_CLASSPATH=$pcp;
+
+# tack on existing classpath
+if test -n "$CLASSPATH" && test -n "$pcp"; then
+  pcp=`echo "$pcp"; echo "$CLASSPATH" | sed 's/:/\n/g'`;
+fi
+
+if test -n "$pcp"; then
+#  cp=`echo "$pcp" | dedup | concat | sed 's/:$//'`;
+  cp=`echo "$pcp" | .env/dedup.pl | concat | sed 's/:$//'`;
+  export CLASSPATH=$cp;
+fi
+
+fi
