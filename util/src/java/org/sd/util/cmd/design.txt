@@ -1,0 +1,40 @@
+
+CommandInterpreter <>-- Commands
+                   <>-- vars: Map<String, String>  // key -> value
+                          prompt
+                          initFile
+
+   init():void
+     load initFile: processLine(line[i], true)
+
+   start():void
+     enter interactive command loop
+       - help (shows all commands w/short descriptions)
+       - quit
+       - vars (shows all vars)
+       - print var (shorthand: var)
+       - set var = value (shorthand var = value)
+       ...
+       - command args
+
+   processLine(line:String, batchMode:boolean):boolean  // true=lineHandled, false=notHandled,reportBadLine
+     process line
+       - lookup commandExecutor in Commands & call commandExecutor.execute
+       - lookup var in vars
+
+
+Commands <>-- executors:Map<String, CommandExecutor>  // commandName -> executor
+
+
+
+<<abstract>>BaseCommands --> Commands
+
+FooCommands --> BaseCommands
+  - init: addCommandExecutor(fooExecutor1), ...
+  - override reporting if desired.
+
+<<abstract>>AbstractExecutor --> CommandExecutor
+fooExecutor --> AbstractExecutor
+  - constructor: name, description
+  - buildOptions
+  - execute

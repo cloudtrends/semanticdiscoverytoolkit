@@ -1,0 +1,15 @@
+#
+# Sample/test mtf file format
+#
+
+# first expression: match case-sensitive foo, bar, or baz, but not case-insensitive oof, rab, zab.
+%(and 0 (not 1))
+
+# second expression: match case-sensitive foo, bar, or baz and case-insensitive oof, rab, or zab.
+%(and 0 1)
+
+$caseSensitive full
+foo, bar, baz
+
+$caseInsensitive full
+oof, rab, zab
