@@ -1,0 +1,15 @@
+% SD-Enhanced ARFF File.  Edit with caution as this is an auto-generated ARFF.
+@RELATION SAMPLE_TEST
+
+%CLASSIFICATION=CLASS
+@ATTRIBUTE CLASS {B2B,B2C}
+@ATTRIBUTE IntAttribute integer
+@ATTRIBUTE NumericAttribute real
+@ATTRIBUTE RealAttribute real
+@ATTRIBUTE NominalAttribute2 {value3,value4}
+
+
+@DATA
+B2C,22,9.1,1.9,value4
+B2B,43,1.9,3.8,value3
+B2C,39,5.9,3.2,value4

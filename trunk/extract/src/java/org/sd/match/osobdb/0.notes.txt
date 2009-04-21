@@ -1,0 +1,79 @@
+OsobDB
+
+An osobDB will hold binary osob (Optimized Scoring OBject) data for each rbit.
+It is meant to be kept on RAM-Disk for efficient retrieval.
+
+Parameters:
+- name
+  - translates to the path/name of the directory in which the db files reside)
+- blockSize
+  - the number of osobs that are bundled together as a block for retrieval operations
+- cacheSize
+  - the number of blocks to keep in an LRU cache
+
+DB Files:
+- osobdb.parms
+  - binary parameters file recording the db parameters.
+- osobdb.parms.txt
+  - human-readable form of the osobdb.parms for viewing/debugging purposes only.
+- osobdb.idx
+  - binary index identifying each block's byte offset and actual number of block osobs in osobdb.dat
+  - header int specifies number of blocks.
+  - data stored as alternating data file seek pos (long, 8 byte) and num block osobs (int, 4 byte) for each block.
+  - small enough to be kept in memory
+- osobdb.dat
+  - blocks of binary osob data where each block has
+    - blockSize number of osobs where each osob is
+      - numOsobBytes followed by numOsobBytes bytes
+
+==============================================================================
+
+package: match
+<<interface>>
+   OsobDB
+     +getOsob(conceptId:int):Osob
+
+
+package: osobdb
++OsobDbFactory
+  +<<static>>getOsobDB(path:String):OsobDB
+
+              1 1
+#OsobDbImpl <>--- OsobBlockCache
+
+              1 1
+            <>--- OsobData
+
+              1 1
+            <>--- OsobDbParms
+
+  +getOsob(conceptId:int):Osob
+    // translate conceptId to blockId, get block by id from block cache, get osob from block
+    // if block isn't in cache, retrieve block by id from osob data
+
+#OsobDbParms
+   +getBlockSize():int
+   +getCacheSize():int
+   +getBlockId(conceptId:int):int
+
+             1 *
+#OsobBlock <>--- Osob
+  +getOsob(conceptId:int):Osob
+    // NOTE: characterisitcs of rbits (i.e. dense numbering) show that a native array of osobs[blockSize] would be a good representation for storing a block of osobs.
+
+#OsobBlockCache
+   +getBlock(blockId:int):OsobBlock
+   +putBlock(blockId:int, block:OsobBlock)
+
+            1 1
+#OsobData <>--- OsobIndex
+   +retrieveBlock(blockId:int):OsobBlock
+     // get data position from index, read osobs from data file
+
+#OsobIndex
+   +getDataPosition(blockId:int):long  // data file start offset for block
+   +getNumOsobs(blockId:int):int       // actual number of osobs written for block.
+
+
+OsobDbBuilder
+   +buildDb()

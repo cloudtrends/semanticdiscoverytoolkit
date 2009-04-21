@@ -1,0 +1,346 @@
+
+
+todo:
+- concepts are now being built fully permuted
+  - change scoring to take advantage of this
+    - implement/use osob aligner/scorer
+
+
+when a concept is expressed multiple ways with all the same words, keep the words with the lowest total weight (denominator)
+  or the first one seen in cases where the denominators are equal.
+
+concept -> {{w1 w2 ... wN} |
+            {w1 w2 ... wM} |
+             ...
+           }
+ where wi has a word token and word-, variant-, synonym-, term-, decomp-, and form- types.
+
+
+a concept can be expressed by any one of multiple forms
+a form is expressed by all of its terms
+a term is expressed by any one of its synonyms
+a synonym is expressed by any one of its variants
+a variant is expressed by all of its words
+
+a concept is expressed by all words in any variant in any synonym across all terms in any form
+
+forms are created from language strings or from the ontology columns
+   and from language string synonyms and permutations of ontology column synonyms
+terms are created from each comma-delimited language string piece or from each ontology decomposition column
+synonyms are created by permutations of a term from splitting on acronyms
+variants are created by permutations of a synonym's compound's orthographic variations
+  - where compounds are delineated by alternating sequences of capitalized and non-capitalized space-delimited words
+  + where compounds are delineated by space-delimited words
+words are tokens, each given a type based on its decomposition path
+
+(OntologyLineBuilderStrategy)
+x don't dedup while creating tree
+x for each form, for each term, collect all variants. permute.
+   concatenate all sorted words from all variants in each result to express the form.
+x for equal concatenated sorted words, prune those with non-minimum denominators
+
+
+
+                 F1   ...   Fn
+
+
+     D1       D2     ...       Dn
+
+
+S1  S2 ... SN
+
+
+V1  V2 ... VN
+
+
+W1  W2 ... WN
+
+
+(C
+  (F1
+      (D1 (S1 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+          (S2 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+            ...
+          (SN (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN)))
+
+      (D2 (S1 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+          (S2 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+            ...
+          (SN (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN)))
+
+         ...
+
+      (DN (S1 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+          (S2 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+            ...
+          (SN (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))))
+
+  (F2
+      (D1 (S1 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+          (S2 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+            ...
+          (SN (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN)))
+
+      (D2 (S1 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+          (S2 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+            ...
+          (SN (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN)))
+
+         ...
+
+      (DN (S1 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+          (S2 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+            ...
+          (SN (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))))
+
+     ...
+
+
+  (FN
+      (D1 (S1 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+          (S2 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+            ...
+          (SN (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN)))
+
+      (D2 (S1 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+          (S2 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+            ...
+          (SN (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN)))
+
+         ...
+
+      (DN (S1 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+          (S2 (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN))
+            ...
+            (SN (V1 W1 W2 ... WN) (V2 W1 W2 ... WN) ...(VN W1 W2 ... WN)))))
+
+ -->
+
+combine synonyms across terms for forms
+
+
+
+==============================================================================
+
+// extend MatchAligner. have extending MatchConceptAligner and OsobAligner classes, singletons held/called from within? -vs- with? a ConceptModel based on a strategy.
+//
+//    AlignmentStrategy.getMatchResult(ConceptModel model, Normalizer normalizer, List<StringWrapper.SubString> inputWords):MatchAligner.MatchResult
+//       model.getMatchResult(normalizer, List<StringWrapper.SubString> inputWords):MatchAligner.MatchResult
+//
+// ConceptModel model = new ConceptModel();
+// model.setModelString(ConceptDeserializer deserializer, String modelString)
+//
+// ConceptDeserializer.loadModelTree(ConceptModel model, String modelString):void
+//
+// a ConceptModel has a string and a deserializer AND/OR a modelTree
+//
+// model.getOsob():Osob
+// model.getBasicConcept():String
+// model.getTreeString():String
+//
+// BUT I don't want the model to have to be aware of all of its forms, so ... ConceptSerializers do that.
+//   model is aware of treeString and of osob, but not of others (like basic concept)
+//   
+// BUT I don't want to go to the work to create the modelTree, serialize it to get an alternate form!
+// 
+// so how about this: the deserializer will also map a modelString to its object type. but how? cast? type-safe downcast? template?
+//
+// If I knew the modelString was an X (i.e. encoded osob), I could just grab it and decode it when I wanted an X.
+// If I didn't know the modelString was an X (i.e. encoded osob), I would need to deserialize it as a modelTree and then serialize the modelTree as an X (i.e. osob)
+//
+// See OntologyHits:152 ... modelString -> ConceptModel -> alignmentResult (MatchAligner.MatchResult)
+//   ConceptModel needs to hold either osob or matchConcept or both (lazily loaded) [may as well throw in a basic concept]
+
+//  private Normalizer normalizer;
+//  private List<StringWrapper.SubString> inputWords;
+
+//  private Osob osob
+
+//todo: share interfaces and result classes with MatchAligner
+//      refactor for lower object creation demands
+
+// comparison: use osob.pointer.
+// when at new Form, start new scoring (or cut-out early if score is > 0.95)
+// when at new Term, ...
+// when at new Variant, end current score keeping best, start new score
+// at each Word, ladder compare sorted words/input terms
+//   on a character basis. use StringWrapper.SubString.getOriginalChars()
+
+==============================================================================
+
+   <<interface>>
+   ModelStrategy
+     +buildModel(String serializedString):ConceptModel
+
+DANGER: pass serialized string from one model impl into another.
+
+
+   <<abstract>>
+   ConceptModel
+     +asString():String                   // serialized string form
+     +load(serializedString:String):void
+     +getConceptId():int
+     +setInfoObject(infoObject:Object):void
+     +getInfoObject():Object
+     +collectTerms(terms:Set<String>, acronyms:Set<String>, functional:Set<String>):void
+     +align(normalizer:Normalizer, inputWords:List<StringWrapper.SubString>):AlignmentResult
+
+     +asTreeModel():TreeModel
+
+     #setConceptId(conceptId:int):ConceptModel.MatchConcept
+
+
+     <<interface>>
+     ConceptModel.Data
+       ^   +getWeightMultiplier():int
+       |
+       |       <<interface>>
+       +-- ConceptModel.MatchConcept
+       |     +addConceptForm(formType:Form.Type):ConceptModel.ConceptForm
+       |     +getConceptForms():List<ConceptModel.ConceptForm>
+       |     +getConceptId():int
+       |
+       |       <<interface>>
+       +-- ConceptModel.ConceptForm
+       |     +addConceptTerm(termType:Decomp.Type):ConceptModel.ConceptTerm
+       |     +getConceptTerms():List<ConceptModel.ConceptTerm>
+       |     +getFormType():Form.Type
+       |
+       |       <<interface>>
+       +-- ConceptModel.ConceptTerm
+       |     +addTermSynonym(synonymType:Synonym.Type):ConceptModel.TermSynonym
+       |     +getTermSynonyms():List<ConceptModel.TermSynonym>
+       |     +getTermType():Decomp.Type
+       |     +getDefaultAlignmentWeight():int
+       |     +getDefaultVariant():ConceptModel.OrthographicVariant
+       |
+       |       <<interface>>
+       +-- ConceptModel.TermSynonym
+       |     +addOrthographicVariant(variantType:Variant.Type):ConceptModel.OrthographicVariant
+       |     +getOrthographicVariants():List<OrthographicVariant>
+       |     +getSynonymType():Synonym.Type
+       |
+       |       <<interface>>
+       +-- ConceptModel.OrthographicVariant
+       |     +addWordData(typedWord:TypedWord):ConceptModel.WordData
+       |     +getWordDatas():List<WordData>
+       |     +getVariantType():Variant.Type
+       |     +getId():int
+       |
+       |       <<interface>>
+       +-- ConceptModel.WordData
+             +getTypedWord():TypedWord
+
+
+   TreeModel ---> AbstractConceptModel
+     +getTree():Tree<ConceptModel.Data>
+
+     <<interface>>
+     TreeModel.Data ---> ConceptModel.Data
+       ^  getNode():Tree<TreeModel.Data>
+       |   +asMatchConcept:TreeModel.MatchConcept
+           +asConceptForm:TreeModel.ConceptForm
+       |   +asTermSynonym:TreeModel.TermSynonym
+           +asOrthographicVariant:TreeModel.OrthographicVariant
+       |   +asWordData:TreeModel.WordData
+        
+       |    <<abstract>>
+       +- - AbstractData
+            |  +asAbstractData():TreeModel.AbstractData
+            |  #setNode(node:Tree<TreeModel.Data>):void
+            |
+            +-- TreeModel.MatchConcept - - > ConceptModel.MatchConcept
+            |
+            +-- TreeModel.ConceptForm - - > ConceptModel.ConceptForm
+            |     +getWordDatas(word:String):List<TreeModel.WordData>
+            |     #addWordData(wordData:WordData):void
+            |
+            +-- TreeModel.ConceptTerm - - > ConceptModel.ConceptTerm
+            |
+            +-- TreeModel.TermSynonym - - > ConceptModel.TermSynonym
+            |
+            +-- TreeModel.OrthographicVariant - - > ConceptModel.OrthographicVariant
+            |
+            +-- TreeModel.WordData - - > ConceptModel.WordData
+
+
+   OsobModel ---> AbstractConceptModel
+     +getOsob():Osob
+
+     <<interface>>
+     OsobModel.Data ---> ConceptModel.Data
+       ^  getNode():Tree<OsobModel.Data>
+       |   +asMatchConcept:OsobModel.MatchConcept
+           +asConceptForm:OsobModel.ConceptForm
+       |   +asTermSynonym:OsobModel.TermSynonym
+           +asOrthographicVariant:OsobModel.OrthographicVariant
+       |   +asWordData:OsobModel.WordData
+        
+       |    <<abstract>>
+       +- - AbstractData
+            |  +asAbstractData():OsobModel.AbstractData
+            |  #setNode(node:Tree<OsobModel.Data>):void
+            |
+            +-- OsobModel.MatchConcept - - > ConceptModel.MatchConcept
+            |     +getFirstConceptForm():OsobModel.ConceptForm
+            |
+            +-- OsobModel.ConceptForm - - > ConceptModel.ConceptForm
+            |     +getFirstConceptTerm():OsobModel.ConceptTerm
+            |     +getNextConceptForm():OsobModel.ConceptForm
+            |
+            +-- OsobModel.ConceptTerm - - > ConceptModel.ConceptTerm
+            |     +getFirstTermSynonym():OsobModel.TermSynonym
+            |     +getNextConceptTerm():OsobModel.ConceptTerm
+            |
+            +-- OsobModel.TermSynonym - - > ConceptModel.TermSynonym
+            |     +getFirstOrthographicVariant():OsobModel.OrthographicVariant
+            |     +getNextTermSynonym():OsobModel.TermSynonym
+            |
+            +-- OsobModel.OrthographicVariant - - > ConceptModel.OrthographicVariant
+            |     +getFirstWordData():OsobModel.WordData
+            |     +getNextOrthographicVariant():OsobModel.OrthographicVariant
+            |
+            +-- OsobModel.WordData - - > ConceptModel.WordData
+                  +getNextWordData():OsobModel.WordData
+
+
+CONVERTING BETWEEN MODELS:
+  - i.e. osob to tree needed for treeString:
+    - Tree2Dot (GraphHelper)
+    - HumanReadable
+  - dump data from one and load in the other
+
+
+==============================================================================
+
+              <<interface>>
+                MatchModel
+     +asString():String                   // serialized string form
+     +load(serializedString:String):void
+     +getConceptId():int
+?    +setInfoObject(infoObject:Object):void
+?    +getInfoObject():Object
+     +collectTerms(terms:Set<String>, acronyms:Set<String>, functional:Set<String>):void
+     +align(normalizer:Normalizer, inputWords:List<StringWrapper.SubString>):AlignmentResult
+
+
+ <<impl>>        <<impl>>      <<impl>>
+ConceptModel       Osob        BasicModel
+(TreeModel)     (OsobModel)   (BasicConcept)
+
+ModelStrategy
+  + buildModel(String modelString):MatchModel
+
+
+// build concept model
+ConceptModelBuilder <>-- ConceptModelBuilderStrategy <-- FileLineBuilderStrategy <-- OntologyLineBuilderStrategy
+
+ConceptSerializerStrategy
+  + getSerializer():ConceptSerializer
+
+// turn ConceptModel into X (osob, basicModel)
+ConceptSerializer <-- AbstractConceptSerializer <-- OsobSerializer, BasicConceptSerializer
+
+// turn modelString Y into conceptModel
+ConceptDeserializer
+  + buildConceptModel(modelString:String):ConceptModel

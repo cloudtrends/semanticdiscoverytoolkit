@@ -1,0 +1,76 @@
+
+Typical filter usage, for example:
+
+  Filterer.acceptAll(new Filterable[] {
+      new StringFilterWrapper(string) {
+        protected boolean accept(String string) {
+          boolean result = false;
+          //todo: set result to true if string should be accepted.
+          return result;
+        }
+      },
+    });
+  
+  or Filterer.acceptOne
+  using any or all necessary filterables.
+  
+====================
+Filter implementations can use FilterUtil.
+
+====================
+Common auxiliaries to a FilterWrapper that don't quite fit in FilterUtil should be added to the abstract Wrapper classes.
+
+
+==============================================================================
+
+org.sd.util.UrlFilterer ideas:  (Some of which are implemented in util.MultiTermFinder)
+
+Strategy for filtering:
+
+Specifying Url Filters:
+
+Have a list of filtered files or a directory containing files named:
+  *.<urlPart>.<matchFlag>.txt[.gz]
+
+  Where urlPart is:
+    domain -- match the words against the (non-normalized) domain only
+    ndomain -- match the words against the (normalized) domain only
+    path -- match the words against the (non-normalized) path only
+    npath -- match the words against the (normalized) path
+    url  -- match the words against the full url
+  
+  Where matchFlag is:
+    sub -- match strings with a termFinder that contain the file words (regardless of word boundaries)
+    prefix -- match strings with a termFinder that start with file words
+    suffix -- match strings with a termFinder that end with file words
+    full -- match strings with a termFinder that are full words (having word boundaries before and after)
+    split -- match strings by splitting out words
+    mtf -- match multiple terms (using a multi term finder)
+  
+Filter file format:
+  For sub,prefix,suffix,full,split:
+    Lines in each filter file are recognized as the filter strings.
+    Lines beginning with a hash mark '#' are ignored as comments.
+    Blank lines are ignored.
+
+  For multi:
+    Lines beginning with '%' have a logical expression to apply (after the %)
+    Lines beginning with '$' specify "<caseSensitivity> <matchFlag>" (after the $)
+      where caseSensitivity is
+        caseSensitive -- for case sensitive matching
+        caseInsensitive -- for case insensitive matching
+      where matchFlag is
+        sub -- for substring matches
+        prefix -- for prefix matches
+        suffix -- for suffix matches
+        full -- for full matches
+      all non-empty, non-comment lines that follow (until another $ or EOF) are considered to be comma-delimitted lists of filter terms,
+      or for lines beginning with '@<filename>' reference a file containing comma-delimitted lists of filter terms.
+
+
+
+%(and 0 (not 1) 2)
+
+$caseSensitive|caseInsensitive sub|prefix|suffix|full
+
+terms (comma-delimited)

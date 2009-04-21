@@ -1,0 +1,54 @@
+General-purpose data structures and processing for matching.
+
+==== MODEL ====
+
+The model (ConceptModel) can be expressed as a tree with the following data at each level from
+the root down to the leaves.
+
+MatchConcept
+ - has an integer id (to map to general concept data) as the root of the tree.
+ - is decomposed as an ordered list of ConceptTerms.
+ - match input across all concept terms.
+ - maps normalized words to their orthographic variants.
+
+ConceptTerm
+ - has a decomposition type (Decomp.Type).
+ - has a flag for whether this term is optional or necessary to express the concept.
+ - has a set of TermSynonyms.
+ - match input with best term synonym.
+
+TermSynonym
+ - has a synonym type (Synonym.Type).
+ - has a set of OrthographicVariants.
+ - match input with best orthographic synonym.
+ - each variation of a term is a new synonym.
+   - In additional to traditional (looked-up table) synonyms, there may be:
+     - concept (full) text with conjunctions
+     - concept (partial) text between conjunctions
+     - concept text without a defined acronym
+     - concept text using defined acronym in place of its expanded form
+
+OrthographicVariant
+ - has a variant type (Variant.Type).
+ - has a sequence of WordDatas.
+ - the full orthographic variant string is to be defined as a valid dictionary string.
+ - match/score input across all words.
+
+WordData
+ - has a word type (Word.Type).
+ - has the normalized word text as a leaf of the tree.
+ - normal word text is indexed for retrieving a concept record.
+
+==== TYPES ====
+
+DecompType
+ - a type identifying the meaning or context of a concept term decomposed from the full match concept.
+
+SynonymType
+ - a type identifying the process used to generate a term synonym for a concept term.
+
+VariantType
+ - a type identifying the characteristics of an othrographic variant and/or how it was generated.
+
+WordType
+ - a type distinguishing special words (acronyms, functional words, numbers) from normal (content) words.

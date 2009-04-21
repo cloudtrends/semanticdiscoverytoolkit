@@ -1,0 +1,6 @@
+2006Ç¯01·î29Æü|(DATE (YEAR '2006') (MONTH '01') (DAY '29'))
+19»þ45Ê¬|(TIME (HOUR '19') (MINUTE '45'))
+²¼¸á7»þ45Ê¬|(TIME (AMPM '²¼¸á') (HOUR '7') (MINUTE '45'))
+²¼¸á7:45|(TIME (AMPM '²¼¸á') (HOUR '7') (MINUTE '45'))
+¾å¸á7»þ45Ê¬|(TIME (AMPM '¾å¸á') (HOUR '7') (MINUTE '45'))
+7»þ45Ê¬|(TIME (HOUR '7') (MINUTE '45'))
