@@ -1,0 +1,8 @@
+(.*\bnot what you're looking for\b.*|.*\blooking for\b.*\bthen search here\b.*|.*\bsponsored links\b.*|.*\bsponsored results\b.*|.*\bsponsored listings\b.*|.*\bsponsored links\b.*).{1,50}.*\brelated searches\b.*
+.*\brelated searches\b.*.{1,50}(.*\bnot what you're looking for\b.*|.*\blooking for\b.*\bthen search here\b.*|.*\bsponsored links\b.*|.*\bsponsored results\b.*|.*\bsponsored listings\b.*|.*\bsponsored links\b.*)
+.*\bpopular links\b.*.{1,50}.*\brelated links\b.*
+.*\brelated links\b.*.{1,50}.*\bpopular links\b.*
+.*\bbanned interdit verboden prohibido vietato proibido\b.*
+.*\bbanned interdit verboden vietato prohibido verboden banned vietato interdit proibido vietato interdit verboden banned prohibido\b.*
+.*\bsponsored links [0-9\.]* seconds\b.*
+(".*\bbest links\b.*" && ".*\btop searches\b.*" && ".*\bmost popular tags\b.*")

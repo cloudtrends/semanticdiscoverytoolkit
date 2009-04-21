@@ -1,0 +1,8 @@
+".*\\bfree domain registration\\b.*" ||
+".*\\bfree domain name registration\\b.*" ||
+".*\\bthis.page.is.parked\\b.*" ||
+".*\\bdomain is available\\b.*" ||
+".*\\bdomain may be for sale\\b.*" ||
+".*\\bsite is under construction\\b.*" ||
+".*\\bsite under construction\\b.*" ||
+".*\\bfree web hosting\\b.*"

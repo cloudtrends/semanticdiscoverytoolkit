@@ -1,0 +1,5 @@
+
+- Lexical tokenization uses the presence of lexical definitions of terms to tokenize.
+
+- NormalizedString.split is non-lexical tokenization or tokenization not dependent on
+  the presence of lexical definitions but on identifying delimiters between minimal tokens.
