@@ -1,0 +1,70 @@
+#!/bin/bash
+#
+# Hierarchical deployment.
+#
+# Based on data in $HOME/cluster/conf/active-cluster-hierarchy.txt, rsync deployment to this node's children.
+#
+# NOTE: uses env CLUSTER_CLASSES if defined.
+#
+
+HTEXT="$HOME/cluster/conf/active-cluster-hierarchy.txt";
+MYNAME=`uname -n | tr "[:upper:]" "[:lower:]"`;
+
+classes="$CLUSTER_CLASSES";
+if test -z "$classes"; then
+  classes="build/classes";
+fi
+if ! test -e "../$classes"; then
+  classes="target/classes";
+fi
+build=`dirname $classes`;
+
+# get name, called when IFS=- returns name part of name-num
+function getName() {
+  echo "$1";
+}
+
+# set IFS for getName, getName, restore IFS
+function fixName () {
+  NORMAL_IFS="$IFS";
+  IFS="-";
+  echo `getName $1`;
+  IFS="$NORMAL_IFS";
+}
+
+function doRsync() {
+  if test $# -gt 0; then
+    CURNAME=`fixName $1`;
+    DEST=$CURNAME;
+
+    if test "$DEST" != "$MYNAME"; then
+      echo "($MYNAME)rsyncing ../bin ../conf ../lib ../resources ../$build ../src/jsp $DEST:cluster/;";
+      rsync -Laz --exclude='*~' --exclude='.svn' --exclude="reports" --delete --delete-excluded ../bin ../conf ../lib ../resources ../$build $DEST:cluster/
+      rsync -az --exclude='*~' --exclude='.svn' --exclude="reports" --delete --delete-excluded ../src/jsp $DEST:cluster/src/
+      ssh $DEST "cd ~/cluster/bin;./hdeploy";
+    fi
+
+    # shift and recurse for remaining children
+    shift;
+    doRsync $@
+  fi
+}
+
+function doRsyncIfMine() {
+  CURNAME=`fixName $1`;
+
+  if test "$CURNAME" == "$MYNAME"; then
+    # it's mine!
+    shift;
+    echo "`doRsync $@;`";
+  fi
+}
+
+if test -s $HTEXT; then
+  cat $HTEXT | while read line; do
+    rsyncOutput=`doRsyncIfMine $line;`;
+    test -n "$rsyncOutput" && echo "$rsyncOutput";
+  done;
+else
+  echo "($MYNAME)FAILED: can't find file '$HTEXT'"
+fi

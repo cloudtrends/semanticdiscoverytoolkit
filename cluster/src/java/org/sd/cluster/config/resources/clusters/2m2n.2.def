@@ -1,0 +1,6 @@
+(_root_
+  (gateway node1-0 node2-0)
+
+  (controller node1-0)
+  (processor node2-0)
+  )

@@ -1,0 +1,5 @@
+(gateway
+  (node1
+    (node3-2 node5-3))
+  (node2
+    (node4-2 node6-3)))

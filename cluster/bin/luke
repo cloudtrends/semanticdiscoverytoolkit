@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# Script to run luke for anlayzing a lucene database
+#
+# Usage: luke luceneDirectoryPath
+#
+
+test -z "$JAVA_HOME" && JAVA_HOME=/etc/opt/java
+JDK_HOME=$JAVA_HOME
+JAVA_OPTS="-Xmx800m"
+
+CLASSPATH="../lib/luke.jar:../lib/lucene-core.jar"
+
+echo "java $JAVA_OPTS -cp $CLASSPATH $@"
+$JAVA_HOME/bin/java $JAVA_OPTS -cp $CLASSPATH org.getopt.luke.Luke -index $1

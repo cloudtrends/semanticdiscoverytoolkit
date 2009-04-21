@@ -1,0 +1,6 @@
+#!/bin/bash
+#
+# Run cluster admin to stop the current cluster.
+#
+
+./admin -k

@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# Install java for a cluster machine.
+#
+# arg1: java-version (i.e. jdk1.6.0)
+#
+# Usage:
+#  first, copy the java version (.tgz) to ~/j on the machine (i.e. ~/j/jdk1.6.0.tgz), then run this script.
+#    pdsh -R ssh mkdir -p j
+#    pdcp -R ssh -f 3 ~/tmp/jdk1.6.0.tgz j/
+#  then call this script
+#    pdsh -R ssh "cd cluster/bin;./install-java jdk1.6.0"
+#
+
+version="$1";
+tarball="$1.tgz";
+symlink="/etc/opt/java";
+target="/usr/local/java/$version";
+
+haveAlready="";
+
+if test -d "$symlink" && test -L "$symlink"; then
+  cd -P "$symlink";
+  curTarget=`pwd`;
+  if test "$curTarget" == "$target"; then
+    haveAlready="yes";
+  fi;
+fi;
+
+if test "$haveAlready" == "yes"; then
+  echo "$target is already installed!"
+else
+  echo "installing $target...";
+
+  sudo mkdir -p "/usr/local/java"
+  sudo cp "$HOME/j/$tarball" "/usr/local/java";
+  cd "/usr/local/java";
+  sudo tar -zxf "$tarball";
+  sudo rm -f "$tarball";
+  if test -e "$symlink"; then
+    oldSymlink="$symlink-old";
+    sudo mv -f "$symlink" "$oldSymlink";
+  fi
+  sudo ln -s "$target" "$symlink";
+
+  echo "$target installed!"
+fi;

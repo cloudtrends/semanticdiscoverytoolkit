@@ -1,0 +1,254 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>Cluster Documentation</title>
+</head>
+<body>
+<h1>Cluster Documentation</h1>
+<h2>Introduction<br>
+</h2>
+A cluster is one or more machines, each hosting one or more nodes
+(jvms) that perform distributed tasks in parallel and communicate with
+each other. The nodes are organized into a cluster through a cluster
+definition. A cluster is executed under a specific user, to which a
+range of ports is assigned. This allows for a machine to participate
+simultaneously without interference in different clusters by different
+users.<br>
+<br>
+Communications are handled by low-level socket connections over which
+publishable objects are marshalled between node clients and node
+servers running in cluster nodes. Messages that are sent from a client
+include their own code for generating a synchronous response on the
+target server(s) and handling an asynchronous operation on the server.<br>
+<br>
+The basic messaging model that invokes operations on a cluster node is
+a "push" model. A client for the operation sends a message to the
+server of a node (or nodes) to execute the operation. Each server node
+generates a response and then executes the operation. A message's
+response is generally intended to verify receipt of a message and to
+handle fast operations like collecting information about the cluster
+node required by the client. Long-running operations are intended to be
+handled on the node without further direct communications with the
+initiating client. The end result of an operation can be to generate
+data on the node's machine and/or to send another message to nodes for
+performing another operation.<br>
+<br>
+Each node has a job manager that is available as a mechanism for
+managing long-running operations defined in specialized messages called
+jobs. Note that any message can perform operations but a job message
+allows for additional control over the operation while it is being
+handled. The most common management operation is to have a job report
+its status or progress, but other commands can pause, resume, or stop a
+job as well as to send it internally processed directives and/or data.<br>
+<br>
+<br>
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+ cellspacing="2">
+  <tbody>
+    <tr>
+      <td colspan="2" rowspan="1" style="vertical-align: top;">
+      <h3>Definitions<br>
+      </h3>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">cluster</span><br>
+      </td>
+      <td style="vertical-align: top;">A set of machines working
+together on a task. One or more machines are specified by a <span
+ style="font-weight: bold;">cluster definition</span>, where each
+machine hosts one or more <span style="font-weight: bold;">node</span>s
+that perform distributed tasks in parallel and communicate with each
+other through <span style="font-weight: bold;">message</span>s.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">cluster
+definition</span></td>
+      <td style="vertical-align: top;">A resource that identifies a
+high-level machine hierarchy with their contained <span
+ style="font-weight: bold;">node</span>s and <span
+ style="font-weight: bold;">node group</span>s.</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">cluster
+node</span><br>
+      </td>
+      <td style="vertical-align: top;">The basic operating unit in a <span
+ style="font-weight: bold;">cluster</span>. One and only one cluster
+node runs within a single jvm instance. Multiple cluster nodes can run
+on the same machine. Cluster nodes are identified by the machine they
+run on and a 0-based node number. Each cluster node has a <span
+ style="font-weight: bold;">node server</span>, a <span
+ style="font-weight: bold;">node client</span>, and a <span
+ style="font-weight: bold;">job manager</span>.<span
+ style="font-weight: bold;"></span><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">global
+job id</span><br>
+      </td>
+      <td style="vertical-align: top;">A unique identifier for a <span
+ style="font-weight: bold;">job</span> running in a <span
+ style="font-weight: bold;">cluster</span>.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">job</span><br>
+      </td>
+      <td style="vertical-align: top;">A specialized <span
+ style="font-weight: bold;">message</span> defining work to be
+performed on a <span style="font-weight: bold;">node</span> to be
+controlled within the <span style="font-weight: bold;">job manager</span>.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">job
+command</span><br>
+      </td>
+      <td style="vertical-align: top;">A specifier for a type of
+command to apply to a <span style="font-weight: bold;">job</span>.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">job
+command message</span><br>
+      </td>
+      <td style="vertical-align: top;">A specialized <span
+ style="font-weight: bold;">message</span> holding a <span
+ style="font-weight: bold;">job command</span> and job identifier used
+by a <span style="font-weight: bold;">job manager</span> to manage a <span
+ style="font-weight: bold;">job</span>.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">job
+manager</span><br>
+      </td>
+      <td style="vertical-align: top;">A container and controller<span
+ style="font-weight: bold;"></span> for <span
+ style="font-weight: bold;">job</span>s handled by a <span
+ style="font-weight: bold;">node</span>. Each <span
+ style="font-weight: bold;">node</span> has exactly one job manager and
+each job manager can handle multiple <span style="font-weight: bold;">job</span>s,
+distinguished on a node by a <span style="font-weight: bold;">local
+job id</span> and across a cluster by a <span
+ style="font-weight: bold;">global job id</span>.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">local
+job id</span><br>
+      </td>
+      <td style="vertical-align: top;">A unique identifier for a <span
+ style="font-weight: bold;">job</span> running on a <span
+ style="font-weight: bold;">node</span>.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">message</span><br>
+      </td>
+      <td style="vertical-align: top;">An instance of a <span
+ style="font-weight: bold;">publishable</span> sent from one <span
+ style="font-weight: bold;">node</span>'s <span
+ style="font-weight: bold;">node client</span> to another <span
+ style="font-weight: bold;">node</span>'s <span
+ style="font-weight: bold;">node server</span> with the capability of
+generating a <span style="font-weight: bold;">response</span> and
+performing ("handling") an operation. The <span
+ style="font-weight: bold;">node server</span> synchronously returns
+the message's <span style="font-weight: bold;">response</span>, then
+asynchronously handles the message on a thread from a pool of threads.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">node</span><br>
+      </td>
+      <td style="vertical-align: top;">See <span
+ style="font-weight: bold;">cluster node</span>.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">node
+client</span><br>
+      </td>
+      <td style="vertical-align: top;">A controller for sending <span
+ style="font-weight: bold;">message</span>s <span
+ style="font-weight: bold;"></span>to another <span
+ style="font-weight: bold;">node</span> and receiving its <span
+ style="font-weight: bold;">response</span>. Each <span
+ style="font-weight: bold;">node</span> has exactly one node client.
+Each node client has multiple threads for sending <span
+ style="font-weight: bold;">message</span>s.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">node
+group</span><br>
+      </td>
+      <td style="vertical-align: top;">A group of <span
+ style="font-weight: bold;">node</span>s identified as a collective
+target for <span style="font-weight: bold;">message</span>s.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">node
+server</span><br>
+      </td>
+      <td style="vertical-align: top;">A controller for receiving and
+handling <span style="font-weight: bold;"><span
+ style="font-weight: bold;"><span style="font-weight: bold;"></span></span>message</span>s
+from other <span style="font-weight: bold;">node</span>s and sending <span
+ style="font-weight: bold;">response</span>s.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">port</span><br>
+      </td>
+      <td style="vertical-align: top;">An identifier for a <span
+ style="font-weight: bold;">node server</span> socket that listens for <span
+ style="font-weight: bold;">message</span>s. Each <span
+ style="font-weight: bold;">node</span> has its own port selected from
+a range of ports reserved for each <span style="font-weight: bold;">user</span>.
+      <span style="font-weight: bold;"></span><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">publishable</span><br>
+      </td>
+      <td style="vertical-align: top;">An interface for marshalling
+objects between nodes.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">response</span><br>
+      </td>
+      <td style="vertical-align: top;">A specialized <span
+ style="font-weight: bold;">message</span> sent by a <span
+ style="font-weight: bold;">node server</span> in response to a <span
+ style="font-weight: bold;">message</span> from a <span
+ style="font-weight: bold;">node client</span>.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><span style="font-weight: bold;">user</span><br>
+      </td>
+      <td style="vertical-align: top;">The account under which a
+cluster is run. Corresponds to a range of <span
+ style="font-weight: bold;">port</span> assignments for the cluster,
+enabling multiple clusters to be run by different users on the same
+machines (hardware constraints permitting.)<br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<h2>Contents<br>
+</h2>
+<ul>
+  <li><a href="cluster-usage.html">Cluster Usage</a></li>
+  <li><a href="cluster-architecture.html">Cluster Architecture</a></li>
+</ul>
+</body>
+</html>

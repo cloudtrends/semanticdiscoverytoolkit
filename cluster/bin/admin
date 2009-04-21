@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# Run cluster admin with all script args.
+#
+# if CLUSTER_HOME is defined, then this will override the default cluster root.
+#
+
+test -n "$CLUSTER_HOME" && ROOT="-r $CLUSTER_HOME";
+
+./run org.sd.cluster.config.Admin $ROOT $@

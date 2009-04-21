@@ -1,0 +1,9 @@
+(_root_
+  (gateway node1-3)
+
+  (controller node1-0)
+
+  (server node1-0)
+
+  (extractor node1-1 node1-2)
+  )

@@ -1,0 +1,13 @@
+#!/bin/bash
+#
+# Script to unmount a ramdisk directory, reversing the 'ramize' process.
+#
+# This unmounts the ram version of a directory and restores the '.real' version.
+#
+# Usage: uramize dir
+#
+
+dir=$1;
+sudo umount $dir;
+mv $dir $dir.uramize;
+mv $dir.real $dir

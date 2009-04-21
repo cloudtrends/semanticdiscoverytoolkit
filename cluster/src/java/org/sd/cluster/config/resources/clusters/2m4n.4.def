@@ -1,0 +1,7 @@
+(_root_
+  (gateway node1-2 node2-2)
+
+  (workserver node1-0)
+
+  (processor node1-1 node2-0 node2-1)
+  )

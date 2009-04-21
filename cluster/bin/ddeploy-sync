@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# Utility (used by ddeploy) to rsync "found" files to the "right" locations
+#
+# arg1: "found" file (or directory)
+# arg2: user@machine
+# arg3: dest root
+#
+
+src="$1";
+addr="$2";
+destroot="$3";
+destpath=`dirname $src`;
+
+rsync -lavz --exclude='*~' --exclude='.svn' --delete --delete-excluded $src $addr:$destroot/$destpath/

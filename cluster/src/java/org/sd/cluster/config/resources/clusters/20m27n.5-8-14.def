@@ -1,0 +1,29 @@
+(_root_
+  (gateway
+    (node1
+      (node7 node14-2)
+      (node8 node15-2))
+    (node2
+      (node9 node16-2)
+      (node10 node17-2))
+    (node3
+      (node11 node18-2)
+      (node12 node19-2))
+    (node4
+      (node13 node20-2))
+    (node5 node6))
+
+  (top node1-0)
+
+  (controller node1-0)
+  (crawler node2-0 node3-0 node4-0 node7-0 node8-0 node9-0 node10-0)
+  (warrior node11-0 node12-0 node13-0)
+  (officer1 node14-0 node14-1 node15-0 node15-1 node16-0 node16-1 node17-0 node17-1 node18-0 node18-1)
+  (officer2 node19-0 node19-1 node20-0 node20-1)
+  (other node5-0 node6-0)
+
+  (processor node2-0 node3-0 node4-0 node5-0 node6-0 node7-0 node8-0 node9-0
+             node10-0 node11-0 node12-0 node13-0
+             node14-0 node14-1 node15-0 node15-1 node16-0 node16-1 node17-0 node17-1
+             node18-0 node18-1 node19-0 node19-1 node20-0 node20-1)
+  )

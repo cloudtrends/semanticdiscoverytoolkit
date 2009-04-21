@@ -1,0 +1,136 @@
+
+Cluster Job Work Package
+
+WorkJob --> AbstractJob
+  <>-- WorkServer  // serves work from job
+
+  <>-- WorkClient  // gets/generates work
+
+  <>-- Worker      // does job's work
+
+  <>-- WorkPool    // manages threads to do work
+
+<<interface>>
+ WorkServer
+    <>-- WorkQueue
+
+<<interface>>
+ServerWorkClient --> WorkClient
+    <>-- workServerId
+
+WorkPool
+    <>-- WorkClient
+    <>-- Worker
+    <>-- WorkQueue
+
+<<interface>>
+WorkQueue
+    <>-- work:Publishables
+
+NOTE: WorkServer, WorkClient, and Worker need access to the (potentially) same WorkQueue in a WorkJob;
+      though, WorkClient's workQueue is often different.
+
+?TODO?: (Abstract?)WorkServer <>-- WorkInterpreter for identifying work that belongs to clients and/or
+                                   needs a home and/or could be given to other/any clients.
+
+  WorkServer <>-- jobIdString, dataDirName (provides path info for server output logs)
+
+   <<interface>>
+  WorkInterpreter
+    +chooseWork(workRequest:WorkRequest, workQueue:WorkQueue(=workServer)):Publishable
+
+//WorkUnit --> Publishable
+//  <>-- Publishable
+
+<<impl>>
+WorkRequest --> Publishable
+  <>-- requestString
+  <>-- requestingJobId
+  <>-- requestingNodeId
+
+<<impl>>
+WorkResponse --> SignedResponse
+  <>-- WorkResponseStatus {done, waiting, work, down}
+  <>-- workUnit:Publishable
+
+
+==============================================================================
+
+WorkJob's
+
+A[ WorkClient  Worker  WorkServer ]  ---  B[ WorkClient  Worker  WorkServer ]
+
+
+         WorkJob       WorkPool       BlockingThreadPool   WorkClient    Worker      WorkQueue(=WorkServer)
+            |              |                  |                 |           |             |
+--start()-->|              |                  |                 |           |             |
+            |--addWork()-->|                  |                 |           |             |
+            |              |--waitForSlot()-->|                 |           |             |
+            |              |                  |                 |           |             |
+            |              |<. . . ready . . .|                 |           |             |
+            |              |                  |                 |           |             |
+            |              |--------------getWork()------------>|           |             |
+            |              |                  |                 |           |             |
+            |              |<. . . . . . workResponse . . . . . |           |             |
+            |              |                  |                 |           |             |
+            |              |--addWork(work)-->|                 |           |             |
+            |              |                  |---performWork(work,queue)-->|             |
+            |              |                  |                 |           |--pushData-->|
+            |              |                  |                 |           |             |
+
+
+       ServerWorkClient   WorkServer-->WorkQueue(=QueueWorkServer)
+              |               |            |
+--getWork()-->|               |            |
+              |---getWork()-->|            |
+              |               |--popData-->|
+              |               |            |
+              |               |<. . work . |
+              |<. . work . . .|            |
+<. . work . . |               |            |
+
+
+       QueueWorkClient    WorkQueue(=QueueWorkServer)
+              |               |
+--getWork()-->|               |
+              |---popData()-->|
+              |               |
+              |<. . work . . .|
+<. . work . . |               |
+
+
+NOTE: A Worker will take input work from the Client WorkQueue, transform to output work and fill the Server WorkQueue.
+
+==============================================================================
+
+AbstractJob Properties:
+  numThreads=N [optional, default=1]
+  jobId=jobId [required]
+  groupName=groupName [required]
+  beginImmediately=true/false [optional, default=true]
+
+WorkJob (isa AbstractJob) Properties:
+  worker=workerClasspath (requires properties-based constructor)
+  workDesignator=workDesignatorClasspath [optional, default=null] (requires properties-based constructor)
+  workClient=workClientClasspath (requires properties-based constructor)
+  workServer=workServerClasspath (requires properties-based constructor)
+  maxPoolQueueSize=N [optional, default=1]
+  maxWorkPoolErrors=N [optional, default=100]
+  maxSecondsPerUnit=N [optional, default=600]
+
+  (must have (workserver) and/or (workclient and worker))
+
+ServerWorkClient Properties:
+  workServerId=idOfServer [required]
+  numClientToServerRetries=N [optional, default=10]
+  clientToServerTimeoutMillis=N [optional, default=5000]
+
+QueueWorkServer (isa AbstractWorkServer) Properties:
+  serverQueueDir=queueDir [required]
+  serverQueueChooser=queueChooserClasspath [optional] (requires properties-based constructor)
+  serverQueueName=queueName [optional, default=queueDir's name]
+
+QueueWorkClient Properties:
+  clientQueueDir=queueDir [requird]
+  clientQueueChooser=queueChooserClasspath [optional] (requires properties-based constructor)
+  clientQueueName=queueName [optional, default=queueDir's name]

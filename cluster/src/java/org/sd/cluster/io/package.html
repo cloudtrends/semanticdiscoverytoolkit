@@ -1,0 +1,72 @@
+package org.sd.cluster.io.package;
+
+
+<p>This package is responsible for managing sockets and communications
+between nodes.
+</p>
+<p>In general, communications across the cluster are always
+asynchronous and forward. This is to prevent communication bottlenecks
+and limit network traffic. In message passing, however, brief two-way
+communications are used for servers to acknowledge receipt of messages
+and to return information to clients on request. The responses should
+always be kept light and small while the bulk of a message's work is in
+forward motion through the cluster.
+</p>
+<p>Nodes communicate by transporting Message instances. A NodeServer
+listens on a port. A NodeClient will synchronously send a message to
+one ore more servers and receive the message's response from each
+server. It is up to consumers of the client to handle message
+responses. After replying to the message, the server handles the
+message. Each message is handled on a thread from a pool by the server.
+</p>
+<p>Typical usage for establishing communication between two nodes is as
+follows:
+<table>
+  <tbody>
+    <tr>
+      <td
+ style="text-align: center; font-weight: bold; text-decoration: underline;">Server(s)</td>
+      <td
+ style="text-align: center; font-weight: bold; text-decoration: underline;">Client(s)</td>
+    </tr>
+    <tr>
+      <td><code><pre>
+NodeServer server = null;
+try {
+  server = new NodeServer(serverAddress,
+                          numSocketThreads,
+                          numMessageHandlerThreads);
+  server.start();
+      
+  //...let the server listen and handle messages...
+      
+  server.shutdown(false); // let the server shutdown gracefully
+}
+finally { // make sure server is shutdown properly
+  if (server != null) server.shutdown(true);
+}
+      </pre></code></td>
+      <td><code><pre>
+NodeClient client = null;
+try {
+  client = new NodeClient(clientAddress, numSocketThreads);
+  client.start();
+      
+  // send messages and manage responses
+  Message[] responses = client.sendMessage(serverAddresses,
+                                           message,
+                                           checkInterval,
+                                           timeout,
+                                           timeLimit); 
+      
+ client.shutdown(false); // let the client shutdown gracefully
+}
+finally { // make client is shutdown properly
+  if (client != null) client.shutdown(true);
+}
+      </pre></code></td>
+    </code></tr>
+  </tbody>
+</table>
+</p>
+</BODY>

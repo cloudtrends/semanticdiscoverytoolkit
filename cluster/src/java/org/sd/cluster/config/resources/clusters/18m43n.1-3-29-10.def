@@ -1,0 +1,8 @@
+(_root_ (gateway (node1 (node15 (node18 node10-2 node11-2 node12-2) (node2-5 node13-2 node14-2) node3-5) (node16 node4-5 node5-5 node6-2) (node17 node7-2 node8-2 node9-2)))
+ (root node1-0)
+ (controller node1-0)
+
+ (server node16-0 node18-0)
+ (disabled node15-0 node17-0)
+ (extractor node2-0 node2-1 node2-2 node2-3 node2-4 node3-0 node3-1 node3-2 node3-3 node3-4 node4-0 node4-1 node4-2 node4-3 node4-4 node5-0 node5-1 node5-2 node5-3 node5-4 node6-0 node6-1 node7-0 node7-1 node8-0 node8-1 node9-0 node9-1 node10-0 node10-1 node11-0 node11-1 node12-0 node12-1 node13-0 node13-1 node14-0 node14-1)
+ (all node1-0 node15-0 node16-0 node17-0 node18-0 node2-0 node2-1 node2-2 node2-3 node2-4 node3-0 node3-1 node3-2 node3-3 node3-4 node4-0 node4-1 node4-2 node4-3 node4-4 node5-0 node5-1 node5-2 node5-3 node5-4 node6-0 node6-1 node7-0 node7-1 node8-0 node8-1 node9-0 node9-1 node10-0 node10-1 node11-0 node11-1 node12-0 node12-1 node13-0 node13-1 node14-0 node14-1))

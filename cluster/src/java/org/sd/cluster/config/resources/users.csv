@@ -1,0 +1,37 @@
+# users.csv holds information for each user.
+#user,low-port,high-port
+dave,10100,10199
+dev1,10100,10199
+dev2,10200,10299
+abe,10300,10399
+abraham,10300,10399
+dev3,10300,10399
+ken,10600,10699
+dev4,10600,10699
+
+# spence and sbk are the same range (ssh equiv)
+spence,10400,10499
+sbk,10400,10499
+dev5,10400,10499
+
+# sd and bperry are the same range (ssh equiv)
+sd,10500,10599
+bperry,10500,10599
+redwood,10500,10599
+
+# production clusters
+blog,11100,11199
+german,11200,11299
+corpinfo,11300,11399
+corpinfo-test,11400,11499
+ks,11500,11599
+ks-test,11600,11699
+rbi,11700,11799
+rbi-test,11800,11899
+newmedia,11900,11999
+newmedia-test,12000,12099
+kb,12100,12199
+kb-test,12200,12299
+
+# test clusters
+junit,10000,10099

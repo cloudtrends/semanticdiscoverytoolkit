@@ -1,0 +1,9 @@
+(_root_ (gateway (node1-4 (node2-2 (node5-2 node14-1) node6-2 node7-2) (node3-2 node8-5 node9-5 node10-5) (node4-2 node11-5 node12-5 node13-2)))
+
+ (server node1-0)
+
+ (grabber node2-0 node2-1 node3-0 node3-1 node4-0 node4-1 node5-0 node5-1 node6-0 node6-1 node7-0 node7-1)
+
+ (extractor node1-1 node1-2 node1-3 node8-0 node8-1 node8-2 node8-3 node8-4 node9-0 node9-1 node9-2 node9-3 node9-4 node10-0 node10-1 node10-2 node10-3 node10-4 node11-0 node11-1 node11-2 node11-3 node11-4 node12-0 node12-1 node12-2 node12-3 node12-4 node13-0 node13-1)
+
+ (all node1-0 node1-1 node1-2 node1-3 node2-0 node2-1 node3-0 node3-1 node4-0 node4-1 node5-0 node5-1 node6-0 node6-1 node7-0 node7-1 node8-0 node8-1 node8-2 node8-3 node8-4 node9-0 node9-1 node9-2 node9-3 node9-4 node10-0 node10-1 node10-2 node10-3 node10-4 node11-0 node11-1 node11-2 node11-3 node11-4 node12-0 node12-1 node12-2 node12-3 node12-4 node13-0 node13-1 node14-0))
