@@ -1,0 +1,39 @@
+.*\bnude model\b.*
+.*\badult videos\b.*
+.*\bblow job\b.*
+.*\blesbian sex\b.*
+.*\bgay sex\b.*
+.*\bteen sex\b.*
+.*\badult sex\b.*
+.*\bwet pussy\b.*
+.*\bsex movies\b.*
+.*\bsex videos\b.*
+.*\bsex cam\b.*
+.*\bsex cams\b.*
+.*\bsex toys\b.*
+.*\bgeile pics\b.*
+.*\bxxx movie\b.*
+.*\bxxx movies\b.*
+.*\berotik pics\b.*
+.*\bnaked pics\b.*
+.*\bnude videos\b.*
+.*\bnude celebrities\b.*
+.*\bcelebrity nude\b.*
+.*\bnude celebrity\b.*
+.*\bcelebrities nude\b.*
+.*\bnaked videos\b.*
+.*\bnaked movies\b.*
+.*\bpornfotos\b.*
+.*\bporn gratis\b.*
+.*\badult dating\b.*
+.*\bbisexual dating\b.*
+.*\berotic\b.{1,50}\bpics\b.*
+.*\bhardcore\b.{1,50}\bsex\b.*
+.*\bhardcore\b.{1,50}\bporn\b.*
+.*\bfree\b.{1,10}\bporn\b.*
+.*\bfree\b.{1,10}\bsex\b.*
+.*\bfree\b.{1,10}\bnaked\b.*
+.*\bgay\b.{1,10}\bporn\b.*
+.*\blesbian\b.{1,10}\bporn\b.*
+.*\bteen\b.{1,10}\bporn\b.*
+.*\badult\b.{1,10}\bporn\b.*

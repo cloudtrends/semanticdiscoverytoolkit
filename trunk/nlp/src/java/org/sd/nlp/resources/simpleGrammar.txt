@@ -1,0 +1,22 @@
+#
+# Simple English Grammar
+#
+# Intended for use with Category enum, Categories & CategoryToken classes.
+#
+# Notes
+# - unprefixed terms must match a Category enum (case insensitive).
+# - terms prefixed with an underscore will be interpreted as the text of a word to match.
+# - terms prefixed with an exclamation point will be interpreted as a term that must not match.
+#
+
+# active sentence
+S <- Subject Direct_Object Indirect_Object ?
+
+Subject <- NP PP *
+Direct_Object <- VP PP *
+Indirect_Object <- _to NP PP *
+NP <- det ? adj * noun +
+
+VP <- adv * verb adv * NP
+VP <- adv * verb_intrans adv *
+PP <- prep NP

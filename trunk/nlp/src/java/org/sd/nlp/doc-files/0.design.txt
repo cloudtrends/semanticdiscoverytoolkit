@@ -1,0 +1,15 @@
+
+StringWrapper
+
+                               0    1    2    3    4    5   ...   n-3  n-2  n-1
+
+inputChars int[]               i    i    i    i    i    i          i    i    i            string.getCodePoints():int[]
+
+breaks  Break[]                b    b    b    b    b    b          b    b    b            breakStrategy.computeBreak(inputChars, index):Break
+                                                                                          stringWrapper.computeBreaks(breakStrategy, inputChars):Break[]
+
+normalizedChars  int[][]      i[]  i[]  i[]  i[]  i[]  i[]        i[]  i[]  i[]           normalizer.normalizeChar(inputChars, index):int[]
+                                                                                          stringWrapper.normalizeChars(normalizer, inputChars, startIndex, endIndex):int[][]
+
+SubString
+                                    ^                                   ^                 subString.buildNormalString(normalizedChars, startIndex, endIndex):String

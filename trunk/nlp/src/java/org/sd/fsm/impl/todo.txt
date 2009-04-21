@@ -1,0 +1,3 @@
+
+- get records from states (in addition to treees)
+- use dot to draw trees and records
