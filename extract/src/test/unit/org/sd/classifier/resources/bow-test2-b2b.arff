@@ -1,0 +1,86 @@
+% SD-Enhanced ARFF File.  Edit with caution as this is an auto-generated ARFF.
+@RELATION b2b-test1
+
+%CLASSIFICATION=class
+@ATTRIBUTE class {B2B,B2C,BOTH,OTHER}
+@ATTRIBUTE _h1_briefcases integer
+@ATTRIBUTE _h1_cable integer
+@ATTRIBUTE _h1_case integer
+@ATTRIBUTE _h1_contact integer
+@ATTRIBUTE _h1_device integer
+@ATTRIBUTE _h1_enclosure integer
+@ATTRIBUTE _h1_enclosures integer
+@ATTRIBUTE _h1_equipment integer
+@ATTRIBUTE _h1_flat integer
+@ATTRIBUTE _h1_laptop integer
+@ATTRIBUTE _h1_locking integer
+@ATTRIBUTE _h1_pc integer
+@ATTRIBUTE _h1_peripheral integer
+@ATTRIBUTE _h1_portable integer
+@ATTRIBUTE _h1_products integer
+@ATTRIBUTE _h1_safe integer
+@ATTRIBUTE _h1_screen integer
+@ATTRIBUTE _h1_security integer
+@ATTRIBUTE _h1_solutions integer
+@ATTRIBUTE _h1_transport integer
+@ATTRIBUTE _h1_vehicle integer
+@ATTRIBUTE _h1_wall integer
+@ATTRIBUTE _h2_bar integer
+@ATTRIBUTE _h2_cable integer
+@ATTRIBUTE _h2_contacts integer
+@ATTRIBUTE _h2_key integer
+@ATTRIBUTE _h2_price integer
+@ATTRIBUTE _h2_tractors integer
+@ATTRIBUTE _h2_welcome integer
+@ATTRIBUTE _h3_colour integer
+@ATTRIBUTE _h3_contacts integer
+@ATTRIBUTE _h3_department integer
+@ATTRIBUTE _rellink_about integer
+@ATTRIBUTE _rellink_agricultural integer
+@ATTRIBUTE _rellink_click integer
+@ATTRIBUTE _rellink_combine integer
+@ATTRIBUTE _rellink_combines integer
+@ATTRIBUTE _rellink_construction integer
+@ATTRIBUTE _rellink_contact integer
+@ATTRIBUTE _rellink_handlers integer
+@ATTRIBUTE _rellink_harvesters integer
+@ATTRIBUTE _rellink_here integer
+@ATTRIBUTE _rellink_home integer
+@ATTRIBUTE _rellink_machinery integer
+@ATTRIBUTE _rellink_new integer
+@ATTRIBUTE _rellink_tractors integer
+@ATTRIBUTE _rellink_us integer
+@ATTRIBUTE _rellink_used integer
+@ATTRIBUTE _title_briefcases integer
+@ATTRIBUTE _title_cart integer
+@ATTRIBUTE _title_computer integer
+@ATTRIBUTE _title_computers integer
+@ATTRIBUTE _title_devices integer
+@ATTRIBUTE _title_laptop integer
+@ATTRIBUTE _title_limited integer
+@ATTRIBUTE _title_listings integer
+@ATTRIBUTE _title_locking integer
+@ATTRIBUTE _title_products integer
+@ATTRIBUTE _title_search integer
+@ATTRIBUTE _title_security integer
+@ATTRIBUTE _title_shopping integer
+@ATTRIBUTE _title_tractors integer
+@ATTRIBUTE _title_view integer
+@ATTRIBUTE numAboutPages integer
+@ATTRIBUTE numContactPages integer
+@ATTRIBUTE numFlash integer
+@ATTRIBUTE numOffsiteLinks0 integer
+@ATTRIBUTE numOnsiteLinks0 integer
+@ATTRIBUTE numPages0 integer
+@ATTRIBUTE numPages1 integer
+@ATTRIBUTE numPages2 integer
+@ATTRIBUTE numPdf integer
+@ATTRIBUTE numProductPages integer
+@ATTRIBUTE numRedirects integer
+@ATTRIBUTE numRobots integer
+@ATTRIBUTE numVisited integer
+
+
+@DATA
+B2B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,0,1,1,1,1,0,1,1,1,1,1,1,0,1,1,1,1,1,1,0,0,0,0,0,0,0,1,0,0,1,0,0,1,0,3,12,0,3,9,1,9,0,0,0,0,0,69
+B2B,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,14,28,2,0,0,0,7,1,0,2,0,0,112

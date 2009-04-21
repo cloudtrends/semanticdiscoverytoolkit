@@ -1,0 +1,166 @@
+Interfaces and Utilities for document modeling and traversal.
+
+//todo: should Extractor return a list of Extractions [yes] or should an Extraction have a next (like item) [no].
+  //todo: what about a text splitter? ...used internally by an extractor and may yield multiple extractions.
+//todo: add remaining Entity functionality (i.e. parses) into Extraction
+  //note: multiple parses indicates structural ambiguity while multiple extractions means multiple entities exist
+//todo: make AbstractExtractor; make ExtractionResources abstraction.
+//todo: replace TextModel.Block functionality.
+
+Main Ideas:
+- A goal is to minimize memory consumption and maximize performance while processing a document's data.
+- In general an xml-like model can be applied to any type of document/text data.
+
+<<interface>>
+TextContainer --> Iterator:<DocText>, <>-- DocText
+  hasNext():boolean
+  next():DocText  // non-empty text before a start tag; any text before a valid, non-skipped end tag.
+                  // i.e. <a>Foo<b>Bar<c/></b>Baz</a> yields {<a'>"Foo", <a'><b>"Bar", <a'><b><c>"", <a>"Baz"}
+                  //   (where a' means a is incomplete; empty text nodes don't contribute to "incompleteness")
+                  // --versus--
+                  // next simple or complex text node with possibly empty text.
+  close():void    // closes stream whether fully loaded or not; hasNext() will be false
+
+  isCaching():boolean             // decided on construction whether to cache DocTexts
+  isComplete():boolean            // true if fully loaded; false if stream closed before hit
+                                  // end or haven't hit end.
+  getCount():int                  // number of DocTexts retrieved from stream (whether caching or not).
+  getDocText(index:int):DocText   // [0 .. numLoaded) if caching; else null.
+  getDocTexts(XmlLite.Data):List<DocText>     // if caching, retrieve all loaded docTexts that have the given
+                                              // xmlData instance in their tagStack or xmlTree
+  compact():void  // clear lazy caches in all cached docTexts or in all ExtractionResults docTexts
+  remove(DocText):boolean         // remove the given docText from the cache.
+  purge(keepExtractionResults:boolean, keepN:int):void   // dump all cached docTexts
+
+  getExtractionResults():ExtractionResults
+  addExtraction(Extraction):ExtractionResults  // convenience method for extractionRestuls.addExtraction
+
+
+DocText
+  getTextContainer():TextContainer  // back pointer
+  getString():String                // could be empty
+  getStringWrapper():StringWrapper  // lazily constructed from non-empty string or null
+  getStringWrapper(BreakStrategy):StringWrapper  // "
+  getTagStack():TagStack            // always grabbed from iterator
+  getXmlNode():Tree<XmlLite.Data>   // xml node containing text (possibly complex with multiple text nodes)
+  getPathKey():String               // xpath like key
+  getCommonData(other:DocText):XmlLite.Data
+  hasData(xmlData:XmlLite.Data):boolean
+
+  compact():void  // clear lazy caches
+
+
+- sometimes don't need to save anything (i.e. fast tag or text ripper)
+- sometimes need to save a single tag path (i.e. for text ripping with path data)
+- sometimes need to save multiple tag paths (i.e. to complete nodes for a paragraph)
+- sometimes need to save parts of the xml tree (i.e. auto-discovering records)
+- sometimes need to save the entire xml tree? (i.e. path/block analysis?, applying x-paths?)
+- what about x-paths?
+
+
+USE CASES:
+
+Product Snippets: (save path keys)
+- dynamically build "groups" from successful extractions with the same tag path
+- choose the best group
+- harvester
+
+Blog Snippets: (save nodes)
+- find "lowest common parent" (lcp) from successful extractions with the same tag path and extraction signature
+- keep each lcp sibling (all paths under each lcp sibling) as a block
+- organize paths within blocks into "paragraphs"
+- choose the best group (of blocks)
+
+Company Contact Information:
+- find "key" through successful extraction
+- find "(nearly) adjacent" pre/post with other extractors
+
+Classification Features:
+- all of the above, plus
+- extractions
+- <meta name="foo" content="bar"/> named content extraction (pre-body tag)
+- <title>titleText</title> title text extraction (pre-body tag)
+- top words extraction (post-body tag)
+  - optional limit to
+    - non-hyperlinked text
+    - noun phrases
+  - etc.
+
+
+==============================================================================
+
+Extraction <>-- extractionType:String, DocText, weight:Double, ExtractionData
+
+DocText <>-- String, StringWrapper, topTextNode:Tree<XmlLite.Data>, preTagPath:TagPath, pathKey:String
+  getCommonData(other:DocText):Tree<XmlLite.Tag>
+
+TextContainer <>-- ExtractionResults
+  getExtractionResults():ExtractionResults
+  addExtractionResult(Extraction):void  // convenience method for extractionRestuls.addExtraction
+
+ExtractionResults <>-- Map<extractionType:String, extractions:Map<pathKey, ExtractionGroup>>
+  addExtraction(Extraction):void
+//  getExtractionGroup(extractionType:String, ExtractionGroupChooser):ExtractionGroup
+  getExtractionGroup(extractionType:String, pathKey:String):ExtractionGroup
+
+  getExtractionGroups(extractionType:String):List<ExtractionGroup>
+  getExtractions(extractionType:String):List<Extraction>
+
+ExtractionGroup <>-- pathKey:String, List<Extraction>
+
+  <<interface>>
+ExtractionGroupChooser
+  chooseExtractionGroup(extractionType:String, ExtractionResults):ExtractionGroup
+
+Extractor <>-- TextAcceptor
+  getExtraction(DocText):Extraction   // Extraction == extract.Entity; Needs to hold an optional parse result.
+                                      //  Need to modify extract.Extractor interface to return Entities instead of parseResults.
+
+ExtractionData
+  ^.. ExtractionParseData
+  ^.. ExtractionMatcherData
+  ^.. ExtractionStringData
+  ^.. ExtractionStringsData
+
+//todo: move these extraction classes to extract package...
+
+<<interface>>
+TextAcceptor
+  accept(DocText):boolean
+
+ExtractionPipeline <>-- extractors:List<Extractor>
+
+MegaExtractor == ExtractionPipeline
+  extract(TextContainer, extractionPipeline):boolean
+
+Job <>-- MegaExtractor
+Classifier <>-- MegaExtractor
+
+SiteClassifier --> Classifier
+ProductExtractorJob --> Job
+
+==============================================================================
+
+HeadingOrganizer
+
+- Heading range of influence:
+  - path index range  -versus-     [IndexHeadings]
+  - path key prefix range          [KeyHeadings]
+
+- General headings apply in document order
+  - same or higher weight usurps previous headings back to and including headings of the same weight.
+  - lower weight is under higher weight
+  - apply to paths in document order
+- Table headings <>-- GeneralHeadings
+  - if found in row 0, each is a column heading for its table
+  - if found in col 0 (row > 0), each is a row heading for its table
+  - apply to paths with same path prefix, where prefix = table heading's path key
+    - assuming table and td tags are numbered
+  - General headings apply to table headings
+    - and all table data indirectly through table data headings + general headings
+
+Extrapolation  (ExtractionGroup.buildExtrapolatedGroup)
+
+- based on common headings
+- grab a path only once
+- coordinate with already extracted paths

@@ -1,0 +1,49 @@
+
+
+target  -vs-  candidate
+                              alignment
+head             head
+mod1             mod1
+mod2             mod2
+mod3             mod3
+...              ...
+modN             modM
+
+
+
+         candidate
+target
+           head   mod1   mod2   mod3   ...   modM
+
+  head      
+
+  mod1
+
+  mod2
+
+  mod3
+
+  ...
+
+  modN
+
+
+
+   t-head    c-head     head-head-match * t-head-weight +
+   t-mod1    c-mod1     t-mod1-c-modK-match * t-mod1-weight - penalty(K, 1)
+   t-mod2    c-mod2
+   ...       ...
+   t-modN    c-modN
+
+
+    x/n  f(x,n)
+    0/1   1.000
+
+    0/2   0.667
+    1/2   0.333
+
+    0/3   0.750
+    1/3   0.167
+    2/3   0.083
+
+

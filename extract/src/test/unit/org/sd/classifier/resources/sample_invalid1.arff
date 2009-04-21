@@ -1,0 +1,12 @@
+%CLASSIFICATION=CLASS
+@ATTRIBUTE NominalAttribute {value1,value2}
+@ATTRIBUTE IntAttribute integer
+@ATTRIBUTE RealAttribute real
+@ATTRIBUTE NumericAttrivute numeric
+@ATTRIBUTE CLASS {Class1,Class2}
+
+@DATA
+value1,25,2.6,3.1,4,Class1
+value1,42,1.9,3.3,8,Class1
+value2,25,2.6,3.1,4,Class2
+value2,42,1.9,3.3,8,Class2

@@ -1,0 +1,450 @@
+
+Classification operations are over a FeatureSet which is defined by a FeatureDictionary.
+
+A FeatureDictionary defines FeaturesAttributes.
+A FeatureAttribute is an attribute name and specifies the types of values.
+A FeatureSet identifies the feature attributes (from the FeatureDictionary) that apply to a Classifier, including the (special) classification result feature attribute.
+
+A FeatureInstance is a FeatureAttribute with a specific value (or specified as "missing" or "undefined"?).
+A DataSet is a set of FeatureInstances for all features in a FeatureSet.
+
+A DataSet is incrementally instantiated from ClassificationInput by executing a FeatureExtractionPipeline over the ClassificationInput.
+
+A FeatureExtractionPipeline executes a sequence of FeatureExtractors.
+A FeatureExtractor adds one or more FeatureInstances to a DataSet based on a ClassificationInputElement.
+A FeatureExtractor can use incremental information stored in a DataSet by prior FeatureExtractors executed in the FeatureExtractionPipeline over the current or prior ClassificationInputElements.
+
+Execution of a FeatureExtractionPipeline entails pre-input, incremental-input, and post-input stages.
+- create an empty DataSet
+- execute pre-input FeatureExtractors, supplying the DataSet.
+- iterate over the input, executing incremental-input FeatureExtractors over each ClassificationInputElement, supplying the DataSet.
+- execute post-input FeatureExtractors, supplying the DataSet.
+
+A FeatureExtractionPipeline is a FeatureExtractor.
+- this allows for an extractor to be a pipeline that executes over an input element.
+
+A ClassificationInputElement is a ClassificationInput.
+- this allows for input elements to be broken down into smaller elements, each to be operated on by a FeatureExtractor (or Pipeline).
+
+A ClassificationInput has an Iterator<ClassificationInputElement>.
+- if it can be broken down into smaller inputs
+
+--------------------
+
+What role does the FeatureDictionary play? Just to generate arffs? Validation of and/or constraints on types/instances?
+Could the FeatureDictionary be "distributed" across all FeatureAttributes and its functions be served from within each FeatureAttribute?
+
+What role does the FeatureSet play? Just to generate arffs? Validation of DataSets?
+Could the FeatureSet's functions be a property of the DataSet?
+
+--------------------
+
+Classification (v) has two modes of operation:
+ (1) Training  :  ClassifierTrainer [needs to know the ml algorithm to use and needs a (defining) FeatureSet and (fully instantiated) DataSet]
+ (2) Execution  :  ClassifierRunner
+
+Think of a classification (n) as an attribute with a value that is
+ - present for training or
+ - filled in by execution
+
+--------------------
+
+weka, arff:
+
+dataset(=relation,=featureSet) name,
+  has attribute name, value(s)/specification,
+  feature instances
+
+
+See weka "Attribute", "Instance", and "Instances" classes.
+
+--------------------
+
+QUESTION:
+
+  Do we "wrap" weka with a layer of abstraction or do we not care about "high coupling"?
+
+Use cases
+
+- Retrofitting "hand" classifiers
+- Incorporating "java code" decision trees (exported from weka)
+- Upgrading weka
+- Using home-grown or alternate classification tools
+- Bag of words "features"
+
+
+==> (Answer:) wrap weka.
+
+==============================================================================
+
+FeatureAttribute -- defines an attribute by name (string) associated with values (numeric, range, enum/nominal, strings, etc.)
+FeatureVector -- associates each of a set of feature attributes to an instantiated value
+            - has special FeatureAttribute for a "classification" feature that can be set/get directly.  "Classification Label"
+TrainingSet -- a collection of FeatureVectors used for training
+
+ClassificationInput -- interface around input to be classified by feeding through FeatureExtraction
+FeatureExtractor(Pipeline) -- transforms ClassificationInput, filling a FeatureVector by setting specific values for specific feature attributes in the feature vector.
+
+ClassifierTrainer -- takes multiple ClassificationInputs and generates a TrainingSet of FeatureVectors through repeated use of a FeatureExtractor(Pipeline).
+                   - creates a FeatureDictionary and gives to ExtractionRunner
+                   - sets the special "classification" feature for each input.
+                   - writes out an ARFF file
+ClassifierRunner -- takes a trained classifier and a ClassificationInput and generates a fully instantiated FeatureVector
+                  - computes the special "classification" feature for an input through the classifier.
+
+
+FeatureExtractor <abstract>  // implements or has sdn.doc.Extractor ??? I think has.
+  + process(result:FeatureVector, input:ClassificationInput, dictionary:FeatureDictionary):boolean <final impl>  // iterate over input, calling #process
+  # processElement(result:FeatureVector, input:ClassificationInputElement, dictionary:FeatureDictionary):boolean <abstract>  // set feature(s) value(s) if warranted
+  # defineFeatures(dictionary:FeatureDictionary):boolean <abstract>
+
+FeatureExtractionPipeline -> FeatureExtractor
+    1 *
+  <>--- FeatureExtractor
+  # processElement(result:FeatureVector, input:ClassificationInputElement, dictionary:FeatureDictionary):boolean <impl>
+  # defineFeatures(dictionary:FeatureDictionary):boolean <impl>
+
+StepFeatureExtractor -> FeatureExtractor  // step deeper into the input, to do extraction
+    1 1
+  <>--- FeatureExtractor
+  # process(result:FeatureVector, input:ClassificationInputElement, dictionary:FeatureDictionary):boolean <impl>  // call #fe.processEachInput
+  # defineFeatures(dictionary:FeatureDictionary):boolean <impl>  // call fe.defineFeatures
+
+FeatureVector <<interface>>
+  <>--- ClassificationInput
+  <>--- Map<FeatureAttribute, value:double>
+
+  + setValue(attribute:FeatureAttribute, value:int/double/String):boolean
+  + getValue(attribute:FeatureAttribute):double
+  + getAttributes():Set<FeatureAttribute>
+  + getInput():TextContainer
+//  + getFeatureDictionary():FeatureDictionary
+
+  + getExtractionFlag():Boolean
+  + setExtractionFlag(f:Boolean):void
+
+FeatureAttribute
+  <>--- FeatureDictionary
+
+  + isValidValue(value:int/double/String):boolean
+
+
+FeatureExtractionRunner   // create a feature vector
+    1 1
+  <>--- FeatureExtractor
+
+  + run(input:ClassificationInput, dict:FeatureDictionary):FeatureVector  {return featureExtractor.process(fv, inputElement, dict);}
+
+
+<<abstract>>
+BaseClassificationRunner
+    1 1
+  <>--- FeatureDictionary  // passed in on construction from extending class
+
+    1 1
+  <>--- FeatureExtractor   // passed in on construction from extending class
+
+
+  # extract(input:ClassificationInput):FeatureVector
+
+ClassificationRunner -> BaseClassificationRunner
+    1 1
+  <>--- FeatureDictionary  // passed in on construction or constructed from resources
+
+    1 1
+  <>--- FeatureExtractor  // passed in on construction or constructed from resources
+
+    1 1
+  <>--- TrainedClassifier  // passed in on construction or constructed from resources
+
+// (an instance defines features for each feature dictionary once, (not storing the FeatureDictionary because runners will offer alternatives)
+
+  + getFeatureDictionary():FeatureDictionary
+
+  + classify(input:ClassificationInput):ClassificationResult
+
+
+ClassificationTrainer -> BaseClassificationRunner
+    1 1
+  <>--- FeatureDictionary  // created new to keep track of features
+
+    1 1
+  <>--- FeatureExtractor  // passed in on construction or constructed from resources
+
+// (an instance defines features for each feature dictionary once, (not storing the FeatureDictionary because runners will offer alternatives)
+
+  + getFeatureDictionary():FeatureDictionary
+
+  + train(input:TrainingData):TrainedClassifier
+
+
+TrainingData   // has set of ClassificationInputs with values for the special classification label.
+
+FeatureDictionary
+  // dynamically created while extracting for training
+  // locks up and ignores (but logs) new features while extracting for classifying
+  // can be constructed from an ARFF file (for classifying)
+
+  + FeatureDictionary()
+  + hasAttribute(attributeName:String):boolean
+  + getAttribute(attributeName:String):FeatureAttribute
+  + setAttribute(attributeName:String, attribute:FeatureAttribute):boolean
+  + isLocked():boolean
+
+ClassificationInput -> Iterator<ClassificationInputElement>
+  + iterator():Iterator<ClassificationInputElement>
+
+ClassificationInputElement -> (-vs- <>-- ?) TextContainer
+  + asClassificationInput():ClassificationInput
+
+  + asSiteClassificationInputElement():SiteClassificationInputElement
+  + asXmlClassificationInputElement():XmlClassificationInputElement
+
+SiteClassificationInput -> ClassificationInput                // based on sitegraph
+SiteClassificationInputElement -> ClassificationInputElement  // based on a sitegraph line
+XmlClassificationInput -> ClassificationInput                 // based on an xml document (TextContainer)
+XmlClassificationInputElement -> ClassificationInputElement   // based on an xml text node (DocText)
+
+OR (preferred)
+
+is ClassificationInput really just TextContainer and ClassificationInputElement just DocText ???
+(add interface methods to TextContainer: convertToTextContainer(docText:DocText):TextContainer &
+     getContainerType():String)
+
+for SiteClassificationInput, can implement TextContainer around a site graph, serving up DocTexts
+
+==============================================================================
+
+TASKS:
+
+- Implement FeatureDictionary interface named WekaFeatureDictionary. (arff-based)
+- Implement FeatureAttribute hierarchy classes.
+  - Define and implement behaviors in each.
+    - NumericFeatureAttribute
+      - IntegerFeatureAttribute
+      - RealFeatureAttribute
+    - NominalFeatureAttribute
+    - BagOfWordsFeatureAttribute
+
+- Design Classifier interface
+  - Implement WekaClassifier
+    - converts FeatureVector to Instance (arff-line) for running/training
+
+- Create Design Docs
+
+- Create initial JUnit test cases for classes
+
+- Design higher-level skeletons
+  - ClassifierTrainer
+  - ClassifierRunner
+  - TrainingSet
+  - Flesh out property-driven initialization
+
+- Implement a SiteTextContainer that serves up XmlTextContainers through the convertToTextContainer interface.
+  - iterates over the urls from a sitegraph file.
+  - each docText identifies a url along with its cached file location.
+    - need to figure out what the DocText pieces mean relative to a url.
+
+==============================================================================
+
+08/29/2007 -- Further clarification and discussion
+
+PrimaryFeatureExtractor
+  - has a org.sd.doc.Extractor []
+  - has an AttributeConstraints instance
+    - which has an attribute name, etc.
+
+  - runs the extractor(s)
+    +process(result:FeatureVector, input:TextContainer, dict:FeatureDictionary)
+    - extract(docText:DocText, die:AtomicBoolean):List<Extraction>
+    - checks results (extraction.getData().toString()?) against constraints
+      - if "ok", then asks feature dictionary for the attribute instance for attribute name
+        - depending on attribute type in constraints, uses appropriate feature dictionary interface
+        - if non-null, then sets the feature attribute to the value on the feature vector
+
+ - BagOfWordsFeatureExtractor  (replaces concept of a BagOfWordsFeatureAttribute)
+   - has a "key" distinguishing the bag's features from other features
+   - adds a "key-" prefix to words (=features) that are added
+
+AttributeConstraints
+  - identifies type as nominal, integer, or double
+  - constrains "strings" to:
+    - pre-defined set of acceptable strings -vs- "open" to any string
+    - pre-defined range of integers -vs- open to any value
+    - pre-defined range of doubles -vs- open to any value
+  - talks to feature dictionary interface (if necessary, checking locks, etc.)
+
+ClassifierTrainer -> BaseClassificationRunner
+  - creates/has an empty/unlocked FeatureDictionary
+  - has a FeatureExtractor (creates from properties?)
+  - creates an ARFF from a set of classified input == TrainingSet
+    - by running each input through the feature extractor to create a feature vector
+    - and setting the classification label's value on the feature vector
+
+ClassifierRunner -> BaseClassificationRunner
+  - creates/has a locked FeatureDictionary built from an ARFF file
+  - has a FeatureExtractor (creates from properties?)
+  - loads a serialized Classifier
+  - runs an input through the feature extractor to create a feature vector
+  - runs the feature vector through the Classifier to set the classification label's value
+  - gets the classification label's value off the feature vector
+    - (returns the ClassificationResult)
+
+NOTE: the FeatureDictionary knows which attribute is the classification label.
+
+BaseClassificationRunner
+  - has a FeatureDictionary
+  - has a FeatureExtractor
+  - runs the FeatureExtractor over an input to generate a FeatureVector
+
+ArffContainer = ExtractedFeatures
+  - Wrapper around an ARFF file
+
+Classifier
+  + classify(fv:FeatureVector):boolean
+
+
+RawLabeledData
+ - is an iterator over LabledInput
+ - holds input with a label for each
+ - *** Needs to keep track of the source of a label
+
+LabeledInput
+ - is an immutable container with
+   - a label
+   - an input (TextContainer)
+
+ExtractedFeatures
+ - holds a header (=FeatureDictionary) and
+ - holds instances (= set of extracted FeatureVectors)
+
+==============================================================================
+
+Property-based construction:
+
+- See PropertiesParser.getMultiValues
+- let one property define a key
+  - then prepend keys onto attributes with postpended indeces
+    where <propname>=<key>,
+    <key>-<propname>-<param>_[0..]=<value>
+
+BaseClassifierRunner
+- has FeatureDictionary
+
+- has FeatureExtractor
+  - has 1 or more Extractor/AttributeConstraint pairs
+- or has FeatureExtractionPipeline
+  - has 1 or more FeatureExtractors
+- or has StepFeatureExtractor
+  - has FeatureExtractor
+
+  - each AbstractExtractor needs
+    - extractionType
+    - textAcceptor
+    - textSplitter
+    - needsDocTextCache
+    - stopAtFirst
+    - normalizer
+    - breakStrategy
+    - disambiguator
+    - extractor-specific params
+
+PrimaryFeatureExtractor
+
+primaryFeatureExtractor_<i>=<name<i>>
+
+extractor_<Name<i>>_extractionType=<extractionType>
+extractor_<Name<i>>_textAcceptor=<textAcceptorClasspath>
+...
+
+
+classifierRunner_0=b2b
+b2b-classifierRunner_0-inputArff=<pathToInputArff> // for feature dictionary
+b2b-classifierRunner_0-featurePipeline=b2b-pipeline
+b2b-pipeline-b2b-classifierRunner_0-featureExtractor-
+
+(ClassifierRunner
+  FeatureDictionary
+  FeatureExtractor)
+
+(FeatureDictionary
+  (or
+    inputArff
+    (and dataSet classificationAttribute)))
+
+(FeatureExtractor
+  (or
+    PrimaryFeatureExtractor
+    FeatureExtractionPipeline
+    StepFeatureExtractor
+    BagOfWordsExtractor))
+
+(PrimaryFeatureExtractor
+  Extractor+)
+
+(FeatureExtractionPipeline
+  FeatureExtractor+)
+
+(StepFeatureExtractor
+  FeatureExtractor)
+
+(Extractor
+  (or
+    specificExtractorNameWithOwnParams-1
+    ...
+    RegexExtractor
+    BagOfWordsExtractor
+    ...
+    (and
+      extractionType
+      textAcceptor?
+      textSplitter?
+      needsDocTextCache?
+      stopAtFirst?
+      normalizer?
+      breakStrategy?
+      disambiguator?)))
+
+(RegexExtractor
+  extractionType
+  pattern)
+
+
+ClassifierRunner=testRunner
+testRunner.FeatureDictionary=testDict
+testRunner.FeatureExtractor=testFeatureExtractor
+
+testFeatureExtractor.PrimaryFeatureExtractor=testPFE
+testPFE.Extractor_1=emailRegexExtractor
+testPFE.Extractor_2=bagOfWordsExtractor
+
+emailRegexExtractor.extractionType=email
+emailRegexExtractor.pattern=.*\\b([a-zA-Z0-9\\_\\-\\.]+@[a-zA-Z0-9\\_\\-\\.]+\\.[a-zA-Z][a-zA-Z]+)\\b.*
+
+bagOfWordsExtractor.extractionType=bagOfWords
+bagOfWordsExtractor.bagName=testBag
+
+==============================================================================
+
+Validating correlated properties against schema/input to find mistakes...
+
+Constructing instance (chains) from properties...
+
+
+final Properties properties = new Properties();
+
+properties.clear();  // don't reuse same instance in recursion if we're passing information along with properties.
+if (correlatedProperties.extractProperties(properties, initialKey)) {
+  // build required sub-pieces
+  for (String name : properties.stringPropertyNames()) {
+    final String[] values = PropertiesParser.getStrings(properties, name);
+    if (values != null) {
+      for (String value : values) {
+        recurse(name, value);  // where 'name' is the type of class; recursing should set more properties?
+      }
+    }
+  }
+  constructInstanceHere(classType, properties)
+}
+
+need to map 'name' to a classpath and call constructor that takes 'properties'
