@@ -1,0 +1,4 @@
+random text to verify
+that the FileUtil.copyFile
+method is working
+properly.
