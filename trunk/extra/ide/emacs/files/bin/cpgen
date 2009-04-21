@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# cpgen
+# by Spence Koehler
+#
+# Script to generate a classpath from "projects" where each project has an ant
+# build file with a "print-classpath" target like:
+#
+#    <target name="print-classpath">
+#      <pathconvert property="classpath.property" refid="my.class.path"/>
+#      <echo message="CLASSPATH IS: ${classpath.property}"/>
+#    </target>
+#
+# If the ant build file's name is not "build.xml" then set its name in the
+# "ANT_BUILD_NAME" environment variable.
+#
+# If ant requires special libraries (i.e. due to custom tasks) to build,
+# then specify them in the "ANT_PROJECTS_LIB" environment variable.
+#
+# args: paths to projects (or modules) for which a single classpath is to
+#       be generated.
+# output: the classpath for the projects.
+#
+# Usage example:
+#
+# export ANT_BUILD_NAME="ant-build.xml";
+# export PD="/home/$USER/co/trunk";
+# export ANT_PROJECTS_LIB=`cpgen $PD/anttasks`
+# export LINGO_CLASSPATH=`cpgen $PD/util $PD/lingonet $PD/newdoc $PD/lingopointclient $PD/lingopoint`
+#
+
+function get_project_classpath () {
+  project=$1;
+  if test -d $project; then
+    cd $project;
+    test -z "$ANT_BUILD_NAME" && ANT_BUILD_NAME="build.xml"
+		test -s "$ANT_BUILD_NAME" || ANT_BUILD_NAME="build.xml"
+    if test -n "$ANT_PROJECTS_LIB"; then
+      ant -f "$ANT_BUILD_NAME" -lib $ANT_PROJECTS_LIB print-classpath | grep CLASSPATH | sed 's/.* \(.*\)/\1/; s/\\/\//g';
+    else
+      ant -f "$ANT_BUILD_NAME" print-classpath | grep CLASSPATH | sed 's/.* \(.*\)/\1/; s/\\/\//g';
+    fi
+  fi
+}
+
+# get classpath for each project
+pcp=;
+for project in $@; do
+  ccp=`get_project_classpath $project`;
+	if test -n "$pcp"; then
+	  pcp="$pcp:$ccp";
+	else
+	 pcp="$ccp";
+  fi
+done
+
+dcp=;
+if test -n "$pcp"; then
+  dcp=`echo "$pcp" | dedup.pl | sed 's/:$//'`;
+fi
+
+echo -n "$dcp";

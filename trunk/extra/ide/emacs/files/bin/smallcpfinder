@@ -1,0 +1,13 @@
+#!/bin/sh
+#
+# find a class scanning the full classpath
+#
+# arg1: name of class to find
+#
+# stdout: classpaths
+#
+
+name=$1;
+
+$HOME/bin/name2path $JDK_HOME/jre/lib/rt.jar $name;
+echo "$SMALL_CLASSPATH" | $HOME/bin/findclasses $name;

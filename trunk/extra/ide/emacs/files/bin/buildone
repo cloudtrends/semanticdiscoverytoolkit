@@ -1,0 +1,25 @@
+#!/bin/bash
+
+TOP=`echo $1 | sed "s/^\(.*\)\/src\/.*$/\1/1"`;
+CLASSES=$TOP/build/classes;
+
+# send tests to "$TOP/build/unit-test-classes" instead
+ISTEST=`expr match $1 ".*/\(test/unit\)/.*"`;
+if test -n "$ISTEST"; then
+  CLASSES=$TOP/build/unit-test-classes;
+fi;
+
+if ! test -e $CLASSES; then mkdir -p $CLASSES; fi;
+
+echo Building to output path=$CLASSES
+base=`basename $1 .java`
+echo "removing $base.class..."
+find $CLASSES -name "$base.class" -exec rm -f '{}' ';'
+echo "compiling $1 to $CLASSES..."
+
+#echo javac -cp "`cpgen $TOP`" -source "1.6" -Xlint:-path -Xlint:unchecked -g -d $CLASSES $1
+javac -cp "`cpgen $TOP`" -source "1.6" -Xlint:-path -Xlint:unchecked -g -d $CLASSES $1
+
+#echo `printenv`;
+#echo "classpath=$CLASSPATH"
+

@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# convert file paths to classpaths
+#
+# stdin: file paths to convert (ending in .class, 1 per line)
+# arg1: (optional) prefix to remove from file path
+#
+# output: one classpath per input line
+#
+
+prefix=$1;
+
+while read file
+do
+  $HOME/bin/file2class $file $prefix
+done

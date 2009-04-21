@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+# given a single java classpath component and the name of a class to find,
+# find all of the possible classpaths.
+#
+# arg1: single java classpath component
+# arg2: name of class to find
+#
+# stdout: 0 or more classpaths that match the name, 1 per line.
+#
+
+path=$1;
+class=$2;
+
+if test -f $path; then
+  # looking at a jar
+  jar -tf $path | grep -w "$class.class" | $HOME/bin/files2classes
+else
+  # looking at a directory
+  extraFindArgs="";
+  if [ "$path" == "." ]; then
+    extraFindArgs="-maxdepth 1";
+  fi
+
+  if test -d $path; then
+    find $path -name "$class.class" $extraFindArgs | $HOME/bin/files2classes $path
+  fi
+fi

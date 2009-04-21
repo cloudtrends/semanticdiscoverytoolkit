@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# showdiffs
+#
+# Utility to show differences between files in two directories.
+#
+# Usage:
+#
+# showdiffs <dir1> <dir2>
+#
+
+dir1="$1";
+dir2="$2";
+
+for file in `ls -1 $dir1`; do echo "$file"; diff $dir1/$file $dir2/$file; done;
