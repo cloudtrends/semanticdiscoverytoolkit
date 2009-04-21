@@ -1,0 +1,54 @@
+
+Notes on dependencies.
+
+
+- io -- has no dependencies
+  - put input/output related utilities with no external dependencies here.
+
+- util -- only depends on "io"
+  - put utilities with no external dependencies (other than on "io") here.
+  - also depends on external
+		- J2EE Mail (mail.jar) for EmailUtil
+    - Apache Commons Command Line Interface (commons-cli-1.1.jar) for util.cmd
+
+- xml -- depends on "io" and "util"
+  - holds xml related utilities
+
+- nlp -- depends on "io", "util", and "xml"
+  - holds nlp related utilities
+
+- cio -- depends on "io", "util" and "xml"
+  - put input/output related utilities that also depend on "util" and "xml" here.
+
+- bdb -- depends on "io", "util", and "cio"
+  - also depends on external
+	  - BerkeleyDB (je-3.3.75.jar)
+    - Apache Commons Command Line Interface (commons-cli-1.1.jar)
+
+- text -- depends on all of the above
+	- also depends on external
+		- Lucene (for text.lucene package)
+        - NOTE: it is feasible to have lucene as its own module to avoid this
+								dependency on text. For now, I've decided to keep "lucene" under "text".
+			- lucene-core-2.4.1.jar (core lucene)
+			- lucene-highlighter-2.4.1.jar (lucene highligher methods)
+
+Call all of the above the "base" tools
+==============================================================================
+
+- cluster -- depends on all of the base tools except nlp
+	- also depends on external
+		- J2EE Mail (mail.jar) [because of using util.EmailUtil]
+    - Apache Commons Command Line Interface (commons-cli-1.1.jar)
+  - TestDataPusher
+		- requires ssh to localhost to work without interaction
+
+- extract -- depends on all of the base tools except bdb
+  - also depends on external
+		- Weka (weka-3-6-0.jar) [used by classifier package]
+
+- lang -- depends on all of the base tools
+  - also depends on external
+    - WordNet data files
+
+- crawl -- depends on all of the base tools
