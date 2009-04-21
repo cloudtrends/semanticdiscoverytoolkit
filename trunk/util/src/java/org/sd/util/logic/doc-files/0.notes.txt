@@ -1,0 +1,9 @@
+
+logical constructs
+
+
+logicalStatement<T> <>--+-- type {operator[non-leaf], truthFunction<T>[leaf]}
+
+truthFunction<T>.evaluateInput(input:T):LogicalResult<T>
+
+input --> tree<logicalStatement> --> logicalResult <>-- successful:List<TruthFunction>

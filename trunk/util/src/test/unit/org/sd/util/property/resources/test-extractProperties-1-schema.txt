@@ -1,0 +1,17 @@
+(ClassifierRunner  FeatureDictionary  FeatureExtractor)
+
+(FeatureDictionary  (or    inputArff    (and dataSet classificationAttribute)))
+
+(FeatureExtractor  (or    PrimaryFeatureExtractor    FeatureExtractionPipeline    StepFeatureExtractor    BagOfWordsExtractor))
+
+(PrimaryFeatureExtractor  Extractor+)
+
+(FeatureExtractionPipeline  FeatureExtractor+)
+
+(StepFeatureExtractor  FeatureExtractor)
+
+(Extractor  (or    RegexExtractor    (and      extractionType      textAcceptor?      textSplitter?      needsDocTextCache?      stopAtFirst?      normalizer?      breakStrategy?      disambiguator?)))
+
+(RegexExtractor  extractionType  pattern)
+
+(BagOfWordsExtractor  extractionType  bagName  maxWords)
