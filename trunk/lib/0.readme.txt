@@ -1,0 +1,6 @@
+
+This directory contains all jars applicable to the cumulative runtime
+environment for this project's modules.
+
+See this directory's sibling directory, "jars", to find the jars that
+are relevant for all contexts including building and testing.
