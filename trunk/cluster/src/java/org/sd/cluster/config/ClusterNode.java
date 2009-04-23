@@ -303,12 +303,7 @@ public class ClusterNode implements ClusterContext {
 		// portRangeString
 		final String portRangeString = properties.getProperty("portRange");
 		if (portRangeString != null) {
-			final String[] portRangePieces = portRangeString.split(":");
-			final int lowPort = Integer.parseInt(portRangePieces[0]);
-			final int highPort = portRangePieces.length > 1 ? Integer.parseInt(portRangePieces[1]) : lowPort;
-			ConfigUtil.setPortOverride(lowPort, highPort);
-
-			System.out.println("ClusterNode: Applying (portRange) port override: " + portRangeString);
+			ConfigUtil.setPortOverride(portRangeString);
 		}
 		else {
 			// check for active override

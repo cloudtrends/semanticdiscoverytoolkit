@@ -50,7 +50,7 @@ public class ClusterDefinition {
 
   public static final String getClusterDefinitionPath(String defName) {
     final String ext = defName.endsWith(".def") ? "" : ".def";
-    String result = FileUtil.getFilename(ClusterDefinition.class, CLUSTER_DEFINITIONS_PATH) + defName + ext;
+    String result = FileUtil.getFilename(ClusterDefinition.class, CLUSTER_DEFINITIONS_PATH + defName + ext);
 		File file = FileUtil.getFile(result);
 
 		if (!file.exists()) {
@@ -87,7 +87,7 @@ public class ClusterDefinition {
     this.gateway = null;
 		this.clusterDefFile = findClusterDefinitionFile(defName);
     this.machineTree = readMachineTree(defName, clusterDefFile);
-//    if(this.machineTree == null) System.out.println("readMachineTree(" + defName + ") returned null result!");
+    if(this.machineTree == null) System.out.println("readMachineTree(" + defName + ") returned null result! file=" + clusterDefFile);
     this.fixedNodeNames = null;
     this.serverAddresses = new HashMap<String, ServerAddressCache>();
     this.nodeNames = null;  // lazily computed
@@ -175,9 +175,48 @@ public class ClusterDefinition {
 		return result;
 	}
 
+	private final Tree<NameNum> readMachineTree(String defName) throws IOException {
+		Tree<NameNum> result = null;
+
+System.out.println("ClusterDefinition.readMachineTree(" + defName + ")");
+
+		if (defName != null) {
+			if (!defName.endsWith(".def")) defName += ".def";
+			final java.io.InputStream in = this.getClass().getResourceAsStream(CLUSTER_DEFINITIONS_PATH + defName);
+			this.clusterDefString = FileUtil.readAsString(new java.io.BufferedReader(new java.io.InputStreamReader(in)), FileUtil.LINUX_COMMENT_IGNORER);
+			if (clusterDefString != null) {
+				result = treeBuilder.buildTree(clusterDefString);
+System.out.println("\tclusterDefString(1)=" + clusterDefString);
+			}
+			in.close();
+		}
+
+		return result;
+	}
+
   private final Tree<NameNum> readMachineTree(String defName, File clusterdefFile) throws IOException {
-		this.clusterDefString = clusterdefFile != null && clusterdefFile.exists() ? FileUtil.readAsString(clusterdefFile.getPath(), FileUtil.LINUX_COMMENT_IGNORER) : null;
-    return clusterDefString == null ? null : treeBuilder.buildTree(clusterDefString);
+		Tree<NameNum> result = null;
+
+System.out.println("ClusterDefinition.readMachineTree(" + defName + "," + clusterdefFile +")... exists=" + ((clusterdefFile == null) ? false : clusterdefFile.exists()));
+
+		if (clusterdefFile == null || !clusterdefFile.exists()) {
+System.out.println("\treadMachineTree 1a");
+			result = readMachineTree(defName);
+		}
+
+		if (result == null) {
+System.out.println("\treadMachineTree 2");
+			this.clusterDefString = clusterdefFile != null && clusterdefFile.exists() ? FileUtil.readAsString(clusterdefFile.getPath(), FileUtil.LINUX_COMMENT_IGNORER) : null;
+			result = clusterDefString == null ? null : treeBuilder.buildTree(clusterDefString);
+System.out.println("\tclusterDefString(2)=" + clusterDefString);
+		}
+
+		if (result == null && "".equals(clusterDefString)) {
+System.out.println("\treadMachineTree 1b");
+			result = readMachineTree(defName);
+		}
+
+		return result;
   }
 
   /**
