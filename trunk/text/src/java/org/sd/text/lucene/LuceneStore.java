@@ -146,6 +146,13 @@ public class LuceneStore {
     }
   }
 
+	/**
+	 * Get this instance's indexWriter (null if not opened yet.)
+	 */
+	public IndexWriter getIndexWriter() {
+		return indexWriter;
+	}
+
   /**
    * Close and optimize this lucene store.
    */
