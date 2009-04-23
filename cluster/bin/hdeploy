@@ -37,10 +37,12 @@ function doRsync() {
     CURNAME=`fixName $1`;
     DEST=$CURNAME;
 
-    if test "$DEST" != "$MYNAME"; then
+    if test "$DEST" != "$MYNAME" && "$DEST" != "localhost"; then
       echo "($MYNAME)rsyncing ../bin ../conf ../lib ../resources ../$build ../src/jsp $DEST:cluster/;";
-      rsync -Laz --exclude='*~' --exclude='.svn' --exclude="reports" --delete --delete-excluded ../bin ../conf ../lib ../resources ../$build $DEST:cluster/
-      rsync -az --exclude='*~' --exclude='.svn' --exclude="reports" --delete --delete-excluded ../src/jsp $DEST:cluster/src/
+      rsync -Laz --delete --delete-excluded ../bin ../conf ../lib ../resources ../$build $DEST:cluster/
+			if test -e ../src/jsp; then
+        rsync -az --delete --delete-excluded ../src/jsp $DEST:cluster/src/;
+      fi;
       ssh $DEST "cd ~/cluster/bin;./hdeploy";
     fi
 

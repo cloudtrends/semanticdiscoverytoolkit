@@ -62,6 +62,8 @@ public class ClusterRunner {
     this._clusterDef = null;
     this._console = null;
     this._groupName = null;
+
+		ConfigUtil.setPortOverride(System.getenv("CLUSTER_PORT_RANGE"));
   }
 
   public ClusterRunner(Properties properties) {
@@ -76,12 +78,7 @@ public class ClusterRunner {
 			// override port range
 			final String defaultPortRange = properties.getProperty("CLUSTER_PORT_RANGE");
 			final String portRangeString = properties.getProperty("portRange", defaultPortRange);
-			if (portRangeString != null) {
-				final String[] portRangePieces = portRangeString.split(":");
-				final int lowPort = Integer.parseInt(portRangePieces[0]);
-				final int highPort = portRangePieces.length > 1 ? Integer.parseInt(portRangePieces[1]) : lowPort;
-				ConfigUtil.setPortOverride(lowPort, highPort);
-			}
+			ConfigUtil.setPortOverride(portRangeString);
 
 			// default gateway
 			final String defaultGateway = properties.getProperty("CLUSTER_GATEWAY");
@@ -147,7 +144,12 @@ public class ClusterRunner {
       final String defName = getDefName();
       final String[] machines = getMachines();
 			final Tree<String> clusterTree = Admin.getActiveClusterDefTree();
-      _clusterDef = new ClusterDefinition(defName, clusterTree, _gateway, machines);
+			if (clusterTree != null) {
+				_clusterDef = new ClusterDefinition(defName, clusterTree, _gateway, machines);
+			}
+			else {
+				_clusterDef = new ClusterDefinition(defName, _gateway, machines);
+			}
     }
     return _clusterDef;
   }

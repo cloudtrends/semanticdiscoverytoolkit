@@ -30,7 +30,7 @@ fi
 
 if test $UIDNUM -eq -1; then
   PROPERTIES="$PROPERTIES single=true";
-	UIDNUM=0;
+  UIDNUM=0;
 fi
 
 nohup ./run org.sd.cluster.config.ClusterNode $PROPERTIES $UIDNUM 2> "$LOGDIR/log-$TIMESTAMP-$UIDNUM.err" 1> "$LOGDIR/log-$TIMESTAMP-$UIDNUM.out" &

@@ -134,10 +134,16 @@ public class ConfigUtil {
 		String result = System.getenv("CLUSTER_DEV_DIR");
 
 		if (result == null) {
-			// try to get relative to this class (NOTE: won't work when we're using the jar!)
-			result = FileUtil.getFilename(ConfigUtil.class, "ConfigUtil.class");
-			final int pos = (result != null) ? result.indexOf("/cluster/") : -1;
-			result = (pos >= 0) ? result.substring(0, pos + 9) : null;
+			// return current working dir (or parent if in 'bin')
+			result = new File("").getAbsolutePath() + "/";
+			if (result.endsWith("/bin/")) {
+				result = new File("..").getAbsolutePath() + "/";
+			}
+
+// 			// try to get relative to this class (NOTE: won't work when we're using the jar!)
+// 			result = FileUtil.getFilename(ConfigUtil.class, "ConfigUtil.class");
+// 			final int pos = (result != null) ? result.indexOf("/cluster/") : -1;
+// 			result = (pos >= 0) ? result.substring(0, pos + 9) : null;
 		}
 
 		return result;
@@ -156,6 +162,20 @@ public class ConfigUtil {
   public static String getClusterDevBinDir() {
     return getClusterDevDir() + "bin/";
   }
+
+	/**
+	 * Given a string of the form "lowPort:highPort", set the portOverride.
+	 */
+	public static void setPortOverride(String overrideString) {
+		if (overrideString != null && !"".equals(overrideString)) {
+			final String[] portRangePieces = overrideString.split(":");
+			final int lowPort = Integer.parseInt(portRangePieces[0]);
+			final int highPort = portRangePieces.length > 1 ? Integer.parseInt(portRangePieces[1]) : lowPort;
+			setPortOverride(lowPort, highPort);
+
+			System.out.println("ConfigUtil: Applying (portRange) port override: " + overrideString);
+		}
+	}
 
 	/**
 	 * Set a low and high port overrides to use instead of the UsersCsv lookup

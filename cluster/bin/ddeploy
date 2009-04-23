@@ -20,14 +20,28 @@ if ! test -e "../$classes"; then
 fi
 build=`dirname $classes`;
 
-echo "rsyncing ../bin ../conf ../lib ../resources ../$build ../src/jsp $USER@$MACHINE:cluster/"
-rsync -Lavz --exclude-from=../resources/deploy/deploy-excludes.txt --delete --delete-excluded ../bin ../conf ../lib ../$build $USER@$MACHINE:cluster/
-rsync -avz --exclude='*~' --exclude='.svn' --exclude='*.jdb' --delete --delete-excluded ../resources $USER@$MACHINE:cluster/
+excludes="";
+if test -e "../resources/deploy/deploy-excludes.txt"; then
+  excludes="--exclude-from=../resources/deploy/deploy-excludes.txt";
+fi;
+
+echo "rsyncing ../bin ../conf ../lib ../resources $USER@$MACHINE:cluster/"
+rsync -Lavz --exclude='*~' --exclude='.svn' --exclude='*.jdb' $excludes --delete --delete-excluded ../bin ../conf ../lib $USER@$MACHINE:cluster/
+
+echo "rsyncing ../$classes $USER@$MACHINE:cluster/$build/"
+rsync -Lavz --exclude='doc-files' --exclude='*.html.*' --delete --delete-excluded ../$classes $USER@$MACHINE:cluster/$build/
+
+if test -e "../resources"; then
+  rsync -avz --exclude='*~' --exclude='.svn' --exclude='*.jdb' --delete --delete-excluded ../resources $USER@$MACHINE:cluster/;
+fi;
 
 # push "src" (i.e. jsp) content except not WEB-INF (which hold symlinks to classes and lib)
-rsync -Lavz --exclude="WEB-INF" --exclude-from=../resources/deploy/deploy-excludes.txt --delete --delete-excluded ../src/jsp $USER@$MACHINE:cluster/src/
+if test -e "../src/jsp"; then
+  echo "rsyncing ../src/jsp $USER@$MACHINE:cluster/"
+  rsync -Lavz --exclude="WEB-INF" $excludes --delete --delete-excluded ../src/jsp $USER@$MACHINE:cluster/src/;
 
-# send WEB-INF dirs without dereferencing symlinks
-pushd ../src/jsp
-find . -name WEB-INF -exec ../../bin/ddeploy-sync \{\} $USER@$MACHINE cluster/src/jsp \;
-popd
+  # send WEB-INF dirs without dereferencing symlinks
+  pushd ../src/jsp
+  find . -name WEB-INF -exec ../../bin/ddeploy-sync \{\} $USER@$MACHINE cluster/src/jsp \;
+  popd
+fi;
