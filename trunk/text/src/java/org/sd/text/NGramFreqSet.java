@@ -27,7 +27,7 @@ package org.sd.text;
  */
 public class NGramFreqSet extends NGramSet {
 	
-	private int freq;
+	private long freq;
 
 	/**
 	 * Construct a new (empty) set. The first added ngram will determine the
@@ -79,7 +79,7 @@ public class NGramFreqSet extends NGramSet {
 	/**
 	 * Get the frequency of all of the ngrams in this set.
 	 */
-	public int getFreq() {
+	public long getFreq() {
 		return freq;
 	}
 }

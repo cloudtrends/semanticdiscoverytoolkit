@@ -305,7 +305,7 @@ public class NGramSet {
 				}
 
 				if (combinedNGram != null) {
-					final int comboFreq = Math.min(ngramFreq.getFreq(), lastNGramFreq.getFreq());
+					final long comboFreq = Math.min(ngramFreq.getFreq(), lastNGramFreq.getFreq());
 					final int comboN = Math.max(ngramFreq.getN(), lastNGramFreq.getN());
 					final NGramFreq combo = new NGramFreq(combinedNGram, comboFreq, comboN);
 					combo.addAllSources(lastNGramFreq);

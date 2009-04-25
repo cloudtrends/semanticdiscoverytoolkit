@@ -21,7 +21,7 @@
 			<arg value="--exclude=*~"/>
       <arg value="--exclude=lib/sd-*.jar"/>
       <arg value="--exclude=jars/sd-*.jar"/>
-			<arg value="sdtoolkit"/>
+			<arg value="semanticdiscoverytoolkit"/>
 		</exec>
   </target>
 

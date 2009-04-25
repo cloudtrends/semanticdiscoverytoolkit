@@ -46,7 +46,7 @@ public class NGramFreq implements Publishable, Comparable<NGramFreq> {
 
 	private String ngram;
 	private Set<String> sources;
-	private int freq;
+	private long freq;
 	private Map<String, NGramFreq> container;  // back-reference for pruning
 	private int n;
 
@@ -56,7 +56,7 @@ public class NGramFreq implements Publishable, Comparable<NGramFreq> {
 	public NGramFreq() {
 	}
 
-	public NGramFreq(String ngram, int freq, int n) {
+	public NGramFreq(String ngram, long freq, int n) {
 		this.ngram = ngram;
 		this.sources = null;
 		this.freq = freq;
@@ -68,7 +68,7 @@ public class NGramFreq implements Publishable, Comparable<NGramFreq> {
 		this.ngram = ngram;
 		this.sources = null;
 		addSource(source);
-		this.freq = 1;
+		this.freq = 1L;
 		this.container = container;
 		this.n = n;
 	}
@@ -77,7 +77,7 @@ public class NGramFreq implements Publishable, Comparable<NGramFreq> {
 		final Matcher m = NGRAMFREQ_PATTERN.matcher(toStringForm);
 		if (m.matches()) {
 			this.ngram = m.group(1);
-			this.freq = Integer.parseInt(m.group(2));
+			this.freq = Long.parseLong(m.group(2));
 		}
 	}
 
@@ -100,7 +100,7 @@ public class NGramFreq implements Publishable, Comparable<NGramFreq> {
 		return ngram;
 	}
 
-	public int getFreq() {
+	public long getFreq() {
 		return freq;
 	}
 
@@ -109,7 +109,7 @@ public class NGramFreq implements Publishable, Comparable<NGramFreq> {
 		addSource(source);
 	}
 
-	public void inc(int freq, Set<String> sources) {
+	public void inc(long freq, Set<String> sources) {
 		freq += freq;
 		if (sources != null) {
 			if (this.sources == null) this.sources = new HashSet<String>();
@@ -144,7 +144,7 @@ public class NGramFreq implements Publishable, Comparable<NGramFreq> {
 	 * Sort from higher to lower frequency.
 	 */
 	public int compareTo(NGramFreq other) {
-		return other.freq - this.freq;
+		return this.freq > other.freq ? -1 : this.freq == other.freq ? 0 : 1;
 	}
 
 	public String toString() {
@@ -172,7 +172,7 @@ public class NGramFreq implements Publishable, Comparable<NGramFreq> {
 			}
 		}
 
-		dataOutput.writeInt(freq);
+		dataOutput.writeLong(freq);
 		dataOutput.writeInt(n);
 	}
 
@@ -196,7 +196,7 @@ public class NGramFreq implements Publishable, Comparable<NGramFreq> {
 			}
 		}
 
-		this.freq = dataInput.readInt();
+		this.freq = dataInput.readLong();
 		this.n = dataInput.readInt();
 	}
 }

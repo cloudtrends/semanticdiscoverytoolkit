@@ -76,7 +76,7 @@ public class WordGramStatsUtil {
 	public static void pruneOverlap(WordGramStat[] stats, int highN) {
 
     final List<NGramFreq> all = new LinkedList<NGramFreq>();
-		final Map<Integer, Map<Integer, List<NGramFreq>>> lookup = new HashMap<Integer, Map<Integer, List<NGramFreq>>>();
+		final Map<Long, Map<Integer, List<NGramFreq>>> lookup = new HashMap<Long, Map<Integer, List<NGramFreq>>>();
 
 		for (WordGramStat stat : stats) {
 			final Collection<NGramFreq> values = stat.getNgram2Freq().values();
@@ -86,7 +86,7 @@ public class WordGramStatsUtil {
 
 			// add to lookup lists
 			for (NGramFreq value : values) {
-				final int freq = value.getFreq();
+				final long freq = value.getFreq();
 				Map<Integer, List<NGramFreq>> freqMap = lookup.get(freq);
 				if (freqMap == null) {
 					freqMap = new HashMap<Integer, List<NGramFreq>>();
@@ -112,7 +112,7 @@ public class WordGramStatsUtil {
       final int n1 = nGramFreq1.getN();
       if (n1 == highN) continue; // won't prune any 'largest'
       if ("".equals(nGramFreq1.getNGram())) continue;
-      final int freq1 = nGramFreq1.getFreq();
+      final long freq1 = nGramFreq1.getFreq();
 
       boolean remove = false;
 
@@ -159,7 +159,7 @@ public class WordGramStatsUtil {
 		boolean result = false;
 
 		final int n1 = nGramFreq.getN();
-		final int freq1 = nGramFreq.getFreq();
+		final long freq1 = nGramFreq.getFreq();
 		final String string1 = nGramFreq.getNGram();
 		final int len1 = string1.length();
 
@@ -173,7 +173,7 @@ public class WordGramStatsUtil {
 				// NOTE: test only those with more words and the same frequency,
 				if (n1 >= nGramFreq2.getN()) continue;  // skip this, it's too small
 			
-				final int freq2 = nGramFreq2.getFreq();
+				final long freq2 = nGramFreq2.getFreq();
 				if (isSorted) {
 					if (freq2 > freq1) continue;  // haven't reached those w/same freq yet
 					if (freq2 < freq1) break;     // passed those w/same freq
