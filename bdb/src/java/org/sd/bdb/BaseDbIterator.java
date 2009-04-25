@@ -557,6 +557,7 @@ public abstract class BaseDbIterator<T> implements DbIterator<T> {
         else if (hasNext.get() && dbIter.shouldIncrement()) {
           dbIter.increment(false);
         }
+				else break;
       }
 
       stayAlive.set(false);
