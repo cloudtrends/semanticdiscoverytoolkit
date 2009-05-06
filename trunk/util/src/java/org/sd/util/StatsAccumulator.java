@@ -69,6 +69,18 @@ public class StatsAccumulator {
     this.sos = stddev * stddev * (n - 1.0) + sum * sum / n;
   }
 
+	/**
+	 * Copy constructor.
+	 */
+	public StatsAccumulator(StatsAccumulator other) {
+		this.label = other.label;
+    this.n = other.n;
+    this.min = other.min;
+    this.max = other.max;
+    this.sum = other.sum;
+    this.sos = other.sos;
+	}
+
   /**
    * Clear (reset/zero) this instance to begin anew.
    */

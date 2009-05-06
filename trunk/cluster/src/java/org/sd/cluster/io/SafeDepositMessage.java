@@ -22,6 +22,7 @@ package org.sd.cluster.io;
 import org.sd.cio.MessageHelper;
 import org.sd.cluster.config.ClusterContext;
 import org.sd.io.Publishable;
+import org.sd.util.thread.UnitCounter;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -42,10 +43,14 @@ public abstract class SafeDepositMessage implements Message {
    * Do the work of generating contents for the box.
    *
    * @param context  The currently active context.
+   * @param uc  A unit counter through which to record progress. Note that the
+   *            implementation of this method is responsible to set uc.toBeDone
+   *            if possible.
    *
    * @return the generated contents.
    */
-  protected abstract Publishable generateContents(ClusterContext context);
+
+  protected abstract Publishable generateContents(ClusterContext context, UnitCounter uc);
 
   /**
    * Generate a key that uniquely identifies this instance to the
@@ -56,6 +61,17 @@ public abstract class SafeDepositMessage implements Message {
    */
   protected abstract String generateSafeDepositKey();
 
+	/**
+	 * Generate intermediate results if applicable.
+	 * <p>
+	 * It is up to the extending class to determine what and when intermediate
+	 * results are generated.
+	 *
+	 * @return current intermediate results or null if there are none or the
+	 *         request is not applicable (e.g. processing has finished.)
+	 */
+	protected abstract Publishable generateIntermediateResults();
+
 
   private Map<String, Long> claimTickets;  // nodeName -> claimTicket
   private boolean closeBox;
@@ -64,6 +80,8 @@ public abstract class SafeDepositMessage implements Message {
 
   private transient SafeDepositReceipt _receipt;
   private transient final Object CLAIM_MUTEX = new Object();
+
+	private String _key;
 
   /**
    * Empty constructor for publishable reconstruction.
@@ -89,6 +107,16 @@ public abstract class SafeDepositMessage implements Message {
     this.forceRehandle = forceRehandle;
     this.fillTime = fillTime;
   }
+
+	/**
+	 * Get a key that uniquely identifies this message.
+	 */
+	public String getKey() {
+		if (_key == null) {
+			_key = generateSafeDepositKey();
+		}
+		return _key;
+	}
 
   /**
    * Set the claim ticket identifying the contents to retrieve.
@@ -213,7 +241,7 @@ public abstract class SafeDepositMessage implements Message {
     preReceiptHook(serverContext);
 
     this._receipt = new SafeDepositReceipt(serverContext, claimTickets, closeBox, forceRehandle, fillTime,
-                                           generateSafeDepositKey());
+                                           getKey(), generateIntermediateResults());
 
     // if the claimTicket is valid and filled, the contents will be retrieved now.
     // if the claimTicket is valid but not yet filled, it will be returned and can be resubmitted later.

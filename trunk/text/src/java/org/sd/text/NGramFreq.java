@@ -110,7 +110,7 @@ public class NGramFreq implements Publishable, Comparable<NGramFreq> {
 	}
 
 	public void inc(long freq, Set<String> sources) {
-		freq += freq;
+		this.freq += freq;
 		if (sources != null) {
 			if (this.sources == null) this.sources = new HashSet<String>();
 			this.sources.addAll(sources);

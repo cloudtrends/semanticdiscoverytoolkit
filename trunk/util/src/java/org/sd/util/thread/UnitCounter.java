@@ -325,6 +325,12 @@ public class UnitCounter {
 
 	/**
 	 * Get the ratio of completion.
+   * <ul>
+   * <li>doneSoFar -- the total number of units of work done so far or -1 if
+   *                  counting has not been started.</li>
+   * <li>toBeDone -- the total number of units of work to be done or -1 if
+   *                 unknown.</li>
+   * </ul>
 	 *
 	 * @return {doneSoFar, toBeDone}
 	 */

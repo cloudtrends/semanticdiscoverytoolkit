@@ -21,6 +21,7 @@ package org.sd.cluster.io;
 
 import org.sd.cluster.config.ClusterException;
 import org.sd.cluster.config.Console;
+import org.sd.io.Publishable;
 import org.sd.util.StatsAccumulator;
 import org.sd.util.thread.TimeLimitedThreadPool;
 
@@ -53,7 +54,9 @@ public class SafeDepositAgent {
   private List<Callable<List<SafeDepositReceipt>>> nodeCallables;
 
   // return parameters.
-  private List<SafeDepositBox.Withdrawal> withdrawals;  // withdrawal from each node contacted.
+  private List<SafeDepositBox.Withdrawal> withdrawals;   // withdrawal from each node contacted.
+	private Map<String, Publishable> intermediateResults;  // node signature to intermediate result
+	private Map<String, SafeDepositReceipt> receipts;      // node signature to receipt
   private AtomicBoolean timedOut = new AtomicBoolean(false);
 
   private StatsAccumulator responseTimes;
@@ -88,6 +91,8 @@ public class SafeDepositAgent {
     this.withdrawalTimeout = withdrawalTimeout;
 
     this.withdrawals = new ArrayList<SafeDepositBox.Withdrawal>();
+		this.intermediateResults = new HashMap<String, Publishable>();
+		this.receipts = new HashMap<String, SafeDepositReceipt>();
 
     this.nodePool =
       new TimeLimitedThreadPool<List<SafeDepositReceipt>>(
@@ -99,7 +104,8 @@ public class SafeDepositAgent {
     this.responseCount = new AtomicInteger(0);
 
     this.nodeCallables = buildNodeCallables(console, message, responseTimeout, this.nodesToContact,
-                                            withdrawals, queryTimes, responseCount);
+                                            withdrawals, intermediateResults, receipts,
+																						queryTimes, responseCount);
 
     this.cumulativeResponseTimes = new StatsAccumulator("cumulativeRoundTripMillis");
     this.cumulativeQueryTimes = new StatsAccumulator("cumulativeQueryMillis");
@@ -114,12 +120,13 @@ public class SafeDepositAgent {
   }
 
   private final List<Callable<List<SafeDepositReceipt>>> buildNodeCallables(Console console, SafeDepositMessage message, long responseTimeout, String[] nodesToContact,
-                                                                            List<SafeDepositBox.Withdrawal> withdrawals, StatsAccumulator queryTimes,
-                                                                            AtomicInteger responseCount) {
+																											List<SafeDepositBox.Withdrawal> withdrawals, Map<String, Publishable> intermediateResults,
+																											Map<String, SafeDepositReceipt> receipts,	StatsAccumulator queryTimes,
+																											AtomicInteger responseCount) {
     final List<Callable<List<SafeDepositReceipt>>> result = new ArrayList<Callable<List<SafeDepositReceipt>>>();
 
     for (String nodeToContact : nodesToContact) {
-      result.add(new NodeCallable(console, message, responseTimeout, nodeToContact, withdrawals, queryTimes, responseCount));
+      result.add(new NodeCallable(console, message, responseTimeout, nodeToContact, withdrawals, intermediateResults, receipts, queryTimes, responseCount));
     }
 
     return result;
@@ -146,6 +153,8 @@ public class SafeDepositAgent {
     if (!this.message.equals(message)) {
       this.message = message;
       this.withdrawals.clear();
+			this.intermediateResults.clear();
+			this.receipts.clear();
       this.responseCount.set(0);
 
       for (Callable<List<SafeDepositReceipt>> callable : nodeCallables) {
@@ -169,9 +178,17 @@ public class SafeDepositAgent {
   /**
    * Initiate messaging and collect the withdrawals.
    *
-   * @return true if results were collected.
+   * @return a TransactionResult instance.
    */
-  public boolean collectWithdrawals() {
+  public TransactionResult collectWithdrawals() {
+
+//I'm here...
+//todo: return a data structure that includes the SignedResponse (ExecutionInfo?) instances
+//             that can be queried as to whether (and what) results were collected.
+//      =?TransactionResult?
+//      NOTE: this is called from ServletProcessorController.WithdrawalCallable.call() as sdAgent.collectWithdrawals()
+//
+//todo: get rid of system.outs
 
     final long starttime = System.currentTimeMillis();
     final long expirationTime = starttime + withdrawalTimeout;
@@ -180,8 +197,14 @@ public class SafeDepositAgent {
     // aggregate results
     while (System.currentTimeMillis() < expirationTime && responseCount.get() < nodesToContact.length) {
 
+			// set all nodeCallables to 'busy'
+			setAllBusy();
+
       final TimeLimitedThreadPool.ExecutionInfo<List<SafeDepositReceipt>> executionInfo =
         nodePool.execute(nodeCallables, withdrawalTimeout);
+
+			// wait until all nodeCallables have submitted and received responses i.e. are no longer 'busy' before looping again
+			while (!noneAreBusy() && System.currentTimeMillis() < expirationTime && responseCount.get() < nodesToContact.length) {}
 
       responseTimes.combineWith(executionInfo.getOperationTimes());
 
@@ -197,16 +220,24 @@ public class SafeDepositAgent {
     System.out.println(cumulativeQueryTimes);
     System.out.println("responseRatio=" + getResponseRatio() + "  loopCount=" + loopCount + "  withdrawalCount=" + withdrawals.size());
 
+		List<String> missingResponses = null;
     if (responseCount.get() < nodesToContact.length) {
+			missingResponses = new ArrayList<String>();
 System.out.print("\tmissing responses from:");
       for (Callable<List<SafeDepositReceipt>> callable : nodeCallables) {
         final NodeCallable nodeCallable = (NodeCallable)callable;
-        if (!nodeCallable.retrieved()) System.out.print(" " + nodeCallable.getNodeName().toUpperCase());
+        if (!nodeCallable.retrieved()) {
+					final String nodeName = nodeCallable.getNodeName().toUpperCase();
+					missingResponses.add(nodeName);
+					System.out.print(" " + nodeName);
+				}
       }
       System.out.println();
     }
 
-    return withdrawals.size() > 0;
+		return new TransactionResult(message, withdrawals, queryTimes,
+																 responseCount, intermediateResults,
+																 receipts, missingResponses, loopCount);
   }
 
   /**
@@ -222,6 +253,20 @@ System.out.print("\tmissing responses from:");
   public List<SafeDepositBox.Withdrawal> getWithdrawals() {
     return withdrawals;
   }
+
+	/**
+	 * Get the intermediate results.
+	 */
+	public Map<String, Publishable> getIntermediateResults() {
+		return intermediateResults;
+	}
+
+	/**
+	 * Get the receipts.
+	 */
+	public Map<String, SafeDepositReceipt> getReceipts() {
+		return receipts;
+	}
 
   /**
    * Get the number of nodes that responded.
@@ -251,6 +296,24 @@ System.out.print("\tmissing responses from:");
     return responseTimes.getN() < nodesToContact.length;
   }
 
+	private final void setAllBusy() {
+		for (Callable<List<SafeDepositReceipt>> callable : nodeCallables) {
+			final NodeCallable nodeCallable = (NodeCallable)callable;
+			nodeCallable.setBusy();
+		}
+	}
+
+	private final boolean noneAreBusy() {
+		boolean result = true;
+		for (Callable<List<SafeDepositReceipt>> callable : nodeCallables) {
+			final NodeCallable nodeCallable = (NodeCallable)callable;
+			if (nodeCallable.isBusy()) {
+				result = false;
+				break;
+			}
+		}
+		return result;
+	}
 
   private static final class NodeCallable implements Callable<List<SafeDepositReceipt>> {
     private Console console;
@@ -260,11 +323,17 @@ System.out.print("\tmissing responses from:");
     private boolean retrieved;
 
     private List<SafeDepositBox.Withdrawal> withdrawals;
+		private Map<String, Publishable> intermediateResults;
+		private Map<String, SafeDepositReceipt> receipts;
     private StatsAccumulator queryTimes;
     private AtomicInteger responseCount;
 
+		private AtomicBoolean busy = new AtomicBoolean(false);
+
+
     NodeCallable(Console console, SafeDepositMessage message, long responseTimeout, String nodeName,
-                 List<SafeDepositBox.Withdrawal> withdrawals, StatsAccumulator queryTimes,
+                 List<SafeDepositBox.Withdrawal> withdrawals, Map<String, Publishable> intermediateResults,
+								 Map<String, SafeDepositReceipt> receipts, StatsAccumulator queryTimes,
                  AtomicInteger responseCount) {
       this.console = console;
       this.message = message;
@@ -273,9 +342,23 @@ System.out.print("\tmissing responses from:");
       this.retrieved = false;
 
       this.withdrawals = withdrawals;
+			this.intermediateResults = intermediateResults;
+			this.receipts = receipts;
       this.queryTimes = queryTimes;
       this.responseCount = responseCount;
     }
+
+		public void setBusy() {
+			this.busy.set(true);
+		}
+
+		public void clearBusy() {
+			this.busy.set(false);
+		}
+
+		public boolean isBusy() {
+			return this.busy.get();
+		}
 
     public void setMessage(SafeDepositMessage message) {
       this.message = message;
@@ -311,6 +394,11 @@ System.out.print("\tmissing responses from:");
           for (Response response : responses) {
             if (response != null) {
               final SafeDepositReceipt sdReceipt = (SafeDepositReceipt)response;
+							final String signature = sdReceipt.getSignature();
+
+							intermediateResults.remove(signature);  // clear intermediate result
+							receipts.put(signature, sdReceipt);     // keep latest receipt
+
               synchronized (message) {
                 message.updateClaims(sdReceipt);
               }
@@ -333,6 +421,12 @@ System.out.print("\tmissing responses from:");
                   }
                 }
               }
+							else {
+								final Publishable intermediateResult = sdReceipt.getIntermediateResults();
+								if (intermediateResult != null) {
+									intermediateResults.put(signature, intermediateResult);
+								}
+							}
             }
           }
 
@@ -354,6 +448,8 @@ System.out.print("\tmissing responses from:");
       }
 //else System.out.println("*Reusing query results from " + nodeName.toUpperCase());
 
+			clearBusy();
+				
       return result;
     }
 
@@ -361,4 +457,67 @@ System.out.print("\tmissing responses from:");
       return this.nodeName.equals(nodeName);
     }
   }
+
+
+	/**
+	 * Container for the results of a transaction.
+	 */
+	public static final class TransactionResult {
+
+		/** The message sent for this transaction */
+		public final SafeDepositMessage message;
+
+		/** Successful withdrawals for this transaction */
+		public final List<SafeDepositBox.Withdrawal> withdrawals;
+
+		/** The query times for this transaction */
+		public final StatsAccumulator queryTimes;
+
+		/** The number of nodes that responded with a non-null withdrawal */
+		public final int responseCount;
+
+		/** Non-null intermediate results for the transaction. */
+		public final Map<String, Publishable> intermediateResults;
+
+		/** SafeDepositReceipts for the transaction for each responding node. */
+		public final Map<String, SafeDepositReceipt> receipts;
+
+		/** Names of nodes that didn't respond. */
+		public final List<String> missingResponses;
+
+		/** Number of times cluster was contacted for results. */
+		public final int loopCount;
+
+
+		public TransactionResult(SafeDepositMessage message,
+														 List<SafeDepositBox.Withdrawal> withdrawals,
+														 StatsAccumulator queryTimes,
+														 AtomicInteger responseCount,
+														 Map<String, Publishable> intermediateResults,
+														 Map<String, SafeDepositReceipt> receipts,
+														 List<String> missingResponses, int loopCount) {
+			this.message = message;
+			this.withdrawals = new ArrayList<SafeDepositBox.Withdrawal>(withdrawals);
+			this.queryTimes = new StatsAccumulator(queryTimes);
+			this.responseCount = responseCount.get();
+			this.intermediateResults = new HashMap<String, Publishable>(intermediateResults);
+			this.receipts = new HashMap<String, SafeDepositReceipt>(receipts);
+			this.missingResponses = missingResponses;
+			this.loopCount = loopCount;
+		}
+
+		/**
+		 * Determine whether this result has any withdrawals.
+		 */
+		public boolean hasWithdrawals() {
+			return withdrawals.size() > 0;
+		}
+
+		/**
+		 * Determine whether this result has any intermediate results.
+		 */
+		public boolean hasIntermediateResults() {
+			return intermediateResults.size() > 0;
+		}
+	}
 }

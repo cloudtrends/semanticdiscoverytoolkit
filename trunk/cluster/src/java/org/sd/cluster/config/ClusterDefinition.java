@@ -49,11 +49,25 @@ public class ClusterDefinition {
   public static final String ALL_NODES_GROUP = "_ALL_";
 
   public static final String getClusterDefinitionPath(String defName) {
-    final String ext = defName.endsWith(".def") ? "" : ".def";
-    String result = FileUtil.getFilename(ClusterDefinition.class, CLUSTER_DEFINITIONS_PATH + defName + ext);
-		File file = FileUtil.getFile(result);
+		return getClusterDefinitionPath(defName, null);
+	}
 
-		if (!file.exists()) {
+  public static final String getClusterDefinitionPath(String defName, String clusterDefDir) {
+    final String ext = defName.endsWith(".def") ? "" : ".def";
+		String result = null;
+		File file = null;
+
+		if (clusterDefDir != null) {
+			result = FileUtil.getFilename(clusterDefDir, defName + ext);
+			file = FileUtil.getFile(result);
+		}
+
+		if (file == null || !file.exists()) {
+			result = FileUtil.getFilename(ClusterDefinition.class, CLUSTER_DEFINITIONS_PATH + defName + ext);
+			file = FileUtil.getFile(result);
+		}
+
+		if (file == null || !file.exists()) {
 			// try testing area
 			result = result.replace("/classes/", "/unit-test-classes/");
 			file = FileUtil.getFile(result);
@@ -83,9 +97,16 @@ public class ClusterDefinition {
 	 * Package protected constructor for internal and testing access only.
 	 */
   ClusterDefinition(String defName, boolean doInit) throws IOException {
+		this(defName, doInit, null);
+	}
+
+	/**
+	 * Package protected constructor for internal and testing access only.
+	 */
+  ClusterDefinition(String defName, boolean doInit, String clusterDefDir) throws IOException {
     this.defName = defName;
     this.gateway = null;
-		this.clusterDefFile = findClusterDefinitionFile(defName);
+		this.clusterDefFile = findClusterDefinitionFile(defName, clusterDefDir);
     this.machineTree = readMachineTree(defName, clusterDefFile);
     if(this.machineTree == null) System.out.println("readMachineTree(" + defName + ") returned null result! file=" + clusterDefFile);
     this.fixedNodeNames = null;
@@ -104,7 +125,16 @@ public class ClusterDefinition {
 	 * the definition tree.
 	 */
   public ClusterDefinition(String defName, String gateway, String[] machines) throws IOException {
-    this(defName, false);
+		this(defName, gateway, machines, null);
+	}
+
+	/**
+	 * Construct with a generic definition file where we will substitute the
+	 * given gateway for the "gateway" and machine names for the "nodes" in
+	 * the definition tree.
+	 */
+  public ClusterDefinition(String defName, String gateway, String[] machines, String clusterDefDir) throws IOException {
+    this(defName, false, clusterDefDir);
 
     // walk the tree; replace root data with gateway & replacing nodeN-n with machines[N-1]-n
     this.gateway = gateway;
@@ -118,7 +148,7 @@ public class ClusterDefinition {
 	 * Construct with a named definition file that already has the machine names.
 	 */
   public ClusterDefinition(String defName) throws IOException {
-    this(defName, true);
+    this(defName, true, null);
   }
 
 	/**
@@ -156,12 +186,12 @@ public class ClusterDefinition {
 		return clusterDefFile;
 	}
 
-	private final File findClusterDefinitionFile(String defName) {
+	private final File findClusterDefinitionFile(String defName, String clusterDefDir) {
 		File result = null;
 
 		if (defName != null) {
 			// First try to find a persisted cluster definition within the deployed code
-			final String clusterdefFilename = getClusterDefinitionPath(defName);
+			final String clusterdefFilename = getClusterDefinitionPath(defName, clusterDefDir);
 			result = FileUtil.getFile(clusterdefFilename);
 			if (!result.exists()) {
 				// Next look at the "active" cluster def

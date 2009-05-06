@@ -430,7 +430,9 @@ public class TestBerkeleyDb extends TestCase {
       data[i][1] = String.valueOf(i);
     }
 
-    final String filename = FileUtil.getFilename("/tmp/TestBerkeleyDb", "bdb/testMarker");
+		final String testRoot = "/tmp/TestBerkeleyDb";
+		new File(testRoot).delete();  // clean up
+    final String filename = FileUtil.getFilename(testRoot, "bdb/testMarker");
     final File dbDir = new File(filename);
 
     DbHandle dbHandle = null;
@@ -447,7 +449,7 @@ public class TestBerkeleyDb extends TestCase {
 
       // delay to allow final elements to flush
       Thread.sleep(100);
-      assertEquals(FileUtil.countLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker"),41);
+      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),41);
 
       // test restart and roll forward
       iter = dbHandle.iterator(DbTraversal.KEY_ORDER);
@@ -460,11 +462,11 @@ public class TestBerkeleyDb extends TestCase {
       Thread.sleep(100);
 
       // check for backup file and bufferSize
-      assertTrue(new File("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker").exists());
-      assertEquals(FileUtil.countLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker"),136);
+      assertTrue(new File(testRoot + "/bdb/testMarker/TestDbMarker.marker").exists());
+      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),136);
 
       // verify contents
-      ArrayList<String> markerLines = FileUtil.readLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker");
+      ArrayList<String> markerLines = FileUtil.readLines(testRoot + "/bdb/testMarker/TestDbMarker.marker");
       for(int i = 0; i < markerLines.size(); i++){
         String line = markerLines.get(i);
         assertEquals(i + ":" + line, data[i][0], line);
@@ -486,11 +488,11 @@ public class TestBerkeleyDb extends TestCase {
       // delay to allow final elements to flush
       Thread.sleep(100);
       // check for backup file and bufferSize
-      assertTrue(new File("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker").exists());
-      assertEquals(FileUtil.countLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker"),166);
+      assertTrue(new File(testRoot + "/bdb/testMarker/TestDbMarker.marker").exists());
+      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),166);
 
       // verify contents
-      ArrayList<String> reverseMarkerLines = FileUtil.readLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker");
+      ArrayList<String> reverseMarkerLines = FileUtil.readLines(testRoot + "/bdb/testMarker/TestDbMarker.marker");
       int dataIndex = 0;
       for(int i = 0; i < 136; i++){
         String line = reverseMarkerLines.get(i);
@@ -515,8 +517,8 @@ public class TestBerkeleyDb extends TestCase {
       // delay to allow final elements to flush
       Thread.sleep(100);
       // check for backup file and bufferSize
-      assertTrue(new File("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker").exists());
-      assertEquals(FileUtil.countLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker"),271);
+      assertTrue(new File(testRoot + "/bdb/testMarker/TestDbMarker.marker").exists());
+      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),271);
     }
     finally {
       if (iter != null) iter.close();
@@ -527,7 +529,7 @@ public class TestBerkeleyDb extends TestCase {
     }
   }
 
-  public void testMarkerLongKeyOrder() throws IOException, InterruptedException{
+  public void testMarkerLongKeyOrder() throws IOException, InterruptedException {
     long[] keys = new long[136];
     String[] values = new String[136];
     for(int i = 0; i < 136; i++){
@@ -535,7 +537,8 @@ public class TestBerkeleyDb extends TestCase {
       values[i] = String.valueOf(i);
     }
 
-    final String filename = FileUtil.getFilename("/tmp/TestBerkeleyDb", "bdb/testMarker");
+		final String testRoot = "/tmp/TestBerkeleyDb";
+    final String filename = FileUtil.getFilename(testRoot, "bdb/testMarker");
     final File dbDir = new File(filename);
 
     DbHandle dbHandle = null;
@@ -552,7 +555,7 @@ public class TestBerkeleyDb extends TestCase {
 
       // delay to allow final elements to flush
       Thread.sleep(100);
-      assertEquals(FileUtil.countLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker"),41);
+      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),41);
 
       // test restart and roll forward
       iter = dbHandle.iteratorLong(DbTraversal.KEY_ORDER);
@@ -565,11 +568,11 @@ public class TestBerkeleyDb extends TestCase {
       Thread.sleep(100);
 
       // check for backup file and bufferSize
-      assertTrue(new File("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker").exists());
-      assertEquals(FileUtil.countLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker"),136);
+      assertTrue(new File(testRoot + "/bdb/testMarker/TestDbMarker.marker").exists());
+      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),136);
 
       // verify contents
-      ArrayList<String> markerLines = FileUtil.readLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker");
+      ArrayList<String> markerLines = FileUtil.readLines(testRoot + "/bdb/testMarker/TestDbMarker.marker");
       for(int i = 0; i < markerLines.size(); i++){
         String line = markerLines.get(i);
         assertEquals(i + ":" + line, values[i], line);
@@ -591,11 +594,11 @@ public class TestBerkeleyDb extends TestCase {
       // delay to allow final elements to flush
       Thread.sleep(100);
       // check for backup file and bufferSize
-      assertTrue(new File("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker").exists());
-      assertEquals(FileUtil.countLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker"),166);
+      assertTrue(new File(testRoot + "/bdb/testMarker/TestDbMarker.marker").exists());
+      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),166);
 
       // verify contents
-      ArrayList<String> reverseMarkerLines = FileUtil.readLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker");
+      ArrayList<String> reverseMarkerLines = FileUtil.readLines(testRoot + "/bdb/testMarker/TestDbMarker.marker");
       int dataIndex = 0;
       for(int i = 0; i < 136; i++){
         String line = reverseMarkerLines.get(i);
@@ -620,8 +623,8 @@ public class TestBerkeleyDb extends TestCase {
       // delay to allow final elements to flush
       Thread.sleep(100);
       // check for backup file and bufferSize
-      assertTrue(new File("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker").exists());
-      assertEquals(FileUtil.countLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker"),271);
+      assertTrue(new File(testRoot + "/bdb/testMarker/TestDbMarker.marker").exists());
+      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),271);
     }
     finally {
       if (iter != null) iter.close();
@@ -632,7 +635,7 @@ public class TestBerkeleyDb extends TestCase {
     }
   }
 
-  public void testMarkerBuffer() throws IOException, InterruptedException{
+  public void testMarkerBuffer() throws IOException, InterruptedException {
     long[] keys = new long[1136];
     String[] values = new String[1136];
     for(int i = 0; i < 1136; i++){
@@ -640,7 +643,8 @@ public class TestBerkeleyDb extends TestCase {
       values[i] = String.valueOf(i);
     }
 
-    final String filename = FileUtil.getFilename("/tmp/TestBerkeleyDb", "bdb/testMarker");
+		final String testRoot = "/tmp/TestBerkeleyDb";
+    final String filename = FileUtil.getFilename(testRoot, "bdb/testMarker");
     final File dbDir = new File(filename);
 
     DbHandle dbHandle = null;
@@ -659,20 +663,20 @@ public class TestBerkeleyDb extends TestCase {
       Thread.sleep(100);
 
       // check for backup file and bufferSize
-      assertTrue(new File("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker").exists());
-      assertTrue(new File("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker.bup").exists());
-      assertEquals(FileUtil.countLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker"),136);
-      assertEquals(FileUtil.countLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker.bup"),1000);
+      assertTrue(new File(testRoot + "/bdb/testMarker/TestDbMarker.marker").exists());
+      assertTrue(new File(testRoot + "/bdb/testMarker/TestDbMarker.marker.bup").exists());
+      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),136);
+      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker.bup"),1000);
 
       // verify contents
-      ArrayList<String> markerLinesBup = FileUtil.readLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker.bup");
+      ArrayList<String> markerLinesBup = FileUtil.readLines(testRoot + "/bdb/testMarker/TestDbMarker.marker.bup");
       int dataIndex = 0;
       for(int i = 0; i < markerLinesBup.size(); i++){
         String line = markerLinesBup.get(i);
         assertEquals(i + ":" + line, values[dataIndex], line);
         dataIndex++;
       }
-      ArrayList<String> markerLines = FileUtil.readLines("/tmp/TestBerkeleyDb/bdb/testMarker/TestDbMarker.marker");
+      ArrayList<String> markerLines = FileUtil.readLines(testRoot + "/bdb/testMarker/TestDbMarker.marker");
       for(int i = 0; i < markerLines.size(); i++){
         String line = markerLines.get(i);
         assertEquals(i + ":" + line, values[dataIndex], line);
