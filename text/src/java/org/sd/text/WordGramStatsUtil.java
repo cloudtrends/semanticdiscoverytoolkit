@@ -21,6 +21,7 @@ package org.sd.text;
 
 import org.sd.util.StringUtil;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Utility methods for working with WordGramStats.
@@ -236,4 +238,58 @@ public class WordGramStatsUtil {
   protected static boolean isBoundaryChar(char c) {
     return (c == ' ');  // todo: should we check for non-char instead of a space?
   }
+
+
+	public static final NGramFreq[] getTopNGrams(Collection<NGramFreq> ngrams, int countLimit, int minFreq,
+																							 WordGramStat.NGramAcceptor acceptor, AtomicBoolean die,
+																							 boolean isSorted, boolean collapse,
+																							 Long timeLimit, Long waitMillis) {
+		List<NGramFreq> result = null;
+
+    if (ngrams != null) {
+			result = new ArrayList<NGramFreq>();
+
+			int index = 0;
+			final long startTime = System.currentTimeMillis();
+			for (Iterator<NGramFreqSet> iter = new NGramFreqSetIterator(ngrams, isSorted, collapse/*collapsible*/); iter.hasNext(); ) {
+				final NGramFreqSet ngramSet = iter.next();
+				if (minFreq > 0 && ngramSet.getFreq() < minFreq) break;
+
+				final List<NGramFreq> freqs = collapse ?
+					(timeLimit == null ? ngramSet.getCollapsedNGrams(die) : ngramSet.getCollapsedNGrams(timeLimit, waitMillis))
+					: ngramSet.getNGrams();
+
+				for (NGramFreq freq : freqs) {
+					if (acceptor == null || acceptor.accept(freq)) {
+						result.add(freq);
+						++index;
+						if (countLimit > 0 && index >= countLimit) break;
+					}
+				}
+				
+				if (countLimit > 0 && index >= countLimit) break;
+				if (minFreq > 0 && ngramSet.getFreq() == minFreq) break;
+				
+				if (timeIsUp(die, startTime, timeLimit)) {
+					collapse = false;  // don't collapse any more
+				}
+			}
+		}
+
+    return result == null ? null : result.toArray(new NGramFreq[result.size()]);
+	}
+
+	private static final boolean timeIsUp(AtomicBoolean die, long startTime, Long timeLimit) {
+		boolean result = false;
+
+		if ((die != null && die.get())) {
+			result = true;
+		}
+		else if (timeLimit != null && (System.currentTimeMillis() - startTime) > timeLimit) {
+			if (die != null) die.set(true);
+			result = true;
+		}
+
+		return result;
+	}
 }

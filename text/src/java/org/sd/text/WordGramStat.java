@@ -425,56 +425,18 @@ public class WordGramStat {
 	 */
 	public final NGramFreq[] getTopNGrams(int countLimit, int minFreq, NGramAcceptor acceptor,
 																				AtomicBoolean die) {
-		boolean collapse = this.collapse;  // shadow so we can disable when timeLimits are hit
-		List<NGramFreq> result = null;
+		NGramFreq[] result = null;
 
     if (ngram2freq != null) {
 			synchronized (ngram2freq) {
-				result = new ArrayList<NGramFreq>();
-
-				int index = 0;
-				final long startTime = System.currentTimeMillis();
-				for (Iterator<NGramFreqSet> iter = new NGramFreqSetIterator(ngram2freq.values(), false, collapse/*collapsible*/); iter.hasNext(); ) {
-					final NGramFreqSet ngramSet = iter.next();
-					if (minFreq > 0 && ngramSet.getFreq() < minFreq) break;
-
-					final List<NGramFreq> freqs = collapse ?
-						(timeLimit == null ? ngramSet.getCollapsedNGrams(die) : ngramSet.getCollapsedNGrams(timeLimit, waitMillis))
-						: ngramSet.getNGrams();
-
-					for (NGramFreq freq : freqs) {
-						if (acceptor == null || acceptor.accept(freq)) {
-							result.add(freq);
-							++index;
-							if (countLimit > 0 && index >= countLimit) break;
-						}
-					}
-
-					if (countLimit > 0 && index >= countLimit) break;
-					if (minFreq > 0 && ngramSet.getFreq() == minFreq) break;
-
-					if (timeIsUp(die, startTime)) {
-						collapse = false;  // don't collapse any more
-					}
-				}
+				result =
+					WordGramStatsUtil.getTopNGrams(ngram2freq.values(), countLimit,
+																				 minFreq, acceptor, die, false,
+																				 collapse, timeLimit, waitMillis);
 			}
 		}
 
-    return result == null ? null : result.toArray(new NGramFreq[result.size()]);
-	}
-
-	private final boolean timeIsUp(AtomicBoolean die, long startTime) {
-		boolean result = false;
-
-		if ((die != null && die.get())) {
-			result = true;
-		}
-		else if (timeLimit != null && (System.currentTimeMillis() - startTime) > timeLimit) {
-			if (die != null) die.set(true);
-			result = true;
-		}
-
-		return result;
+    return result;
 	}
 
 	/**

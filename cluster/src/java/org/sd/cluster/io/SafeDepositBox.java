@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.sd.cio.MessageHelper;
 import org.sd.io.Publishable;
+import org.sd.util.thread.UnitCounter;
 
 /**
  * Container for SafeDepositMessage results waiting to be claimed.
@@ -111,9 +112,9 @@ public class SafeDepositBox implements Shutdownable {
    *
    * @return the claim number to use to access the drawer.
    */
-  public long reserveDrawer(long forMillis, String key) {
+  public long reserveDrawer(long forMillis, String key, UnitCounter uc) {
     final long result = NEXT_NUM.getAndIncrement();
-    claimNum2Drawer.put(result, new Drawer(forMillis));
+    claimNum2Drawer.put(result, new Drawer(forMillis, uc));
 
     if (key != null) {
       key2claimNum.put(key, result);
@@ -166,6 +167,22 @@ public class SafeDepositBox implements Shutdownable {
   }
 
   /**
+   * Get the UnitCounter associated with the claim number.
+   *
+   * @return the UnitCounter or null if not found/available/present.
+   */
+  public UnitCounter getUnitCounter(long claimNumber) {
+    UnitCounter result = null;
+
+    final Drawer drawer = claimNum2Drawer.get(claimNumber);
+    if (drawer != null) {
+      result = drawer.getUnitCounter();
+    }
+
+    return result;
+  }
+
+  /**
    * Withdraw the contents associated with the claim number, optionally
    * closing the box if the contents are retrieved. Note that when closed,
    * the drawer can no longer be accessed.
@@ -177,6 +194,7 @@ public class SafeDepositBox implements Shutdownable {
 
     final Drawer drawer = claimNum2Drawer.get(claimNumber);
     WithdrawalCode withdrawalCode = null;
+    UnitCounter uc = null;
     Publishable contents = null;
     long openedTime = 0;
     long depositTime = 0;
@@ -189,6 +207,7 @@ public class SafeDepositBox implements Shutdownable {
       withdrawalCode = (claimNumber < claimLimit) ? WithdrawalCode.EXPIRED : WithdrawalCode.UNRESERVED;
     }
     else {
+      uc = drawer.getUnitCounter();
       contents = drawer.getContents();
       withdrawalCode = (drawer.hasDeposit()) ? WithdrawalCode.RETRIEVED : WithdrawalCode.NO_DEPOSIT;
       openedTime = drawer.getOpenedTime();
@@ -205,7 +224,7 @@ public class SafeDepositBox implements Shutdownable {
 
     return new Withdrawal(claimNumber, withdrawalCode, contents,
                           openedTime, depositTime, withdrawalTime,
-                          expirationTime);
+                          expirationTime, uc);
   }
 
   /**
@@ -256,6 +275,7 @@ public class SafeDepositBox implements Shutdownable {
     private long depositTime;
     private long withdrawalTime;
     private long expirationTime;
+    private long[] completionRatio;
 
     /**
      * Empty constructor for publishable reconstruction.
@@ -267,7 +287,8 @@ public class SafeDepositBox implements Shutdownable {
      * Construct with the given params.
      */
     public Withdrawal(long claimNumber, WithdrawalCode withdrawalCode, Publishable contents,
-                      long openedTime, long depositTime, long withdrawalTime, long expirationTime) {
+                      long openedTime, long depositTime, long withdrawalTime, long expirationTime,
+                      UnitCounter uc) {
       this.claimNumber = claimNumber;
       this.withdrawalCode = withdrawalCode;
       this.contents = contents;
@@ -275,6 +296,7 @@ public class SafeDepositBox implements Shutdownable {
       this.depositTime = depositTime;
       this.withdrawalTime = withdrawalTime;
       this.expirationTime = expirationTime;
+      this.completionRatio = uc == null ? null : uc.getCompletionRatio();
     }
 
     /**
@@ -327,6 +349,21 @@ public class SafeDepositBox implements Shutdownable {
     }
 
     /**
+     * Get the completion ratio from the process's unit counter.
+     * <ul>
+     * <li>doneSoFar -- the total number of units of work done so far or -1 if
+     *                  counting has not been started.</li>
+     * <li>toBeDone -- the total number of units of work to be done or -1 if
+     *                 unknown.</li>
+     * </ul>
+     *
+     * @return {doneSoFar, toBeDone} or null if unavailable.
+     */
+    public long[] getCompletionRatio() {
+      return completionRatio;
+    }
+
+    /**
      * Write this message to the dataOutput stream such that this message
      * can be completely reconstructed through this.read(dataInput).
      *
@@ -340,6 +377,15 @@ public class SafeDepositBox implements Shutdownable {
       dataOutput.writeLong(depositTime);
       dataOutput.writeLong(withdrawalTime);
       dataOutput.writeLong(expirationTime);
+      if (completionRatio == null) {
+        dataOutput.writeInt(-1);
+      }
+      else {
+        dataOutput.writeInt(completionRatio.length);
+        for (long value : completionRatio) {
+          dataOutput.writeLong(value);
+        }
+      }
     }
 
     /**
@@ -362,6 +408,16 @@ public class SafeDepositBox implements Shutdownable {
       this.depositTime = dataInput.readLong();
       this.withdrawalTime = dataInput.readLong();
       this.expirationTime = dataInput.readLong();
+      final int numValues = dataInput.readInt();
+      if (numValues < 0) {
+        this.completionRatio = null;
+      }
+      else {
+        this.completionRatio = new long[numValues];
+        for (int i = 0; i < numValues; ++i) {
+          completionRatio[i] = dataInput.readLong();
+        }
+      }
     }
   }
 
@@ -373,6 +429,7 @@ public class SafeDepositBox implements Shutdownable {
     private long forMillis;
     private long expirationTime;
     private long agedTime;
+    private UnitCounter uc;
     private Publishable publishable;
 
     private long openedTime;
@@ -389,14 +446,17 @@ public class SafeDepositBox implements Shutdownable {
      *                   If less than 0, this drawer will be incinerated
      *                   this magnitude of milliseconds after deposit or
      *                   when memory gets low (time-limited caching).
+     * @param uc  The UnitCounter that is tracking process progress.
      */
-    Drawer(long forMillis) {
+    Drawer(long forMillis, UnitCounter uc) {
       this.forMillis = forMillis;
       this.openedTime = System.currentTimeMillis();
 
       // if <=0, don't expire on timer.
       this.expirationTime = forMillis <= 0 ? 0 : forMillis + openedTime;
       this.agedTime = 0;
+
+      this.uc = uc;
     }
 
     /**
@@ -438,6 +498,13 @@ public class SafeDepositBox implements Shutdownable {
      */
     boolean isAged(long currentTime) {
       return agedTime == 0 ? false : agedTime >= currentTime;
+    }
+
+    /**
+     * Return the UnitCounter associated with this drawer.
+     */
+    UnitCounter getUnitCounter() {
+      return uc;
     }
 
     /**
