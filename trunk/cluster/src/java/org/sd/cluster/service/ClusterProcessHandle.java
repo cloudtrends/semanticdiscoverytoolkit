@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.cluster.io.SafeDepositAgent;
 import org.sd.cluster.io.SafeDepositMessage;
 import org.sd.cluster.io.SafeDepositReceipt;
+import org.sd.io.Publishable;
 import org.sd.util.StatsAccumulator;
 
 /**
@@ -36,6 +37,7 @@ import org.sd.util.StatsAccumulator;
  */
 public class ClusterProcessHandle implements ProcessHandle {
 
+	private String serviceKey;
 	private ProcessController controller;
 	private SafeDepositMessage serviceTask;
 	private ServiceResults results;
@@ -49,10 +51,12 @@ public class ClusterProcessHandle implements ProcessHandle {
 	private AtomicBoolean running = new AtomicBoolean(false);
 	private AtomicBoolean die = new AtomicBoolean (false);
 
-	public ClusterProcessHandle(ProcessController controller,
+	public ClusterProcessHandle(String serviceKey,
+															ProcessController controller,
                               SafeDepositMessage serviceTask,
-                              long requestTimeOut, long withdrawalTimeout,
+                              long requestTimeout, long withdrawalTimeout,
                               boolean verbose) {
+		this.serviceKey = serviceKey;
 		this.controller = controller;
 		this.serviceTask = serviceTask;
 		this.results = new ServiceResults(serviceTask);
@@ -76,7 +80,7 @@ public class ClusterProcessHandle implements ProcessHandle {
 
 				// send service task message through controller
 				final List<SafeDepositAgent.TransactionResult> responses =
-					controller.doProcessing(serviceTask, requestTimeout, withdrawalTimeout);
+					controller.doProcessing(serviceTask, requestTimeout, withdrawalTimeout, verbose);
 
 				if (verbose) {
 					System.out.println(new Date() + ": ClusterProcessHandle received " +
@@ -111,6 +115,14 @@ public class ClusterProcessHandle implements ProcessHandle {
 	}
 
 	/**
+	 * Get a unique key that identifies this handle and distinguishes it from
+	 * others.
+	 */
+	public String getServiceKey() {
+		return serviceKey;
+	}
+
+	/**
 	 * Get an error from the process if present.
 	 */
 	public Throwable getError() {
@@ -132,19 +144,29 @@ public class ClusterProcessHandle implements ProcessHandle {
 	}
 
 	/**
-	 * Determine whether this handle has results.
+	 * Determine whether this handle has retrievable results.
 	 */
 	public boolean hasResults() {
 		return finished() && results.getNumResults() > 0;
 	}
 
 	/**
-	 * Get the results from this handle if available.
+	 * Get the results from this handle if processing is finished and results
+	 * are available.
 	 *
 	 * @return the results or null.
 	 */
 	public ServiceResults getResults() {
 		return finished() ? results : null;
+	}
+
+	/**
+	 * Reset finished from "true" to "false".
+	 *
+	 * @return true if successfully reset; otherwise, false.
+	 */
+	public boolean resetFinished() {
+		return finished.compareAndSet(true, false);
 	}
 
 	/**
@@ -169,6 +191,7 @@ public class ClusterProcessHandle implements ProcessHandle {
     final long[] result = new long[]{0L, 0L};
 
 //todo: check/test the logic of this method...
+//todo: add in getting/returning sdReceipt.getAverageTimePerUnit()
 
     int numUnknownTxns = 0;
     int numUnknownNodes = 0;
@@ -211,8 +234,8 @@ public class ClusterProcessHandle implements ProcessHandle {
 
     result[1] =
       (long)nodeToBeDoneStats.getSum() +
-      (long)Math.ceil(numUnknownTxns * txnToBeDoneStats.getMean()) +
-      (long)Math.ceil(numUnknownNodes * nodeToBeDoneStats.getMean());
+      (long)Math.ceil(numUnknownTxns * Math.max(1.0, txnToBeDoneStats.getMean())) +
+      (long)Math.ceil(numUnknownNodes * Math.max(1.0, nodeToBeDoneStats.getMean()));
 
     return result;
   }
@@ -224,5 +247,29 @@ public class ClusterProcessHandle implements ProcessHandle {
 		if (controller != null) {
 			controller.close();
 		}
+	}
+
+	/**
+	 * Wait until the process has finished or a signal to die has been issued,
+	 * returning the current results.
+	 *
+	 * @param checkInterval  Amount of time to wait between checking for termination.
+	 * @param die  Flag to monitor for signal to end (ok if null).
+	 *
+	 * @return non-null ServiceResults, possibly incomplete.
+	 */
+	public ServiceResults runUntilDone(long checkInterval, AtomicBoolean die) {
+
+		while (!finished() && (die == null || !die.get())) {
+			try {
+				Thread.sleep(checkInterval);
+			}
+			catch (InterruptedException e) {
+				// time to go.
+				break;
+			}
+		}
+
+		return results;
 	}
 }

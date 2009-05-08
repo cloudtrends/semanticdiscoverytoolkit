@@ -129,7 +129,7 @@ public class UnitCounter {
 	}
 
 	/**
-	 * Reset the number if units to be done.
+	 * Reset the number of units to be done.
 	 */
 	public void setToBeDone(long toBeDone) {
 		this.toBeDone = toBeDone;

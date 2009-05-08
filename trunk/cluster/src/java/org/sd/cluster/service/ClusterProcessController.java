@@ -52,11 +52,11 @@ public class ClusterProcessController extends ProcessController {
     this.transactionCallables = null;
 	}
 
-	public List<SafeDepositAgent.TransactionResult> doProcessing(SafeDepositMessage serviceTask, long responseTimeout, long withdrawalTimeout) {
+	public List<SafeDepositAgent.TransactionResult> doProcessing(SafeDepositMessage serviceTask, long responseTimeout, long withdrawalTimeout, boolean verbose) {
 
 		// Create or update safe deposit agents.
 		if (safeDepositAgents == null) {
-			initialize(serviceTask, responseTimeout, withdrawalTimeout);
+			initialize(serviceTask, responseTimeout, withdrawalTimeout, verbose);
 		}
 		else {
 			for (SafeDepositAgent sdAgent : safeDepositAgents) {
@@ -103,7 +103,7 @@ public class ClusterProcessController extends ProcessController {
 		}
 	}
 
-  private synchronized void initialize(SafeDepositMessage serviceTask, long responseTimeout, long withdrawalTimeout) {
+  private synchronized void initialize(SafeDepositMessage serviceTask, long responseTimeout, long withdrawalTimeout, boolean verbose) {
     if (safeDepositAgents == null) {
       safeDepositAgents = new SafeDepositAgent[consoles.size()];
       transactionCallables = new ArrayList<Callable<SafeDepositAgent.TransactionResult>>();
@@ -112,7 +112,7 @@ public class ClusterProcessController extends ProcessController {
       //      (usually the same group in cluster definitions like "querier")
       int index = 0;
       for (ClusterServiceConnector.ConsoleInfo consoleInfo : consoles) {
-        final SafeDepositAgent sdAgent = new SafeDepositAgent(consoleInfo.console, serviceTask, consoleInfo.nodesToContact, 3, responseTimeout, withdrawalTimeout);
+        final SafeDepositAgent sdAgent = new SafeDepositAgent(consoleInfo.console, serviceTask, consoleInfo.nodesToContact, 3, responseTimeout, withdrawalTimeout, verbose);
         safeDepositAgents[index++] = sdAgent;
 //System.out.println("ServletProcessorController.initilalize(" + (index - 1) + ")");
         transactionCallables.add(new TransactionCallable(sdAgent));

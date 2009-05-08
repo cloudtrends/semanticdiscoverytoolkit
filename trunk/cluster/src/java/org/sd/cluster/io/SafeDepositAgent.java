@@ -49,13 +49,13 @@ public class SafeDepositAgent {
   private Map<String, Integer> name2pos;
   private long responseTimeout;
   private long withdrawalTimeout;
+	private boolean verbose;
 
   private TimeLimitedThreadPool<List<SafeDepositReceipt>> nodePool;
   private List<Callable<List<SafeDepositReceipt>>> nodeCallables;
 
   // return parameters.
   private List<SafeDepositBox.Withdrawal> withdrawals;   // withdrawal from each node contacted.
-	private Map<String, Publishable> intermediateResults;  // node signature to intermediate result
 	private Map<String, SafeDepositReceipt> receipts;      // node signature to receipt
   private AtomicBoolean timedOut = new AtomicBoolean(false);
 
@@ -81,7 +81,8 @@ public class SafeDepositAgent {
    * @param withdrawalTimeout    Millis to wait for withdrawals before giving up.
    */
   public SafeDepositAgent(Console console, SafeDepositMessage message, String[] nodesToContact,
-                          int groupSize, long responseTimeout, long withdrawalTimeout) {
+                          int groupSize, long responseTimeout, long withdrawalTimeout,
+													boolean verbose) {
     this.console = console;
     this.message = message;
     this.nodesToContact = console.explode(nodesToContact);
@@ -89,9 +90,9 @@ public class SafeDepositAgent {
     this.name2pos = buildName2Pos(this.nodesToContact);
     this.responseTimeout = responseTimeout;
     this.withdrawalTimeout = withdrawalTimeout;
+		this.verbose = verbose;
 
     this.withdrawals = new ArrayList<SafeDepositBox.Withdrawal>();
-		this.intermediateResults = new HashMap<String, Publishable>();
 		this.receipts = new HashMap<String, SafeDepositReceipt>();
 
     this.nodePool =
@@ -103,9 +104,16 @@ public class SafeDepositAgent {
     this.queryTimes = new StatsAccumulator("queryMillis");
     this.responseCount = new AtomicInteger(0);
 
-    this.nodeCallables = buildNodeCallables(console, message, responseTimeout, this.nodesToContact,
-                                            withdrawals, intermediateResults, receipts,
-																						queryTimes, responseCount);
+		if (verbose) {
+			System.out.println(new Date() + ": SafeDepositAgent.responseTimeout=" +
+												 responseTimeout + " .withdrawalTimeout=" +
+												 withdrawalTimeout + " .numNodesToContact=" +
+												 nodesToContact.length);
+		}
+
+    this.nodeCallables = buildNodeCallables(console, message, responseTimeout, withdrawalTimeout,
+																						this.nodesToContact, withdrawals, receipts,
+																						queryTimes, responseCount, verbose);
 
     this.cumulativeResponseTimes = new StatsAccumulator("cumulativeRoundTripMillis");
     this.cumulativeQueryTimes = new StatsAccumulator("cumulativeQueryMillis");
@@ -119,14 +127,19 @@ public class SafeDepositAgent {
     return result;
   }
 
-  private final List<Callable<List<SafeDepositReceipt>>> buildNodeCallables(Console console, SafeDepositMessage message, long responseTimeout, String[] nodesToContact,
-																											List<SafeDepositBox.Withdrawal> withdrawals, Map<String, Publishable> intermediateResults,
-																											Map<String, SafeDepositReceipt> receipts,	StatsAccumulator queryTimes,
-																											AtomicInteger responseCount) {
+  private final List<Callable<List<SafeDepositReceipt>>> buildNodeCallables(
+		Console console, SafeDepositMessage message, long responseTimeout,
+		long withdrawalTimeout, String[] nodesToContact,
+		List<SafeDepositBox.Withdrawal> withdrawals,
+		Map<String, SafeDepositReceipt> receipts,	StatsAccumulator queryTimes,
+		AtomicInteger responseCount, boolean verbose) {
+
     final List<Callable<List<SafeDepositReceipt>>> result = new ArrayList<Callable<List<SafeDepositReceipt>>>();
 
     for (String nodeToContact : nodesToContact) {
-      result.add(new NodeCallable(console, message, responseTimeout, nodeToContact, withdrawals, intermediateResults, receipts, queryTimes, responseCount));
+      result.add(new NodeCallable(console, message, responseTimeout, withdrawalTimeout,
+																	nodeToContact, withdrawals, receipts, queryTimes,
+																	responseCount, verbose));
     }
 
     return result;
@@ -153,7 +166,6 @@ public class SafeDepositAgent {
     if (!this.message.equals(message)) {
       this.message = message;
       this.withdrawals.clear();
-			this.intermediateResults.clear();
 			this.receipts.clear();
       this.responseCount.set(0);
 
@@ -182,62 +194,42 @@ public class SafeDepositAgent {
    */
   public TransactionResult collectWithdrawals() {
 
-//I'm here...
-//todo: return a data structure that includes the SignedResponse (ExecutionInfo?) instances
-//             that can be queried as to whether (and what) results were collected.
-//      =?TransactionResult?
-//      NOTE: this is called from ServletProcessorController.WithdrawalCallable.call() as sdAgent.collectWithdrawals()
-//
-//todo: get rid of system.outs
-
-    final long starttime = System.currentTimeMillis();
-    final long expirationTime = starttime + withdrawalTimeout;
-    int loopCount = 0;
+		// NOTE: this is called from ServletProcessorController.WithdrawalCallable.call() as sdAgent.collectWithdrawals()
 
     // aggregate results
-    while (System.currentTimeMillis() < expirationTime && responseCount.get() < nodesToContact.length) {
+		final TimeLimitedThreadPool.ExecutionInfo<List<SafeDepositReceipt>> executionInfo =
+			nodePool.execute(nodeCallables, withdrawalTimeout);
 
-			// set all nodeCallables to 'busy'
-			setAllBusy();
-
-      final TimeLimitedThreadPool.ExecutionInfo<List<SafeDepositReceipt>> executionInfo =
-        nodePool.execute(nodeCallables, withdrawalTimeout);
-
-			// wait until all nodeCallables have submitted and received responses i.e. are no longer 'busy' before looping again
-			while (!noneAreBusy() && System.currentTimeMillis() < expirationTime && responseCount.get() < nodesToContact.length) {}
-
-      responseTimes.combineWith(executionInfo.getOperationTimes());
-
-      ++loopCount;
-    }
+		responseTimes.combineWith(executionInfo.getOperationTimes());
 
     cumulativeQueryTimes.combineWith(queryTimes);
     cumulativeResponseTimes.combineWith(responseTimes);
 
-    System.out.println(responseTimes);
-    System.out.println(cumulativeResponseTimes);
-    System.out.println(queryTimes);
-    System.out.println(cumulativeQueryTimes);
-    System.out.println("responseRatio=" + getResponseRatio() + "  loopCount=" + loopCount + "  withdrawalCount=" + withdrawals.size());
+		if (false && verbose) {
+			System.out.println(responseTimes);
+			System.out.println(cumulativeResponseTimes);
+			System.out.println(queryTimes);
+			System.out.println(cumulativeQueryTimes);
+			System.out.println("responseRatio=" + getResponseRatio() + "  withdrawalCount=" + withdrawals.size());
+		}
 
 		List<String> missingResponses = null;
     if (responseCount.get() < nodesToContact.length) {
 			missingResponses = new ArrayList<String>();
-System.out.print("\tmissing responses from:");
+			if (verbose) System.out.print("\tmissing responses from:");
       for (Callable<List<SafeDepositReceipt>> callable : nodeCallables) {
         final NodeCallable nodeCallable = (NodeCallable)callable;
         if (!nodeCallable.retrieved()) {
 					final String nodeName = nodeCallable.getNodeName().toUpperCase();
 					missingResponses.add(nodeName);
-					System.out.print(" " + nodeName);
+					if (verbose) System.out.print(" " + nodeName);
 				}
       }
-      System.out.println();
+      if (verbose) System.out.println();
     }
 
 		return new TransactionResult(message, withdrawals, queryTimes,
-																 responseCount, intermediateResults,
-																 receipts, missingResponses, loopCount);
+																 responseCount, receipts, missingResponses);
   }
 
   /**
@@ -253,13 +245,6 @@ System.out.print("\tmissing responses from:");
   public List<SafeDepositBox.Withdrawal> getWithdrawals() {
     return withdrawals;
   }
-
-	/**
-	 * Get the intermediate results.
-	 */
-	public Map<String, Publishable> getIntermediateResults() {
-		return intermediateResults;
-	}
 
 	/**
 	 * Get the receipts.
@@ -319,11 +304,12 @@ System.out.print("\tmissing responses from:");
     private Console console;
     private SafeDepositMessage message;
     private long responseTimeout;
+		private long withdrawalTimeout;
     private String nodeName;
     private boolean retrieved;
+		private boolean verbose;
 
     private List<SafeDepositBox.Withdrawal> withdrawals;
-		private Map<String, Publishable> intermediateResults;
 		private Map<String, SafeDepositReceipt> receipts;
     private StatsAccumulator queryTimes;
     private AtomicInteger responseCount;
@@ -331,21 +317,25 @@ System.out.print("\tmissing responses from:");
 		private AtomicBoolean busy = new AtomicBoolean(false);
 
 
-    NodeCallable(Console console, SafeDepositMessage message, long responseTimeout, String nodeName,
-                 List<SafeDepositBox.Withdrawal> withdrawals, Map<String, Publishable> intermediateResults,
-								 Map<String, SafeDepositReceipt> receipts, StatsAccumulator queryTimes,
-                 AtomicInteger responseCount) {
+    NodeCallable(Console console,
+								 SafeDepositMessage message, long responseTimeout,
+								 long withdrawalTimeout, String nodeName,
+								 List<SafeDepositBox.Withdrawal> withdrawals,
+								 Map<String, SafeDepositReceipt> receipts,
+								 StatsAccumulator queryTimes,
+                 AtomicInteger responseCount, boolean verbose) {
       this.console = console;
       this.message = message;
       this.responseTimeout = responseTimeout;
+			this.withdrawalTimeout = withdrawalTimeout;
       this.nodeName = nodeName;
       this.retrieved = false;
 
       this.withdrawals = withdrawals;
-			this.intermediateResults = intermediateResults;
 			this.receipts = receipts;
       this.queryTimes = queryTimes;
       this.responseCount = responseCount;
+			this.verbose = verbose;
     }
 
 		public void setBusy() {
@@ -374,29 +364,29 @@ System.out.print("\tmissing responses from:");
     }
 
     public List<SafeDepositReceipt> call() throws Exception {
+			if (verbose) System.out.println("*NodeCallable.call " + nodeName.toUpperCase());
       List<SafeDepositReceipt> result = new ArrayList<SafeDepositReceipt>();
+			final long starttime = System.currentTimeMillis();
+			final long expirationTime = starttime + withdrawalTimeout;
+			long curtime = 0L;
+			boolean timeToQuit = false;
 
-      if (!retrieved) {
-//System.out.println("*Sending query to " + nodeName.toUpperCase());
+      while (!retrieved && !timeToQuit && (curtime = System.currentTimeMillis()) < expirationTime) {
 
-        final long starttime = System.currentTimeMillis();
-        final Response[] responses = console.sendMessageToNodes(message, nodeName, (int)responseTimeout, false);
+        final long remainingTime = expirationTime - curtime;
+        final int timeout = (int)Math.min(responseTimeout, remainingTime);
+				if (verbose) System.out.println("*Sending query to " + nodeName.toUpperCase() + " timeout=" + timeout + " result.size()=" + result.size());
+        final Response[] responses = console.sendMessageToNodes(message, nodeName, timeout, false);
 
         if (responses != null) {
           boolean gotResponse = false;
-
-//           if (responses.length == 0) {
-//             // a node is currently non-responsive. we have to "count it out".
-//             gotResponse = true;
-//             this.retrieved = true;
-//           }
+					result.clear();
 
           for (Response response : responses) {
             if (response != null) {
               final SafeDepositReceipt sdReceipt = (SafeDepositReceipt)response;
 							final String signature = sdReceipt.getSignature();
 
-							intermediateResults.remove(signature);  // clear intermediate result
 							receipts.put(signature, sdReceipt);     // keep latest receipt
 
               synchronized (message) {
@@ -408,7 +398,7 @@ System.out.print("\tmissing responses from:");
                 final SafeDepositBox.Withdrawal withdrawal = sdReceipt.getWithdrawal();
 
                 if (withdrawal != null) {
-//System.out.println("*Received results from " + nodeName.toUpperCase());
+									if (verbose) System.out.println("*Received results from " + nodeName.toUpperCase());
 
                   this.retrieved = true;
                   gotResponse = true;
@@ -421,32 +411,37 @@ System.out.print("\tmissing responses from:");
                   }
                 }
               }
-							else {
-								final Publishable intermediateResult = sdReceipt.getIntermediateResults();
-								if (intermediateResult != null) {
-									intermediateResults.put(signature, intermediateResult);
+
+							if (!retrieved) {
+								final long[] completionRatio = sdReceipt.getCompletionRatio();
+								final double atpu = sdReceipt.getAverageTimePerUnit();
+								if (completionRatio != null && completionRatio[1] > 0 && atpu > 0) {
+									// given how long we've waited and how much has been accomplished,
+									final double etr = (completionRatio[1] - completionRatio[0]) * atpu; // estimated time remaining
+									if (verbose) System.out.println("\t*EstimatedTimeRemaining=" + etr + ", cr=" + completionRatio[0] + "/" + completionRatio[1] + ", atpu=" + atpu);
+									if (System.currentTimeMillis() + etr < expirationTime) {
+										// wait for about the right time to pick up the results.
+										try {
+											if (verbose) System.out.println("\t*Sleeping=" + etr);
+											Thread.sleep((long)Math.floor(etr));
+										}
+										catch (InterruptedException e) {
+											break;
+										}
+									}
+									else {
+										// if there isn't time to wait for completion, then skip out now.
+										timeToQuit = true;
+										break;
+									}
 								}
 							}
             }
           }
 
           if (gotResponse) responseCount.incrementAndGet();
-
-/*
-          if (!retrieved && responses.length > 0) {
-            // put a little governor on resubmitting the message
-            final long deltatime = responseTimeout - (System.currentTimeMillis() - starttime);
-            if (deltatime > 100) {
-              try {
-                Thread.sleep(100);
-              }
-              catch (InterruptedException ignore) {}
-            }
-          }
-*/
         }
       }
-//else System.out.println("*Reusing query results from " + nodeName.toUpperCase());
 
 			clearBusy();
 				
@@ -476,34 +471,25 @@ System.out.print("\tmissing responses from:");
 		/** The number of nodes that responded with a non-null withdrawal */
 		public final int responseCount;
 
-		/** Non-null intermediate results for the transaction. */
-		public final Map<String, Publishable> intermediateResults;
-
 		/** SafeDepositReceipts for the transaction for each responding node. */
 		public final Map<String, SafeDepositReceipt> receipts;
 
 		/** Names of nodes that didn't respond. */
 		public final List<String> missingResponses;
 
-		/** Number of times cluster was contacted for results. */
-		public final int loopCount;
-
 
 		public TransactionResult(SafeDepositMessage message,
 														 List<SafeDepositBox.Withdrawal> withdrawals,
 														 StatsAccumulator queryTimes,
 														 AtomicInteger responseCount,
-														 Map<String, Publishable> intermediateResults,
 														 Map<String, SafeDepositReceipt> receipts,
-														 List<String> missingResponses, int loopCount) {
+														 List<String> missingResponses) {
 			this.message = message;
 			this.withdrawals = new ArrayList<SafeDepositBox.Withdrawal>(withdrawals);
 			this.queryTimes = new StatsAccumulator(queryTimes);
 			this.responseCount = responseCount.get();
-			this.intermediateResults = new HashMap<String, Publishable>(intermediateResults);
 			this.receipts = new HashMap<String, SafeDepositReceipt>(receipts);
 			this.missingResponses = missingResponses;
-			this.loopCount = loopCount;
 		}
 
 		/**
@@ -511,13 +497,6 @@ System.out.print("\tmissing responses from:");
 		 */
 		public boolean hasWithdrawals() {
 			return withdrawals.size() > 0;
-		}
-
-		/**
-		 * Determine whether this result has any intermediate results.
-		 */
-		public boolean hasIntermediateResults() {
-			return intermediateResults.size() > 0;
 		}
 	}
 }

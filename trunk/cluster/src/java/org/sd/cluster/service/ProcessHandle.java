@@ -19,6 +19,11 @@
 package org.sd.cluster.service;
 
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.sd.io.Publishable;
+
 /**
  * Runnable container for sending, monitoring, and collecting the service
  * task's results.
@@ -26,6 +31,12 @@ package org.sd.cluster.service;
  * @author Spence Koehler
  */
 public interface ProcessHandle extends Runnable {
+
+	/**
+	 * Get a unique key that identifies this handle and distinguishes it from
+	 * others.
+	 */
+	public String getServiceKey();
 
 	/**
 	 * Get an error from the process if present.
@@ -37,18 +48,26 @@ public interface ProcessHandle extends Runnable {
 	 */
 	public boolean finished();
 
+	/**
+	 * Reset finished from "true" to "false".
+	 *
+	 * @return true if successfully reset; otherwise, false.
+	 */
+	public boolean resetFinished();
+
   /**
    * Send this handle's process a kill signal.
    */
 	public void kill();
 
 	/**
-	 * Determine whether this handle has results.
+	 * Determine whether this handle has retrievable results.
 	 */
 	public boolean hasResults();
 
 	/**
-	 * Get the results from this handle if available.
+	 * Get the results from this handle if processing is finished and results
+	 * are available.
 	 *
 	 * @return the results or null.
 	 */
@@ -76,4 +95,15 @@ public interface ProcessHandle extends Runnable {
 	 * Close this process handle (when finished).
 	 */
 	public void close();
+
+	/**
+	 * Wait until the process has finished or a signal to die has been issued,
+	 * returning the current results.
+	 *
+	 * @param checkInterval  Amount of time to wait between checking for termination.
+	 * @param die  Flag to monitor for signal to end (ok if null).
+	 *
+	 * @return non-null ServiceResults, possibly incomplete.
+	 */
+	public ServiceResults runUntilDone(long checkInterval, AtomicBoolean die);
 }
