@@ -182,6 +182,7 @@ public class ConfigUtil {
 	 * table.
 	 */
 	public static void setPortOverride(int lowPortOverride, int highPortOverride) {
+		System.out.println("ConfigUtil.setPortOverride(" + lowPortOverride + "," + highPortOverride + ")");
 		portOverride = new int[]{lowPortOverride, highPortOverride};
 	}
 

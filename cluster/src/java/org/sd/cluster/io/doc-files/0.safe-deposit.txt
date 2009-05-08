@@ -1,0 +1,14 @@
+
+
+Safe Deposit abstraction:
+
+- A SafeDepositBox has Drawers for holding the contents (output) of a process.
+- A SafeDepositMessage initiates generation of the contents or retrieves the current status or finished contents.
+- A SafeDepositReceipt is the return value from sending a SafeDepositMessage.
+- A SafeDepositAgent is used to send SafeDepositMessage instances to multiple nodes and collect all responses.
+	- it works under time limits to ensure at least a partial response when nodes die, fail, or fail to respond in time.
+	- For each node (or node group), the message is sent via a console and the responses are collected.
+		- The message is repeatedly sent until
+			- the generated contents are available or
+			- time expires or
+			- the estimated time to completion would exceed the expiration time

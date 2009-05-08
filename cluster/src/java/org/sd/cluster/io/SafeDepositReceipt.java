@@ -46,12 +46,12 @@ public class SafeDepositReceipt extends SignedResponse {
 
   private long claimTicket;
   private SafeDepositBox.Withdrawal withdrawal;
-	private Publishable intermediateResults;
 
   private transient SafeDepositBox _safeDepositBox;
   private transient boolean _handled;
   private transient UnitCounter _uc;          // NOTE: only meaningful while generating contents
   private transient long[] _completionRatio;  // NOTE: only instantiated when reconstructed
+	private transient double _atpu;             // NOTE: only instantiated when reconstructed
 
   /**
    * Empty constructor for publishable reconstruction.
@@ -65,11 +65,11 @@ public class SafeDepositReceipt extends SignedResponse {
    * Recipient should check the withdrawal for status. If null, the claimTicket
    * should be resubmitted later to retrieve the contents.
    */
-  public SafeDepositReceipt(Context context, Map<String, Long> claimTickets, boolean closeBox, boolean forceRehandle, long fillTime,
-                            String safeDepositKey, Publishable intermediateResults) {
+  public SafeDepositReceipt(Context context, Map<String, Long> claimTickets,
+														boolean closeBox, boolean forceRehandle, long fillTime,
+                            String safeDepositKey) {
     super(context);
 
-		this.intermediateResults = intermediateResults;
     final ClusterContext clusterContext = getClusterContext(); // from super
     this._safeDepositBox = clusterContext.getSafeDepositBox();
 
@@ -146,7 +146,6 @@ public class SafeDepositReceipt extends SignedResponse {
 
     dataOutput.writeLong(claimTicket);
     MessageHelper.writePublishable(dataOutput, withdrawal);
-		MessageHelper.writePublishable(dataOutput, intermediateResults);
 
     // write out the current progress (completionRatio) if available
     final long[] completionRatio = getCompletionRatio();
@@ -159,6 +158,8 @@ public class SafeDepositReceipt extends SignedResponse {
         dataOutput.writeLong(value);
       }
     }
+
+		dataOutput.writeDouble(getAverageTimePerUnit());
   }
 
   /**
@@ -175,7 +176,6 @@ public class SafeDepositReceipt extends SignedResponse {
 
     this.claimTicket = dataInput.readLong();
     this.withdrawal = (SafeDepositBox.Withdrawal)MessageHelper.readPublishable(dataInput);
-		this.intermediateResults = MessageHelper.readPublishable(dataInput);
 
     // read in the completion ratio (if any)
     final int numValues = dataInput.readInt();
@@ -188,6 +188,8 @@ public class SafeDepositReceipt extends SignedResponse {
         _completionRatio[i] = dataInput.readLong();
       }
     }
+
+		this._atpu = dataInput.readDouble();
   }
 
 	/**
@@ -213,6 +215,24 @@ public class SafeDepositReceipt extends SignedResponse {
 
     return result;
   }
+
+	/**
+	 * Get an estimate on the average time per unit if available.
+	 *
+	 * @return the average time per unit or 0.0 if unknown.
+	 */
+	public double getAverageTimePerUnit() {
+		double result = -1.0;
+
+		if (_uc != null) {
+			result = _uc.getAverageTimePerUnit();
+		}
+		else {
+			result = this._atpu;
+		}
+
+		return result;
+	}
 
   /**
    * Get the claim ticket.
@@ -273,18 +293,6 @@ public class SafeDepositReceipt extends SignedResponse {
 
     return result;
   }
-
-	/**
-	 * Get the intermediate results attached to this receipt.
-	 * <p>
-	 * Note that it is left to the extension of SafeDepositMessage to decide
-	 * when and what kind of results to attach.
-	 *
-	 * @return the intermediate results (often null).
-	 */
-	public Publishable getIntermediateResults() {
-		return intermediateResults;
-	}
 
   void handleContentGeneration(SafeDepositMessage safeDepositMessage) {
     if (!_handled) {

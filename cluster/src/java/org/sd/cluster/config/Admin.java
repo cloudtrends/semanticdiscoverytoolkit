@@ -434,6 +434,19 @@ public class Admin {
   }
 
 	/**
+	 * Remove the active-port-override.txt file if it exists.
+	 * <p>
+	 * NOTE: This should be called in contexts where the file would be configured
+	 *       (or unconfigured) from environment settings (like when we deploy.)
+	 */
+	public static final void clearPortOverrideFile() {
+		File portOverrideFile = FileUtil.getFile(ConfigUtil.getClusterDevConfDir() + "active-port-override.txt");
+		if (portOverrideFile.exists()) portOverrideFile.delete();
+		portOverrideFile = FileUtil.getFile(ConfigUtil.getClusterPath("conf/active-port-override.txt"));
+		if (portOverrideFile.exists()) portOverrideFile.delete();
+	}
+
+	/**
 	 * Get the active port override if there is one.
 	 */
 	public static final int[] getActivePortOverride() {
@@ -609,6 +622,13 @@ public class Admin {
 
 			if (rootDir != null) {
 				ConfigUtil.setClusterRootDir(rootDir);
+			}
+
+			if (deployOption) {
+				// when we deploy, we need to rely on environment settings, not
+				// on the override file. If we have overridden and now are not
+				// overriding, then this file needs to disappear for proper function.
+				clearPortOverrideFile();
 			}
 
       final ClusterRunner cr = new ClusterRunner(clusterName, theMachines, userName, gateway);

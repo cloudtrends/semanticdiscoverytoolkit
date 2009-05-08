@@ -89,13 +89,13 @@ public class ClusterServiceConnector extends ServiceConnector {
   /**
    * Build the process handle for this connector.
    */
-  protected ProcessHandle buildProcessHandle(SafeDepositMessage serviceTask,
+  protected ProcessHandle buildProcessHandle(String serviceKey, SafeDepositMessage serviceTask,
                                              long requestTimeout, long withdrawalTimeout,
                                              boolean verbose) {
     //
     // build a new process handle for each request.
     //
-    return new ClusterProcessHandle(getProcessController(), serviceTask,
+    return new ClusterProcessHandle(serviceKey, getProcessController(), serviceTask,
                                     requestTimeout, withdrawalTimeout,
                                     verbose);
   }

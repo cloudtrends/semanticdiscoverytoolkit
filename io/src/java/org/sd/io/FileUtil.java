@@ -852,15 +852,45 @@ public class FileUtil {
    * @return the number of lines in the file
    * @throws IOException
    */
-  public static int countLines(String filename) throws IOException {
+  public static long countLines(String filename) throws IOException {
     BufferedReader reader = FileUtil.getReader(filename);
-    int lineCount = 0;
+    long lineCount = 0;
     while (reader.readLine() != null) {
       lineCount++;
     }
     reader.close();
     return lineCount;
   }
+
+	/**
+	 * Count the number of lines in the given file.
+	 *
+	 * @param file  The file whose lines to count.
+	 *
+	 * @return the number of lines or -1 if unable to compute.
+	 */
+	public static final long countLines(File file) {
+		long lineCount = 0;
+		BufferedReader reader = null;
+
+		try {
+			reader = getReader(file);
+			while (reader.readLine() != null) ++lineCount;
+		}
+		catch (IOException e) {
+			lineCount = -1;
+		}
+		finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				}
+				catch (IOException ignore) {}
+			}
+		}
+
+		return lineCount;
+	}
 
   /**
    * Read in the entire file as a list of strings, one per line, returning null

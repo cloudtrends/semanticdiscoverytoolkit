@@ -37,7 +37,7 @@ public abstract class ServiceConnector {
   /**
    * Build the process handle for this connector.
    */
-  protected abstract ProcessHandle buildProcessHandle(SafeDepositMessage serviceTask,
+  protected abstract ProcessHandle buildProcessHandle(String serviceKey, SafeDepositMessage serviceTask,
                                                       long requestTimeout, long withdrawalTimeout,
                                                       boolean verbose);
 
@@ -100,18 +100,48 @@ public abstract class ServiceConnector {
 		synchronized (processCache) {
 			result = processCache.get(serviceKey);
 			if (result == null) {  // need to create one
-        result = buildProcessHandle(serviceTask, requestTimeout, withdrawalTimeout, verbose);
+        result = buildProcessHandle(serviceKey, serviceTask, requestTimeout, withdrawalTimeout, verbose);
 				threadPool.execute(result);            // submit to thread pool
 				processCache.put(serviceKey, result);  // add to cache
 			}
 		}
 
 		// remove from cache if errored or finished
-		if (!leaveInCache && result != null &&
-				(result.getError() != null || result.finished())) {
-			processCache.remove(serviceKey);
-		}
+		cleanCache(result);
 
 		return result;
+	}
+
+	/**
+	 * Re-run the processHandle if possible.
+	 *
+	 * @param processHandle  The processHandle to resubmit.
+	 *
+	 * @return true if successfully re-initiated processing; otherwise, false.
+	 */
+	public boolean resubmit(ProcessHandle processHandle) {
+		boolean result = false;
+
+		if (processHandle != null && processHandle.resetFinished()) {
+			final String serviceKey = processHandle.getServiceKey();
+			threadPool.execute(processHandle);
+			processCache.put(serviceKey, processHandle);
+			result = true;
+		}
+
+		// remove from cache if errored or finished
+		cleanCache(processHandle);
+
+		return result;
+	}
+
+	/**
+	 * Clean the processHandle out the cache if warranted.
+	 */
+	private final void cleanCache(ProcessHandle processHandle) {
+		if (!leaveInCache && processHandle != null &&
+				(processHandle.getError() != null || processHandle.finished())) {
+			processCache.remove(processHandle.getServiceKey());
+		}
 	}
 }

@@ -37,7 +37,7 @@ public abstract class ProcessController {
 		this.serviceID = serviceID;
 	}
 
-	public abstract List<SafeDepositAgent.TransactionResult> doProcessing(SafeDepositMessage serviceTask, long responseTimeout, long withdrawalTimeout);
+	public abstract List<SafeDepositAgent.TransactionResult> doProcessing(SafeDepositMessage serviceTask, long responseTimeout, long withdrawalTimeout, boolean verbose);
 	public abstract int getNumResponses();
 	public abstract int getNumResponders();
 	public abstract void close();

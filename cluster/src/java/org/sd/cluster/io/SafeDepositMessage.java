@@ -61,17 +61,6 @@ public abstract class SafeDepositMessage implements Message {
    */
   protected abstract String generateSafeDepositKey();
 
-	/**
-	 * Generate intermediate results if applicable.
-	 * <p>
-	 * It is up to the extending class to determine what and when intermediate
-	 * results are generated.
-	 *
-	 * @return current intermediate results or null if there are none or the
-	 *         request is not applicable (e.g. processing has finished.)
-	 */
-	protected abstract Publishable generateIntermediateResults();
-
 
   private Map<String, Long> claimTickets;  // nodeName -> claimTicket
   private boolean closeBox;
@@ -240,8 +229,8 @@ public abstract class SafeDepositMessage implements Message {
 
     preReceiptHook(serverContext);
 
-    this._receipt = new SafeDepositReceipt(serverContext, claimTickets, closeBox, forceRehandle, fillTime,
-                                           getKey(), generateIntermediateResults());
+    this._receipt = new SafeDepositReceipt(serverContext, claimTickets, closeBox,
+																					 forceRehandle, fillTime, getKey());
 
     // if the claimTicket is valid and filled, the contents will be retrieved now.
     // if the claimTicket is valid but not yet filled, it will be returned and can be resubmitted later.

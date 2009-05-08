@@ -53,14 +53,18 @@ public class ServiceResults {
 	 * Clear this container's results.
 	 */
 	public void clear() {
-		this.results.clear();
+		synchronized (results) {
+			this.results.clear();
+		}
 	}
 
 	/**
 	 * Add the result to this container.
 	 */
 	public void add(SafeDepositAgent.TransactionResult result) {
-		results.add(result);
+		synchronized (results) {
+			results.add(result);
+		}
 	}
 
   /**
@@ -75,8 +79,10 @@ public class ServiceResults {
 	 */
 	public int getNumResults() {
 		int size = 0;
-		for (SafeDepositAgent.TransactionResult result : results) {
-			size += result.withdrawals.size();
+		synchronized (results) {
+			for (SafeDepositAgent.TransactionResult result : results) {
+				size += result.withdrawals.size();
+			}
 		}
 		return size;
 	}
@@ -87,14 +93,16 @@ public class ServiceResults {
   public List<Publishable> getAllResults() {
     final List<Publishable> result = new ArrayList<Publishable>();
 
-		for (SafeDepositAgent.TransactionResult txnResult : results) {
-      if (txnResult.withdrawals == null) continue;
-      for (SafeDepositBox.Withdrawal withdrawal : txnResult.withdrawals) {
-        final Publishable contents = withdrawal.getContents();
-        if (contents != null) {
-          result.add(contents);
-        }
-      }
+		synchronized (results) {
+			for (SafeDepositAgent.TransactionResult txnResult : results) {
+				if (txnResult.withdrawals == null) continue;
+				for (SafeDepositBox.Withdrawal withdrawal : txnResult.withdrawals) {
+					final Publishable contents = withdrawal.getContents();
+					if (contents != null) {
+						result.add(contents);
+					}
+				}
+			}
 		}
 
     return result;
@@ -106,33 +114,6 @@ public class ServiceResults {
    */
   public Publishable getAllResults(ResultsMerger merger) {
     final List<Publishable> publishables = getAllResults();
-    return doMerge(publishables, merger);
-  }
-
-  /**
-   * Get all of the available intermediate (low-level) results.
-   */
-  public List<Publishable> getIntermediateResults() {
-    final List<Publishable> result = new ArrayList<Publishable>();
-
-		for (SafeDepositAgent.TransactionResult txnResult : results) {
-      if (txnResult.intermediateResults == null) continue;
-      for (Publishable intermediateResult : txnResult.intermediateResults.values()) {
-        if (intermediateResult != null) {
-          result.add(intermediateResult);
-        }
-      }
-		}
-
-    return result;
-  }
-
-  /**
-   * Convenience method to get all available intermediate results as a single
-   * merged result using the given merger.
-   */
-  public Publishable getIntermediateResults(ResultsMerger merger) {
-    final List<Publishable> publishables = getIntermediateResults();
     return doMerge(publishables, merger);
   }
 

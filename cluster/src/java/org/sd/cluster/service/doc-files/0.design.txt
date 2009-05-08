@@ -39,7 +39,7 @@ LOW-DOWN:
   - has cluster Console instances with knowledge of nodes to contact
   - has a ClusterProcessController
   - gets a process handle for a task by
-    - providing the processController to (super) ServiceConnector
+    - building a ClusterProcessHandle to which it supplies a (new) ClusterProcessController
     - ServiceConnector.getProcessHandle
 			- checks its cache for the running process or
       - creates and starts the process(handle) in its thread pool
@@ -47,35 +47,30 @@ LOW-DOWN:
     - The ProcessController processess the task (SafeDepositMessage) by
 			- using SafeDepositAgents (one per console which is one per cluster)
   		  - to submit the task (SafeDepositMessage) to the cluster nodes
-				- and collect responses (SafeDepositBox.Withdrawals) from the cluster nodes
-					- or collects intermediate results if available
+				- and collect responses (SafeDepositBox.Withdrawals) from the cluster nodes (one per node)
 				- using a TimeLimitedThreadPool
 
-- NOTE: If we want to execute more than one task through a single service
-  - then each ClusterServiceConnector would need to create a new ClusterProcessController for each task
-      - this would re-use the cluster consoles but use new agents and response collectors
-	  - and the processHandle when released should close the ClusterProcessController without closing its consoles
-  - The alternative is to have a new ClusterService (complete with new consoles, etc) for each client/task.
-    - usually a single user submits only one task at a time and can reuse the service, then each user can have his/her own service.
-    - in this case, ClusterProcessControllers (and their) SafeDepositAgents are re-used by updating their message
+- We can execute more than one task through a single service
+	- each ClusterServiceConnector creates a new ClusterProcessController for each task
+		- This re-uses the cluster consoles, but creates new agents and response collectors
+	- Each processHandle needs to be properly closed to release the resources
 
-  - Because the resources are handed over within ProcessHandle instances, which are released by consumers,
-    - it seems the best way to manage concurrency would be to have a new controller for each task.
-    - Perhaps a ClusterProcessController could be reused (with an updated/alternate message) by a consumer
-			- by the consumer calling another processing request through the ProcessHandle?
-				- if it hasn't finished, it can clean up after itself;
-					- the back-end task could be notified that its results won't be needed anymore?
-					- -vs- the process handle can be used to cycle through/check up on numerous tasks?
-					  - !Need to call out ProcessHandle interactions to decide!
+	- If we create a new ClusterService for each client/task, then
+		- ClusterProcessControllers (and their) SafeDepositAgents are re-used by updating their message
+    - this may be used when a single user submits only one task at a time and can reuse the service,
+			- then each user can have his/her own service.
 
-- Currently working in service.ClusterProcessController.java
-  - copying from ServletProcessorController.java
-  - changing List<SafeDepositBox.Withdrawal> result into SafeDepositAgent.TransactionResult
+	- Future consideration(s):
+		- New/alternate tasks could be executed using the same underlying resources through a ProcessHandle
+			- This would mean aborting (and handling interactions to abort on the backend) active processes.
+			- If we decide to do this, add appropriate interface methods and implementations to ProcessHandle.
+		- Could also consider controlling multiple active tasks through a ProcessHandle
+			- but this seems to make things unnecessarily complicated
 
-- TODO: Think about processes that use a single node (in a multinode cluster) -vs-
-	- those that use all nodes -vs-
+- TODO: Think about processes that can't be distributed and use a single node (in a multinode cluster) -vs-
+	- those that can be distributed and use all nodes -vs-
 	- those that use some group(s) of nodes
-  - maybe this calls for a different cluster service for each and we don't need to muck at the low-level for reuse?
+  - maybe each case calls for a different cluster service and we don't need to muck at the low-level for reuse?
 
 ===================================
 
@@ -191,17 +186,15 @@ LOW-DOWN:
         ProcessHandle
           - - -> Runnable
 
-          + getError():Throwable
-          + kill():void
+          +getError():Throwable
+					+finished():boolean
+          +kill():void
           +hasResults():boolean
           +getResults():ServiceResults
           +getProcessingTime():long
           +getCompletionRatio():long[]
           +close():void
-
-#todo: check that getResults will return intermediate results or add a method to getIntermediateResults
-#todo: implement runUntilDone
-				  + runUntilDone(checkInterval:long, die:AtomicBoolean):boolean
+				  +runUntilDone(checkInterval:long, die:AtomicBoolean):boolean
 
 
         ClusterProcessHandle
@@ -224,8 +217,6 @@ LOW-DOWN:
           +getNumResults():int
           +getAllResults():List<Publishable>
           +getAllResults(merger:ResultsMerger):Publishable
-          +getIntermediateResults():List<Publishable>
-          +getIntermediateResults(merger:ResultsMerger):Publishable
 
 
         ProcessController
@@ -255,9 +246,7 @@ LOW-DOWN:
 					+withdrawals:List<SafeDepositBox.Withdrawal>
 					+queryTimes:StatsAccumulator
 					+responseCount:int
-					+intermediateResults:Map<String, Publishable>
 					+receipts:Map<String, SafeDepositReceipt>
 					+missingResponses:List<String>
 
 					+hasWithdrawals():boolean
-					+hasIntermediateResults():boolean
