@@ -682,6 +682,7 @@ public class TestBerkeleyDb extends TestCase {
 		final String testRoot = "/tmp/TestBerkeleyDb";
     final String filename = FileUtil.getFilename(testRoot, "bdb/testMarker");
     final File dbDir = new File(filename);
+    FileUtil.deleteDir(dbDir);
 
     DbHandle dbHandle = null;
     DbIterator<LongKeyValuePair> iter = null;
