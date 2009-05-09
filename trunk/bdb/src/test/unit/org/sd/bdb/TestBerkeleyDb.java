@@ -569,7 +569,19 @@ public class TestBerkeleyDb extends TestCase {
 
       // check for backup file and bufferSize
       assertTrue(new File(testRoot + "/bdb/testMarker/TestDbMarker.marker").exists());
-      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),136);
+
+      //assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),136);
+      final String checkfile = testRoot + "/bdb/testMarker/TestDbMarker.marker";
+      assertTrue(waitFor(1000, 100, new BooleanFunction() {
+          public boolean getValue() {
+            boolean result = false;
+            try {
+              result = (FileUtil.countLines(checkfile) == 136);
+            }
+            catch (IOException e) {}
+            return result;
+          }
+        }));
 
       // verify contents
       ArrayList<String> markerLines = FileUtil.readLines(testRoot + "/bdb/testMarker/TestDbMarker.marker");
@@ -719,6 +731,25 @@ public class TestBerkeleyDb extends TestCase {
 
 //todo: test push and iterators
 
+
+  private final boolean waitFor(long maxWait, long checkInterval, BooleanFunction fn) {
+
+    final long starttime = System.currentTimeMillis();
+    final long exptime = maxWait + starttime;
+    try {
+      while (!fn.getValue() && System.currentTimeMillis() < exptime) {
+        Thread.sleep(checkInterval);
+      }
+    }
+    catch (InterruptedException e) {
+    }
+
+    return fn.getValue();
+  }
+
+  private static interface BooleanFunction {
+    public boolean getValue();
+  }
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestBerkeleyDb.class);
