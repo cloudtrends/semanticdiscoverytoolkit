@@ -75,18 +75,7 @@ public class DbInfo {
     if (open.compareAndSet(true, false)) {
       if (timestampedDb != null) timestampedDb.close();
       if (database != null) {
-        try {
-          database.close();
-        }
-        catch (DatabaseException e) {
-          System.err.println("Error closing db: " + e.toString() + " ...retrying...");
-          try {
-            Thread.sleep(100);
-          }
-          catch (InterruptedException ignore) {
-          }
-          database.close();
-        }
+        database.close();
       }
     }
   }
