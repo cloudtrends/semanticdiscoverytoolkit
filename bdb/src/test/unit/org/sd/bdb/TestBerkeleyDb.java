@@ -554,8 +554,19 @@ public class TestBerkeleyDb extends TestCase {
       iter.close();
 
       // delay to allow final elements to flush
-      Thread.sleep(100);
-      assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),41);
+      //Thread.sleep(100);
+      //assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),41);
+      final String checkfile = testRoot + "/bdb/testMarker/TestDbMarker.marker";
+      assertTrue(waitFor(1000, 100, new BooleanFunction() {
+          public boolean getValue() {
+            boolean result = false;
+            try {
+              result = (FileUtil.countLines(checkfile) == 41);
+            }
+            catch (IOException e) {}
+            return result;
+          }
+        }));
 
       // test restart and roll forward
       iter = dbHandle.iteratorLong(DbTraversal.KEY_ORDER);
@@ -571,7 +582,7 @@ public class TestBerkeleyDb extends TestCase {
       assertTrue(new File(testRoot + "/bdb/testMarker/TestDbMarker.marker").exists());
 
       //assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),136);
-      final String checkfile = testRoot + "/bdb/testMarker/TestDbMarker.marker";
+      //final String checkfile = testRoot + "/bdb/testMarker/TestDbMarker.marker";
       assertTrue(waitFor(1000, 100, new BooleanFunction() {
           public boolean getValue() {
             boolean result = false;
