@@ -41,4 +41,4 @@ if ! test -e "$LICENSE"; then
   exit 1;
 fi
 
-find .. -name '*.java' -exec add-license \{\} \;
+find .. -name '*.java' -exec ./add-license \{\} \;
