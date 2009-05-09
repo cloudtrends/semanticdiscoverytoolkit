@@ -446,6 +446,7 @@ public class TestBerkeleyDb extends TestCase {
         iter.next();
       }
       iter.close();
+      iter = null;
 
       // delay to allow final elements to flush
       Thread.sleep(100);
@@ -457,6 +458,7 @@ public class TestBerkeleyDb extends TestCase {
         iter.next();
       }
       iter.close();
+      iter = null;
 
       // delay to allow final elements to flush
       Thread.sleep(100);
@@ -477,6 +479,7 @@ public class TestBerkeleyDb extends TestCase {
       iter.next();
       assertFalse(iter.hasNext());
       iter.close();
+      iter = null;
 
       // test reverse order
       iter = dbHandle.iterator(DbTraversal.REVERSE_KEY_ORDER);
@@ -484,6 +487,7 @@ public class TestBerkeleyDb extends TestCase {
         iter.next();
       }
       iter.close();
+      iter = null;
 
       // delay to allow final elements to flush
       Thread.sleep(100);
@@ -513,6 +517,7 @@ public class TestBerkeleyDb extends TestCase {
         iter.next();
       }
       iter.close();
+      iter = null;
 
       // delay to allow final elements to flush
       Thread.sleep(100);
@@ -521,7 +526,10 @@ public class TestBerkeleyDb extends TestCase {
       assertEquals(FileUtil.countLines(testRoot + "/bdb/testMarker/TestDbMarker.marker"),271);
     }
     finally {
-      if (iter != null) iter.close();
+      if (iter != null) {
+        iter.close();
+        Thread.sleep(100);
+      }
       if (dbHandle != null) dbHandle.getDbInfo().getBerkeleyDb().close();
 
       // clean up junk left behind on the disk
