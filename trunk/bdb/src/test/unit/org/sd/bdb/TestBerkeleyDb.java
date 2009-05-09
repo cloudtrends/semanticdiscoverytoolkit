@@ -522,6 +522,8 @@ public class TestBerkeleyDb extends TestCase {
     }
     finally {
       if (iter != null) iter.close();
+      // delay to allow final elements to flush
+      Thread.sleep(100);
       if (dbHandle != null) dbHandle.getDbInfo().getBerkeleyDb().close();
 
       // clean up junk left behind on the disk
