@@ -54,6 +54,9 @@ This module provides a wrapper around Berkeley DB for simplified usage of the da
 text
 This module combines elements from the other base modules to implement more complex algorithms. Included are utilities for searching for common substring matches within strings, including applying logic to the matching of sets of strings within text.
 
+=== text ===
+This module combines elements from the other base modules to implement more complex algorithms. Included are utilities for searching for common substring matches within strings, including applying logic to the matching of sets of strings within text.
+
 == Advanced Modules ==
 The advanced modules depend on the base modules but not on each other and are named "cluster", "extract", "lang", and "crawl".
 
