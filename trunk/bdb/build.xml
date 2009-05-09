@@ -145,7 +145,7 @@
 
   <target name="doTest" depends="build-unit-test">
     <mkdir dir="${reports}"/>
-    <junit printsummary="on" haltonfailure="off" fork="on" showoutput="false"
+    <junit printsummary="on" haltonfailure="off" fork="off" showoutput="false"
       errorProperty="unittest.failed.flag"
       failureProperty="unittest.failed.flag">
       <classpath refid="project.class.path"/>
