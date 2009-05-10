@@ -1,4 +1,4 @@
-#summary Project documentation
+#summary Project documentation and downloads
 
 = Introduction =
 

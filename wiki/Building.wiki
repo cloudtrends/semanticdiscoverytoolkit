@@ -59,7 +59,7 @@ The following environment settings are required to successfully build and run al
 {{{
   % export JAVA_HOME=<path-to-java>
   % export ANT_HOME=<path-to-ant>
-  % export PATH=$JAVA_HOME/bin:$ANT_HOME/bin:$PATH;
+  % export PATH=.:$JAVA_HOME/bin:$ANT_HOME/bin:$PATH;
   % export JAVA_OPTS="-Xmx640m -Dcom.sun.management.jmxremote"
   % export ANT_OPTS=-Xmx500m
 }}}
