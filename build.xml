@@ -25,7 +25,7 @@
 		</exec>
   </target>
 
-	<target name="build" depends="dobuild,base-jar,add-license" />
+	<target name="build" depends="dobuild,base-jar,all-jar,add-license" />
 
 	<target name="add-license">
 		<exec dir="license" executable="do-add-license"/>
@@ -56,7 +56,7 @@
     <!-- create symbolic link to jarlinks without the timestamp -->
     <exec executable="/bin/ln">
       <arg value="-s"/>
-      <arg value="jars/sd-all.${buildNumber}.jar"/>
+      <arg value="../jars/sd-all.${buildNumber}.jar"/>
       <arg value="jarlinks/sd-all.jar"/>
     </exec>
   </target>
@@ -81,7 +81,7 @@
     <!-- create symbolic link to jarlinks without the timestamp -->
     <exec executable="/bin/ln">
       <arg value="-s"/>
-      <arg value="jars/sd-base.${buildNumber}.jar"/>
+      <arg value="../jars/sd-base.${buildNumber}.jar"/>
       <arg value="jarlinks/sd-base.jar"/>
     </exec>
   </target>
@@ -114,7 +114,7 @@
     <ant dir="crawl" antfile="build.xml" target="clean"/>
   </target>
 
-  <target name="all" depends="each-all,base-jar,add-license"/>
+  <target name="all" depends="each-all,base-jar,all-jar,add-license"/>
 
   <target name="each-all">
     <ant dir="io" antfile="build.xml" target="all"/>
