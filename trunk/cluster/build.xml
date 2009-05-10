@@ -150,7 +150,7 @@
          excludes="**/Test*.class" />
     <!-- create symbolic link to jarlinks without the timestamp -->
     <exec executable="/bin/ln">
-      <arg value="-s"/>
+      <arg value="-sf"/>
       <arg value="${dist}/${jar}.${buildNumber}.jar"/>
       <arg value="${ldist}/${jar}.jar"/>
     </exec>
