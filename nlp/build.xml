@@ -116,7 +116,6 @@
     <delete dir="${build}"/>
     <delete verbose="true" failonerror="false">
       <fileset dir="${dist}" includes="${jar}*.jar"/>
-      <fileset dir="${ldist}" includes="${jar}*.jar"/>
     </delete>
   </target>
 
@@ -134,7 +133,7 @@
          excludes="**/Test*.class" />
     <!-- create symbolic link to jarlinks without the timestamp -->
     <exec executable="/bin/ln">
-      <arg value="-s"/>
+      <arg value="-sf"/>
       <arg value="${dist}/${jar}.${buildNumber}.jar"/>
       <arg value="${ldist}/${jar}.jar"/>
     </exec>
