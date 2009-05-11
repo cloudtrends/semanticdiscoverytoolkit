@@ -34,7 +34,6 @@
   <target name="all-jar" depends="init">
 		<delete verbose="true" failonerror="false">
 			<fileset dir="jars" includes="sd-all*.jar"/>
-			<fileset dir="jarlinks" includes="sd-all.jar"/>
 		</delete>
 
     <mkdir dir="jars"/>
@@ -57,6 +56,7 @@
     <exec executable="/bin/ln">
       <arg value="-sf"/>
       <arg value="../jars/sd-all.${buildNumber}.jar"/>
+      <arg value="jarlinks/all-base.jar"/>
     </exec>
   </target>
 

@@ -64,12 +64,49 @@ public class SentenceSplitter {
     return result.toArray(new String[result.size()]);
   }
 
+  /**
+   * Split the paragraph into sentence info instances.
+   */
+  public final SplitInfo[] splitInfo(String paragraph) {
+    final List<SplitInfo> result = new ArrayList<SplitInfo>();
+
+    // build an input wrapper
+    final InputWrapper inputWrapper = buildInputWrapper(paragraph);
+
+    // scan for punctuation chars. determine which represent a sentence boundary.
+    final int len = inputWrapper.length();
+    int startPos = 0;
+
+    for (int i = 0; i < len; ++i) {
+      if (inputWrapper.isEndOfSentenceMarker(i)) {
+        if (inputWrapper.isSentence(startPos, i)) {
+          doAddSplitInfo(result, inputWrapper, startPos, i + 1);
+          startPos = i + 1;
+        }
+      }
+    }
+
+    if (startPos < len) {
+      doAddSplitInfo(result, inputWrapper, startPos, len);
+    }
+
+    return result.toArray(new SplitInfo[result.size()]);
+  }
+
   private final void doAddSentence(List<String> result, String sentence) {
     final String trimmed = trimSentence(sentence);
     if (trimmed != null && !"".equals(trimmed)) {
       result.add(trimmed);
     }
   }
+
+	private final void doAddSplitInfo(List<SplitInfo> result, InputWrapper inputWrapper, int startIndex, int endIndex) {
+		final String sentence = inputWrapper.getInput(startIndex, endIndex);
+		final String trimmed = trimSentence(sentence);
+		if (trimmed != null && !"".equals(trimmed)) {
+			result.add(new SplitInfo(startIndex, endIndex, trimmed));
+		}
+	}
 
   protected InputWrapper buildInputWrapper(String paragraph) {
     return new SdInputWrapper(paragraph);
@@ -105,6 +142,26 @@ public class SentenceSplitter {
     public boolean isSentence(int startPos, int endPos);
 
   }
+
+	/**
+	 * Container for a sentence and its original text boundaries.
+	 */
+	public static final class SplitInfo {
+		/** Start index (inclusive.) */
+		public final int startIndex;
+
+		/** End index (exlusive.) */
+		public final int endIndex;
+
+		/** Sentence text. */
+		public final String sentence;
+
+		public SplitInfo(int startIndex, int endIndex, String sentence) {
+			this.startIndex = startIndex;
+			this.endIndex = endIndex;
+			this.sentence = sentence;
+		}
+	}
 
   protected static abstract class BaseInputWrapper implements InputWrapper {
 

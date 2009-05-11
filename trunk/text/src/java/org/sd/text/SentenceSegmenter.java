@@ -28,13 +28,54 @@ import org.sd.nlp.SentenceSplitter;
  */
 public class SentenceSegmenter implements TextSegmenter {
 	
-	private String[] sentences;
+	private SentenceSplitter splitter;
+
+	private SentenceSplitter.SplitInfo[] sentences;
 	private int index;
 
+	private String text;
+	private int lastStart;
+	private int lastEnd;
+
 	public SentenceSegmenter(String text) {
-		final SentenceSplitter splitter = new SentenceSplitter();
-		this.sentences = splitter.split(text);
+		this.splitter = new SentenceSplitter();
+		this.setText(text);
+	}
+
+	/**
+	 * Get the full text being iterated over.
+	 */
+	public String getText() {
+		return text;
+	}
+
+	/**
+	 * Set the text to be iterated over, resetting iteration to the
+	 * beginning of the text.
+	 */
+	public final void setText(String text) {
+		this.sentences = splitter.splitInfo(text);
 		this.index = 0;
+
+		this.text = text;
+		this.lastStart = 0;
+		this.lastEnd = 0;
+	}
+
+	/**
+	 * Get the starting character index (inclusive) in the input text of the
+	 * last string returned by 'next'.
+	 */
+	public int getStartIndex() {
+		return lastStart;
+	}
+
+	/**
+	 * Get the ending character index (exclusive) in the input text of the
+	 * last string returned by 'next'.
+	 */
+	public int getEndIndex() {
+		return lastEnd;
 	}
 
 	/**
@@ -51,7 +92,10 @@ public class SentenceSegmenter implements TextSegmenter {
 		String result = null;
 
 		if (hasNext()) {
-			result = sentences[index];
+			final SentenceSplitter.SplitInfo sentence = sentences[index];
+			result = sentence.sentence;
+			lastStart = sentence.startIndex;
+			lastEnd = sentence.endIndex;
 			++index;
 		}
 
