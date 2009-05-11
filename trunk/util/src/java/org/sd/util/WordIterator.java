@@ -27,7 +27,7 @@ import java.util.Locale;
  * <p>
  * @author Spence Koehler
  */
-public class WordIterator extends TextIterator {
+public class WordIterator extends BaseTextIterator {
 	
 	/**
 	 * Construct with the string whose words are to be iterated over
