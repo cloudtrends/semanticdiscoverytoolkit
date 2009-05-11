@@ -27,7 +27,7 @@ import java.util.Iterator;
  * <p>
  * @author Spence Koehler
  */
-public class TextIterator implements Iterator<String> {
+public class BaseTextIterator implements Iterator<String> {
 	
 	private BreakIterator breakIterator;
 	private String text;
@@ -38,7 +38,7 @@ public class TextIterator implements Iterator<String> {
 	/**
 	 * Construct with the string whose text is to be iterated over.
 	 */
-	public TextIterator(BreakIterator breakIterator) {
+	public BaseTextIterator(BreakIterator breakIterator) {
 		this.breakIterator = breakIterator;
 	}
 
