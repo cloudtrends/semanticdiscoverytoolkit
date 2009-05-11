@@ -65,6 +65,11 @@ public class TestSentenceIterator extends TestCase {
 					 });
 	}
 
+	/** Test behavior with empty input. */
+	public void testEmptyInput() {
+		doTest("", new String[0]);
+	}
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestSentenceIterator.class);

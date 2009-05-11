@@ -16,26 +16,39 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.sd.text;
+package org.sd.util;
 
 
 import java.util.Iterator;
 
-import org.sd.util.TextIterator;
-
 /**
- * Interface for segmenting text into phrases suitable for splitting out Word
- * N-Grams.
+ * Interface for iterating over portions of a text string.
  * <p>
  * @author Spence Koehler
  */
-public interface TextSegmenter extends TextIterator {
-	
+public interface TextIterator extends Iterator<String> {
+
 	/**
-	 * Determine whether the last segment returned by 'next' should be flushed.
-	 * <p>
-	 * When segments are not flushed, repeated word N-Grams only count as
-	 * a single instance for purposes of tallying frequencies.
+	 * Get the full text being iterated over.
 	 */
-	public boolean shouldFlush();
+	public String getText();
+
+	/**
+	 * Set the text to be iterated over, resetting iteration to the
+	 * beginning of the text.
+	 */
+	public void setText(String text);
+
+	/**
+	 * Get the starting character index (inclusive) in the input text of the
+	 * last string returned by 'next'.
+	 */
+	public int getStartIndex();
+
+	/**
+	 * Get the ending character index (exclusive) in the input text of the
+	 * last string returned by 'next'.
+	 */
+	public int getEndIndex();
+
 }

@@ -12,3 +12,54 @@ Safe Deposit abstraction:
 			- the generated contents are available or
 			- time expires or
 			- the estimated time to completion would exceed the expiration time
+
+==============================================================================
+
+SafeDepositConsole (in cluster.config)
+
+- Administrative tasks
+	- Inspect/adjust free memory limit
+	- Inspect/Cancel/Reset expiration monitor
+
+- Management tasks
+	- Statistics
+		- num drawers
+			- with contents
+			- awaiting contents
+			- no-deposit/expired/retrieved/unreserved
+		- times
+	- Inspect drawers
+		- keys, claim numbers, unit counters
+		- retrieve contents (only show toString on request?)
+			- by key
+			- all w/keys (as a map)
+		- ?forward contents?
+
+
+Total drawers: NEXT_NUM.get()
+  Active: claimNum2Drawer.size()
+  Incinerated: total - active
+
+Cleanup Monitor:
+  Delay: MONITOR_DELAY MONITOR_UNIT
+  Memory Limit: freeMemoryLimit
+  Current free memory: Runtime.getRuntime().freeMemory()
+
+key2claimNum
+claimNum2Drawer
+
+
+Drawer:
+	shouldIncinerate
+  isExpired
+  isAged
+	getUnitCounter
+	getContents     // has side effect on withdrawalTime and agedTime -- just grab drawer.publishable
+	setContents     // has side effect on depositTime, withdrawalTime, publishable -- ?just set drawer.publishable?
+	hasDeposit
+  depositHasBeenWithdrawn
+  getExpirationTime (show current time/time until expiration)
+  expire          // side effect
+  getOpenedTime
+  getDepositTime
+	getWithdrawalTime

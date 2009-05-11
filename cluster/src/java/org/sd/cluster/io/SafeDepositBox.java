@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -249,6 +250,13 @@ public class SafeDepositBox implements Shutdownable {
       }
     }
   }
+
+	/**
+	 * Get the current administration information snapshot for this instance
+	 */
+	public AdminInfo getAdminInfo() {
+		return new AdminInfo(NEXT_NUM.get(), freeMemoryLimit, key2claimNum, claimNum2Drawer);
+	}
 
 
   private static final class ExpirationMonitor implements Runnable {
@@ -579,4 +587,189 @@ public class SafeDepositBox implements Shutdownable {
       return withdrawalTime;
     }
   }
+
+	public static final class AdminInfo implements Publishable {
+
+		private long totalDrawers;
+		private long activeDrawers;
+		private long freeMemoryLimit;
+		private long freeMemory;
+		private long currentTime;
+
+		private Map<String, Long> key2claimNum;
+		private Map<Long, Withdrawal> claimNum2Withdrawal;
+
+		/**
+		 * Default constructor for publishable reconstruction.
+		 */
+		public AdminInfo() {
+		}
+
+		/**
+		 * Construct with the given info.
+		 */
+		public AdminInfo(long totalDrawers, long freeMemoryLimit,
+										 Map<String, Long> key2claimNum,
+										 Map<Long, Drawer> claimNum2Drawer) {
+			this.totalDrawers = totalDrawers;
+			this.activeDrawers = claimNum2Drawer.size();
+
+			this.freeMemoryLimit = freeMemoryLimit;
+			this.freeMemory = Runtime.getRuntime().freeMemory();
+			this.currentTime = System.currentTimeMillis();
+
+			this.key2claimNum = new TreeMap<String, Long>(key2claimNum);
+
+			this.claimNum2Withdrawal = new TreeMap<Long, Withdrawal>();
+			for (Map.Entry<Long, Drawer> entry : claimNum2Drawer.entrySet()) {
+				final Long claimNum = entry.getKey();
+				final Drawer drawer = entry.getValue();
+				claimNum2Withdrawal.put(claimNum, buildAdminWithdrawal(claimNum, drawer));
+			}
+		}
+
+		/**
+		 * Get the total number of drawers allocated for this box.
+		 */
+		public long numTotalDrawers() {
+			return totalDrawers;
+		}
+
+		/**
+		 * Get the total number of active drawers for this box.
+		 */
+		public long numActiveDrawers() {
+			return activeDrawers;
+		}
+
+		/**
+		 * Get the total number of drawers incinerated.
+		 */
+		public long numIncineratedDrawers() {
+			return totalDrawers - activeDrawers;
+		}
+
+		/**
+		 * Get the amount of free memory under which the scheduled cleanup will
+		 * occur.
+		 */
+		public long getFreeMemoryLimit() {
+			return freeMemoryLimit;
+		}
+
+		/**
+		 * Get the amount of memory currently free in the box's jvm.
+		 */
+		public long getFreeMemory() {
+			return freeMemory;
+		}
+
+		/**
+		 * Get the current time according to this box.
+		 */
+		public long getCurrentTime() {
+			return currentTime;
+		}
+
+		/**
+		 * Get the map of all keys (even incinerated) to their claim numbers.
+		 */
+		public Map<String, Long> getKey2claimNum() {
+			return key2claimNum;
+		}
+
+		/**
+		 * Get the map of all active claim numbers to their withdrawals.
+		 */
+		public Map<Long, Withdrawal> getClaimNum2Withdrawal() {
+			return claimNum2Withdrawal;
+		}
+
+    /**
+     * Write this message to the dataOutput stream such that this message
+     * can be completely reconstructed through this.read(dataInput).
+     *
+     * @param dataOutput  the data output to write to.
+     */
+    public void write(DataOutput dataOutput) throws IOException {
+      dataOutput.writeLong(totalDrawers);
+      dataOutput.writeLong(activeDrawers);
+      dataOutput.writeLong(freeMemoryLimit);
+      dataOutput.writeLong(freeMemory);
+      dataOutput.writeLong(currentTime);
+
+			if (key2claimNum == null) {
+				dataOutput.writeInt(-1);
+			}
+			else {
+				dataOutput.writeInt(key2claimNum.size());
+				for (Map.Entry<String, Long> entry : key2claimNum.entrySet()) {
+					MessageHelper.writeString(dataOutput, entry.getKey());
+					dataOutput.writeLong(entry.getValue());
+				}
+			}
+
+			if (claimNum2Withdrawal == null) {
+				dataOutput.writeInt(-1);
+			}
+			else {
+				dataOutput.writeInt(claimNum2Withdrawal.size());
+				for (Map.Entry<Long, Withdrawal> entry : claimNum2Withdrawal.entrySet()) {
+					dataOutput.writeLong(entry.getKey());
+					MessageHelper.writePublishable(dataOutput, entry.getValue());
+				}
+			}
+    }
+
+    /**
+     * Read this message's contents from the dataInput stream that was written by
+     * this.write(dataOutput).
+     * <p>
+     * NOTE: this requires all implementing classes to have a default constructor
+     *       with no args.
+     *
+     * @param dataInput  the data output to write to.
+     */
+    public void read(DataInput dataInput) throws IOException {
+			this.totalDrawers = dataInput.readLong();
+			this.activeDrawers = dataInput.readLong();
+			this.freeMemoryLimit = dataInput.readLong();
+			this.freeMemory = dataInput.readLong();
+			this.currentTime = dataInput.readLong();
+
+			final int numkeys = dataInput.readInt();
+			if (numkeys > 0) {
+				this.key2claimNum = new TreeMap<String, Long>();
+				for (int i = 0; i < numkeys; ++i) {
+					key2claimNum.put(MessageHelper.readString(dataInput), dataInput.readLong());
+				}
+			}
+
+			final int numclaims = dataInput.readInt();
+			if (numclaims > 0) {
+				this.claimNum2Withdrawal = new TreeMap<Long, Withdrawal>();
+				for (int i = 0; i < numclaims; ++i) {
+					claimNum2Withdrawal.put(dataInput.readLong(), (Withdrawal)MessageHelper.readPublishable(dataInput));
+				}
+			}
+    }
+
+		/**
+		 * Build a withdrawal with the drawer information without the side effects
+		 * of a normal withdrawal.
+		 */
+		private final Withdrawal buildAdminWithdrawal(Long claimNumber, Drawer drawer) {
+			final WithdrawalCode withdrawalCode = (drawer.hasDeposit()) ? WithdrawalCode.RETRIEVED : WithdrawalCode.NO_DEPOSIT;
+			final UnitCounter uc = drawer.getUnitCounter();
+			final Publishable contents = drawer.publishable;  // avoid side-effects of getContents
+			final long openedTime = drawer.getOpenedTime();
+			final long depositTime = drawer.getDepositTime();
+			final long withdrawalTime = drawer.getWithdrawalTime();
+			final long expirationTime = drawer.getExpirationTime();
+
+			return new Withdrawal(claimNumber, withdrawalCode, contents,
+														openedTime, depositTime, withdrawalTime,
+														expirationTime, uc);
+		}
+	}
 }

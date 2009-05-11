@@ -27,13 +27,16 @@ import java.util.Iterator;
  * <p>
  * @author Spence Koehler
  */
-public class BaseTextIterator implements Iterator<String> {
+public class BaseTextIterator implements TextIterator {
 	
 	private BreakIterator breakIterator;
 	private String text;
 	private int start;
 	private int end;
 	private String next;
+
+	private int lastStart;
+	private int lastEnd;
 
 	/**
 	 * Construct with the string whose text is to be iterated over.
@@ -48,12 +51,16 @@ public class BaseTextIterator implements Iterator<String> {
 	 */
 	public final void setText(String text) {
 		this.text = text;
+		this.start = 0;
+		this.end = 0;
 
-		breakIterator.setText(text);
-		this.start = breakIterator.first();
-		this.end = breakIterator.next();
+		if (!"".equals(text)) {
+			breakIterator.setText(text);
+			this.start = breakIterator.first();
+			this.end = breakIterator.next();
 
-		computeNext();
+			computeNext();
+		}
 	}
 
 	/**
@@ -61,6 +68,22 @@ public class BaseTextIterator implements Iterator<String> {
 	 */
 	public final String getText() {
 		return text;
+	}
+
+	/**
+	 * Get the starting character index (inclusive) in the input text of the
+	 * last string returned by 'next'.
+	 */
+	public final int getStartIndex() {
+		return lastStart;
+	}
+
+	/**
+	 * Get the ending character index (exclusive) in the input text of the
+	 * last string returned by 'next'.
+	 */
+	public final int getEndIndex() {
+		return lastEnd;
 	}
 
 	/**
@@ -76,7 +99,7 @@ public class BaseTextIterator implements Iterator<String> {
 	 * Determine whether there is a next text.
 	 */
 	public boolean hasNext() {
-		return next != null;
+		return text != null && !"".equals(text) && next != null;
 	}
 
 	/**
@@ -120,6 +143,9 @@ public class BaseTextIterator implements Iterator<String> {
 				result = text.substring(start, end).trim();
 			}			
 
+			lastStart = start;
+			lastEnd = end;
+
 			start = end;
 			end = breakIterator.next();
 		}
@@ -131,6 +157,6 @@ public class BaseTextIterator implements Iterator<String> {
 	 * Determine whether there is a next text.
 	 */
 	private final boolean computeHasNext() {
-		return start != BreakIterator.DONE && end != BreakIterator.DONE;
+		return text != null && !"".equals(text) && start != BreakIterator.DONE && end != BreakIterator.DONE;
 	}
 }
