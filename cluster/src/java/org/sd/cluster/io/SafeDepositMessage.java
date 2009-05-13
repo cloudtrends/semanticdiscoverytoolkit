@@ -208,6 +208,10 @@ public abstract class SafeDepositMessage implements Message {
     this.forceRehandle = forceRehandle;
   }
 
+	public void setFillTime(long fillTime) {
+		this.fillTime = fillTime;
+	}
+
   /**
    * Hook to override by extending classes to tweak params before building a
    * receipt for the response.

@@ -39,9 +39,17 @@ public class Messenger {
   private DataOutputStream dataOutput;
   private DataInputStream dataInput;
 
+	private long receiveTime;
+	private long responseGenTime;
+	private long sendTime;
+
   Messenger(DataOutputStream dataOutput, DataInputStream dataInput) {
     this.dataOutput = dataOutput;
     this.dataInput = dataInput;
+
+		this.receiveTime = -1L;
+		this.responseGenTime = -1L;
+		this.sendTime = -1L;
   }
 
   /**
@@ -69,13 +77,18 @@ public class Messenger {
 
   public synchronized Message receiveMessage(Context serverContext) throws IOException {
     Message message = null;
+		final long starttime = System.currentTimeMillis();
 
     // listen for a message to receive on dataInput
     message = receiveMessage(dataInput);
+		final long postReceiveTime = System.currentTimeMillis();
+		this.receiveTime = postReceiveTime - starttime;
 
     // send a response through dataOutput
     Message response = message.getResponse(serverContext);
     if (response == null) response = new NullMessage();
+		final long postResponseGenTime = System.currentTimeMillis();
+		this.responseGenTime = postResponseGenTime - postReceiveTime;
 
     try {
       sendMessage(response, dataOutput);
@@ -85,6 +98,8 @@ public class Messenger {
       throw e;
     }
     dataOutput.flush();
+
+		this.sendTime = System.currentTimeMillis() - postResponseGenTime;
 
     return message;
   }
@@ -105,4 +120,32 @@ public class Messenger {
     return (Message)MessageHelper.readPublishable(dataInput);
   }
   
+	/**
+	 * Get the amount of time (in millis) taken to receive the message.
+	 *
+	 * @return the time to receive, or -1 if nothing has been received.
+	 */
+	public long getReceiveTime() {
+		return receiveTime;
+	}
+
+  
+	/**
+	 * Get the amount of time (in millis) taken to generate the response.
+	 *
+	 * @return the time to generate, or -1 if no response has been generated.
+	 */
+	public long getResponseGenTime() {
+		return responseGenTime;
+	}
+
+  
+	/**
+	 * Get the amount of time (in millis) taken to send the response.
+	 *
+	 * @return the time to send, or -1 if nothing has been sent.
+	 */
+	public long getSendTime() {
+		return sendTime;
+	}
 }
