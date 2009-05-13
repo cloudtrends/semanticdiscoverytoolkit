@@ -22,9 +22,11 @@ package org.sd.cluster.io;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
@@ -42,7 +44,7 @@ import org.sd.util.thread.UnitCounter;
  * <p>
  * @author Spence Koehler
  */
-public class SafeDepositBox implements Shutdownable {
+public class SafeDepositBox implements SafeDepositBoxMXBean, Shutdownable {
 
   public enum WithdrawalCode {NO_DEPOSIT, EXPIRED, RETRIEVED, UNRESERVED};
 
@@ -60,6 +62,7 @@ public class SafeDepositBox implements Shutdownable {
   private ScheduledFuture<?> expirationHandle;
 
   private long freeMemoryLimit;
+	private AdminInfo _adminInfo;
 
   /**
    * Default constructor.
@@ -91,6 +94,7 @@ public class SafeDepositBox implements Shutdownable {
 
   private final void init(double freeMemoryLimit) {
     this.freeMemoryLimit = (long)(freeMemoryLimit * Runtime.getRuntime().totalMemory());
+		this._adminInfo = null;
   }
 
   /**
@@ -123,6 +127,8 @@ public class SafeDepositBox implements Shutdownable {
 
 //System.out.println("reserved drawer #" + result + " forMillis=" + forMillis + " key=" + key);
 
+		this._adminInfo = null;  // this will need to be recomputed
+
     return result;
   }
 
@@ -140,6 +146,7 @@ public class SafeDepositBox implements Shutdownable {
    */
   public void incinerate(long claimNumber) {
     claimNum2Drawer.remove(claimNumber);
+		this._adminInfo = null;  // this will need to be recomputed
   }
 
   /**
@@ -156,6 +163,8 @@ public class SafeDepositBox implements Shutdownable {
       drawer.setContents(contents);
       result = true;
     }
+
+		this._adminInfo = null;  // this will need to be recomputed
 
     return result;
   }
@@ -249,13 +258,144 @@ public class SafeDepositBox implements Shutdownable {
                            Runtime.getRuntime().freeMemory() + ", limit=" + freeMemoryLimit + ")");
       }
     }
+
+		this._adminInfo = null;  // this will need to be recomputed
   }
 
 	/**
 	 * Get the current administration information snapshot for this instance
 	 */
 	public AdminInfo getAdminInfo() {
-		return new AdminInfo(NEXT_NUM.get(), freeMemoryLimit, key2claimNum, claimNum2Drawer);
+		if (_adminInfo == null && NEXT_NUM.get() > 0) {
+			_adminInfo = new AdminInfo(NEXT_NUM.get(), freeMemoryLimit, key2claimNum, claimNum2Drawer);
+		}
+		return _adminInfo;
+	}
+
+	/**
+	 * Get the total number of drawers (active and incinerated).
+	 */
+	public long getTotalDrawerCount() {
+		return NEXT_NUM.get();
+	}
+
+	/**
+	 * Get the number of incinerated drawers.
+	 */
+	public long getNumIncineratedDrawers() {
+		long result = 0;
+
+		final AdminInfo adminInfo = getAdminInfo();
+		if (adminInfo != null) {
+			result = adminInfo.numIncineratedDrawers();
+		}
+
+		return result;
+	}
+
+	/**
+	 * Get the number of active drawers (filled or filling).
+	 */
+	public long getNumActiveDrawers() {
+		long result = 0;
+
+		final AdminInfo adminInfo = getAdminInfo();
+		if (adminInfo != null) {
+			result = adminInfo.numActiveDrawers();
+		}
+
+		return result;
+	}
+
+	/**
+	 * Get the number of active drawers that are filled.
+	 */
+	public long getNumFilledDrawers() {
+		long result = 0;
+
+		final AdminInfo adminInfo = getAdminInfo();
+		if (adminInfo != null) {
+			result = adminInfo.numFilledDrawers();
+		}
+
+		return result;
+	}
+
+	/**
+	 * Get the number of active drawers that are yet to be filled.
+	 */
+	public long getNumFillingDrawers() {
+		long result = 0;
+
+		final AdminInfo adminInfo = getAdminInfo();
+		if (adminInfo != null) {
+			result = adminInfo.numFillingDrawers();
+		}
+
+		return result;
+	}
+
+	/**
+	 * Get the keys for the filled drawers.
+	 */
+	public List<String> getFilledKeys() {
+		List<String> result = null;
+
+		final AdminInfo adminInfo = getAdminInfo();
+		if (adminInfo != null) {
+			result = adminInfo.getFilledKeys();
+		}
+
+		return result;
+	}
+
+	/**
+	 * Get the contents from the drawer with the given key.
+	 */
+	public String getContentsString(String key) {
+		String result = null;
+
+		final Long claimNum = key2claimNum.get(key);
+		if (claimNum != null) {
+			final Drawer drawer = claimNum2Drawer.get(claimNum);
+			if (drawer != null && drawer.hasDeposit()) {
+				final Publishable contents = drawer.publishable;  // avoid side-effects of getContents
+				if (contents != null) {
+					result = contents.toString();
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * Incinerate the drawer with the given key.
+	 */
+	public void incinerate(String key) {
+		final Long claimNum = key2claimNum.get(key);
+		if (claimNum != null) {
+			incinerate(claimNum);
+		}
+	}
+
+	/**
+	 * Incinerate all drawers that are older than the given age (in millis).
+	 */
+	public long incinerateOlder(long age) {
+		long result = 0;
+
+		for (Map.Entry<String, Long> k2cEntry : key2claimNum.entrySet()) {
+			final String key = k2cEntry.getKey();
+			final Long claimNum = k2cEntry.getValue();
+			final Drawer drawer = claimNum2Drawer.get(claimNum);
+			if (drawer != null && drawer.agedTime > age) {
+				incinerate(claimNum);
+				++result;
+			}
+		}
+
+		return result;
 	}
 
 
@@ -590,11 +730,12 @@ public class SafeDepositBox implements Shutdownable {
 
 	public static final class AdminInfo implements Publishable {
 
-		private long totalDrawers;
-		private long activeDrawers;
+		private long totalDrawers;      // total drawers ever created
+		private long activeDrawers;     // portion of total that are active
 		private long freeMemoryLimit;
 		private long freeMemory;
 		private long currentTime;
+		private List<String> filledKeys;
 
 		private Map<String, Long> key2claimNum;
 		private Map<Long, Withdrawal> claimNum2Withdrawal;
@@ -613,6 +754,7 @@ public class SafeDepositBox implements Shutdownable {
 										 Map<Long, Drawer> claimNum2Drawer) {
 			this.totalDrawers = totalDrawers;
 			this.activeDrawers = claimNum2Drawer.size();
+			this.filledKeys = getFilledKeys(key2claimNum, claimNum2Drawer);
 
 			this.freeMemoryLimit = freeMemoryLimit;
 			this.freeMemory = Runtime.getRuntime().freeMemory();
@@ -629,6 +771,24 @@ public class SafeDepositBox implements Shutdownable {
 		}
 
 		/**
+		 * Count the number of filled drawers.
+		 */
+		private final List<String> getFilledKeys(Map<String, Long> key2claimNum, Map<Long, Drawer> claimNum2Drawer) {
+			final List<String> result = new ArrayList<String>();
+
+			for (Map.Entry<String, Long> k2cEntry : key2claimNum.entrySet()) {
+				final String key = k2cEntry.getKey();
+				final Long claimNum = k2cEntry.getValue();
+				final Drawer drawer = claimNum2Drawer.get(claimNum);
+				if (drawer != null && drawer.hasDeposit()) {
+					result.add(key);
+				}
+			}
+
+			return result;
+		}
+
+		/**
 		 * Get the total number of drawers allocated for this box.
 		 */
 		public long numTotalDrawers() {
@@ -640,6 +800,27 @@ public class SafeDepositBox implements Shutdownable {
 		 */
 		public long numActiveDrawers() {
 			return activeDrawers;
+		}
+
+		/**
+		 * Get the number of active drawers that have contents.
+		 */
+		public long numFilledDrawers() {
+			return filledKeys.size();
+		}
+
+		/**
+		 * Get the keys for drawers with contents.
+		 */
+		public List<String> getFilledKeys() {
+			return filledKeys;
+		}
+
+		/**
+		 * Get the number of active drawers that have yet to be filled.
+		 */
+		public long numFillingDrawers() {
+			return activeDrawers - filledKeys.size();
 		}
 
 		/**

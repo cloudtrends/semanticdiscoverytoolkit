@@ -35,6 +35,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.sd.util.MathUtil;
+import org.sd.util.StatsAccumulator;
+
 /**
  * Node server.
  * <p>
@@ -45,7 +48,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Spence Koehler
  */
-public class NodeServer extends Thread {
+public class NodeServer extends Thread implements NodeServerMXBean {
 
   /**
    * Identifying prefix string for instances.
@@ -71,8 +74,25 @@ public class NodeServer extends Thread {
 
   private static final AtomicInteger nextServerId = new AtomicInteger(0);
   private final AtomicBoolean stayAlive = new AtomicBoolean(true);
+	private final AtomicBoolean handling = new AtomicBoolean(true);
+	private final AtomicBoolean accepting = new AtomicBoolean(true);
   private final AtomicInteger socketThreadId = new AtomicInteger(0);
   private final AtomicInteger messageHandlerThreadId = new AtomicInteger(0);
+
+	private int numSocketThreads;
+	private int numMessageHandlerThreads;
+	private long starttime;
+	private long endtime;
+
+	private final Object statsMutex = new Object();
+	private StatsAccumulator totalTimeStats;
+	private StatsAccumulator receiveTimeStats;
+	private StatsAccumulator responseGenTimeStats;
+	private StatsAccumulator sendTimeStats;
+	private StatsAccumulator handleTimeStats;
+
+	private final Object socketPoolMutex = new Object();
+	private final Object messagePoolMutex = new Object();
 
   /**
    * Construct a node server.
@@ -89,6 +109,14 @@ public class NodeServer extends Thread {
     this.nodeName = NodeUtil.buildNodeName(PREFIX_STRING, context.getName(), mySocketAddress.toString(), serverId);
     this.mySocketAddress = mySocketAddress;
 
+		// initialize stats
+		this.totalTimeStats = new StatsAccumulator("TotalTime");
+		this.receiveTimeStats = new StatsAccumulator("ReceiveTime");
+		this.responseGenTimeStats = new StatsAccumulator("ResponseGenTime");
+		this.sendTimeStats = new StatsAccumulator("SendTimeStats");
+		this.handleTimeStats = new StatsAccumulator("HandleTimeStats");
+
+		// initialize stable queues
     this.messageQueue = new LinkedBlockingQueue<Message>();
     this.serverThread
       = Executors.newSingleThreadExecutor(
@@ -97,15 +125,6 @@ public class NodeServer extends Thread {
             return new Thread(r, nodeName + "-ServerThread");
           }
         });
-    this.socketPool
-      = Executors.newFixedThreadPool(
-        numSocketThreads,
-        new ThreadFactory() {
-          public Thread newThread(Runnable r) {
-            return new Thread(r, nodeName + "-Socket-" + socketThreadId.getAndIncrement());
-          }
-        });
-//    ((ThreadPoolExecutor)this.socketPool).setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
     this.messageQueueThread
       = Executors.newSingleThreadExecutor(
         new ThreadFactory() {
@@ -113,19 +132,223 @@ public class NodeServer extends Thread {
             return new Thread(r, nodeName + "-MessageQueueThread");
           }
         });
-    this.messageHandlerPool
-      = Executors.newFixedThreadPool(
-        numMessageHandlerThreads,
-        new ThreadFactory() {
-          public Thread newThread(Runnable r) {
-            return new Thread(r, nodeName + "-MessageHandler-" + messageHandlerThreadId.getAndIncrement());
-          }
-        });
+
+		// initialize thread pools
+		this.starttime = System.currentTimeMillis();
+		this.socketPool = null;
+		this.messageHandlerPool = null;
+		this.numSocketThreads = 0;
+		this.numMessageHandlerThreads = 0;
+		init(numSocketThreads, numMessageHandlerThreads);
+	}
+
+	private final void init(int numSocketThreads, int numMessageHandlerThreads) {
+		numSocketThreads = Math.max(numSocketThreads, 1);                  // need at least 1
+		numMessageHandlerThreads = Math.max(numMessageHandlerThreads, 1);  // need at least 1
+
+		if (this.socketPool == null || numSocketThreads != this.numSocketThreads) {
+			accepting.set(false);
+			synchronized (socketPoolMutex) {
+				if (this.socketPool != null) {
+					System.out.println(new Date() + ": " + nodeName + " shutting down socket pool for reset.");
+					this.socketPool.shutdown();  // nicely finish what it's working on. todo: put this in an alternate thread?
+					System.out.println(new Date() + ": " + nodeName + " socket pool shutdown for reset complete.");
+				}
+				this.socketPool
+					= Executors.newFixedThreadPool(
+						numSocketThreads,
+						new ThreadFactory() {
+							public Thread newThread(Runnable r) {
+								return new Thread(r, nodeName + "-Socket-" + socketThreadId.getAndIncrement());
+							}
+						});
+			}
+			accepting.set(true);
+		}
+
+		if (this.messageHandlerPool == null || numMessageHandlerThreads != this.numMessageHandlerThreads) {
+			handling.set(false);
+			synchronized (messagePoolMutex) {
+				if (this.messageHandlerPool != null) {
+					System.out.println(new Date() + ": " + nodeName + " shutting down message handler pool for reset.");
+					this.messageHandlerPool.shutdown();  // nicely finish what it's working on. todo: put this in an alternate thread?
+					System.out.println(new Date() + ": " + nodeName + " message handler pool shutdown for reset complete.");
+				}
+				this.messageHandlerPool
+					= Executors.newFixedThreadPool(
+						numMessageHandlerThreads,
+						new ThreadFactory() {
+							public Thread newThread(Runnable r) {
+								return new Thread(r, nodeName + "-MessageHandler-" + messageHandlerThreadId.getAndIncrement());
+							}
+						});
+			}
+			handling.set(true);
+		}
+
+		this.numSocketThreads = numSocketThreads;
+		this.numMessageHandlerThreads = numMessageHandlerThreads;
   }
 
+	/**
+	 * Get the duration of time during which this server has been "up"
+	 * as a human readable string.
+	 */
+	public String getUpTime() {
+		final long curtime = endtime > 0 ? endtime : System.currentTimeMillis();
+		final long result = curtime - starttime;
+		return MathUtil.timeString(result, false);
+	}
+
+	/**
+	 * Get the number of socket threads for this server.
+	 */
+	public int getNumSocketThreads() {
+		return numSocketThreads;
+	}
+
+	/**
+	 * Get the number of message handler threads for this server.
+	 */
+	public int getNumMessageHandlerThreads() {
+		return numMessageHandlerThreads;
+	}
+
+	/**
+	 * Get the current size of the message queue.
+	 */
+	public int getMessageQueueSize() {
+		return messageQueue.size();
+	}
+
+	/**
+	 * Get this node server's name.
+	 */
+	public String getServerName() {
+		return nodeName;
+	}
+
+	/**
+	 * Determine whether this node is currently "up".
+	 */
   public boolean isUp() {
     return stayAlive.get();
   }
+
+	/**
+	 * Reset this server with the given numbers of threads.
+	 *
+	 * @param numSocketThreads  The new number of threads for listening on sockets
+	 *                          (leave unchanged if &lt;= 0).
+	 * @param numMessageHandlerThreads  The new number of message handler threads
+	 *                          (leave unchanged if &lt;= 0).
+	 * @param resetStats  If true, then the stats will all be reset.
+	 */
+	public void reset(int numSocketThreads,	int numMessageHandlerThreads,	boolean resetStats) {
+
+		// reset stats
+		if (resetStats) {
+			this.totalTimeStats.clear();
+			this.receiveTimeStats.clear();
+			this.responseGenTimeStats.clear();
+			this.sendTimeStats.clear();
+			this.handleTimeStats.clear();
+
+			//this.starttime = System.currentTimeMillis();
+		}
+
+		// rebuild thread pools
+		if (numSocketThreads > 0 || numMessageHandlerThreads > 0) {
+			init(numSocketThreads > 0 ? numSocketThreads : this.numSocketThreads,
+					 numMessageHandlerThreads > 0 ? numMessageHandlerThreads : this.numMessageHandlerThreads);
+		}
+	}
+
+	/**
+	 * Pause handling messages, but keep accepting and responding to them.
+	 * <p>
+	 * Note that the message queue will fill with uncoming requests while paused.
+	 */
+	public void pauseHandling() {
+		handling.compareAndSet(true, false);
+	}
+
+	/**
+	 * Resume handling messages from the queue.
+	 */
+	public void resumeHandling() {
+		handling.compareAndSet(false, true);
+	}
+
+	/**
+	 * Determine whether the server is currently handling or will handle messages.
+	 */
+	public boolean isHandling() {
+		return handling.get();
+	}
+
+	/**
+	 * Pause accepting messages, but keep handling those from the queue.
+	 */
+	public void pauseAccepting() {
+		accepting.compareAndSet(true, false);
+	}
+
+	/**
+	 * Resume accepting messages.
+	 */
+	public void resumeAccepting() {
+		accepting.compareAndSet(false, true);
+	}
+
+	/**
+	 * Determine whether the server is currently accepting messages.
+	 */
+	public boolean isAccepting() {
+		return accepting.get();
+	}
+
+	/**
+	 * Get the overall stats for the time, in millis, to service requests.
+	 * <p>
+	 * This is the sum of receive, responseGen, and send time stats and
+	 * does <b>not</b> include handle time stats.
+	 * <p>
+	 * NOTE: Time is measured from the reception of a request to the sending
+	 *       of a response.
+	 */
+	public StatsAccumulator getServerTimeStats() {
+		return totalTimeStats;
+	}
+
+	/**
+	 * Get the stats for the time, in millis, to receive requests.
+	 */
+	public StatsAccumulator getReceiveTimeStats() {
+		return receiveTimeStats;
+	}
+
+	/**
+	 * Get the stats for the time, in millis, to generate responses.
+	 */
+	public StatsAccumulator getResponseGenTimeStats() {
+		return responseGenTimeStats;
+	}
+
+	/**
+	 * Get the stats for the time, in millis, to send responses.
+	 */
+	public StatsAccumulator getSendTimeStats() {
+		return sendTimeStats;
+	}
+
+	/**
+	 * Get the stats for the time, in millis, to handle messages.
+	 */
+	public StatsAccumulator getHandleTimeStats() {
+		return handleTimeStats;
+	}
+
 
   public void run() {
 //    System.out.println("Starting server: " + nodeName);
@@ -150,8 +373,16 @@ public class NodeServer extends Thread {
       messageQueueThread.execute(new Runnable() {
           public void run() {
             while (stayAlive.get()) {
-              final Message message = getNextMessage(500);
-              if (message != null) handleMessage(message);
+							if (handling.get()) {
+								final Message message = getNextMessage(500);
+								if (message != null) handleMessage(message);
+							}
+							else {
+								try {
+									Thread.sleep(500);
+								}
+								catch (InterruptedException ignore) {}
+							}
             }
           }
         });
@@ -175,13 +406,26 @@ public class NodeServer extends Thread {
     }
   }
 
+	/**
+	 * Shutdown this node server.
+	 * <p>
+	 * Note that the node server will not be able to come back up after being
+	 * shutdown.
+	 *
+	 * @param now  If true, then performa a more aggressive shutdown, not
+	 *             necessarily waiting for threads to die nicely.
+	 */
   public void shutdown(boolean now) {
     if (stayAlive.compareAndSet(true, false)) {
       if (now) {
         serverThread.shutdownNow();
-        socketPool.shutdownNow();
+				synchronized (socketPoolMutex) {
+					socketPool.shutdownNow();
+				}
         messageQueueThread.shutdownNow();
-        messageHandlerPool.shutdownNow();
+				synchronized (messagePoolMutex) {
+					messageHandlerPool.shutdownNow();
+				}
       }
       else {
         // shutdown server thread so no new connections are made
@@ -189,11 +433,16 @@ public class NodeServer extends Thread {
 
         // wait for message
 
-        socketPool.shutdown();
+				synchronized (socketPoolMutex) {
+					socketPool.shutdown();
+				}
         messageQueueThread.shutdown();
-        messageHandlerPool.shutdown();
+				synchronized (messagePoolMutex) {
+					messageHandlerPool.shutdown();
+				}
       }
     }
+		this.endtime = System.currentTimeMillis();
   }
 
   private Message getNextMessage(int timeout) {
@@ -220,17 +469,27 @@ public class NodeServer extends Thread {
     return result;
   }
 
+	private final void addHandledStat(long handledTime) {
+		synchronized (handleTimeStats) {
+			handleTimeStats.add(handledTime);
+		}
+	}
+
   private void handleMessage(final Message message) {
     if (stayAlive.get()) {
       boolean handled = false;
       int tryCount = 0;
       while (stayAlive.get() && tryCount < 100) {
         try {
-          messageHandlerPool.execute(new Runnable() {
-              public void run() {
-                message.handle(context);
-              }
-            });
+					synchronized (messagePoolMutex) {
+						messageHandlerPool.execute(new Runnable() {
+								public void run() {
+									final long starttime = System.currentTimeMillis();
+									message.handle(context);
+									addHandledStat(System.currentTimeMillis() - starttime);
+								}
+							});
+					}
           handled = true;
           break;
         }
@@ -267,7 +526,12 @@ public class NodeServer extends Thread {
       while (stayAlive.get()) {
 //        System.out.println(nodeName + "-SocketListener -- accepting...");
         try {
-          socket = serverSocket.accept();
+					if (accepting.get()) {
+						socket = serverSocket.accept();
+					}
+					else {
+						Thread.sleep(500);  // pause while we're not accepting connections
+					}
 //          System.out.println(nodeName + " ACCEPTED socket!");
         }
         catch (SocketTimeoutException e) {
@@ -280,10 +544,13 @@ public class NodeServer extends Thread {
           e.printStackTrace(System.err);
           shutdown(true);
         }
+				catch (InterruptedException ignore) {}
 
         if (socket != null) {
           // start a socket thread
-          socketPool.execute(new SocketHandler(socket));
+					synchronized (socketPoolMutex) {
+						socketPool.execute(new SocketHandler(socket));
+					}
           socket = null;
         }
         else {
@@ -293,6 +560,16 @@ public class NodeServer extends Thread {
     }
   }
   
+	private final void addStats(long receiveTime, long responseGenTime, long sendTime) {
+		final long totalTime = receiveTime + responseGenTime + sendTime;
+		synchronized (statsMutex) {
+			totalTimeStats.add(totalTime);
+			receiveTimeStats.add(receiveTime);
+			responseGenTimeStats.add(responseGenTime);
+			sendTimeStats.add(sendTime);
+		}
+	}
+
   private class SocketHandler implements Runnable {
     private Socket socket;
 
@@ -312,8 +589,12 @@ public class NodeServer extends Thread {
           final Messenger messenger = new Messenger(dataOut, dataIn);
           final Message message = messenger.receiveMessage(context);  // does both receive and response
 
+					// tally stats
+					addStats(messenger.getReceiveTime(), messenger.getResponseGenTime(), messenger.getSendTime());
+
           //todo: split up receiving message and sending response so that if the message
           //      queue is full we can report that in the response to the client.
+					//todo: set an upper-limit queue size and use messageQueue.offer instead of add.
           messageQueue.add(message);
         }
       }

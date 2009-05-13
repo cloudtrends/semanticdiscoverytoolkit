@@ -19,6 +19,7 @@
 package org.sd.util;
 
 
+import java.beans.ConstructorProperties;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -60,6 +61,7 @@ public class StatsAccumulator {
   /**
    * Construct a statsAccumulator w/the following characteristics.
    */
+  @ConstructorProperties({"label", "n", "min", "max", "mean", "standardDeviation"})
   public StatsAccumulator(String label, int n, double min, double max, double mean, double stddev) {
     this.label = label;
     this.n = n;

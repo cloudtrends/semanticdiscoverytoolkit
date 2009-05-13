@@ -28,12 +28,15 @@ import org.sd.util.ExecUtil;
 import org.sd.util.PropertiesParser;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 /**
  * Class to encapsulate a cluster node.
@@ -49,6 +52,8 @@ public class ClusterNode implements ClusterContext {
   private SafeDepositBox safeDepositBox;
   private NodeServer listener;
   private NodeClient client;
+	private MBeanServer mbs;
+
 
   // this node's logs for monitoring purposes.
   private LogManager.LogInfo errorLog;
@@ -115,6 +120,7 @@ public class ClusterNode implements ClusterContext {
                                    numMessageHandlerThreads);
     final String clientName = (identifier == null) ? config.getName() : config.getName() + "-" + identifier;
     this.client = new NodeClient(clientName, localhost, numberOfChildren);
+		this.mbs = null;
   }
 
   private final void initLogHandles(int jvmNumHint) {
@@ -183,6 +189,18 @@ public class ClusterNode implements ClusterContext {
 //todo: use config params from environment instead of defaults.
       this.safeDepositBox = new SafeDepositBox();
       jobManager.registerShutdownable(safeDepositBox);
+
+			// Register MXBean
+			if (mbs != null) {
+				try {
+					final ObjectName sdbName = new ObjectName("org.sd.cluster.io:type=SafeDepositBox");
+					mbs.registerMBean(safeDepositBox, sdbName);
+				}
+				catch (Exception e) {
+					System.err.println("*** WARNING: Unable to register SafeDepositBoxMXBean!");
+					e.printStackTrace(System.err);
+				}
+			}
     }
 
     return safeDepositBox;
@@ -191,6 +209,10 @@ public class ClusterNode implements ClusterContext {
   public NodeClient getNodeClient() {
     return client;
   }
+
+	public void setMBeanServer(MBeanServer mbs) {
+		this.mbs = mbs;
+	}
 
   public void start() {
     this.listener.start();
@@ -348,6 +370,22 @@ public class ClusterNode implements ClusterContext {
     try {
       System.out.println("Starting " + config.getName() + "...");
       System.out.println("..." + config.getName() + " is listening on port " + config.getServerPort());
+
+			// Register MXBeans if possible
+			MBeanServer mbs = null;
+			try {
+				mbs = ManagementFactory.getPlatformMBeanServer();
+			}
+			catch (Exception e) {
+				System.err.println("*** WARNING: Unable to getPlatformMBeanServer!");
+				e.printStackTrace(System.err);
+				mbs = null;
+			}
+			if (mbs != null) {
+				final ObjectName nodeServerName = new ObjectName("org.sd.cluster.io:type=NodeServer");
+				mbs.registerMBean(clusterNode.listener, nodeServerName);
+				clusterNode.setMBeanServer(mbs);
+			}
 
       clusterNode.listenForMessages();
     }
