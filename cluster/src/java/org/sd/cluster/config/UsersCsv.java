@@ -22,6 +22,7 @@ package org.sd.cluster.config;
 import org.sd.io.FileUtil;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -72,9 +73,27 @@ public class UsersCsv {
     return user.highPort;
   }
 
+  /**
+   * Add the user to this instance.
+   *
+   * @param userName  the user to add.
+   * @param lowPort  the low port for the user.
+   * @param highPort  the high port for the user.
+   * @param override  if false, then only add the user if the name doesn't already exist;
+   *                  otherwise, add the user regardless.
+   */
+  public void addUser(String userName, int lowPort, int highPort, boolean override) {
+
+    if (override || !this.users.containsKey(userName)) {
+      this.users.put(userName, new User(userName, lowPort, highPort));
+    }
+  }
+
   private final Map<String, User> loadUsersCsv() throws IOException {
     final Map<String, User> result = new LinkedHashMap<String, User>();
-    final BufferedReader reader = FileUtil.getReader(this.getClass(), USERS_CSV_RESOURCE);
+
+    // check USERS_CSV environment variable, fallback to USERS_CSV_RESOURCE
+    final BufferedReader reader = getUsersCsvReader();
     String line = null;
     while ((line = reader.readLine()) != null) {
       line = line.trim();
@@ -83,6 +102,28 @@ public class UsersCsv {
         result.put(user.name, user);
       }
     }
+    reader.close();
+    return result;
+  }
+
+  private final BufferedReader getUsersCsvReader() throws IOException {
+    BufferedReader result = null;
+
+    // check USERS_CSV environment variable, fallback to USERS_CSV_RESOURCE
+
+    final String override = System.getenv("USERS_CSV");
+    if (override != null) {
+      final File file = FileUtil.getFile(override);
+      if (file.exists()) {
+        result = FileUtil.getReader(file);
+      }
+    }
+
+    // fallback to default users csv resource
+    if (result == null) {
+      result = FileUtil.getReader(this.getClass(), USERS_CSV_RESOURCE);
+    }
+
     return result;
   }
 
@@ -96,6 +137,12 @@ public class UsersCsv {
       this.name = pieces[0];
       this.lowPort = Integer.parseInt(pieces[1]);
       this.highPort = Integer.parseInt(pieces[2]);
+    }
+
+    public User(String name, int lowPort, int highPort) {
+      this.name = name;
+      this.lowPort = lowPort;
+      this.highPort = highPort;
     }
   }
 }

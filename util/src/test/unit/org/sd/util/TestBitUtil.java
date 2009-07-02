@@ -50,10 +50,21 @@ public class TestBitUtil extends TestCase {
 
   public void testIntToBytesAndBack() {
     final int[] samples = {0, 1, 3, 17, 159, 26535, 897932384, 2147483647,
-                           -1, -3, -17, -159, -26535, -897932384, -2147483647};
+                           -1, -3, -17, -159, -26535, -897932384, -2147483647,
+													 Integer.MAX_VALUE, Integer.MIN_VALUE};
 
     for (int sample : samples) {
       assertEquals(sample, BitUtil.getInteger(BitUtil.getBytes(sample), 0));
+    }
+  }
+
+  public void testLongToBytesAndBack() {
+    final long[] samples = {0, 1, 3, 17, 159, 26535, 897932384, 2147483647,
+														-1, -3, -17, -159, -26535, -897932384, -2147483647,
+														Long.MAX_VALUE, Long.MIN_VALUE};
+
+    for (long sample : samples) {
+      assertEquals(sample, BitUtil.getLong(BitUtil.getBytes(sample), 0));
     }
   }
 

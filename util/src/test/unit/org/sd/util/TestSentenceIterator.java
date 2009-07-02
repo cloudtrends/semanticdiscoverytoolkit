@@ -40,11 +40,18 @@ public class TestSentenceIterator extends TestCase {
 		int count = 0;
 		while (iter.hasNext()) {
 			final String text = iter.next();
-			assertEquals("(" + count + ")", expected[count], text);
+      if (expected == null) {
+        System.out.println(count + ": " + text);
+      }
+      else {
+        assertEquals("(" + count + ")", expected[count], text);
+      }
 			++count;
 		}
 
-		assertEquals(expected.length, count);
+    if (expected != null) {
+      assertEquals(expected.length, count);
+    }
 	}
 
 	public void testSimple() {
@@ -63,6 +70,27 @@ public class TestSentenceIterator extends TestCase {
 						 "Try parsing beyond tokens like Ph.D. and Dr.",
 						 "Smith, if you please.",
 					 });
+	}
+
+	public void testComplex1() {
+		doTest("\"What is Machine Translation? Machine translation (MT) is the application of computers to the task of translating texts from one natural language to another. One of the very earliest pursuits in computer science, MT has proved to be an elusive goal, but today a number of systems are available which produce output which, if not perfect, is of sufficient quality to be useful in a number of specific domains.\" A definition from the European Association for Machine Translation (EAMT), \"an organization that serves the growing community of people interested in MT and translation tools, including users, developers, and researchers of this increasingly viable technology.\"",
+           new String[] {
+             "\"What is Machine Translation?",
+             "Machine translation (MT) is the application of computers to the task of translating texts from one natural language to another.",
+             "One of the very earliest pursuits in computer science, MT has proved to be an elusive goal, but today a number of systems are available which produce output which, if not perfect, is of sufficient quality to be useful in a number of specific domains.\"",
+             "A definition from the European Association for Machine Translation (EAMT), \"an organization that serves the growing community of people interested in MT and translation tools, including users, developers, and researchers of this increasingly viable technology.\"",
+           });
+	}
+
+	public void testComplex2() {
+		doTest("&quot;What is Machine Translation? Machine translation (MT) is the application of computers to the task of translating texts from one natural language to another. One of the very earliest pursuits in computer science, MT has proved to be an elusive goal, but today a number of systems are available which produce output which, if not perfect, is of sufficient quality to be useful in a number of specific domains.&quot; A definition from the European Association for Machine Translation (EAMT), &quot;an organization that serves the growing community of people interested in MT and translation tools, including users, developers, and researchers of this increasingly viable technology.&quot;",
+					 new String[] {
+             "&quot;What is Machine Translation?",
+             "Machine translation (MT) is the application of computers to the task of translating texts from one natural language to another.",
+             "One of the very earliest pursuits in computer science, MT has proved to be an elusive goal, but today a number of systems are available which produce output which, if not perfect, is of sufficient quality to be useful in a number of specific domains.",
+             "&quot; A definition from the European Association for Machine Translation (EAMT), &quot;an organization that serves the growing community of people interested in MT and translation tools, including users, developers, and researchers of this increasingly viable technology.",
+             "&quot;",
+           });
 	}
 
 	/** Test behavior with empty input. */
