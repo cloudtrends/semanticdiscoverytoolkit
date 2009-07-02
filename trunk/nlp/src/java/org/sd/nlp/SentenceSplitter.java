@@ -319,7 +319,7 @@ public class SentenceSplitter {
      * boundary at pos.
      */
     protected final boolean isEndBoundary(int pos) {
-      return (pos >= codePoints.length || codePoints[pos] == ' ' );
+      return (pos >= codePoints.length || codePoints[pos] == ' ' || codePoints[pos] == '&');
     }
 
     /**
