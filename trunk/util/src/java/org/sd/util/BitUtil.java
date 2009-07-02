@@ -86,7 +86,7 @@ public class BitUtil {
       (byte)(value >>> 24),
       (byte)(value >>> 16),
       (byte)(value >>>  8),
-      (byte)(value >>>  0),
+      (byte)(value),
     };
   }
 
@@ -95,10 +95,41 @@ public class BitUtil {
    */
   public static final int getInteger(byte[] bytes, int offset) {
     return
-      (bytes[offset++] << 24) +
-      ((bytes[offset++] & 0xFF) << 16) +
-      ((bytes[offset++] & 0xFF) <<  8) +
+      (bytes[offset++] << 24) |
+      ((bytes[offset++] & 0xFF) << 16) |
+      ((bytes[offset++] & 0xFF) <<  8) |
       (bytes[offset] & 0xFF);
+  }
+
+  /**
+   * Get the long value's (4) bytes.
+   */
+  public static final byte[] getBytes(long value) {
+    return new byte[] {
+      (byte)(value >>> 56),
+      (byte)(value >>> 48),
+      (byte)(value >>> 40),
+      (byte)(value >>> 32),
+      (byte)(value >>> 24),
+      (byte)(value >>> 16),
+      (byte)(value >>>  8),
+      (byte)(value),
+    };
+  }
+
+  /**
+   * Get the long represented in the 4 bytes starting at offset.
+   */
+  public static final long getLong(byte[] bytes, int offset) {
+    return
+      (((long)bytes[offset++]) << 56) |
+      (((long)(bytes[offset++] & 0xFF)) << 48) |
+      (((long)(bytes[offset++] & 0xFF)) << 40) |
+      (((long)(bytes[offset++] & 0xFF)) << 32) |
+  		(((long)(bytes[offset++] & 0xFF)) << 24) |
+      (((long)(bytes[offset++] & 0xFF)) << 16) |
+      (((long)(bytes[offset++] & 0xFF)) <<  8) |
+      (((long)bytes[offset] & 0xFF));
   }
 }
 

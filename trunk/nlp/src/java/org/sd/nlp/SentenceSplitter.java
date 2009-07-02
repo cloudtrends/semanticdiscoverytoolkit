@@ -101,10 +101,11 @@ public class SentenceSplitter {
   }
 
 	private final void doAddSplitInfo(List<SplitInfo> result, InputWrapper inputWrapper, int startIndex, int endIndex) {
-		final String sentence = inputWrapper.getInput(startIndex, endIndex);
-		final String trimmed = trimSentence(sentence);
-		if (trimmed != null && !"".equals(trimmed)) {
-			result.add(new SplitInfo(startIndex, endIndex, trimmed));
+    final int trimStart = inputWrapper.getTrimStart(startIndex);
+    final int trimEnd = inputWrapper.getTrimEnd(endIndex);
+    if (trimEnd > trimStart + 1) {
+      final String trimmed = inputWrapper.getInput(trimStart, trimEnd);
+			result.add(new SplitInfo(trimStart, trimEnd, trimmed));
 		}
 	}
 
@@ -141,6 +142,15 @@ public class SentenceSplitter {
      */
     public boolean isSentence(int startPos, int endPos);
 
+    /**
+     * Get the index of the first non-white character at or after startPos.
+     */
+    public int getTrimStart(int startPos);
+
+    /**
+     * Get the index of the last non-white character before endPos.
+     */
+    public int getTrimEnd(int endPos);
   }
 
 	/**
@@ -150,7 +160,7 @@ public class SentenceSplitter {
 		/** Start index (inclusive.) */
 		public final int startIndex;
 
-		/** End index (exlusive.) */
+		/** End index (exclusive.) */
 		public final int endIndex;
 
 		/** Sentence text. */
@@ -193,6 +203,9 @@ public class SentenceSplitter {
     private int lastCapPos;
     private int lastDigitPos;
 
+    private int lastPrimaryEndPos;
+    private int lastSecondaryEndPos;
+
     protected SdInputWrapper(String input) {
       super(input);
 
@@ -202,6 +215,9 @@ public class SentenceSplitter {
       this.lastLetterPos = -1;
       this.lastCapPos = -1;
       this.lastDigitPos = -1;
+
+      this.lastPrimaryEndPos = -1;
+      this.lastSecondaryEndPos = -1;
     }
 
     public int length() {
@@ -234,11 +250,22 @@ public class SentenceSplitter {
       boolean result = false;
       final int cp = codePoints[index];
 
-      if (cp == '.' || cp == '!' || cp == '?' || cp == '|') {
+      if (cp == '.' || cp == '!' || cp == '?') {
         result = true;
+        lastPrimaryEndPos = index;
+      }
+      else if (cp == '|' || cp == '"' || cp == '\'' || cp == ')') {
+        if (lastPrimaryEndPos == index - 1) {
+          result = true;
+        }
+        else if (lastSecondaryEndPos == index - 1) {
+          lastPrimaryEndPos = index - 1;
+          result = true;
+        }
+        lastSecondaryEndPos = index;
       }
       else {
-        if (cp == ' ') {
+        if (Character.isWhitespace(cp)) {
           lastSpacePos = index;
         }
         else if (Character.isDigit(cp)) {
@@ -292,7 +319,27 @@ public class SentenceSplitter {
      * boundary at pos.
      */
     protected final boolean isEndBoundary(int pos) {
-      return (pos >= codePoints.length || codePoints[pos] == ' ');
+      return (pos >= codePoints.length || codePoints[pos] == ' ' );
+    }
+
+    /**
+     * Get the index of the first non-white character at or after startPos.
+     */
+    public int getTrimStart(int startPos) {
+      for (; startPos < codePoints.length; ++startPos) {
+        if (!Character.isWhitespace(codePoints[startPos])) break;
+      }
+      return startPos;
+    }
+
+    /**
+     * Get the index of the last non-white character before endPos.
+     */
+    public int getTrimEnd(int endPos) {
+      for (; endPos > 0; --endPos) {
+        if (!Character.isWhitespace(codePoints[endPos - 1])) break;
+      }
+      return endPos;
     }
   }
 

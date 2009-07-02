@@ -38,9 +38,13 @@ public class SentenceSegmenter implements TextSegmenter {
 	private int lastEnd;
 
 	public SentenceSegmenter(String text) {
-		this.splitter = new SentenceSplitter();
-		this.setText(text);
+    this(new SentenceSplitter(), text);
 	}
+
+  protected SentenceSegmenter(SentenceSplitter splitter, String text) {
+    this.splitter = splitter;
+    this.setText(text);
+  }
 
 	/**
 	 * Get the full text being iterated over.

@@ -1,0 +1,44 @@
+
+ClusterNode
+  <>-- NodeServer      // --> NodeServerMXBean
+  <>-- NodeClient      // doesn't need an MXBean
+  <>-- JobManager      // --> JobManagerMXBean
+  <>-- SafeDepositBox  // --> SafeDepositBoxMXBean
+
+NodeServerMXBean
+- get info
+- get time stats
+  - server time (= receiveTime + responseGenTime + sendTime)
+    - receiveTime
+    - responseGenTime
+    - sendTime
+  - handleTime
+- control
+  - accepting
+  - handling
+  - thread counts
+  - stat reset
+
+NodeClient doesn't need an MXBean
+  - unless we want to fiddle with thread counts?
+
+JobManagerMXBean
+  + ...
+
+SafeDepositBoxMBean
+- info
+  - total num keys (numkeys)
+  - total filled drawers w/ages (claimNum w/contents)
+    - get keys for filled drawers
+    - show contents for key
+		- incinerate drawer for key
+  - total incinerated drawers  (numkeys - numclaimnums)
+  - total filling drawers  (claimNum w/no contents)
+  - current available memory
+- stats
+  - time from reservation to filled
+    - ?or maybe combined info from each drawer's unit counter
+- actions
+  - show all filled drawers older than X
+  - incinerate all filled drawers older than X
+  - change memory limit (absolute -vs- percentage)
