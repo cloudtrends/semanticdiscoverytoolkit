@@ -72,20 +72,22 @@ public class TestGovernableThread extends TestCase {
 
 		thread.start();  // start the sleeper
 		thread.pauseFor(50, 5);  // pause for 50 millis, checking each 5 millis
+    dowait(5);  // wait long enough for sleeper to catch the pause
 		final long countDone = uc.doneSoFar();  // sleeper should be paused now
-		try {
-			Thread.sleep(10); // sleep long enough for sleeper to proceed if it weren't paused
-		}
-		catch (InterruptedException ignore) {}
+    dowait(10); // sleep long enough for sleeper to proceed if it weren't paused
 		assertEquals(countDone, uc.doneSoFar());  // shouldn't have incremented while paused
-		try {
-			Thread.sleep(100);  // sleep beyond the pause time so sleeper will have proceeded
-		}
-		catch (InterruptedException ignore) {}
+    dowait(100);  // sleep beyond the pause time so sleeper will have proceeded
 		assertTrue(countDone < uc.doneSoFar());  // should have incremented now
 		
 		thread.kill(true, 0, false);  // no need to finish sleeping now.
 	}
+
+  private final void dowait(long millis) {
+    try {
+      Thread.sleep(millis);
+    }
+    catch (InterruptedException ignore) {}
+  }
 
 	private final GovernableThread doKillTest(String id, boolean nice, long waitMillis, boolean interrupt) {
 		final Sleeper sleeper = new Sleeper(200, 5);  // sleep 200 times for 5 millis each
@@ -107,10 +109,7 @@ public class TestGovernableThread extends TestCase {
 		final long endtime = System.currentTimeMillis();
 		
 		final long countDone = uc.doneSoFar();
-		try {
-			Thread.sleep(10); // sleep long enough for sleeper to proceed if it is still alive
-		}
-		catch (InterruptedException ignore) {}
+    dowait(10); // sleep long enough for sleeper to proceed if it is still alive
 
 		assertTrue(uc.hasEnded());                // counter should be marked as ended
 		assertFalse(thread.isAlive());            // thread should be dead
@@ -207,10 +206,7 @@ public class TestGovernableThread extends TestCase {
 		final GovernableThread thread = 
 			GovernableThread.newGovernableThread(new BaseGovernable(numTimes) {
 					protected boolean doOperation(long workUnit, AtomicBoolean die) {
-						try {
-							Thread.sleep(toSleep);
-						}
-						catch (InterruptedException e) {}
+            dowait(toSleep);
 						return true;
 					}
 				}, true);
