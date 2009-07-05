@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Implementation of Ukkonen's Suffix Tree Algorithm for inserting into a
  * suffix tree in time O(n), where n is the length of the string to insert.
  * <p>
+ * Ported to java from Mark Nelson's c++ code at http://marknelson.us/1996/08/01/suffix-trees/
+ *
  * @author Spence Koehler
  */
 public class SuffixTree {
