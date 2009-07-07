@@ -25,6 +25,7 @@ import junit.framework.TestSuite;
 
 import org.sd.io.FileUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -124,14 +125,16 @@ public class TestPropertiesParser extends TestCase {
   }
 
   public void testProperShadowing() throws IOException {
+    final File basePath = FileUtil.getFile(this.getClass(), "resources/testPropertiesParser_shadow2.properties").getParentFile();
+
     final PropertiesParser pp = new PropertiesParser(new String[] {
       "foo=3",
-      FileUtil.getFilename(this.getClass(), "resources/testPropertiesParser_shadow1.properties"),
-      FileUtil.getFilename(this.getClass(), "resources/testPropertiesParser_shadow1.default.properties"),
+      new File(basePath, "testPropertiesParser_shadow2.properties").getAbsolutePath(),
+      new File(basePath, "testPropertiesParser_shadow1.default.properties").getAbsolutePath(),
     });
 
 
-    assertEquals("3", pp.getProperty("foo"));
+    assertEquals("1", pp.getProperty("foo"));
   }
 
   public void testFindProperty() {

@@ -24,7 +24,11 @@ import org.sd.io.FileUtil;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,9 +57,21 @@ import java.util.TreeSet;
  */
 public class PropertiesParser {
   
+  /**
+   * Environment variable to poll for default properties directory.
+   */
+  public static final String DEFAULT_PROPERTIES_VAR = "DEFAULT_PROPERTIES_DIR";
+
+  /**
+   * Default properties directory (if unspecified).
+   */
+  public static final String DEFAULT_PROPERTIES_DIR = "/home/" + ExecUtil.getUser() + "/cluster/resources/properties";
+
+
   private Properties properties;
   private String[] args;
   private String context;
+  private String _defaultPropertiesDir;
 
   private Map<String, Set<String>> prefix2keys;
 
@@ -79,37 +95,33 @@ public class PropertiesParser {
    * Construct with the given args, optionally including environment vars.
    */
   public PropertiesParser(String[] args, boolean getenv) throws IOException {
-    parseArgs(args);
+    this();
 
+    parseArgs(args);
 		if (getenv) getEnvironmentVars();
   }
 
   /**
-   * Load the default .properties file of any argument that ends in ".default.properties".
-   * Load the file of any argument that ends in ".properties" (overrides defaults)
-   * Load any argument of the form "property=value" as overriding properties (overrides files).
+   * Taking the arguments in order, where later arguments override earlier
+   * arguments, load
+   * <ul>
+   * <li>the default .properties file of any argument that ends in ".default.properties"</li>
+   * <li>the file of any argument that ends in ".properties"</li>
+   * <li>any argument of the form "property=value"</li>
+   * </ul>
    */
   private final void parseArgs(String[] args) throws IOException {
     final List<String> remainingArgs = new ArrayList<String>();
 
-    final Properties defaultProperties = new Properties();
-    final Properties fileProperties = new Properties(defaultProperties);
-    final Properties properties = new Properties(fileProperties);
-
-    boolean gotOne = false;
-
     for (String arg : args) {
       if (arg.endsWith(".default.properties")) {
-        loadDefaultProperties(defaultProperties, arg);
-        gotOne = true;
+        loadDefaultProperties(this.properties, arg);
       }
       else if (arg.endsWith(".properties")) {
-        loadFileProperties(fileProperties, arg);
-        gotOne = true;
+        loadFileProperties(this.properties, arg);
       }
       else if (arg.indexOf('=') > 0) {
-        setProperty(properties, arg);
-        gotOne = true;
+        setProperty(this.properties, arg);
       }
       else {
         remainingArgs.add(arg);
@@ -117,44 +129,39 @@ public class PropertiesParser {
     }
 
     this.args = remainingArgs.toArray(new String[remainingArgs.size()]);
-    this.properties = gotOne ? properties : this.properties;
-    this.context = null;
   }
 
   private final void loadDefaultProperties(Properties defaultProperties, String arg) throws IOException {
     String path = null;
 
-		final int cpos = arg.indexOf(':');
-    final char c = arg.charAt(cpos + 1);
-    if (c == '/' || c == '~') {
+    if (isAbsolute(arg)) {
       // use path specified with arg; still remove ".default" from "x.default.properties"
       path = arg.replaceFirst(".default.properties", ".properties");
     }
     else {
       // use default path: "/home/$USER/cluster/resources/properties/x.properties" given "x.default.properties"
-      path = getDefaultPropertyPath() + arg.replaceFirst(".default.properties", ".properties");
+      path = getDefaultPropertiesDir() + arg.replaceFirst(".default.properties", ".properties");
     }
 
     final File file = FileUtil.getFile(path);
-    doLoad(defaultProperties, file, arg);
-  }
-
-  private final void doLoad(Properties properties, File file, String arg) throws IOException {
-    if (file.exists()) {
-      final BufferedReader reader = FileUtil.getReader(file);
-      properties.load(reader);
-      reader.close();
+    if (file == null) {
+      throw new IllegalArgumentException("Can't decode default.properties arg '" + arg + "'!");
     }
     else {
-      throw new IllegalArgumentException("Can't find default properties at '" +
-                                         file.getAbsolutePath() + "' using arg='" +
-                                         arg + "'");
+      doLoad(defaultProperties, file, arg);
     }
   }
 
   private final void loadFileProperties(Properties fileProperties, String arg) throws IOException {
-    final File file = FileUtil.getFile(arg);
-    doLoad(fileProperties, file, arg);
+    if (isAbsolute(arg)) {
+      // use absolute path specified by arg
+      final File file = FileUtil.getFile(arg);
+      doLoad(fileProperties, file, arg);
+    }
+    else {
+      // search classpath for "x.properties"
+      loadProperties(this.properties, arg);
+    }
   }
 
   private final void setProperty(Properties properties, String arg) {
@@ -173,20 +180,76 @@ public class PropertiesParser {
     properties.setProperty(propertyName, value);
   }
 
+  private final void doLoad(Properties properties, File file, String arg) throws IOException {
+    if (file.exists()) {
+      final BufferedReader reader = FileUtil.getReader(file);
+      properties.load(reader);
+      reader.close();
+    }
+    else {
+      throw new IllegalArgumentException("Can't find default properties at '" +
+                                         file.getAbsolutePath() + "' using arg='" +
+                                         arg + "'");
+    }
+  }
+
   /**
-   * Get the path to the default properties directory for this user.
+   * Get the default properties dir.
    * <p>
-   * The default path is: "/home/$USER/cluster/resources/properties/".
+   * This identifies the location at which X.default.properties should be found
+   * as X.properties. It defaults to "$DEFAULT_PROPERTIES_DIR/properties" or
+   * "/home/$USER/cluster/resources/properties"
    */
-  public static final String getDefaultPropertyPath() {
-    final StringBuilder result = new StringBuilder();
+  private final String getDefaultPropertiesDir() {
+    if (_defaultPropertiesDir == null) {
+      String envDir = System.getenv(DEFAULT_PROPERTIES_VAR);
+      if (envDir == null) {
+        envDir = DEFAULT_PROPERTIES_DIR;
+      }
+    }
+    return _defaultPropertiesDir;
+  }
 
-    result.
-      append("/home/").
-      append(ExecUtil.getUser()).
-      append("/cluster/resources/properties/");
+  /**
+   * Determine whether the given path is absolute (from the root).
+   * <p>
+   * Account for paths like "/...", "~...", and "C:\\...".
+   */
+  private final boolean isAbsolute(String path) {
+		final int cpos = path.indexOf(':');
+    final char c = path.charAt(cpos + 1);
+    return (c == '/' || c == '\\' || c == '~');
+  }
 
-    return result.toString();
+  /**
+   * Load as properties all resources with the given name.
+   *
+   * @param properties  The properties in which to load the found resources (ok if null).
+   * @param name  The name of the properties resource to load.
+   *
+   * @return the loaded properties (== properties if non-null).
+   */
+  public static final Properties loadProperties(Properties properties, String name) throws IOException {
+    final Properties result = properties == null ? new Properties() : properties;
+
+    final Enumeration<URL> pUrls = ClassLoader.getSystemResources(name);
+    if (pUrls != null) {
+      while (pUrls.hasMoreElements()) {
+        final URL pUrl = pUrls.nextElement();
+        try {
+          final URI pUri = pUrl.toURI();
+          final File pFile = new File(pUri);
+          final BufferedReader reader = FileUtil.getReader(pFile);
+          result.load(reader);
+          reader.close();
+        }
+        catch (URISyntaxException e) {
+          throw new IOException(e);
+        }
+      }
+    }
+
+    return result;
   }
 
   /**
