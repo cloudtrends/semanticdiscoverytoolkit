@@ -223,7 +223,7 @@ System.out.println("JobManager-" + identifier + " shutting down! (now=" + now + 
     for (Map.Entry<Integer, Job> jobEntry : id2job.entrySet()) {
       result.
         append("lid=").append(jobEntry.getKey()).
-				append(": ").append(jobEntry.getValue().getStatus()).
+        append(": ").append(jobEntry.getValue().getStatus()).
         append("\t:\t").append(jobEntry.getValue().toString()).append('\n');
     }
 
@@ -342,16 +342,16 @@ System.out.println("JobManager-" + identifier + " shutting down! (now=" + now + 
           // end the existing jobHandler thread
           job.setStatus(JobStatus.INTERRUPTED);
 
-					// wait (limited) for job to finish
-					final Timer timer = new Timer(5000, new Date()); //todo: parameterize wait time
-					while (job.getStatus() == JobStatus.INTERRUPTED && !timer.reachedTimerMillis()) {}
+          // wait (limited) for job to finish
+          final Timer timer = new Timer(5000, new Date()); //todo: parameterize wait time
+          while (job.getStatus() == JobStatus.INTERRUPTED && !timer.reachedTimerMillis()) {}
 
-					if (job.getStatus() != JobStatus.INTERRUPTED) {
-						// and start a new one
-						jobThreadPool.execute(new NewJobHandler(job, localJobId.getId(), true));
-						booleanResult = true;
-					}
-					else booleanResult = false;
+          if (job.getStatus() != JobStatus.INTERRUPTED) {
+            // and start a new one
+            jobThreadPool.execute(new NewJobHandler(job, localJobId.getId(), true));
+            booleanResult = true;
+          }
+          else booleanResult = false;
 
           break;
         case INTERRUPT :
@@ -414,7 +414,7 @@ System.out.println("JobManager-" + identifier + " shutting down! (now=" + now + 
   public Console getConsole() {
     synchronized (consoleMutex) {
       if (_console == null) {
-        this._console = new Console(config.getUser(), clusterDefinition, "JobManager-Console");
+        this._console = new Console(clusterDefinition, "JobManager-Console");
       }
     }
     return _console;
@@ -487,33 +487,33 @@ System.out.println("JobManager-" + identifier + " shutting down! (now=" + now + 
 
 
 
-	/**
-	 * Send a job to a running cluster.
-	 */
-	public static final void main(String[] args) throws IOException, ClusterException {
+  /**
+   * Send a job to a running cluster.
+   */
+  public static final void main(String[] args) throws IOException, ClusterException {
     //
     // properties: jobId, groupName, dataDirName, [numThreads], [user], [defName], [machines],
     //
     // properties
     //
     // job -- (required) classpath for job to run (using properties constructor)
-		// sendTimeout -- (optional, default=5000) timeout for sending job.
+    // sendTimeout -- (optional, default=5000) timeout for sending job.
     //
 
     Job job = null;
     Console console = null;
 
     final PropertiesParser pp = new PropertiesParser(args, true);
-		final Properties properties = pp.getProperties();
+    final Properties properties = pp.getProperties();
 
-		final String jobClass = properties.getProperty("job");
-		if (jobClass == null) {
-			throw new IllegalArgumentException("Must define 'job' class to run!");
-		}
-		final int sendTimeout = Integer.parseInt(properties.getProperty("sendTimeout", "5000"));
+    final String jobClass = properties.getProperty("job");
+    if (jobClass == null) {
+      throw new IllegalArgumentException("Must define 'job' class to run!");
+    }
+    final int sendTimeout = Integer.parseInt(properties.getProperty("sendTimeout", "5000"));
 
     // use properties
-    console = new ClusterRunner(properties).getConsole();
+    console = new ClusterRunner(true/*useActiveCluster*/, properties).getConsole();
     job = (Job)ReflectUtil.buildInstance(jobClass, properties);
 
 
@@ -521,5 +521,5 @@ System.out.println("JobManager-" + identifier + " shutting down! (now=" + now + 
       console.showResponses(System.out, console.sendJob(job, sendTimeout));
       console.shutdown();
     }
-	}
+  }
 }

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +42,8 @@ import java.util.Map;
 public class ConfigGenerator {
 
   private File destinationDir;
-  private List<String> allNodeDefs;
-  private List<String> namedNodeDefs;
+  private LinkedHashSet<String> allNodeDefs;
+  private LinkedHashSet<String> namedNodeDefs;
   private Map<String, String[]> group2nodeDefs;
   
   /**
@@ -62,16 +63,36 @@ public class ConfigGenerator {
    * number of nodes.
    */
   public ConfigGenerator(String[] dirAndGroupDefs) {
+    this(dirAndGroupDefs, 1);
     this.destinationDir = new File(dirAndGroupDefs[0]);
-    this.allNodeDefs = new ArrayList<String>();
-    this.namedNodeDefs = new ArrayList<String>();
-    this.group2nodeDefs = new LinkedHashMap<String, String[]>();
-
-    init(dirAndGroupDefs);
   }
 
-  private final void init(String[] groupDefs) {
-    int nodeNum = 1;
+  /**
+   * Construct given group definitions from the firstGroupDefIndex (inclusive)
+   * to the end of the groupDefs array, where each group definitions is of the
+   * form:
+   * <p>
+   * "groupName:nodeDefs"
+   * <p>
+   * Where nodeDefs is of the form "nodeDef,nodeDef,..."
+   * <p>
+   * Where each nodeDef is of the form:
+   * <p>
+   * nodeN-C, where N is the node's number and C is the node's jvm count.
+   * <p>
+   * Node numbers are assumed to range from 1 to N, where N is the total
+   * number of nodes.
+   */
+  public ConfigGenerator(String[] groupDefs, int firstGroupDefIndex) {
+    this.allNodeDefs = new LinkedHashSet<String>();
+    this.namedNodeDefs = new LinkedHashSet<String>();
+    this.group2nodeDefs = new LinkedHashMap<String, String[]>();
+
+    init(groupDefs, firstGroupDefIndex);
+  }
+
+  private final void init(String[] groupDefs, int firstGroupDefIndex) {
+    int nodeNum = firstGroupDefIndex;
 
     for (int i = 1; i < groupDefs.length; ++i) {
       final String groupDef = groupDefs[i];
@@ -141,15 +162,15 @@ public class ConfigGenerator {
     return new Bundle(clusterDefFile, deployLine);
   }
 
-	public final ClusterDefinition buildClusterDefinition(String gateway, String[] machines) {
+  public final ClusterDefinition buildClusterDefinition(String gateway, String user, String[] machines) {
     final Tree<String> gatewayTree = buildGatewayTree();
     final String defName = buildDefinitionName(gatewayTree);
     final Tree<String> clusterDef = buildClusterDefinition(gatewayTree);
-		
-		return new ClusterDefinition(defName, clusterDef, gateway, machines);
-	}
+    
+    return new ClusterDefinition(user, defName, clusterDef, gateway, machines);
+  }
 
-  private final String buildDefinitionName(Tree<String> gatewayTree) {
+  public final String buildDefinitionName(Tree<String> gatewayTree) {
 
     final int[] numJvmsPerLevel = new int[gatewayTree.maxDepth() - 1];
     int numMachines = 0;
@@ -192,7 +213,8 @@ public class ConfigGenerator {
     result.addChild(gatewayTree);
 
     if (!group2nodeDefs.containsKey("controller")) {
-      result.addChild(buildGroupTree("controller", new String[]{allNodeDefs.get(0)}));
+      final String firstNodeDef = allNodeDefs.iterator().next();
+      result.addChild(buildGroupTree("controller", new String[]{firstNodeDef}));
     }
     for (Map.Entry<String, String[]> group2nodeDef : group2nodeDefs.entrySet()) {
       result.addChild(buildGroupTree(group2nodeDef.getKey(), group2nodeDef.getValue()));

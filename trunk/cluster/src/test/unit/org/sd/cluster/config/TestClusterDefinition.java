@@ -45,10 +45,6 @@ public class TestClusterDefinition extends TestCase {
     super(name);
   }
   
-  public void testGetClusterDefinitionPath() {
-    assertTrue(FileUtil.getFile(ClusterDefinition.getClusterDefinitionPath("simple-test-cluster")).exists());
-  }
-
   private static final Pattern mnlPattern = Pattern.compile("^(\\d+)m(\\d+)n\\.(.*)\\.def$");
 
   public void testMNLdefs() throws IOException {
@@ -75,7 +71,7 @@ public class TestClusterDefinition extends TestCase {
       final String levels = matcher.group(3);
       final String[] is = levels.split("-");
 
-      final ClusterDefinition clusterDef = new ClusterDefinition(name);
+      final ClusterDefinition clusterDef = new ClusterDefinition(null, name);
       assertEquals(name, m, clusterDef.getNumMachines());
       assertEquals(name, n, clusterDef.getNumNodes());
       assertEquals(name, is.length, clusterDef.getNumLevels());
@@ -90,20 +86,20 @@ public class TestClusterDefinition extends TestCase {
 
   public void testNameSubstitutionConstructor() throws IOException {
     ClusterDefinition clusterDefinition = null;
-    clusterDefinition = new ClusterDefinition("3m6n.2-4", "gw", new String[]{"foo", "bar", "baz"});
+    clusterDefinition = new ClusterDefinition(null, "3m6n.2-4", "gw", new String[]{"foo", "bar", "baz"});
 
     String expected = "(gw (foo-2 bar-2 baz-2))";
     String machineTreeString = clusterDefinition.getMachineTree().toString();
     assertEquals("expecting '" + expected + "', got '" + machineTreeString + "'", expected, machineTreeString);
 
-    clusterDefinition = new ClusterDefinition("3m3n.1-2", "gw", new String[]{"foo", "bar", "baz"});
+    clusterDefinition = new ClusterDefinition(null, "3m3n.1-2", "gw", new String[]{"foo", "bar", "baz"});
     expected = "(gw (foo bar baz))";
     machineTreeString = clusterDefinition.getMachineTree().toString();
     assertEquals("expecting '" + expected + "', got '" + machineTreeString + "'", expected, machineTreeString);
   }
 
   public void testGetPosition1() throws IOException {
-    final ClusterDefinition clusterDefinition = new ClusterDefinition("3m3n.1-2", "gw", new String[]{"foo", "bar", "baz"});
+    final ClusterDefinition clusterDefinition = new ClusterDefinition(null, "3m3n.1-2", "gw", new String[]{"foo", "bar", "baz"});
 
     assertEquals(0, clusterDefinition.getGlobalPosition("Foo", 0));
     assertEquals(1, clusterDefinition.getGlobalPosition("Bar", 0));
@@ -115,7 +111,7 @@ public class TestClusterDefinition extends TestCase {
   }
 
   public void testGetPosition2() throws IOException {
-    final ClusterDefinition clusterDefinition = new ClusterDefinition("dev-3a");
+    final ClusterDefinition clusterDefinition = new ClusterDefinition(null, "dev-3a");
 
     assertEquals(0, clusterDefinition.getGlobalPosition("Suliban", 0));
     assertEquals(1, clusterDefinition.getGlobalPosition("Andorian", 0));
@@ -127,7 +123,7 @@ public class TestClusterDefinition extends TestCase {
   }
 
   public void testComplexTestClusterDef() throws IOException {
-    final ClusterDefinition clusterDef = new ClusterDefinition("complex-test-cluster", "localhost", new String[]{"z", "a", "b", "c", "d", "e"});
+    final ClusterDefinition clusterDef = new ClusterDefinition(null, "complex-test-cluster", "localhost", new String[]{"z", "a", "b", "c", "d", "e"});
 
     assertTrue(clusterDef.hasGroup("group1"));
     assertTrue(clusterDef.hasGroup("group2"));
@@ -196,14 +192,14 @@ public class TestClusterDefinition extends TestCase {
   }
 
   public void testGetAllServerAddresses() throws IOException {
-    final ClusterDefinition clusterDef = new ClusterDefinition("3m3n.1-2", "vorta", new String[]{"suliban", "andorian", "tholian"});
-    final InetSocketAddress[] serverAddresses = clusterDef.getServerAddresses("spence", ClusterDefinition.ALL_NODES_GROUP);
+    final ClusterDefinition clusterDef = new ClusterDefinition("spence", "3m3n.1-2", "vorta", new String[]{"suliban", "andorian", "tholian"});
+    final InetSocketAddress[] serverAddresses = clusterDef.getServerAddresses(ClusterDefinition.ALL_NODES_GROUP);
     assertNotNull(serverAddresses);
   }
 
   public void testGetServerAddress() throws IOException {
-    final ClusterDefinition clusterDef = new ClusterDefinition("19m26n.5-7-14", "vorta", new String[]{"founder", "tandaran", "talaxian", "miradorn", "hunter", "suliban", "maquis", "ocampa", "tholian", "bolian", "bajoran", "briori", "shran", "archer", "kirk", "damar", "dukat", "gowron", "laforge"});
-    final InetSocketAddress[] serverAddress = clusterDef.getServerAddresses("spence", "founder-0");
+    final ClusterDefinition clusterDef = new ClusterDefinition("spence", "19m26n.5-7-14", "vorta", new String[]{"founder", "tandaran", "talaxian", "miradorn", "hunter", "suliban", "maquis", "ocampa", "tholian", "bolian", "bajoran", "briori", "shran", "archer", "kirk", "damar", "dukat", "gowron", "laforge"});
+    final InetSocketAddress[] serverAddress = clusterDef.getServerAddresses("founder-0");
     assertNotNull(serverAddress);
   }
 

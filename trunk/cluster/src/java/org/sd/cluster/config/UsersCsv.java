@@ -24,6 +24,12 @@ import org.sd.io.FileUtil;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Date;
+import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -34,7 +40,7 @@ import java.util.Map;
  */
 public class UsersCsv {
 
-  public static final String USERS_CSV_RESOURCE = "resources/users.csv";
+  public static final String USERS_CSV_RESOURCE = "users.csv";
 
   private static final UsersCsv INSTANCE = new UsersCsv();
 
@@ -46,18 +52,19 @@ public class UsersCsv {
 
   private UsersCsv() {
     try {
-      this.users = loadUsersCsv();
+      final InputStream inputStream = findUsersCsv();
+      this.users = loadUsersCsv(inputStream);
     }
     catch (IOException e) {
-      throw new IllegalStateException("can't load users! need '" + FileUtil.getFilename(UsersCsv.class, USERS_CSV_RESOURCE) + "' properly defined!", e);
+      throw new IllegalStateException("can't load users! need '" + USERS_CSV_RESOURCE + "' in classpath or referenced through env var 'USERS_CSV'", e);
     }
   }
-
+  
   public int getLowPort(String userName) {
     final User user = users.get(userName);
 
     if (user == null) {
-      throw new IllegalStateException("User '" + userName + "' is undefined in '" + FileUtil.getFilename(UsersCsv.class, USERS_CSV_RESOURCE + "'!"));
+      throw new IllegalStateException("User '" + userName + "' is undefined in '" + USERS_CSV_RESOURCE + "'!");
     }
 
     return user.lowPort;
@@ -67,7 +74,7 @@ public class UsersCsv {
     final User user = users.get(userName);
 
     if (user == null) {
-      throw new IllegalStateException("User '" + userName + "' is undefined in '" + FileUtil.getFilename(UsersCsv.class, USERS_CSV_RESOURCE + "'!"));
+      throw new IllegalStateException("User '" + userName + "' is undefined in '" + USERS_CSV_RESOURCE + "'!");
     }
 
     return user.highPort;
@@ -89,11 +96,11 @@ public class UsersCsv {
     }
   }
 
-  private final Map<String, User> loadUsersCsv() throws IOException {
+  private final Map<String, User> loadUsersCsv(InputStream usersCsvInputStream) throws IOException {
     final Map<String, User> result = new LinkedHashMap<String, User>();
 
     // check USERS_CSV environment variable, fallback to USERS_CSV_RESOURCE
-    final BufferedReader reader = getUsersCsvReader();
+    final BufferedReader reader = FileUtil.getReader(usersCsvInputStream);
     String line = null;
     while ((line = reader.readLine()) != null) {
       line = line.trim();
@@ -106,22 +113,43 @@ public class UsersCsv {
     return result;
   }
 
-  private final BufferedReader getUsersCsvReader() throws IOException {
-    BufferedReader result = null;
+  private final InputStream findUsersCsv() throws IOException {
+    InputStream result = null;
 
-    // check USERS_CSV environment variable, fallback to USERS_CSV_RESOURCE
+    // check USERS_CSV environment variable, fallback to classpath, fallback to USERS_CSV_RESOURCE
 
     final String override = System.getenv("USERS_CSV");
     if (override != null) {
       final File file = FileUtil.getFile(override);
       if (file.exists()) {
-        result = FileUtil.getReader(file);
+        System.out.println(new Date() + ": Loading UsersCsv (using environment var) from '" + file + "'");
+        result = FileUtil.getInputStream(file);
+      }
+    }
+
+    // try finding USERS_CSV_RESOURCE on the classpath
+    if (result == null) {
+      final Enumeration<URL> urls = ClassLoader.getSystemResources(USERS_CSV_RESOURCE);
+      if (urls != null) {
+        while (urls.hasMoreElements()) {
+          final URL url = urls.nextElement();
+          try {
+            final URI uri = url.toURI();
+            final File file = new File(uri);
+            System.out.println(new Date() + ": Loading UsersCsv (using classpath resource) from '" + file + "'");
+            result = FileUtil.getInputStream(file);
+          }
+          catch (URISyntaxException e) {
+            throw new IOException(e);
+          }
+        }
       }
     }
 
     // fallback to default users csv resource
     if (result == null) {
-      result = FileUtil.getReader(this.getClass(), USERS_CSV_RESOURCE);
+      System.out.println(new Date() + ": Loading UsersCsv (using default resource) from 'resources/" + USERS_CSV_RESOURCE + "'");
+      result = FileUtil.getInputStream(this.getClass(), "resources/" + USERS_CSV_RESOURCE);
     }
 
     return result;
@@ -143,6 +171,22 @@ public class UsersCsv {
       this.name = name;
       this.lowPort = lowPort;
       this.highPort = highPort;
+    }
+
+    public String toString() {
+      final StringBuilder result = new StringBuilder();
+
+      result.append(name).append(',').append(lowPort).append(',').append(highPort);
+
+      return result.toString();
+    }
+  }
+
+  public static final void main(String[] args) throws IOException {
+    // echo out the loaded users
+    final UsersCsv users = UsersCsv.getInstance();
+    for (User user : users.users.values()) {
+      System.out.println(user);
     }
   }
 }
