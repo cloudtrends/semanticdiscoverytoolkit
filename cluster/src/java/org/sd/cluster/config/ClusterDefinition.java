@@ -20,6 +20,8 @@ package org.sd.cluster.config;
 
 
 import org.sd.io.FileUtil;
+import org.sd.util.ExecUtil;
+import org.sd.util.PropertiesParser;
 import org.sd.util.tree.Hierarchy;
 import org.sd.util.tree.SimpleTreeBuilder;
 import org.sd.util.tree.SimpleTreeBuilderStrategy;
@@ -29,14 +31,21 @@ import org.sd.util.tree.TreeBuilder;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Class to encapsulate a cluster definition.
@@ -48,43 +57,308 @@ public class ClusterDefinition {
   public static final String CLUSTER_DEFINITIONS_PATH = "resources/clusters/";
   public static final String ALL_NODES_GROUP = "_ALL_";
 
-  public static final String getClusterDefinitionPath(String defName) {
-		return getClusterDefinitionPath(defName, null);
-	}
+  /**
+   * The "Cluster Gateway" identifies the name of the property whose value
+   * is the gateway machine (name or IP) through which the cluster is deployed.
+   */
+  public static final String CLUSTER_GATEWAY_ENV = "CLUSTER_GATEWAY";
+  public static final String CLUSTER_GATEWAY_PROPERTY = "gateway";
 
-  public static final String getClusterDefinitionPath(String defName, String clusterDefDir) {
-    final String ext = defName.endsWith(".def") ? "" : ".def";
-		String result = null;
-		File file = null;
+  /**
+   * The "Cluster Definition Name" identifies the name of the property whose
+   * value is the name of the persisted cluster definition to use.
+   */
+  public static final String CLUSTER_DEFINITION_NAME_PROPERTY = "cluterDefName";  // defName
 
-		if (clusterDefDir != null) {
-			result = FileUtil.getFilename(clusterDefDir, defName + ext);
-			file = FileUtil.getFile(result);
-		}
+  /**
+   * The "Cluster Definition" identifies the name of the property whose
+   * value is "user defName machines" identifying the cluster to use.
+   */
+  public static final String CLUSTER_DEFINITION_PROPERTY = "clusterDef";
 
-		if (file == null || !file.exists()) {
-			result = FileUtil.getFilename(ClusterDefinition.class, CLUSTER_DEFINITIONS_PATH + defName + ext);
-			file = FileUtil.getFile(result);
-		}
+  /**
+   * The "Cluster Machines" identifies the name of the property whose value
+   * is the names (or IP addresses) of machines participating in the cluster
+   * in a comma-delimited string.
+   */
+  public static final String CLUSTER_MACHINES_PROPERTY = "clusterMachines";  // machines
 
-		if (file == null || !file.exists()) {
-			// try testing area
-			result = result.replace("/classes/", "/unit-test-classes/");
-			file = FileUtil.getFile(result);
-		}
+  /**
+   * The "Cluster User Name" identifies the name of the property whose value
+   * is the user name under which the cluster is running.
+   */
+  public static final String CLUSTER_USER_PROPERTY = "clusterUser";  // user
 
-    System.out.println("clusterDef(" + defName + ")=" + result + "  [exists=" + file.exists() + "]");
+  /**
+   * The "Group Definition" identifies a dynamic cluster configuration.
+   * <p>
+   * NOTE: Either generic ('node-') or specific ('machineA') machine names are
+   *       acceptable, but generic naming requires the machines to be defined
+   *       separately.
+   */
+  public static final String CLUSTER_GROUP_DEFINITION_PROPERTY = "clusterGroupDef";
+
+
+  /**
+   * Get the (first) cluster definition identified in the given properties.
+   * <p>
+   * See getClusterDefinitions for a description of the properties.
+   */
+  public static final ClusterDefinition getClusterDefinition(Properties properties) {
+    return getClusterDefinition(null, properties);
+  }
+
+  /**
+   * Get the (first) cluster definition identified in the given properties.
+   * <p>
+   * See getClusterDefinitions for a description of the properties.
+   */
+  public static final ClusterDefinition getClusterDefinition(String prefix, Properties properties) {
+    ClusterDefinition result = null;
+
+    final List<ClusterDefinition> clusterDefs = getClusterDefinitions(prefix, properties);
+
+    if (clusterDefs != null && clusterDefs.size() > 0) {
+      result = clusterDefs.get(0);
+    }
 
     return result;
   }
 
-//  private static TreeBuilder<String> treeBuilder = TreeBuilderFactory.getStringTreeBuilder();
+  /**
+   * Get the cluster definitions identified in the given properties.
+   *
+   * @param prefix  Prefix to use (as prefix.key) when retrieving definition
+   *                properties. (Okay if null.)
+   * @param properties  Properties identifying definition parameters.
+   *
+   * Properties:
+   * <ul>
+   * <li>'gateway'</li>
+   * <li>ClusterDefinition Properties (choose 1 of 3 different ways to define)
+   *   <ul>
+   *     <li>Using a persisted configuration...
+   *       <ul>
+   *         <li>'clusterDefDir' (optional)</li>
+   *         <ul>...with a single property for combined pieces of information
+   *           <li>'clusterDef' == "user defname machines"; where
+   *             <ul>
+   *               <li>'user' is the cluster user</li>
+   *               <li>'defname' is the persisted definition name e.g. 1m1n.1 to be found at "clusterDefDir/1m1n.1.def"</li>
+   *               <li>'machines' is the comma-delimited list of machines to use with defname.</li>
+   *             </ul>
+   *           </li>
+   *         </ul>
+   *         <ul>...with a property for each piece of information:
+   *           <li>'clusterUser' is the cluster user</li>
+   *           <li>'clusterDefName' (same format as 'defname' above)</li>
+   *           <li>'clusterMachines' (same format as 'machines' above)</li>
+   *         </ul>
+   *       </ul>
+   *     </li>
+   *     <li>Using an on-the-fly generated configuration:
+   *       <ul>
+   *         <li>'clusterUser' is the cluster user</li>
+   *         <li>'clusterMachines' (same format as 'machines' above)</li>
+   *         <li>'clusterGroupDef' == "groupNameA:nodeDefs1 groupNameB:nodeDefs2 ..."; where
+   *           <ul>
+   *             <li>'groupName' is a group name for the nodeDefs</li>
+   *             <li>'nodeDefs' == "nodeDef1,nodeDef2,..."</li>
+   *             <li>'nodeDef' == "nodeN-C" or "machine-C"</li>
+   *             <li>'node' is literally 'node'</li>
+   *             <li>'N' is the number (1-based) for the node's machine</li>
+   *             <li>'C' is the number of jvms (nodes) to run on the machine</li>
+   *             <li>'machine' is the hostname of a machine</li>
+   *           </ul>
+   *         </li>
+   *       </ul>
+   *     </li>
+   *      e.g. for a 3 node cluster using machines "machA" with 1 node,
+   *      "machB" with 2 nodes, and "machC" with 2 nodes and having
+   *      machA as a "controller" group while machB and machC nodes
+   *      are all in the "processor" group, either of the following
+   *      forms can be used:
+   *     <ul>
+   *       <li>clusterDef="user 3m5n.1-4 machA,machB,machC"</li>
+   *       <li>groupDefs="controller:machA-1 processor:machB-2,machC-2" clusterUser="user"</li>
+   *       <li>groupDefs="controller:node1-1 processor:node2-2,node3-2" clusterUser="user" clusterMachines="machA,machB,machC"</li>
+   *     </ul>
+   *   </ul>
+   * </li>
+   * </ul>
+   */
+  public static final List<ClusterDefinition> getClusterDefinitions(String prefix, Properties properties) {
+    List<ClusterDefinition> result = new ArrayList<ClusterDefinition>();
+
+    // gateway
+    final String[] defaultGateways = PropertiesParser.getMultiValues(properties, prefix, ClusterDefinition.CLUSTER_GATEWAY_ENV);
+    String[] gateways = PropertiesParser.getMultiValues(properties, prefix, ClusterDefinition.CLUSTER_GATEWAY_PROPERTY, defaultGateways);
+    if (gateways == null || gateways.length == 0) gateways = new String[]{"localhost"};  // final fallback is to localhost.
+
+    // Check for persisited definition(s)
+    final String[] defNames = PropertiesParser.getMultiValues(properties, prefix, ClusterDefinition.CLUSTER_DEFINITION_NAME_PROPERTY);
+
+    // Check for user/machine definition(s)/override(s)
+    final String[] users = PropertiesParser.getMultiValues(properties, prefix, ClusterDefinition.CLUSTER_USER_PROPERTY);
+    final String[] machines = PropertiesParser.getMultiValues(properties, prefix, ClusterDefinition.CLUSTER_MACHINES_PROPERTY);
+
+    // Check for combined persisted definition(s)
+    final String[] clusterDefs = PropertiesParser.getMultiValues(properties, prefix, ClusterDefinition.CLUSTER_DEFINITION_PROPERTY);
+
+    // Check for dynamic ("on-the-fly") config(s)
+    final String[] groupDefs = PropertiesParser.getMultiValues(properties, prefix, ClusterDefinition.CLUSTER_GROUP_DEFINITION_PROPERTY);
+
+
+    if (groupDefs != null) {  // use ConfigGenerator
+      for (int index = 0; index < groupDefs.length; ++index) {
+        final String groupDef = groupDefs[index];
+        final String theGateway = getMatchOrLast(index, gateways, "localhost");
+        final String[] theMachines = getMachines(index, machines);
+        final String theUser = getMatchOrLast(index, users, ExecUtil.getUser());
+
+        final String[] splitDefs = groupDef.split("\\s+");
+        final ConfigGenerator configGenerator = new ConfigGenerator(splitDefs, 0);
+        final ClusterDefinition clusterDef = configGenerator.buildClusterDefinition(theGateway, theUser, theMachines);
+
+        if (clusterDef != null) {
+          result.add(clusterDef);
+        }
+      }
+    }
+    else if (clusterDefs != null) {
+      for (int index = 0; index < clusterDefs.length; ++index) {
+        final String theClusterDef = clusterDefs[index];
+        final String[] defPieces = theClusterDef.split("\\s+");  // user defname [machines]
+        final String defName = getDefName(1, defPieces);
+        final String theUser = defPieces[0];
+        final String theGateway = getMatchOrLast(index, gateways, "localhost");
+        final String[] overrideMachines = getMachines(index, machines);
+        final String[] theMachines = (overrideMachines != null) ? overrideMachines : defPieces[2].split("\\s*,\\s*");
+
+        if (defName != null && !"".equals(defName)) {
+          try {
+            final ClusterDefinition clusterDef = new ClusterDefinition(theUser, defName, theGateway, theMachines);
+            result.add(clusterDef);
+          }
+          catch (IOException e) {
+            //todo: log error!
+          }
+        }
+      }
+    }
+    else if (defNames != null) {
+      for (int index = 0; index < defNames.length; ++index) {
+        final String defName = getDefName(index, defNames);
+        final String theGateway = getMatchOrLast(index, gateways, "localhost");
+        final String[] theMachines = getMachines(index, machines);
+        final String theUser = getMatchOrLast(index, users, ExecUtil.getUser());
+
+        if (defName != null && !"".equals(defName)) {
+          try {
+            final ClusterDefinition clusterDef = new ClusterDefinition(theUser, defName, theGateway, theMachines);
+            result.add(clusterDef);
+          }
+          catch (IOException e) {
+            //todo: log error!
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Utility to get the matching index element or the last available.
+   */
+  private static final String getMatchOrLast(int index, String[] elements, String defaultValue) {
+    String result = null;
+
+    if (elements != null) {
+      final int elementIndex = index < elements.length ? index : elements.length - 1;  // last defined element is ok
+      result = elements[elementIndex];
+    }
+
+    return (result == null || "".equals(result)) ? defaultValue : result;
+  }
+
+  private static final String[] getMachines(int index, String[] machines) {
+    String[] result = null;
+
+    final int machinesIndex = machines == null ? -1 : index < machines.length ? index : -1;  // machines index must match
+    final String machinesString = (machinesIndex < 0) ? null : machines[machinesIndex];
+    if (machinesString != null) {
+      result = machinesString.split("\\s*,\\s*");
+    }
+    else {
+      result = ConfigUtil.getActiveClusterMachines();
+    }
+
+    return result;
+  }
+
+  private static final String getDefName(int index, String[] defNames) {
+    String result = null;
+
+    if (defNames != null && defNames.length > index) {
+      result = defNames[index];
+    }
+
+    return (result == null || "".equals(result)) ? ConfigUtil.getActiveClusterName() : result;
+  }
+
+  private static final InputStream findClusterDefinition(String defName) throws IOException {
+    return findClusterDefinition(defName, null);
+  }
+
+  private static final InputStream findClusterDefinition(String defName, String clusterDefDir) throws IOException {
+    InputStream result = null;
+
+    final String ext = defName.endsWith(".def") ? "" : ".def";
+
+    // look in clusterDefDir for the definition
+    if (clusterDefDir != null) {
+      final File clusterDefDirFile = new File(clusterDefDir);
+      if (clusterDefDirFile.exists()) {
+        final File file = new File(clusterDefDirFile, defName + ext);
+        if (file.exists()) {
+          result = FileUtil.getInputStream(file);
+        }
+      }
+    }
+
+    // look in the default area
+    if (result == null) {
+      result = FileUtil.getInputStream(ClusterDefinition.class, CLUSTER_DEFINITIONS_PATH + defName + ext);
+    }
+
+    if (result == null) {
+      // try searching classpath
+      final Enumeration<URL> urls = ClassLoader.getSystemResources(defName + ext);
+      if (urls != null) {
+        while (urls.hasMoreElements() && result == null) {
+          final URL url = urls.nextElement();
+          try {
+            final URI uri = url.toURI();
+            final File file = new File(uri);
+            result = FileUtil.getInputStream(file);
+          }
+          catch (URISyntaxException e) {
+            // ignore and skip
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
   private static TreeBuilder<NameNum> treeBuilder = new SimpleTreeBuilder<NameNum>(new NameNumTreeBuilderStrategy());
 
+  private String user;
   private String defName;
   private String gateway;
-	private File clusterDefFile;
-	private String clusterDefString;  // for (re)writing this definition
+  private String clusterDefString;  // for (re)writing this definition
   private Tree<NameNum> machineTree;
   private Map<String, Tree<NameNum>> group2node;  // map group name to the node defining its participants
   private Collection<String> fixedNodeNames;
@@ -93,22 +367,25 @@ public class ClusterDefinition {
   private int numNodes;
   private String[] _machines;
 
-	/**
-	 * Package protected constructor for internal and testing access only.
-	 */
-  ClusterDefinition(String defName, boolean doInit) throws IOException {
-		this(defName, doInit, null);
-	}
+  /**
+   * Package protected constructor for internal and testing access only.
+   */
+  ClusterDefinition(String user, String defName, boolean doInit) throws IOException {
+    this(user, defName, doInit, null);
+  }
 
-	/**
-	 * Package protected constructor for internal and testing access only.
-	 */
-  ClusterDefinition(String defName, boolean doInit, String clusterDefDir) throws IOException {
+  /**
+   * Package protected constructor for internal and testing access only.
+   */
+  ClusterDefinition(String user, String defName, boolean doInit, String clusterDefDir) throws IOException {
+    this.user = user;
     this.defName = defName;
     this.gateway = null;
-		this.clusterDefFile = findClusterDefinitionFile(defName, clusterDefDir);
-    this.machineTree = readMachineTree(defName, clusterDefFile);
-    if(this.machineTree == null) System.out.println("readMachineTree(" + defName + ") returned null result! file=" + clusterDefFile);
+
+    final InputStream cdInput = getClusterDefinitionInputStream(defName, clusterDefDir);
+    this.machineTree = readMachineTree(defName, cdInput);
+    if (cdInput != null) cdInput.close();
+    if(this.machineTree == null) System.out.println("readMachineTree(" + defName + ") returned null result! defName=" + defName + " clusterDefDir=" + clusterDefDir);
     this.fixedNodeNames = null;
     this.serverAddresses = new HashMap<String, ServerAddressCache>();
     this.nodeNames = null;  // lazily computed
@@ -119,22 +396,22 @@ public class ClusterDefinition {
     if (doInit) init(machineTree);
   }
 
-	/**
-	 * Construct with a generic definition file where we will substitute the
-	 * given gateway for the "gateway" and machine names for the "nodes" in
-	 * the definition tree.
-	 */
-  public ClusterDefinition(String defName, String gateway, String[] machines) throws IOException {
-		this(defName, gateway, machines, null);
-	}
+  /**
+   * Construct with a generic definition file where we will substitute the
+   * given gateway for the "gateway" and machine names for the "nodes" in
+   * the definition tree.
+   */
+  public ClusterDefinition(String user, String defName, String gateway, String[] machines) throws IOException {
+    this(user, defName, gateway, machines, null);
+  }
 
-	/**
-	 * Construct with a generic definition file where we will substitute the
-	 * given gateway for the "gateway" and machine names for the "nodes" in
-	 * the definition tree.
-	 */
-  public ClusterDefinition(String defName, String gateway, String[] machines, String clusterDefDir) throws IOException {
-    this(defName, false, clusterDefDir);
+  /**
+   * Construct with a generic definition file where we will substitute the
+   * given gateway for the "gateway" and machine names for the "nodes" in
+   * the definition tree.
+   */
+  public ClusterDefinition(String user, String defName, String gateway, String[] machines, String clusterDefDir) throws IOException {
+    this(user, defName, false, clusterDefDir);
 
     // walk the tree; replace root data with gateway & replacing nodeN-n with machines[N-1]-n
     this.gateway = gateway;
@@ -144,25 +421,26 @@ public class ClusterDefinition {
     init(machineTree);
   }
 
-	/**
-	 * Construct with a named definition file that already has the machine names.
-	 */
-  public ClusterDefinition(String defName) throws IOException {
-    this(defName, true, null);
+  /**
+   * Construct with a named definition file that already has the machine names.
+   */
+  public ClusterDefinition(String user, String defName) throws IOException {
+    this(user, defName, true, null);
   }
 
-	/**
-	 * Construct with the given generic clusterDef tree, substituting the given
-	 * gateway for the "gateway" and machine names for the "nodes" in the
-	 * definition tree.
-	 * <p>
-	 * This can be used in conjunction with ConfigGenerator in order to create
-	 * on-the-fly cluster definitions that need not be persisted.
-	 */
-	public ClusterDefinition(String defName, Tree<String> clusterDef, String gateway, String[] machines) {
+  /**
+   * Construct with the given generic clusterDef tree, substituting the given
+   * gateway for the "gateway" and machine names for the "nodes" in the
+   * definition tree.
+   * <p>
+   * This can be used in conjunction with ConfigGenerator in order to create
+   * on-the-fly cluster definitions that need not be persisted.
+   */
+  public ClusterDefinition(String user, String defName, Tree<String> clusterDef, String gateway, String[] machines) {
+    this.user = user;
     this.defName = defName;
     this.gateway = gateway;
-		this.clusterDefString = clusterDef.toString();
+    this.clusterDefString = clusterDef.toString();
     this.machineTree = treeBuilder.buildTree(clusterDefString);
     this.fixedNodeNames = null;
     this.serverAddresses = new HashMap<String, ServerAddressCache>();
@@ -173,80 +451,99 @@ public class ClusterDefinition {
     fixMachineTree(machineTree, gateway, machines);
 
     init(machineTree);
-	}
+  }
 
-	/**
-	 * Get this instance's initialization string.
-	 */
-	public String getClusterDefString() {
-		return clusterDefString;
-	}
+  /**
+   * Get the user associated with this instance.
+   */
+  public String getUser() {
+    return user;
+  }
 
-	public File getClusterDefinitionFile() {
-		return clusterDefFile;
-	}
+  /**
+   * Get this instance's initialization string.
+   */
+  public String getClusterDefString() {
+    return clusterDefString;
+  }
 
-	private final File findClusterDefinitionFile(String defName, String clusterDefDir) {
-		File result = null;
+  private final InputStream getClusterDefinitionInputStream(String defName, String clusterDefDir) throws IOException {
+    InputStream result = null;
 
-		if (defName != null) {
-			// First try to find a persisted cluster definition within the deployed code
-			final String clusterdefFilename = getClusterDefinitionPath(defName, clusterDefDir);
-			result = FileUtil.getFile(clusterdefFilename);
-			if (!result.exists()) {
-				// Next look at the "active" cluster def
-				result = Admin.getActiveClusterDefFile();
-				if (!result.exists()) {
-					result = null;  // no cluster definition found.
-				}
-			}
-		}
+    if (defName != null) {
+      // First try to find a persisted cluster definition within the deployed code
+      result = findClusterDefinition(defName, clusterDefDir);
+      if (result == null) {
+        // Next look at the "active" cluster
+        final File file = Admin.getActiveClusterDefFile();
+        if (file.exists()) {
+          result = FileUtil.getInputStream(file);
+        }
+      }
+    }
 
-		return result;
-	}
+    return result;
+  }
 
-	private final Tree<NameNum> readMachineTree(String defName) throws IOException {
-		Tree<NameNum> result = null;
+  /**
+   * Read the machineTree from the default cluster definition's path for the defName.
+   */
+  private final Tree<NameNum> readDefaultMachineTree(String defName) throws IOException {
+    Tree<NameNum> result = null;
 
-System.out.println("ClusterDefinition.readMachineTree(" + defName + ")");
+    if (defName != null) {
+      if (!defName.endsWith(".def")) defName += ".def";
+      final InputStream in = FileUtil.getInputStream(this.getClass(), CLUSTER_DEFINITIONS_PATH + defName);
+      if (in != null) {
+        result = doRead(in);
+        in.close();
+      }
+    }
 
-		if (defName != null) {
-			if (!defName.endsWith(".def")) defName += ".def";
-			final java.io.InputStream in = this.getClass().getResourceAsStream(CLUSTER_DEFINITIONS_PATH + defName);
-			this.clusterDefString = FileUtil.readAsString(new java.io.BufferedReader(new java.io.InputStreamReader(in)), FileUtil.LINUX_COMMENT_IGNORER);
-			if (clusterDefString != null) {
-				result = treeBuilder.buildTree(clusterDefString);
-System.out.println("\tclusterDefString(1)=" + clusterDefString);
-			}
-			in.close();
-		}
+    System.out.println("ClusterDefinition.readDefaultMachineTree(" + defName + ")... success=" + (result != null));
 
-		return result;
-	}
+    return result;
+  }
 
-  private final Tree<NameNum> readMachineTree(String defName, File clusterdefFile) throws IOException {
-		Tree<NameNum> result = null;
+  /**
+   * Read the machine tree from the given cluster definition's path for the defName.
+   */
+  private final Tree<NameNum> readMachineTree(String defName, InputStream cdInputStream) throws IOException {
+    Tree<NameNum> result = null;
 
-System.out.println("ClusterDefinition.readMachineTree(" + defName + "," + clusterdefFile +")... exists=" + ((clusterdefFile == null) ? false : clusterdefFile.exists()));
+    System.out.println("ClusterDefinition.readMachineTree(" + defName + ",cdInputStream)... exists=" + (cdInputStream != null));
 
-		if (clusterdefFile == null || !clusterdefFile.exists()) {
-System.out.println("\treadMachineTree 1a");
-			result = readMachineTree(defName);
-		}
+    if (cdInputStream == null) {
+      // use default
+      result = readDefaultMachineTree(defName);
+    }
+    else {
+      // read the given stream
+      doRead(cdInputStream);
 
-		if (result == null) {
-System.out.println("\treadMachineTree 2");
-			this.clusterDefString = clusterdefFile != null && clusterdefFile.exists() ? FileUtil.readAsString(clusterdefFile.getPath(), FileUtil.LINUX_COMMENT_IGNORER) : null;
-			result = clusterDefString == null ? null : treeBuilder.buildTree(clusterDefString);
-System.out.println("\tclusterDefString(2)=" + clusterDefString);
-		}
+      if (result == null) {
+        // fallback to default
+        result = readDefaultMachineTree(defName);
+      }
+    }
 
-		if (result == null && "".equals(clusterDefString)) {
-System.out.println("\treadMachineTree 1b");
-			result = readMachineTree(defName);
-		}
+    return result;
+  }
 
-		return result;
+  /**
+   * Do the work of reading a cluster definition from an input stream as a NameNum tree.
+   */
+  private final Tree<NameNum> doRead(InputStream in) throws IOException {
+    Tree<NameNum> result = null;
+
+    if (in != null) {
+      this.clusterDefString = FileUtil.readAsString(FileUtil.getReader(in), FileUtil.LINUX_COMMENT_IGNORER);
+      if (clusterDefString != null) {
+        result = treeBuilder.buildTree(clusterDefString);
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -255,7 +552,7 @@ System.out.println("\treadMachineTree 1b");
   private final void init(Tree<NameNum> machineTree) {
     this.group2node = new HashMap<String, Tree<NameNum>>();
 
-		if (machineTree == null) return;
+    if (machineTree == null) return;
 
     // separate out the groups from the machineTree if top node is "_root_"
     if ("_root_".equals(machineTree.getData().name)) {
@@ -305,7 +602,7 @@ System.out.println("\treadMachineTree 1b");
       if ("gateway".equals(nameNum.name)) {
         machineNode.setData(new NameNum(gateway, 0));
       }
-      if (nameNum.name.startsWith("node")) {
+      if (machines != null && nameNum.name.startsWith("node")) {
         final int index = Integer.parseInt(nameNum.name.substring(4)) - 1;
         machineNode.setData(new NameNum(machines[index], nameNum.getNumAsId()));
       }
@@ -317,6 +614,10 @@ System.out.println("\treadMachineTree 1b");
    */
   public String getDefinitionName() {
     return defName;
+  }
+
+  public String[] getMachines() {
+    return _machines;
   }
 
   /**
@@ -339,13 +640,6 @@ System.out.println("\treadMachineTree 1b");
     }
 
     return (result == null) ? "gateway" : result;
-  }
-
-  /**
-   * Get the path to this definition's cluster definition file.
-   */
-  public String getClusterDefinitionPath() {
-    return getClusterDefinitionPath(defName);
   }
 
   /**
@@ -510,24 +804,6 @@ System.out.println("\treadMachineTree 1b");
     }
 
     return result;
-/*
-    int result = 0;
-    final int limit = getNumGroupNodes(groupName);
-
-    if (machineName != null) {
-      final List<Tree<NameNum>> groupNodes = getGroupNodes(groupName);
-      machineName = machineName.toLowerCase();
-      for (Tree<NameNum> groupNode : groupNodes) {
-        final NameNum groupData = groupNode.getData();
-        if (groupData.getNumAsId() == jvmNum && machineName.equals(groupData.name.toLowerCase())) {
-          break;
-        }
-        ++result;
-      }
-    }
-
-    return (result == limit) ? -1 : result;
-*/
   }
 
   /**
@@ -733,64 +1009,63 @@ System.out.println("\treadMachineTree 1b");
   /**
    * To be overridden for JUnit testing.
    */
-  InetSocketAddress getInetSocketAddress(String hostname, String user, int jvmNum) {
+  InetSocketAddress getInetSocketAddress(String hostname, int jvmNum) {
     final int serverPort = ConfigUtil.getServerPort(jvmNum, user);
     return new InetSocketAddress(hostname, serverPort);
   }
 
-  private final ServerAddressCache initServerAddresses(String user) {
+  private final ServerAddressCache initServerAddresses() {
     final ServerAddressCache result = new ServerAddressCache();
 
     final List<Tree<NameNum>> allNodes = getGroupNodes(ALL_NODES_GROUP);
     for (Tree<NameNum> node : allNodes) {
       final NameNum nameNum = node.getData();
-      final InetSocketAddress serverAddress = getInetSocketAddress(nameNum.name, user, nameNum.getNumAsId());
+      final InetSocketAddress serverAddress = getInetSocketAddress(nameNum.name, nameNum.getNumAsId());
       result.nameNum2address.put(nameNum, serverAddress);
+
+      System.out.println(new Date() + ": ClusterDefinition(" + defName + ")." + nameNum + "=" + serverAddress);
     }
 
     return result;
   }
 
-  private final ServerAddressCache getServerAddressCache(String user) {
+  private final ServerAddressCache getServerAddressCache() {
     ServerAddressCache result = serverAddresses.get(user);
     if (result == null) {
-      result = initServerAddresses(user);
+      result = initServerAddresses();
       serverAddresses.put(user, result);
     }
     return result;
   }
 
   /**
-   * Get the server address for the given user's identified node.
+   * Get the server address for this definition's user's identified node.
    *
-   * @param user         The user.
    * @param nodeWithNum  The node in the form machineName-jvmNum.
    *
    * @return the server address or null if the user or node are invalid.
    */
-  public InetSocketAddress getServerAddress(String user, String nodeWithNum) {
-    final ServerAddressCache cache = getServerAddressCache(user);
+  public InetSocketAddress getServerAddress(String nodeWithNum) {
+    final ServerAddressCache cache = getServerAddressCache();
     return cache.nameNum2address.get(new NameNum(nodeWithNum));
   }
 
   /**
-   * Get the server address for the given user's identified node.
+   * Get the server address for this definition's user's identified node.
    *
-   * @param user         The user.
    * @param machineName  The machine name.
    * @param jvmNum       The jvm number.
    *
    * @return the server address or null if the user or node are invalid.
    */
-  public InetSocketAddress getServerAddress(String user, String machineName, int jvmNum) {
-    final ServerAddressCache cache = getServerAddressCache(user);
+  public InetSocketAddress getServerAddress(String machineName, int jvmNum) {
+    final ServerAddressCache cache = getServerAddressCache();
     return cache.nameNum2address.get(new NameNum(machineName, jvmNum));
   }
 
   /**
-   * Get the server address for the given user's identified node.
+   * Get the server address for this definition's user's identified node.
    *
-   * @param user       The user.
    * @param groupName  The name of the group identifying the cluster nodes
    *                   for which to get addresses.  NOTE: null would indicate
    *                   to get the current node's server address, but we require
@@ -801,10 +1076,10 @@ System.out.println("\treadMachineTree 1b");
    *
    * @return the server addresses or null if the user or level are invalid.
    */
-  public InetSocketAddress[] getServerAddresses(String user, String groupName) {
+  public InetSocketAddress[] getServerAddresses(String groupName) {
     if (groupName == null) return null;
 
-    final ServerAddressCache cache = getServerAddressCache(user);
+    final ServerAddressCache cache = getServerAddressCache();
     InetSocketAddress[] result = cache.getGroupAddresses(groupName);
     if (result == null) {  // lazy load the cache
       final List<Tree<NameNum>> groupNodes = getGroupNodes(groupName);

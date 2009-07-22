@@ -156,7 +156,7 @@ public class Admin {
     Console console = null;
 
     try {
-      console = new ClusterRunner(properties).getConsole();
+      console = new ClusterRunner(true/*useActiveCluster*/, properties).getConsole();
       console.showResponses(System.out, console.sendMessageToNodes(message, groupName, timeout, requireAllResponses));
     }
     catch (Exception e) {
@@ -171,17 +171,15 @@ public class Admin {
     if (console != null) console.shutdown();
   }
 
-  private String userName;
   private ClusterDefinition clusterDef;
   private PrintStream out;
   private Console console;
 
-  public Admin(String userName, ClusterDefinition clusterDef, PrintStream out) {
-    this.userName = userName;
+  public Admin(ClusterDefinition clusterDef, PrintStream out) {
     this.clusterDef = clusterDef;
     this.out = out;
 
-    this.console = new Console(userName, clusterDef, "Admin");
+    this.console = new Console(clusterDef, "Admin");
     console.setDefaultGroup(ClusterDefinition.ALL_NODES_GROUP);
   }
 
@@ -199,6 +197,7 @@ public class Admin {
     // rsync build to top clusterDef node
     final String topNodeName = clusterDef.getTopNodeName(true);
     final String binDir = ConfigUtil.getClusterDevBinDir();
+    final String userName = clusterDef.getUser();
 
     command = "./ddeploy " + userName + " " + topNodeName;
     if (out != null) out.println(command);
@@ -220,6 +219,7 @@ public class Admin {
     configure(heapSize);
 
     // tell top to start children. top isn't started because it is the "gateway" into the cluster, not a worker.
+    final String userName = clusterDef.getUser();
     final String topNodeName = clusterDef.getTopNodeName(true);
     command = " cd ~/cluster/bin;./hstart";
     if (out != null) out.println("ssh " + userName + "@" + topNodeName + " " + command);
@@ -256,10 +256,11 @@ public class Admin {
 
   private void intro(String description) {
     if (out != null) {
+      final String userName = clusterDef.getUser();
       out.println("userName=" + userName + ", cluster=" + clusterDef.getDefinitionName() +
                   ", numMachines=" + clusterDef.getNumMachines() + " numNodes=" + clusterDef.getNumNodes());
       out.println("command: " + description);
-      final InetSocketAddress[] serverAddresses = clusterDef.getServerAddresses(userName, ClusterDefinition.ALL_NODES_GROUP);
+      final InetSocketAddress[] serverAddresses = clusterDef.getServerAddresses(ClusterDefinition.ALL_NODES_GROUP);
 
       out.println("\nclusterDef.serverAddresses[" + serverAddresses.length + "]=");
       for (InetSocketAddress address : serverAddresses) {
@@ -286,8 +287,8 @@ public class Admin {
    */
   private final void configure(String heapSize) throws IOException {
     final String confDir = ConfigUtil.getClusterDevConfDir();
-		configure(confDir, heapSize, clusterDef);
-	}
+    configure(confDir, heapSize, clusterDef);
+  }
 
   /**
    * Create configuration files and put them in the conf dir.
@@ -299,7 +300,7 @@ public class Admin {
    * <p>active-machines.txt
    * <p>...
    */
-	public static final void configure(String confDir, String heapSize, ClusterDefinition clusterDef) throws IOException {
+  public static final void configure(String confDir, String heapSize, ClusterDefinition clusterDef) throws IOException {
     configureActiveClusterName(confDir, clusterDef);
     configureActiveGateway(confDir, clusterDef);
     configureActiveClusterDef(confDir, clusterDef);
@@ -307,7 +308,7 @@ public class Admin {
     configureActiveMachines(confDir, clusterDef);
     configureHeapSize(confDir, heapSize);
     configureLogSettings(confDir);
-		configureActivePortOverride(confDir, ConfigUtil.getPortOverride());
+    configureActivePortOverride(confDir, ConfigUtil.getPortOverride());
   }
 
   private static  final void configureActiveClusterName(String confDir, ClusterDefinition clusterDef) throws IOException {
@@ -317,15 +318,15 @@ public class Admin {
   }
 
   public static final String getActiveClusterName() throws IOException {
-		String result = null;
+    String result = null;
 
-		final File activeClusterNameFile = FileUtil.getFile(ConfigUtil.getClusterPath("conf/active-cluster-name.txt"));
-		if (activeClusterNameFile.exists()) {
-			final BufferedReader reader = FileUtil.getReader(activeClusterNameFile);
-			result = FileUtil.readAsString(reader, FileUtil.LINUX_COMMENT_IGNORER);
-		}
+    final File activeClusterNameFile = FileUtil.getFile(ConfigUtil.getClusterPath("conf/active-cluster-name.txt"));
+    if (activeClusterNameFile.exists()) {
+      final BufferedReader reader = FileUtil.getReader(activeClusterNameFile);
+      result = FileUtil.readAsString(reader, FileUtil.LINUX_COMMENT_IGNORER);
+    }
 
-		return result;
+    return result;
   }
 
   private static final void configureActiveGateway(String confDir, ClusterDefinition clusterDef) throws IOException {
@@ -344,43 +345,35 @@ public class Admin {
     return result;
   }
 
-	public static final File getActiveClusterDefFile() {
-		return FileUtil.getFile(ConfigUtil.getClusterDevConfDir() + "active-cluster-def.txt");
-	}
+  public static final File getActiveClusterDefFile() {
+    return FileUtil.getFile(ConfigUtil.getClusterDevConfDir() + "active-cluster-def.txt");
+  }
 
-	public static final Tree<String> getActiveClusterDefTree() {
-		Tree<String> result = null;
+  public static final Tree<String> getActiveClusterDefTree() {
+    Tree<String> result = null;
 
-		final File clusterDefFile = new File(ConfigUtil.getClusterPath("conf/active-cluster-def.txt"));
-		if (clusterDefFile.exists()) {
-			final String clusterDefString = FileUtil.readAsStringIfCan(clusterDefFile);
-			if (clusterDefString != null) {
-				result = TreeBuilderFactory.getStringTreeBuilder().buildTree(clusterDefString);
-			}
-		}
-		else {
-			System.err.println("Can't find active clusterDefFile '" + clusterDefFile + "'!");
-		}
+    final File clusterDefFile = new File(ConfigUtil.getClusterPath("conf/active-cluster-def.txt"));
+    if (clusterDefFile.exists()) {
+      final String clusterDefString = FileUtil.readAsStringIfCan(clusterDefFile);
+      if (clusterDefString != null) {
+        result = TreeBuilderFactory.getStringTreeBuilder().buildTree(clusterDefString);
+      }
+    }
+    else {
+      System.err.println("Can't find active clusterDefFile '" + clusterDefFile + "'!");
+    }
 
-		return result;
-	}
+    return result;
+  }
 
   public static final void configureActiveClusterDef(String confDir, ClusterDefinition clusterDef) throws IOException {
-    final String source = clusterDef.getClusterDefinitionPath();
     final String dest = confDir + "active-cluster-def.txt";
 
-		final File defFile = FileUtil.getFile(source);
-		if (defFile.exists()) {
-			// just copy the existing file
-			ExecUtil.executeProcess("cp -f " + source + " " + dest);
-		}
-		else {
-			// write out the cluster definition
-			final BufferedWriter writer = FileUtil.getWriter(dest);
-			writer.write(clusterDef.getClusterDefString());
-			writer.newLine();
-			writer.close();
-		}
+    // write out the cluster definition
+    final BufferedWriter writer = FileUtil.getWriter(dest);
+    writer.write(clusterDef.getClusterDefString());
+    writer.newLine();
+    writer.close();
   }
 
   public static final void configureLogSettings(String confDir) {
@@ -418,68 +411,68 @@ public class Admin {
   }
 
   private static final void configureHeapSize(String confDir, String heapSize) throws IOException {
-		final File file = FileUtil.getFile(confDir + "active-heap-size.txt");
+    final File file = FileUtil.getFile(confDir + "active-heap-size.txt");
 
-		if (heapSize == null) {
-			if (file.exists()) {
-				file.delete();
-			}
-		}
-		else {
-			final BufferedWriter writer = FileUtil.getWriter(file);
-			writer.write(heapSize);
-			writer.newLine();
-			writer.close();
-		}
+    if (heapSize == null) {
+      if (file.exists()) {
+        file.delete();
+      }
+    }
+    else {
+      final BufferedWriter writer = FileUtil.getWriter(file);
+      writer.write(heapSize);
+      writer.newLine();
+      writer.close();
+    }
   }
 
-	/**
-	 * Remove the active-port-override.txt file if it exists.
-	 * <p>
-	 * NOTE: This should be called in contexts where the file would be configured
-	 *       (or unconfigured) from environment settings (like when we deploy.)
-	 */
-	public static final void clearPortOverrideFile() {
-		File portOverrideFile = FileUtil.getFile(ConfigUtil.getClusterDevConfDir() + "active-port-override.txt");
-		if (portOverrideFile.exists()) portOverrideFile.delete();
-		portOverrideFile = FileUtil.getFile(ConfigUtil.getClusterPath("conf/active-port-override.txt"));
-		if (portOverrideFile.exists()) portOverrideFile.delete();
-	}
+  /**
+   * Remove the active-port-override.txt file if it exists.
+   * <p>
+   * NOTE: This should be called in contexts where the file would be configured
+   *       (or unconfigured) from environment settings (like when we deploy.)
+   */
+  public static final void clearPortOverrideFile() {
+    File portOverrideFile = FileUtil.getFile(ConfigUtil.getClusterDevConfDir() + "active-port-override.txt");
+    if (portOverrideFile.exists()) portOverrideFile.delete();
+    portOverrideFile = FileUtil.getFile(ConfigUtil.getClusterPath("conf/active-port-override.txt"));
+    if (portOverrideFile.exists()) portOverrideFile.delete();
+  }
 
-	/**
-	 * Get the active port override if there is one.
-	 */
-	public static final int[] getActivePortOverride() {
-		int[] result = null;
+  /**
+   * Get the active port override if there is one.
+   */
+  public static final int[] getActivePortOverride() {
+    int[] result = null;
 
-		final File portOverrideFile = FileUtil.getFile(ConfigUtil.getClusterPath("conf/active-port-override.txt"));
-		if (portOverrideFile.exists()) {
-			try {
-				final BufferedReader reader = FileUtil.getReader(portOverrideFile);
-				final String contents = FileUtil.readAsString(reader, FileUtil.LINUX_COMMENT_IGNORER);
-				reader.close();
-				final String[] pieces = contents.split(":");
-				final int lowPort = Integer.parseInt(pieces[0]);
-				final int highPort = pieces.length > 1 ? Integer.parseInt(pieces[1]) : lowPort;
-				result = new int[]{lowPort, highPort};
-			}
-			catch (Exception e) {
-				System.err.println(new Date() + ": Admin.getActivePortOverride() error!");
-				e.printStackTrace(System.err);
-			}
-		}
+    final File portOverrideFile = FileUtil.getFile(ConfigUtil.getClusterPath("conf/active-port-override.txt"));
+    if (portOverrideFile.exists()) {
+      try {
+        final BufferedReader reader = FileUtil.getReader(portOverrideFile);
+        final String contents = FileUtil.readAsString(reader, FileUtil.LINUX_COMMENT_IGNORER);
+        reader.close();
+        final String[] pieces = contents.split(":");
+        final int lowPort = Integer.parseInt(pieces[0]);
+        final int highPort = pieces.length > 1 ? Integer.parseInt(pieces[1]) : lowPort;
+        result = new int[]{lowPort, highPort};
+      }
+      catch (Exception e) {
+        System.err.println(new Date() + ": Admin.getActivePortOverride() error!");
+        e.printStackTrace(System.err);
+      }
+    }
 
-		return result;
-	}
+    return result;
+  }
 
-	private static final void configureActivePortOverride(String confDir, int[] portOverride) throws IOException {
-		if (portOverride == null) return;  // nothing to configure
+  private static final void configureActivePortOverride(String confDir, int[] portOverride) throws IOException {
+    if (portOverride == null) return;  // nothing to configure
 
-		final BufferedWriter writer = FileUtil.getWriter(confDir + "active-port-override.txt");
-		writer.write(portOverride[0] + ":" + portOverride[1]);
-		writer.newLine();
-		writer.close();
-	}
+    final BufferedWriter writer = FileUtil.getWriter(confDir + "active-port-override.txt");
+    writer.write(portOverride[0] + ":" + portOverride[1]);
+    writer.newLine();
+    writer.close();
+  }
 
 
   public static final String[] getActiveMachines() throws IOException {
@@ -563,9 +556,11 @@ public class Admin {
    * <p>  Admin -c &lt;cluster-name&gt; -k -p
    *
    */
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
 
-//java -Xmx640m org.sd.cluster.config.Admin -c "dev-3a" -u "bperry" -d
+    final PropertiesParser pp = new PropertiesParser(args, true);
+    final Properties properties = pp.getProperties();
+    args = pp.getArgs();
 
     final Options options = new Options();
 
@@ -599,7 +594,7 @@ public class Admin {
       final String gateway = commandLine.getOptionValue('g');
       final String userName = commandLine.getOptionValue('u');
       final String heapSize = commandLine.getOptionValue('h');
-			final String rootDir = commandLine.getOptionValue('r');
+      final String rootDir = commandLine.getOptionValue('r');
 
       final boolean deployOption = commandLine.hasOption('d');
       final boolean startOption = commandLine.hasOption('s');
@@ -620,28 +615,40 @@ public class Admin {
         theNodes = nodes.split("\\s*,\\s*");
       }
 
-			if (rootDir != null) {
-				ConfigUtil.setClusterRootDir(rootDir);
-			}
+      if (rootDir != null) {
+        ConfigUtil.setClusterRootDir(rootDir);
+      }
 
-			if (deployOption) {
-				// when we deploy, we need to rely on environment settings, not
-				// on the override file. If we have overridden and now are not
-				// overriding, then this file needs to disappear for proper function.
-				clearPortOverrideFile();
-			}
+      if (deployOption) {
+        // when we deploy, we need to rely on environment settings, not
+        // on the override file. If we have overridden and now are not
+        // overriding, then this file needs to disappear for proper function.
+        clearPortOverrideFile();
+      }
 
-      final ClusterRunner cr = new ClusterRunner(clusterName, theMachines, userName, gateway);
+      if (gateway != null && gateway.length() > 0) {
+        properties.setProperty(ClusterDefinition.CLUSTER_GATEWAY_PROPERTY, gateway);
+      }
+      if (clusterName != null && clusterName.length() > 0) {
+        properties.setProperty(ClusterDefinition.CLUSTER_DEFINITION_NAME_PROPERTY, clusterName);
+      }
+      if (machines != null && machines.length() > 0) {
+        properties.setProperty(ClusterDefinition.CLUSTER_MACHINES_PROPERTY, machines);
+      }
+      if (userName != null && userName.length() > 0) {
+        properties.setProperty(ClusterDefinition.CLUSTER_USER_PROPERTY, userName);
+      }
+
+      final ClusterRunner cr = new ClusterRunner(!deployOption, properties); // useActiveCluster unless deploying
 
       // check for valid clusterDef
       final ClusterDefinition clusterDef = cr.getClusterDefinition();
-      if (!clusterDef.isValid()) {
-        throw new IllegalArgumentException("Invalid or missing cluster named '" + clusterName + "' found at '" +
-                                           ClusterDefinition.getClusterDefinitionPath(clusterName) + "'!");
+      if (clusterDef == null || !clusterDef.isValid()) {
+        throw new IllegalArgumentException("Invalid or missing cluster named '" + clusterName + "'!");
       }
 
 //todo: configure dif't print stream than System.out
-      admin = new Admin(cr.getUser(), clusterDef, System.out);
+      admin = new Admin(clusterDef, System.out);
 
       // perform requestion operations
       if (deployOption) admin.deploy(heapSize);

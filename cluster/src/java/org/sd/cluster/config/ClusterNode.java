@@ -52,7 +52,7 @@ public class ClusterNode implements ClusterContext {
   private SafeDepositBox safeDepositBox;
   private NodeServer listener;
   private NodeClient client;
-	private MBeanServer mbs;
+  private MBeanServer mbs;
 
 
   // this node's logs for monitoring purposes.
@@ -76,10 +76,9 @@ public class ClusterNode implements ClusterContext {
     this.jvmNumHint = jvmNumHint;
     this.clusterDef = clusterDef;
 
-		if (!this.clusterDef.isValid()) {
-			throw new IllegalStateException("Invalid cluster definition '" + clusterDef.getDefinitionName() +
-																			"'! (file=" + clusterDef.getClusterDefinitionFile() + ")");
-		}
+    if (!this.clusterDef.isValid()) {
+      throw new IllegalStateException("Invalid cluster definition '" + clusterDef.getDefinitionName() + "'!");
+    }
 
     this.config = new Config(jvmNumHint, null);
 
@@ -95,18 +94,18 @@ public class ClusterNode implements ClusterContext {
     init(config, numThreads, numThreads, numThreads, null);
   }
 
-	private static final ClusterDefinition createClusterDefinition(String clusterName, String gateway, String[] machines) throws IOException {
+  private static final ClusterDefinition createClusterDefinition(String clusterName, String gateway, String[] machines) throws IOException {
     ClusterDefinition result = null;
 
     if (gateway == null && machines == null) {
-      result = new ClusterDefinition(clusterName);
+      result = new ClusterDefinition(ExecUtil.getUser(), clusterName);
     }
     else {
-      result = new ClusterDefinition(clusterName, gateway, machines);
+      result = new ClusterDefinition(ExecUtil.getUser(), clusterName, gateway, machines);
     }
 
-		return result;
-	}
+    return result;
+  }
 
   private final void init(Config config, int numberOfParents, int numMessageHandlerThreads, int numberOfChildren, String identifier) throws UnknownHostException, IOException {
     final InetAddress localhost = InetAddress.getLocalHost();
@@ -120,7 +119,7 @@ public class ClusterNode implements ClusterContext {
                                    numMessageHandlerThreads);
     final String clientName = (identifier == null) ? config.getName() : config.getName() + "-" + identifier;
     this.client = new NodeClient(clientName, localhost, numberOfChildren);
-		this.mbs = null;
+    this.mbs = null;
   }
 
   private final void initLogHandles(int jvmNumHint) {
@@ -190,17 +189,17 @@ public class ClusterNode implements ClusterContext {
       this.safeDepositBox = new SafeDepositBox();
       jobManager.registerShutdownable(safeDepositBox);
 
-			// Register MXBean
-			if (mbs != null) {
-				try {
-					final ObjectName sdbName = new ObjectName("org.sd.cluster.io:type=SafeDepositBox");
-					mbs.registerMBean(safeDepositBox, sdbName);
-				}
-				catch (Exception e) {
-					System.err.println("*** WARNING: Unable to register SafeDepositBoxMXBean!");
-					e.printStackTrace(System.err);
-				}
-			}
+      // Register MXBean
+      if (mbs != null) {
+        try {
+          final ObjectName sdbName = new ObjectName("org.sd.cluster.io:type=SafeDepositBox");
+          mbs.registerMBean(safeDepositBox, sdbName);
+        }
+        catch (Exception e) {
+          System.err.println("*** WARNING: Unable to register SafeDepositBoxMXBean!");
+          e.printStackTrace(System.err);
+        }
+      }
     }
 
     return safeDepositBox;
@@ -210,9 +209,9 @@ public class ClusterNode implements ClusterContext {
     return client;
   }
 
-	public void setMBeanServer(MBeanServer mbs) {
-		this.mbs = mbs;
-	}
+  public void setMBeanServer(MBeanServer mbs) {
+    this.mbs = mbs;
+  }
 
   public void start() {
     this.listener.start();
@@ -220,13 +219,13 @@ public class ClusterNode implements ClusterContext {
 
 
     // initialize handles to logs (needs JobManager to have been initialized)
-		try {
-			initLogHandles(jvmNumHint);
-		}
-		catch (Error e) {
-			System.err.println(new Date() + ": WARNING: Unable to initLogHandles! " + e.toString());
-			e.printStackTrace(System.err);
-		}
+    try {
+      initLogHandles(jvmNumHint);
+    }
+    catch (Error e) {
+      System.err.println(new Date() + ": WARNING: Unable to initLogHandles! " + e.toString());
+      e.printStackTrace(System.err);
+    }
   }
 
   public void listenForMessages() {
@@ -297,11 +296,11 @@ public class ClusterNode implements ClusterContext {
   public static void main(String[] args) throws UnknownHostException, IOException {
     // properties:
     //   reportInterval [unused] -- (optional) freq in millis to report on server stats
-		//   clusterHome -- (optional) override for location of $HOME/cluster
-		//   portRange -- (optional, values >= 10100) override for "lowPort:highPort"
-		//   single -- (optional, default="false", values={"true", "false"}) If "true"
-		//             then a single-node cluster definition is generated on the fly)
-		//   heapSize -- (optional) recommended size (in M) for java heap.
+    //   clusterHome -- (optional) override for location of $HOME/cluster
+    //   portRange -- (optional, values >= 10100) override for "lowPort:highPort"
+    //   single -- (optional, default="false", values={"true", "false"}) If "true"
+    //             then a single-node cluster definition is generated on the fly)
+    //   heapSize -- (optional) recommended size (in M) for java heap.
 
     // ensure out/err logs are initialized
     System.out.print("");
@@ -311,81 +310,81 @@ public class ClusterNode implements ClusterContext {
     final Properties properties = pp.getProperties();
     args = pp.getArgs();
 
-		//
+    //
     // get and use properties
-		//
+    //
 
-		// clusterHome
-		final String clusterHome = properties.getProperty("clusterHome");
-		if (clusterHome != null) {
-			ConfigUtil.setClusterRootDir(clusterHome);
-			System.out.println("ClusterNode: clusterHome=" + clusterHome);
-		}
+    // clusterHome
+    final String clusterHome = properties.getProperty("clusterHome");
+    if (clusterHome != null) {
+      ConfigUtil.setClusterRootDir(clusterHome);
+      System.out.println("ClusterNode: clusterHome=" + clusterHome);
+    }
 
-		// portRangeString
-		final String portRangeString = properties.getProperty("portRange");
-		if (portRangeString != null) {
-			ConfigUtil.setPortOverride(portRangeString);
-		}
-		else {
-			// check for active override
-			final int[] activePortOverride = Admin.getActivePortOverride();
-			if (activePortOverride != null) {
-				ConfigUtil.setPortOverride(activePortOverride[0], activePortOverride[1]);
-				System.out.println("ClusterNode: Applying (active) port override: " + activePortOverride[0] + ":" + activePortOverride[1]);
-			}
-		}
+    // portRangeString
+    final String portRangeString = properties.getProperty("portRange");
+    if (portRangeString != null) {
+      ConfigUtil.setPortOverride(portRangeString);
+    }
+    else {
+      // check for active override
+      final int[] activePortOverride = Admin.getActivePortOverride();
+      if (activePortOverride != null) {
+        ConfigUtil.setPortOverride(activePortOverride[0], activePortOverride[1]);
+        System.out.println("ClusterNode: Applying (active) port override: " + activePortOverride[0] + ":" + activePortOverride[1]);
+      }
+    }
 
-		// single
-		final boolean single = "true".equalsIgnoreCase(properties.getProperty("single", "false"));
+    // single
+    final boolean single = "true".equalsIgnoreCase(properties.getProperty("single", "false"));
 
-		// heapSize
-		final String heapSize = properties.getProperty("heapSize");
+    // heapSize
+    final String heapSize = properties.getProperty("heapSize");
 
-		// create cluster definition
-		ClusterDefinition clusterDef = null;
+    // create cluster definition
+    ClusterDefinition clusterDef = null;
 
-		if (!single) {
-			final String clusterName = (args.length == 1) ? Admin.getActiveClusterName() : args[1];
-			final String gateway = Admin.getActiveGateway();
-			final String[] machines = Admin.getActiveMachines();
-			clusterDef = createClusterDefinition(clusterName, gateway, machines);
-		}
-		else {
-			final ConfigGenerator configGenerator = new ConfigGenerator(new String[] {
-					".", "server:node1",
-				});
-			clusterDef = configGenerator.buildClusterDefinition("localhost", new String[]{ExecUtil.getMachineName()});
+    if (!single) {
+      final String clusterName = (args.length == 1) ? Admin.getActiveClusterName() : args[1];
+      final String gateway = Admin.getActiveGateway();
+      final String[] machines = Admin.getActiveMachines();
+      clusterDef = createClusterDefinition(clusterName, gateway, machines);
+    }
+    else {
+      final ConfigGenerator configGenerator = new ConfigGenerator(new String[] {
+          ".", "server:node1",
+        });
+      clusterDef = configGenerator.buildClusterDefinition("localhost", ExecUtil.getUser(), new String[]{ExecUtil.getMachineName()});
 
-			Admin.configure(ConfigUtil.getClusterPath("conf/"), null, clusterDef);
-		}
+      Admin.configure(ConfigUtil.getClusterPath("conf/"), null, clusterDef);
+    }
 
-		// create cluster node instance
-		final int jvmNum = Integer.parseInt(args[0]);
-		final ClusterNode clusterNode = new ClusterNode(clusterDef, jvmNum);
+    // create cluster node instance
+    final int jvmNum = Integer.parseInt(args[0]);
+    final ClusterNode clusterNode = new ClusterNode(clusterDef, jvmNum);
 
     final Config config = clusterNode.getConfig();
 
-		// start the cluster node
+    // start the cluster node
     try {
       System.out.println("Starting " + config.getName() + "...");
       System.out.println("..." + config.getName() + " is listening on port " + config.getServerPort());
 
-			// Register MXBeans if possible
-			MBeanServer mbs = null;
-			try {
-				mbs = ManagementFactory.getPlatformMBeanServer();
-			}
-			catch (Exception e) {
-				System.err.println("*** WARNING: Unable to getPlatformMBeanServer!");
-				e.printStackTrace(System.err);
-				mbs = null;
-			}
-			if (mbs != null) {
-				final ObjectName nodeServerName = new ObjectName("org.sd.cluster.io:type=NodeServer");
-				mbs.registerMBean(clusterNode.listener, nodeServerName);
-				clusterNode.setMBeanServer(mbs);
-			}
+      // Register MXBeans if possible
+      MBeanServer mbs = null;
+      try {
+        mbs = ManagementFactory.getPlatformMBeanServer();
+      }
+      catch (Exception e) {
+        System.err.println("*** WARNING: Unable to getPlatformMBeanServer!");
+        e.printStackTrace(System.err);
+        mbs = null;
+      }
+      if (mbs != null) {
+        final ObjectName nodeServerName = new ObjectName("org.sd.cluster.io:type=NodeServer");
+        mbs.registerMBean(clusterNode.listener, nodeServerName);
+        clusterNode.setMBeanServer(mbs);
+      }
 
       clusterNode.listenForMessages();
     }

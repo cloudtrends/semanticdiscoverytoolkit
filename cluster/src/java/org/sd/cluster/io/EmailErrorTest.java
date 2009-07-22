@@ -71,7 +71,7 @@ public class EmailErrorTest {
     final PropertiesParser pp = new PropertiesParser(args);
     final Properties properties = pp.getProperties();
 
-    final Console console = new ClusterRunner(properties).getConsole();
+    final Console console = new ClusterRunner(true/*useActiveCluster*/, properties).getConsole();
     final String groupName = properties.getProperty("groupName");
     final Message message = new SimpleMessage();
 

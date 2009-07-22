@@ -47,9 +47,9 @@ public class JobAdmin extends BaseCommands {
   private int timeout;
   private Console console;
 
-  public JobAdmin(String user, ClusterDefinition clusterDef, int timeout) throws IOException {
+  public JobAdmin(ClusterDefinition clusterDef, int timeout) throws IOException {
     this.timeout = timeout;
-    this.console = new Console(user, clusterDef, "JobAdmin");
+    this.console = new Console(clusterDef, "JobAdmin");
   }
 
   public void shutdown() {
@@ -134,14 +134,14 @@ public class JobAdmin extends BaseCommands {
 
       interpreter.showMessage("Received " + responses.length + " responses:", batchMode);
       for (Response response : responses) {
-				String responseMessage = null;
-				if (response instanceof BooleanResponse) {
-					final BooleanResponse bresponse = (BooleanResponse)response;
-					responseMessage = bresponse.getNodeName() + ": " + bresponse.getValue();
-				}
-				else {
-					responseMessage = response.toString();
-				}
+        String responseMessage = null;
+        if (response instanceof BooleanResponse) {
+          final BooleanResponse bresponse = (BooleanResponse)response;
+          responseMessage = bresponse.getNodeName() + ": " + bresponse.getValue();
+        }
+        else {
+          responseMessage = response.toString();
+        }
         interpreter.showMessage(responseMessage, batchMode);
       }
 
@@ -267,8 +267,8 @@ public class JobAdmin extends BaseCommands {
     for (int i = 3; i < args.length; ++i) {
       machines[i - 3] = args[i];
     }
-    final ClusterDefinition clusterDef = new ClusterDefinition(defName, gateway, machines);
-    final JobAdmin jobAdmin = new JobAdmin(user, clusterDef, 10000);
+    final ClusterDefinition clusterDef = new ClusterDefinition(user, defName, gateway, machines);
+    final JobAdmin jobAdmin = new JobAdmin(clusterDef, 10000);
     final CommandInterpreter interp = new CommandInterpreter(jobAdmin, null);
 
     interp.setVar("prompt", "jobcmd> ");
@@ -291,17 +291,17 @@ public class JobAdmin extends BaseCommands {
 
     final PropertiesParser pp = new PropertiesParser(args, true);
     final Properties properties = pp.getProperties();
-    final ClusterRunner cr = new ClusterRunner(properties);
-    final String user = cr.getUser();
+    final ClusterRunner cr = new ClusterRunner(true/*useActiveCluster*/, properties);
+    //final String user = cr.getUser();
     final ClusterDefinition clusterDef = cr.getClusterDefinition();
-    final JobAdmin jobAdmin = new JobAdmin(user, clusterDef, 10000);
+    final JobAdmin jobAdmin = new JobAdmin(clusterDef, 10000);
     final String cmdFile = properties != null ? properties.getProperty("cmdFile") : null;
     final CommandInterpreter interp = new CommandInterpreter(jobAdmin, cmdFile);
 
     interp.setVar("prompt", "jobcmd> ");
-    interp.setVar("user", user);
-    interp.setVar("defName", cr.getDefName());
-    interp.setVar("machines", concat(cr.getMachines(), ", "));
+    interp.setVar("user", clusterDef.getUser());
+    interp.setVar("defName", clusterDef.getDefinitionName());
+    interp.setVar("machines", concat(clusterDef.getMachines(), ", "));
 
     jobAdmin.init();
     if (cmdFile != null) {

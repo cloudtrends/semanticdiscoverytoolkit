@@ -315,12 +315,18 @@ public class FileUtil {
    * Get a utf8-safe buffered reader over data in the input stream.
    */
   public static BufferedReader getReader(InputStream istream, String encoding) {
-    try {
-      return new BufferedReader(new InputStreamReader(istream, encoding));
+    BufferedReader result = null;
+
+    if (istream != null) {
+      try {
+        result = new BufferedReader(new InputStreamReader(istream, encoding));
+      }
+      catch (UnsupportedEncodingException e) {
+        throw new RuntimeException("UTF-8 not supported in FileUtil.");
+      }
     }
-    catch (UnsupportedEncodingException e) {
-      throw new RuntimeException("UTF-8 not supported in FileUtil.");
-    }
+
+    return result;
   }
 
   /**
@@ -390,40 +396,39 @@ public class FileUtil {
    * filename's extension is ".gz".
    */
   public static InputStream getInputStream(File file) throws IOException {
-    InputStream inputStream = new FileInputStream(file);
-    if (file.getName().toLowerCase().endsWith(".gz")) {
-      // GZIPInputStream has a bug in reading 4GB+ files, so use the workaround wrapper to
-      //  ignore the bogus "Corrupt Gzip Trailer" error.
-      inputStream = new GZIPInputStreamWorkaround(inputStream);
+    return getInputStream(file.toURI().toURL());
+  }
+
+  /**
+   * Get a normal input stream or a gzip input stream depending on whether
+   * the url's extension is ".gz".
+   */
+  public static InputStream getInputStream(URL url) throws IOException {
+    InputStream inputStream = null;
+
+    if (url != null) {
+      inputStream = url.openStream();
+      if (url.getPath().toLowerCase().endsWith(".gz")) {
+        // GZIPInputStream has a bug in reading 4GB+ files, so use the workaround wrapper to
+        //  ignore the bogus "Corrupt Gzip Trailer" error.
+        inputStream = new GZIPInputStreamWorkaround(inputStream);
+      }
     }
+
     return inputStream;
   }
 
-	/**
-	 * Get a normal input stream or a gzip input stream depending on whether
-	 * the url's extension is ".gz".
-	 */
-	public static InputStream getInputStream(URL url) throws IOException {
-		InputStream inputStream = url.openStream();
-		if (url.getPath().toLowerCase().endsWith(".gz")) {
-      // GZIPInputStream has a bug in reading 4GB+ files, so use the workaround wrapper to
-      //  ignore the bogus "Corrupt Gzip Trailer" error.
-      inputStream = new GZIPInputStreamWorkaround(inputStream);
-		}
-		return inputStream;
-	}
-
-	public static URL getUrl(Class clazz, String resource) {
-		if (File.separatorChar != '/') {
-			if (File.separatorChar == '\\') {
-				//resource = resource.replaceAll("/", "\\\\");
-			}
-			else {
-				//resource = resource.replaceAll("/", File.separator);
-			}
-		}
-		return clazz.getResource(resource);
-	}
+  public static URL getUrl(Class clazz, String resource) {
+    if (File.separatorChar != '/') {
+      if (File.separatorChar == '\\') {
+        //resource = resource.replaceAll("/", "\\\\");
+      }
+      else {
+        //resource = resource.replaceAll("/", File.separator);
+      }
+    }
+    return clazz.getResource(resource);
+  }
 
   /**
    * Get the filename for the class's resource suitable for opening.
@@ -434,7 +439,7 @@ public class FileUtil {
       filename = resource;
     }
     else {
-			final URL url = getUrl(clazz, resource);
+      final URL url = getUrl(clazz, resource);
       if (url != null) {
         filename = url.toString();
       }
@@ -447,8 +452,22 @@ public class FileUtil {
    * Get a file handle for the class's resource.
    */
   public static final File getFile(Class clazz, String resource) {
-    final String filename = getFilename(clazz, resource);
-    return filename == null ? null : getFile(filename);
+    File result = null;
+
+    if (clazz != null) {
+      try {
+        final URL url = clazz.getResource(resource);
+        result = new File(url.toURI());
+      }
+      catch (URISyntaxException eat) {}
+    }
+
+    if (result == null) {
+      final String filename = getFilename(clazz, resource);
+      result = filename == null ? null : getFile(filename);
+    }
+
+    return result;
   }
 
   /**
@@ -459,29 +478,29 @@ public class FileUtil {
     return getInputStream(getUrl(clazz, resource));
   }
 
-	/**
-	 * Get the file referenced by the resource name, dereferencing appropriately
-	 * if the filename is a valid URL.
-	 */
-	public static File getFile(String resourceName) {
-		File result = null;
+  /**
+   * Get the file referenced by the resource name, dereferencing appropriately
+   * if the filename is a valid URL.
+   */
+  public static File getFile(String resourceName) {
+    File result = null;
 
-		try {
-			final URL url = new URL(resourceName);
-			result = new File(url.toURI());
-		}
-		catch (MalformedURLException me) {
-			result = new File(resourceName);
-		}
-		catch (URISyntaxException ue) {
-			result = new File(resourceName);
-		}
-		catch (IllegalArgumentException ue) {
-			result = new File(resourceName);
-		}
+    try {
+      final URL url = new URL(resourceName);
+      result = new File(url.toURI());
+    }
+    catch (MalformedURLException me) {
+      result = new File(resourceName);
+    }
+    catch (URISyntaxException ue) {
+      result = new File(resourceName);
+    }
+    catch (IllegalArgumentException ue) {
+      result = new File(resourceName);
+    }
 
-		return result;
-	}
+    return result;
+  }
 
   /**
    * Get a buffered writer for a UTF-8 (and possibly gzipped) file.
@@ -491,7 +510,7 @@ public class FileUtil {
    * @throws IOException
    */
   public static BufferedWriter getWriter(String filename) throws IOException {
-	  return getWriter( filename, false );
+    return getWriter( filename, false );
   }
 
   /**
@@ -502,7 +521,7 @@ public class FileUtil {
    * @throws IOException
    */
   public static BufferedWriter getWriter(File file) throws IOException {
-	  return getWriter( file, false );
+    return getWriter( file, false );
   }
 
   /**
@@ -514,7 +533,7 @@ public class FileUtil {
    * @throws IOException
    */
   public static BufferedWriter getWriter(String filename, boolean append) throws IOException {
-	  return getWriter(getFile(filename), append );
+    return getWriter(getFile(filename), append );
   }
 
   /**
@@ -862,35 +881,35 @@ public class FileUtil {
     return lineCount;
   }
 
-	/**
-	 * Count the number of lines in the given file.
-	 *
-	 * @param file  The file whose lines to count.
-	 *
-	 * @return the number of lines or -1 if unable to compute.
-	 */
-	public static final long countLines(File file) {
-		long lineCount = 0;
-		BufferedReader reader = null;
+  /**
+   * Count the number of lines in the given file.
+   *
+   * @param file  The file whose lines to count.
+   *
+   * @return the number of lines or -1 if unable to compute.
+   */
+  public static final long countLines(File file) {
+    long lineCount = 0;
+    BufferedReader reader = null;
 
-		try {
-			reader = getReader(file);
-			while (reader.readLine() != null) ++lineCount;
-		}
-		catch (IOException e) {
-			lineCount = -1;
-		}
-		finally {
-			if (reader != null) {
-				try {
-					reader.close();
-				}
-				catch (IOException ignore) {}
-			}
-		}
+    try {
+      reader = getReader(file);
+      while (reader.readLine() != null) ++lineCount;
+    }
+    catch (IOException e) {
+      lineCount = -1;
+    }
+    finally {
+      if (reader != null) {
+        try {
+          reader.close();
+        }
+        catch (IOException ignore) {}
+      }
+    }
 
-		return lineCount;
-	}
+    return lineCount;
+  }
 
   /**
    * Read in the entire file as a list of strings, one per line, returning null
@@ -1071,6 +1090,8 @@ public class FileUtil {
    * @throws IOException
    */
   public static String readAsString(BufferedReader reader, LineIgnorer lineIgnorer) throws IOException {
+    if (reader == null) return null;
+
     final StringBuilder result = new StringBuilder();
     String line;
     boolean didFirst = false;

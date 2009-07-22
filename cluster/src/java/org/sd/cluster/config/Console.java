@@ -74,8 +74,8 @@ public class Console {
 
     if (defName != null && machines != null && machines.length > 0) {
       try {
-        final ClusterDefinition clusterDef = new ClusterDefinition(defName, "vorta", machines);
-        result = new Console(user, clusterDef, consoleIdentifier);
+        final ClusterDefinition clusterDef = new ClusterDefinition(user, defName, "vorta", machines);
+        result = new Console(clusterDef, consoleIdentifier);
       }
       catch (IOException e) {
         e.printStackTrace(System.err);
@@ -85,7 +85,6 @@ public class Console {
     return result;
   }
 
-  private String user;
   private ClusterDefinition clusterDef;
   private NodeClient consoleClient;
   private ClusterContext clusterContext;
@@ -94,12 +93,11 @@ public class Console {
 
   private final Object SEND_MESSAGE_MUTEX = new Object();
 
-  public Console(String user, ClusterDefinition clusterDef, String identifier) {
-    this.user = user;
+  public Console(ClusterDefinition clusterDef, String identifier) {
     this.clusterDef = clusterDef;
     this.consoleClient = makeConsoleClient(identifier);
 
-    final Config config = new Config(99, user);
+    final Config config = new Config(99, clusterDef.getUser());
     this.clusterContext = new ConsoleClusterContext(config, clusterDef);
   }
 
@@ -114,7 +112,7 @@ public class Console {
   private final NodeClient makeConsoleClient(String identifier) {
     NodeClient result = null;
     try {
-      result = new NodeClient("console-client(" + user + "@" + clusterDef.getDefinitionName() + ", " + identifier + ")",
+      result = new NodeClient("console-client(" + clusterDef.getUser() + "@" + clusterDef.getDefinitionName() + ", " + identifier + ")",
                               InetAddress.getLocalHost(), clusterDef.getNumNodes());
       result.start();
     }
@@ -147,7 +145,7 @@ public class Console {
    * @throws ClusterException to identify problems.
    */
   public Response sendMessageToNode(Message message, String node, int timeout) throws ClusterException {
-    final InetSocketAddress serverAddress = clusterDef.getServerAddress(user, node);
+    final InetSocketAddress serverAddress = clusterDef.getServerAddress(node);
 
     if (serverAddress == null) {
       throw new NonexistentNodeException("unknown node '" + node + "' in cluster '" +
@@ -175,7 +173,7 @@ public class Console {
   private final InetSocketAddress[] getServerAddresses(String groupName) throws ClusterException {
     InetSocketAddress[] serverAddresses = null;
     try {
-      serverAddresses = clusterDef.getServerAddresses(user, groupName);
+      serverAddresses = clusterDef.getServerAddresses(groupName);
     }
     catch (IllegalStateException e) {
       throw new NonexistentNodeException(e);
@@ -365,7 +363,7 @@ public class Console {
    */
   public Response sendJobCommandToNode(JobCommandMessage message, int timeout) throws ClusterException {
     final LocalJobId localJobId = message.getLocalJobId();
-    final InetSocketAddress serverAddress = clusterDef.getServerAddress(user, localJobId.getNodeName());
+    final InetSocketAddress serverAddress = clusterDef.getServerAddress(localJobId.getNodeName());
     final Response result = sendMessage(serverAddress, message, timeout);
 //System.err.println("Sending jobCommandToNode: " + message + " serverAddress=" + serverAddress + " response=" + result);
     return result;
@@ -437,7 +435,7 @@ public class Console {
     final Message[] messages = new Message[localJobIds.size()];
     int index = 0;
     for (LocalJobId localJobId : localJobIds) {
-      serverAddresses[index] = clusterDef.getServerAddress(user, localJobId.getNodeName());
+      serverAddresses[index] = clusterDef.getServerAddress(localJobId.getNodeName());
       messages[index] = new JobCommandMessage(message.getJobCommand(), localJobId);
       ++index;
     }

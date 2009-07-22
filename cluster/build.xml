@@ -142,7 +142,7 @@
 
   <target name="dist" depends="build-clean,build-jar"/>
 
-	<target name="build-jar" depends="init">
+	<target name="build-jar" depends="init,build">
     <mkdir dir="${dist}"/>
     <mkdir dir="${ldist}"/>
     <jar destfile="${dist}/${jar}.${buildNumber}.jar"

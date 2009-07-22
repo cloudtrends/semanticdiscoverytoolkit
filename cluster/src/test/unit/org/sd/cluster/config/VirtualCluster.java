@@ -82,7 +82,7 @@ public class VirtualCluster {
   public VirtualCluster(final String clusterName, final String defName, final String identifier) throws UnknownHostException, IOException {
     this.clusterName = clusterName;
     this.userName = "junit";
-    this.clusterDefinition = new SubstituteClusterDefinition(defName);
+    this.clusterDefinition = new SubstituteClusterDefinition(userName, defName);
     this.identifier = identifier;
     this.nodeNames = clusterDefinition.getNodeNames();
     this.numNodes = nodeNames.size();
@@ -110,7 +110,7 @@ public class VirtualCluster {
    * Start (listening for messages in) the virtual cluster.
    */
   public void start() {
-    this.console = new Console(userName, clusterDefinition, "VirtualCluster-" + identifier);
+    this.console = new Console(clusterDefinition, "VirtualCluster-" + identifier);
 
     // start each cluster node on a thread.
     for (int i = 0; i < numNodes; ++i) {
@@ -154,20 +154,20 @@ public class VirtualCluster {
     return num2node.get(num);
   }
 
-	public List<Job> getRunningJobs() {
-		final List<Job> result = new ArrayList<Job>();
+  public List<Job> getRunningJobs() {
+    final List<Job> result = new ArrayList<Job>();
 
-		for (ClusterNode node : num2node.values()) {
-			final JobManager jobManager = node.getJobManager();
-			final Collection<Integer> jobIds = jobManager.getActiveJobIds(null);
-			for (Integer jobId : jobIds) {
-				final Job job = jobManager.getActiveJob(jobId);
-				if (job != null) result.add(job);
-			}
-		}
+    for (ClusterNode node : num2node.values()) {
+      final JobManager jobManager = node.getJobManager();
+      final Collection<Integer> jobIds = jobManager.getActiveJobIds(null);
+      for (Integer jobId : jobIds) {
+        final Job job = jobManager.getActiveJob(jobId);
+        if (job != null) result.add(job);
+      }
+    }
 
-		return result;
-	}
+    return result;
+  }
 
   private final String buildJvmRootDir(int nodeNum) {
     final StringBuilder result = new StringBuilder();
@@ -217,13 +217,13 @@ public class VirtualCluster {
     private final Map<String, String> def2conf;
     private final Map<String, String> conf2def;
 
-    SubstituteClusterDefinition(String defName) throws IOException {
-      super(defName);
+    SubstituteClusterDefinition(String user, String defName) throws IOException {
+      super(user, defName);
       this.def2conf = new HashMap<String, String>();
       this.conf2def = new HashMap<String, String>();
     }
 
-    InetSocketAddress getInetSocketAddress(String hostname, String user, int jvmNum) {
+    InetSocketAddress getInetSocketAddress(String hostname, int jvmNum) {
       final String configName = def2conf.get(hostname + "-" + jvmNum);
       final String[] pieces = configName.split("-");
       final int newJvmNum = Integer.parseInt(pieces[1]);
@@ -246,9 +246,9 @@ public class VirtualCluster {
       return result;
     }
 
-    public InetSocketAddress getServerAddress(String user, String nodeWithNum) {
+    public InetSocketAddress getServerAddress(String nodeWithNum) {
       final String def = conf2def.get(nodeWithNum);
-      return super.getServerAddress(user, def == null ? nodeWithNum : def);
+      return super.getServerAddress(def == null ? nodeWithNum : def);
     }
 
     public String getJvmBasePath(int jvmNum) {

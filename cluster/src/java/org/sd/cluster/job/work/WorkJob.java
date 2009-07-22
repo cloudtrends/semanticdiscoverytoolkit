@@ -439,7 +439,7 @@ public class WorkJob extends AbstractJob {
    */
   public static final void run(String[] args) throws IOException, ClusterException {
     final PropertiesParser pp = new PropertiesParser(args, true);
-    final Console console = new ClusterRunner(pp.getProperties()).getConsole();
+    final Console console = new ClusterRunner(true/*useActiveCluster*/, pp.getProperties()).getConsole();
     run(pp.getProperties(), console);
     console.shutdown();
   }

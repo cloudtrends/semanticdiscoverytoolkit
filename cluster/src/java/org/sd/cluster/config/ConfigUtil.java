@@ -53,8 +53,8 @@ public class ConfigUtil {
    */
   public static final String CLUSTER_DIR_NAME = "cluster";
 
-	private static String clusterRootDir = ExecUtil.getUserHome() + "/" + CLUSTER_DIR_NAME + "/";
-	private static int[] portOverride = null;
+  private static String clusterRootDir = ExecUtil.getUserHome() + "/" + CLUSTER_DIR_NAME + "/";
+  private static int[] portOverride = null;
 
   /**
    * Get the active cluster name if possible.
@@ -93,20 +93,20 @@ public class ConfigUtil {
    * Get the cluster root directory path for the current user.
    */
   public static String getClusterRootDir() {
-		return clusterRootDir;
+    return clusterRootDir;
   }
 
-	/**
-	 * Set (override) the cluster root directory.
-	 * <p>
-	 * If never called, then the clusterRootDir defaults to: "~/cluster/"
-	 */
-	public static void setClusterRootDir(String newClusterRootDir) {
-		clusterRootDir = newClusterRootDir;
-		if (clusterRootDir.charAt(clusterRootDir.length() - 1) != '/') {
-			clusterRootDir = clusterRootDir + "/";
-		}
-	}
+  /**
+   * Set (override) the cluster root directory.
+   * <p>
+   * If never called, then the clusterRootDir defaults to: "~/cluster/"
+   */
+  public static void setClusterRootDir(String newClusterRootDir) {
+    clusterRootDir = newClusterRootDir;
+    if (clusterRootDir.charAt(clusterRootDir.length() - 1) != '/') {
+      clusterRootDir = clusterRootDir + "/";
+    }
+  }
 
   /**
    * Get the cluster directory path for the current user.
@@ -130,23 +130,23 @@ public class ConfigUtil {
   }
 
   public static String getClusterDevDir() {
-		// try to get from environment variable
-		String result = System.getenv("CLUSTER_DEV_DIR");
+    // try to get from environment variable
+    String result = System.getenv("CLUSTER_DEV_DIR");
 
-		if (result == null) {
-			// return current working dir (or parent if in 'bin')
-			result = new File("").getAbsolutePath() + "/";
-			if (result.endsWith("/bin/")) {
-				result = new File("..").getAbsolutePath() + "/";
-			}
+    if (result == null) {
+      // return current working dir (or parent if in 'bin')
+      result = new File("").getAbsolutePath() + "/";
+      if (result.endsWith("/bin/")) {
+        result = new File("..").getAbsolutePath() + "/";
+      }
 
-// 			// try to get relative to this class (NOTE: won't work when we're using the jar!)
-// 			result = FileUtil.getFilename(ConfigUtil.class, "ConfigUtil.class");
-// 			final int pos = (result != null) ? result.indexOf("/cluster/") : -1;
-// 			result = (pos >= 0) ? result.substring(0, pos + 9) : null;
-		}
+//       // try to get relative to this class (NOTE: won't work when we're using the jar!)
+//       result = FileUtil.getFilename(ConfigUtil.class, "ConfigUtil.class");
+//       final int pos = (result != null) ? result.indexOf("/cluster/") : -1;
+//       result = (pos >= 0) ? result.substring(0, pos + 9) : null;
+    }
 
-		return result;
+    return result;
   }
 
   /**
@@ -163,37 +163,39 @@ public class ConfigUtil {
     return getClusterDevDir() + "bin/";
   }
 
-	/**
-	 * Given a string of the form "lowPort:highPort", set the portOverride.
-	 */
-	public static void setPortOverride(String overrideString) {
-		if (overrideString != null && !"".equals(overrideString)) {
-			final String[] portRangePieces = overrideString.split(":");
-			final int lowPort = Integer.parseInt(portRangePieces[0]);
-			final int highPort = portRangePieces.length > 1 ? Integer.parseInt(portRangePieces[1]) : lowPort;
-			setPortOverride(lowPort, highPort);
+  /**
+   * Given a string of the form "lowPort:highPort", set the portOverride.
+   */
+  public static void setPortOverride(String overrideString) {
+    if (overrideString != null && !"".equals(overrideString)) {
+      final String[] portRangePieces = overrideString.split(":");
+      final int lowPort = Integer.parseInt(portRangePieces[0]);
+      final int highPort = portRangePieces.length > 1 ? Integer.parseInt(portRangePieces[1]) : lowPort;
+      setPortOverride(lowPort, highPort);
 
-			System.out.println("ConfigUtil: Applying (portRange) port override: " + overrideString);
-		}
-	}
+//      System.out.println("ConfigUtil: Applying (portRange) port override: " + overrideString);
+    }
+  }
 
-	/**
-	 * Set a low and high port overrides to use instead of the UsersCsv lookup
-	 * table.
-	 */
-	public static void setPortOverride(int lowPortOverride, int highPortOverride) {
-		System.out.println("ConfigUtil.setPortOverride(" + lowPortOverride + "," + highPortOverride + ")");
-		portOverride = new int[]{lowPortOverride, highPortOverride};
-	}
+  /**
+   * Set a low and high port overrides to use instead of the UsersCsv lookup
+   * table.
+   */
+  public static void setPortOverride(int lowPortOverride, int highPortOverride) {
+    if (portOverride == null || portOverride[0] != lowPortOverride || portOverride[1] != highPortOverride) {
+      System.out.println("ConfigUtil.setPortOverride(" + lowPortOverride + "," + highPortOverride + ")");
+      portOverride = new int[]{lowPortOverride, highPortOverride};
+    }
+  }
 
-	/**
-	 * Get the port override.
-	 * <p>
-	 * Note that this will be null if no override has been set.
-	 */
-	public static int[] getPortOverride() {
-		return portOverride;
-	}
+  /**
+   * Get the port override.
+   * <p>
+   * Note that this will be null if no override has been set.
+   */
+  public static int[] getPortOverride() {
+    return portOverride;
+  }
 
   /**
    * Get the server port for the given jvmNum and the current user.
@@ -212,18 +214,18 @@ public class ConfigUtil {
   public static final int getServerPort(int jvmNum, String user) {
     if (user == null) user = ExecUtil.getUser();
 
-		int serverPort = 0;
-		int highPort = 0;
+    int serverPort = 0;
+    int highPort = 0;
 
-		if (portOverride != null) {
-			serverPort = portOverride[0] + jvmNum;  // lowPortOverride + jvmNum
-			highPort = portOverride[1];             // highPortOverride
-		}
-		else {
-			final UsersCsv usersCsv = UsersCsv.getInstance();
-			serverPort = usersCsv.getLowPort(user) + jvmNum;
-			highPort = usersCsv.getHighPort(user);
-		}
+    if (portOverride != null) {
+      serverPort = portOverride[0] + jvmNum;  // lowPortOverride + jvmNum
+      highPort = portOverride[1];             // highPortOverride
+    }
+    else {
+      final UsersCsv usersCsv = UsersCsv.getInstance();
+      serverPort = usersCsv.getLowPort(user) + jvmNum;
+      highPort = usersCsv.getHighPort(user);
+    }
 
     if (serverPort > highPort) {
       throw new IllegalStateException("Too many jvms -- can't use another server port for jvmNum=" + jvmNum + " (maxPort=" + Integer.toString(highPort) + ")!");

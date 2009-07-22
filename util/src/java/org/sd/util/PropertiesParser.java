@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -88,7 +89,7 @@ public class PropertiesParser {
    * Construct with the given args.
    */
   public PropertiesParser(String[] args) throws IOException {
-		this(args, false);
+    this(args, false);
   }
 
   /**
@@ -98,7 +99,7 @@ public class PropertiesParser {
     this();
 
     parseArgs(args);
-		if (getenv) getEnvironmentVars();
+    if (getenv) getEnvironmentVars();
   }
 
   /**
@@ -160,7 +161,7 @@ public class PropertiesParser {
     }
     else {
       // search classpath for "x.properties"
-      loadProperties(this.properties, arg);
+      loadProperties(this.properties, arg, false/*verbose*/);
     }
   }
 
@@ -216,9 +217,25 @@ public class PropertiesParser {
    * Account for paths like "/...", "~...", and "C:\\...".
    */
   private final boolean isAbsolute(String path) {
-		final int cpos = path.indexOf(':');
+    final int cpos = path.indexOf(':');
     final char c = path.charAt(cpos + 1);
     return (c == '/' || c == '\\' || c == '~');
+  }
+
+  /**
+   * Combine the properties into one, where later properties will "shadow"
+   * earlier properties.
+   */
+  public static final Properties combineProperties(Properties[] properties) {
+    final Properties result = new Properties();
+
+    if (properties != null) {
+      for (Properties p : properties) {
+        result.putAll(p);
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -226,10 +243,11 @@ public class PropertiesParser {
    *
    * @param properties  The properties in which to load the found resources (ok if null).
    * @param name  The name of the properties resource to load.
+   * @param vebose  When true, show resources from which properties resources are loaded.
    *
    * @return the loaded properties (== properties if non-null).
    */
-  public static final Properties loadProperties(Properties properties, String name) throws IOException {
+  public static final Properties loadProperties(Properties properties, String name, boolean verbose) throws IOException {
     final Properties result = properties == null ? new Properties() : properties;
 
     final Enumeration<URL> pUrls = ClassLoader.getSystemResources(name);
@@ -242,6 +260,10 @@ public class PropertiesParser {
           final BufferedReader reader = FileUtil.getReader(pFile);
           result.load(reader);
           reader.close();
+
+          if (verbose) {
+            System.out.println(new Date() + ": PropertiesParser loaded '" + pUrl.toString() + "'");
+          }
         }
         catch (URISyntaxException e) {
           throw new IOException(e);
@@ -326,7 +348,7 @@ public class PropertiesParser {
   public String[] getProperties(String propertyName, String context) {
     String[] result = null;
 
-    final String keyPrefix = getKeyPrefix(propertyName, context);
+    final String keyPrefix = concat(context, propertyName);
     final Set<String> keys = getKeys(keyPrefix);
     if (keys != null) {
       result = new String[keys.size()];
@@ -353,7 +375,7 @@ public class PropertiesParser {
   public List<Pair> findProperties(String propertyName, String context) {
     List<Pair> result = null;
 
-    final String keyPrefix = getKeyPrefix(propertyName, context);
+    final String keyPrefix = concat(context, propertyName);
     final Set<String> keys = getKeys(keyPrefix);
     if (keys != null) {
       result = new ArrayList<Pair>();
@@ -365,10 +387,6 @@ public class PropertiesParser {
     return result;
   }
 
-  public static final String getKeyPrefix(String propertyName, String context) {
-    return (context == null) ? propertyName : context + "." + propertyName;
-  }
-
   public boolean hasContextProperty(String propertyName) {
     return hasContextProperty(propertyName, context);
   }
@@ -376,7 +394,7 @@ public class PropertiesParser {
   public boolean hasContextProperty(String propertyName, String context) {
     boolean result = false;
 
-    final String keyPrefix = getKeyPrefix(propertyName, context);    
+    final String keyPrefix = concat(context, propertyName);    
 
     if (prefix2keys != null && prefix2keys.get(keyPrefix) != null) {
       result = true;
@@ -416,24 +434,37 @@ public class PropertiesParser {
     return result;
   }
 
-	/**
-	 * Get environment vars, setting properties for those that are not already
-	 * properties. In other words, properties override environment variables.
-	 */
-	private final void getEnvironmentVars() {
-		final Map<String, String> env = System.getenv();
+  /**
+   * Get environment vars, setting properties for those that are not already
+   * properties. In other words, properties override environment variables.
+   */
+  private final void getEnvironmentVars() {
+    getEnvironmentVars(null);
+  }
 
-		if (this.properties == null) this.properties = new Properties();
+  /**
+   * Get environment vars, setting properties for those that are not already
+   * properties. In other words, properties override environment variables.
+   *
+   * @param prefix  If non-null, then set properties "prefix.key" for each env
+   *                key. If null, property keys will match environment keys.
+   */
+  private final void getEnvironmentVars(String prefix) {
+    final Map<String, String> env = System.getenv();
 
-		for (Map.Entry<String, String> entry : env.entrySet()) {
-			final String key = entry.getKey();
-			final String value = entry.getValue();
+    if (this.properties == null) this.properties = new Properties();
 
-			if (properties.getProperty(key) == null) {
-				properties.setProperty(key, value);
-			}
-		}
-	}
+    for (Map.Entry<String, String> entry : env.entrySet()) {
+      String key = entry.getKey();
+      final String value = entry.getValue();
+
+      if (prefix != null) key = concat(prefix, key);
+
+      if (properties.getProperty(key) == null) {
+        properties.setProperty(key, value);
+      }
+    }
+  }
 
   /**
    * Utility method to get a property as an integer.
@@ -504,10 +535,61 @@ public class PropertiesParser {
    * <p>
    * Note that _1, _2, can be _A, _B, or full word strings and their values will be
    * collected in alphabetical order.
+   *
+   * @param properties  The properties from which to retrieve the values.
+   * @param propertyPrefix  The property name (before the ordering '_').
    */
   public static final String[] getMultiValues(Properties properties, String propertyPrefix) {
+    return getMultiValues(properties, null, propertyPrefix, null);
+  }
+
+  /**
+   * Get all values for properties with the given prefix in sorted order.
+   * <p>
+   * This is intended for getting values for multiple ordered properties of the form:
+   * <p>
+   * propertyName_1=value1 <p>
+   * propertyName_2=value2 <p>
+   * and so on.
+   * <p>
+   * Note that _1, _2, can be _A, _B, or full word strings and their values will be
+   * collected in alphabetical order.
+   *
+   * @param properties  The properties from which to retrieve the values.
+   * @param prefix  The prefix for the property (name) for generating property
+   *                names of the form "prefix.property".
+   * @param propertyPrefix  The property name (before the ordering '_').
+   */
+  public static final String[] getMultiValues(Properties properties, String prefix, String propertyPrefix) {
+    return getMultiValues(properties, prefix, propertyPrefix, null);
+  }
+
+  /**
+   * Get all values for properties with the given prefix in sorted order.
+   * <p>
+   * This is intended for getting values for multiple ordered properties of the form:
+   * <p>
+   * propertyName_1=value1 <p>
+   * propertyName_2=value2 <p>
+   * and so on.
+   * <p>
+   * Note that _1, _2, can be _A, _B, or full word strings and their values will be
+   * collected in alphabetical order.
+   *
+   * @param properties  The properties from which to retrieve the values.
+   * @param prefix  The prefix for the property (name) for generating property
+   *                names of the form "prefix.property".
+   * @param propertyPrefix  The property name (before the ordering '_').
+   * @param defaultValues  The default values to apply when a value is not found.
+   *                       Note that if the defaultValue size is less than the
+   *                       found value size, then the last defaultValue will be
+   *                       used (even if null).
+   */
+  public static final String[] getMultiValues(Properties properties, String prefix, String propertyPrefix, String[] defaultValues) {
     Set<String> propertyNames = null;
     
+    propertyPrefix = concat(prefix, propertyPrefix);
+
     for (String propertyName : properties.stringPropertyNames()) {
       if (propertyName.startsWith(propertyPrefix)) {
         if (propertyNames == null) propertyNames = new TreeSet<String>();
@@ -520,7 +602,11 @@ public class PropertiesParser {
     final String[] result = new String[propertyNames.size()];
     int index = 0;
     for (String propertyName : propertyNames) {
-      result[index++] = properties.getProperty(propertyName);
+      String curProperty = properties.getProperty(propertyName);
+      if (curProperty == null && defaultValues != null && defaultValues.length > 0) {
+        curProperty = defaultValues[index >= defaultValues.length ? defaultValues.length - 1 : index];
+      }
+      result[index++] = curProperty;
     }
 
     return result;
@@ -539,6 +625,94 @@ public class PropertiesParser {
         result = name;
         break;
       }
+    }
+
+    return result;
+  }
+
+  /**
+   * Concatenate the prefix to the property with an intermediate '.', if non-null.
+   *
+   * @param prefix  The prefix to the result (ok if null)
+   * @param property  The property.
+   *
+   * @return "prefix.property" or "property"
+   */
+  public static final String concat(String prefix, String property) {
+    if (prefix == null) return property;  // shortcut out
+    if (property == null) return prefix;  // shortcut out
+
+    final StringBuilder result = new StringBuilder();
+    result.append(prefix).append('.').append(property);
+    return result.toString();
+  }
+
+  /**
+   * Get the value for the concatenated property from the properties, applying
+   * the prefix as "prefix.property".
+   *
+   * @param properties  The properties from which to retrieve a value.
+   * @param prefix  The prefix for the property (name).
+   * @param property  The property (name).
+   *
+   * @return the value for the property (possibly null).
+   */
+  public static final String getProperty(Properties properties, String prefix,
+                                         String property) {
+    return getProperty(properties, prefix, property, null, false);
+  }
+
+  /**
+   * Get the value for the concatenated property from the properties, applying
+   * the prefix as "prefix.property".
+   *
+   * @param properties  The properties from which to retrieve a value.
+   * @param prefix  The prefix for the property (name).
+   * @param property  The property (name).
+   * @param defaultValue  The default value to retrieve if no value for the
+   *                      property (or its fallback if applied) is set.
+   *
+   * @return the value for the property (possibly null).
+   */
+  public static final String getProperty(Properties properties, String prefix,
+                                         String property, String defaultValue) {
+    return getProperty(properties, prefix, property, defaultValue, false);
+  }
+
+  /**
+   * Get the value for the concatenated property from the properties, applying
+   * the prefix as "prefix.property".
+   *
+   * @param properties  The properties from which to retrieve a value.
+   * @param prefix  The prefix for the property (name).
+   * @param property  The property (name).
+   * @param defaultValue  The default value to retrieve if no value for the
+   *                      property (or its fallback if applied) is set.
+   * @param fallback  If true, then return the value associated with "property"
+   *                  iff the value for "prefix.property" is null.
+   *
+   * @return the value for the property (possibly null).
+   */
+  public static final String getProperty(Properties properties, String prefix,
+                                         String property, String defaultValue,
+                                         boolean fallback) {
+
+    // shortcut out
+    if (prefix == null) {
+      return properties.getProperty(property, defaultValue);
+    }
+
+    // get the concatenated property's value.
+    String result = properties.getProperty(concat(prefix, property));
+
+    // fallback if warranted
+    if (result == null && fallback && prefix != null) {
+      result = properties.getProperty(property);
+    }
+
+    // apply the default value if needed
+    if (result == null && defaultValue != null) {
+      result = defaultValue;
     }
 
     return result;

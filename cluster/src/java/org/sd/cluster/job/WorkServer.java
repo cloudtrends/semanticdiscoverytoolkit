@@ -281,7 +281,7 @@ public abstract class WorkServer extends AbstractJob {
     String serverNodeName = null;
 
     // use properties
-    console = new ClusterRunner(pp.getProperties()).getConsole();
+    console = new ClusterRunner(true/*useActiveCluster*/, pp.getProperties()).getConsole();
     serverNodeName = pp.getProperties().getProperty("groupName");
 
     if (console != null) {
