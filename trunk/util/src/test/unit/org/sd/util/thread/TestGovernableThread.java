@@ -65,7 +65,7 @@ public class TestGovernableThread extends TestCase {
 	}
 
 	public void testPauseFor() {
-		final Sleeper sleeper = new Sleeper(200, 5);  // sleep 200 times for 5 millis each
+		final Sleeper sleeper = new Sleeper(2000, 5);  // sleep 200 times for 5 millis each
 
 		final GovernableThread thread = new GovernableThread(sleeper);
 		final UnitCounter uc = sleeper.getUnitCounter();  // grab a handle to the counter
