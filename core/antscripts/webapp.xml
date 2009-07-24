@@ -1,0 +1,72 @@
+<project>
+
+  <!--
+    - Definitions and targets to import for webapp projects
+    -
+    - The following targets are defined:
+    -   Top-level targets:
+    -     all : Compile, test, javadoc, deploy
+    -     webdist : Create full module web distribution (todo: implement this!)
+    -     deploy : Deploy web application (todo: implement this!)
+    -
+    -   Cleaning targets:
+    -     clean-deploy-dir : Cleans the deployed webapp
+    -
+    -   Composite convenience targets:
+    -     clean-deploy : clean, clean-deploy-dir, deploy
+    -     clean-all : clean, clean-deploy-dir, all
+    -
+    - Customization:
+    -   Environment variables:
+    -     Web Application:
+    -       TOMCAT_HOME : path to Tomcat installation
+    -       DEPLOY_DIR : name of deployment directory under Tomcat (default "webapps")
+    -       WEBAPP_DIR : name of web application (under Tomcat's deployment directory)
+    -->
+
+  <!-- load in the environment variables prefixed with "env." -->
+  <property environment="env"/>
+
+  <!-- set tomcat home if not already set through environment var -->
+  <!-- set tomcat.exists to true if tomcat home directory exists -->
+  <!-- fail the build if tomcat home doesn't exist -->
+  <property name="env.TOMCAT_HOME" value="/usr/local/tomcat"/>
+  <available property="tomcat.exists" file="${env.TOMCAT_HOME}" type="dir"/>
+  <fail message="Tomcat home '${env.TOMCAT_HOME}' not found!">
+    <condition>
+      <and>
+        <not>
+          <isset property="tomcat.exists"/>
+        </not>
+      </and>
+    </condition>
+  </fail>
+  <property name="env.DEPLOY_DIR" value="webapps"/>
+  <property name="deploydir" value="${env.TOMCAT_HOME}/${env.DEPLOY_DIR}/${env.WEBAPP_DIR}"/>
+
+
+  <target name="webdist" depends="dist" description="Create web distribution">
+    <!-- todo: implement this. ...copy dist to webdist? -->
+  </target>
+
+  <target name="deploy" depends="webdist" description="Deploy to webapps">
+    <!-- todo: implement this. -->
+  </target>
+
+  <target name="clean-deploy-dir">
+    <delete dir="${deploydir}"/>
+  </target>
+
+  <target name="all"
+          depends="compile,test,javadoc,jar,dist,deploy"
+          description="Performs a build; runs tests; builds javadocs, jar, dist; deploys"/>
+
+  <target name="clean-deploy"
+          depends="clean-deploy-dir,clean,deploy"
+          description="Clean all, compile, and deploy."/>
+
+  <target name="clean-all"
+          depends="clean-deploy-dir,clean,all"
+          description="Performs a clean build; runs tests; build javadocs, jar, dist; deploys"/>
+
+</project>

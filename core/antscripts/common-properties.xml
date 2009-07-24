@@ -1,0 +1,45 @@
+<project>
+
+  <!-- load in the environment variables prefixed with "env." -->
+  <property environment="env"/>
+
+  <!-- load properties from build.properties -->
+  <property file="build.properties"/>
+
+  <!-- set default properties -->
+  <property name="rootdir" value=".."/>
+  <!--property name="common" value="commondist"/>
+  <property name="commondir" value="${rootdir}/${common}"/-->
+  <property name="env.ANT_BUILD_NAME" value="build.xml"/>
+
+  <property name="srcdir" value="src/java"/>
+  <property name="bldoutdir" value="build"/>
+  <property name="classoutdir" value="${bldoutdir}/classes"/>
+  <property name="distdir" value="${bldoutdir}/dist"/>
+  <property name="distlibdir" value="${distdir}/lib"/>
+
+  <property name="docdir" value="${bldoutdir}/docs"/>
+  <property name="apidocs" value="${docdir}/javadocs"/>
+  <property name="api.packages" value="org.sd.*"/>
+
+  <property name="default.compiler.args" value="-Xlint:unchecked"/>
+
+  <property name="env.CORE_ROOT" value="../../core"/>
+  <property name="env.JARS_ROOT" value="${env.CORE_ROOT}/jars"/>
+  <property name="env.MODULES_ROOT" value=".."/>
+  <property name="modlibname" value="modlib"/>
+  <property name="modlib" value="${env.JARS_ROOT}/${modlibname}"/>
+  <property name="ext" value="${env.JARS_ROOT}/ext"/>
+  <property name="antscripts" value="${env.CORE_ROOT}/antscripts"/>
+  <property name="depsroot" value="${env.CORE_ROOT}/deps"/>
+  <property name="localdist" value="${env.CORE_ROOT}/localdist"/>
+  <property name="localdeps" value="deps"/>
+
+  <!-- set up test properties -->
+  <property name="junit.test" value="src/test/junit"/>
+  <property name="junit.test.classes" value="${bldoutdir}/junit-classes"/>
+  <property name="junit.results" value="${bldoutdir}/junit-results"/>
+  <property name="junit.tests" value="Test*"/>
+  <available property="has.junit.tests" file="${junit.test}" type="dir"/>
+
+</project>

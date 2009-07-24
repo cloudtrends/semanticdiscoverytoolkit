@@ -1,0 +1,10 @@
+<project name="crawl" basedir=".">
+
+  <!-- preload the environment variables for reference here -->
+  <property environment="env"/>
+
+  <!-- identify location of ant-common.xml for import -->
+  <property name="env.CORE_ROOT" value="../../core"/>
+  <import file="${env.CORE_ROOT}/antscripts/common.xml"/>
+
+</project>

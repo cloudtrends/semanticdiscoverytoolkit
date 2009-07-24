@@ -1,0 +1,3 @@
+runtime:lucene-core.jar
+runtime:lucene-highlighter.jar
+testonly:junit.jar

@@ -1,0 +1,186 @@
+<project name="modules" default="compile">
+
+  <property environment="env"/>
+  <property file="build.properties"/>
+
+  <property name="env.ANT_BUILD_NAME" value="build.xml"/>
+  <property name="env.CORE_ROOT_FROM_MODULES_ROOT" value="../core"/>
+  <property name="antscripts" value="${env.CORE_ROOT_FROM_MODULES_ROOT}/antscripts"/>
+  <import file="${antscripts}/loadlines.xml"/>
+
+  <property name="depsroot" value="${env.CORE_ROOT_FROM_MODULES_ROOT}/deps"/>
+  <property name="modulesfile" value="${depsroot}/module-order.txt"/>
+  <property name="env.JARS_ROOT_FROM_MODULES_ROOT" value="${env.CORE_ROOT_FROM_MODULES_ROOT}/jars"/>
+  <property name="modlibname" value="modlib"/>
+  <property name="modlib" value="${env.JARS_ROOT_FROM_MODULES_ROOT}/${modlibname}"/>
+
+  <property name="localdist" value="${env.CORE_ROOT_FROM_MODULES_ROOT}/localdist"/>
+  <property name="apidocs" value="${localdist}/javadoc"/>
+  <property name="api.packages" value="org.sd.*"/>
+  <property name="srcdir" value="src/java"/>
+
+  <loadlines srcfile="${modulesfile}" property="ordered.builds" failonerror="true" postpend="/${env.ANT_BUILD_NAME} "/>
+  <!--echo message="ordered.builds=${ordered.builds}"/-->
+
+  <filelist id="ordered.build.files" dir="." files="${ordered.builds}"/>
+  <intersect id="ordered.existing.build.files">
+    <filelist refid="ordered.build.files"/>
+    <fileset dir="." includes="*/${env.ANT_BUILD_NAME}"/>
+  </intersect>
+
+  <macrodef name="iterate">
+    <attribute name="target"/>
+    <sequential>
+      <subant target="@{target}" inheritall="false">
+        <resources refid="ordered.existing.build.files"/>
+        <!--fileset dir="modules" includes="*/${env.ANT_BUILD_NAME}"/-->
+      </subant>
+    </sequential>
+  </macrodef>
+
+
+  <!-- load common properties -->
+  <property name="env.CORE_ROOT" value="${env.CORE_ROOT_FROM_MODULES_ROOT}"/>
+  <property name="env.JARS_ROOT" value="${env.JARS_ROOT_FROM_MODULES_ROOT}"/>
+  <property name="env.MODULES_ROOT" value="."/>
+  <import file="${env.CORE_ROOT_FROM_MODULES_ROOT}/antscripts/common-properties.xml"/>
+
+
+  <!-- module targets: all, compile, test, javadoc, clean, clean-compile, clean-test, clean-all, showdeps, p4chkn, update-modlib, compile-test -->
+
+  <target name="all" description="Run each module's 'all' target in order.">
+    <iterate target="all"/>
+  </target>
+
+  <target name="compile" description="Run each module's 'compile' target in order.">
+    <iterate target="compile"/>
+  </target>
+
+  <target name="test" description="Run each module's 'test' target in order.">
+    <iterate target="test"/>
+  </target>
+
+  <target name="javadoc" description="Create combined javadocs for all modules (under core/localdist/javadoc)">
+    <!--iterate target="javadoc"/-->
+
+    <mkdir dir="${apidocs}"/>
+    <loadlines srcfile="${modulesfile}" property="module.sources" failonerror="true" postpend="/${srcdir}:" />
+    <echo message="Building javadocs for module.sources=${module.sources}"/>
+
+    <javadoc
+        packagenames="${api.packages}"
+        sourcepath="${module.sources}"
+        destdir="${apidocs}"
+        verbose="no"
+        Public="no"
+        Protected="no"
+        Package="yes"
+        Private="no"
+        Version="yes"
+        Author="yes"
+        windowtitle="JavaDOC for SD Toolkit"
+        doctitle="SD Toolkit javadocs"
+        bottom=""
+        header=""
+        footer=""
+        nodeprecated="no"
+        nodeprecatedlist="no"
+        failonerror="no">
+      <classpath>
+        <fileset dir="${env.CORE_ROOT_FROM_MODULES_ROOT}" includes="**/*.jar"/>
+      </classpath>
+    </javadoc>
+  </target>
+
+  <target name="clean" description="Run each module's 'clean' target in order.">
+    <iterate target="clean"/>
+  </target>
+
+  <target name="clean-test" description="Run each module's 'clean-test' target in order.">
+    <iterate target="clean-test"/>
+  </target>
+
+  <target name="clean-all" description="Run each module's 'clean-all' target in order.">
+    <iterate target="clean-all"/>
+  </target>
+
+  <target name="clean-dist" description="Run each module's 'clean-dist' target in order.">
+    <iterate target="clean-dist"/>
+  </target>
+
+  <target name="showdeps" description="Run each module's 'showdeps' target in order.">
+    <iterate target="showdeps"/>
+  </target>
+
+  <target name="p4chkn" depends="add-license" description="Run each module's 'p4chkn' target in order.">
+    <iterate target="p4chkn"/>
+    <iterate target="update-modlib"/>
+  </target>
+
+  <target name="update-modlib" description="Run each module's 'update-modlib' target in order.">
+    <iterate target="update-modlib"/>
+  </target>
+
+  <target name="compile-test" description="Run each module's 'compile-test' target in order.">
+    <iterate target="compile-test"/>
+  </target>
+
+  <target name="add-license">
+    <exec dir="${env.CORE_ROOT_FROM_MODULES_ROOT}/license" executable="do-add-license"/>
+  </target>
+
+  <target name="init">
+    <!-- Create the time stamp -->
+    <tstamp>
+      <!--format property="buildNumber" pattern="yyyyMMddHHmmss" /-->
+      <format property="buildNumber" pattern="yyyy-MM-dd" />
+    </tstamp>
+  </target>
+
+  <target name="toolkit-jar" description="Create a complete toolkit jar." depends="init,compile">
+    <delete verbose="true" failonerror="false">
+      <fileset dir="${localdist}" includes="sd-toolkit*.jar"/>
+    </delete>
+
+    <mkdir dir="${localdist}"/>
+
+    <!--jar destfile="${localdist}/sd-toolkit.${buildNumber}.jar" basedir="${env.CORE_ROOT_FROM_MODULES_ROOT}/license" includes="*gpl.txt"/-->
+
+    <sequential>
+      <subant target="add-to-jar" inheritall="false">
+        <property name="destjarfile" value="../${localdist}/sd-toolkit.${buildNumber}.jar"/>
+        <resources refid="ordered.existing.build.files"/>
+      </subant>
+    </sequential>
+  </target>
+
+  <target name="newmod" description="Create a new module. Use 'ant -Dnewmod=foo newmod' for new module 'foo'.">
+    <echo message="Creating new module '${newmod}'..."/>
+    <mkdir dir="${newmod}"/>
+
+    <!-- create the build.xml file -->
+    <echoxml file="${newmod}/build.xml">
+      <project name="${newmod}" basedir=".">
+        <!-- preload the environment variables for reference here -->
+        <property environment="env"/>
+        <!-- identify location of ant-common.xml for import -->
+        <property name="env.CORE_ROOT" value="../../core"/>
+        <import file="$${env.CORE_ROOT}/antscripts/common.xml"/>
+      </project>
+    </echoxml>
+
+    <!-- create the basic directory structure -->
+    <mkdir dir="${newmod}/${localdeps}"/>
+    <touch file="${newmod}/${localdeps}/${newmod}.dep"/>
+    <touch file="${newmod}/${localdeps}/${newmod}.lib"/>
+    <touch file="${newmod}/${localdeps}/${newmod}.conf"/>
+    <mkdir dir="${newmod}/${srcdir}"/>
+    <mkdir dir="${newmod}/${junit.test}"/>
+
+    <echo message="Created new module '${newmod}'."/>
+    <echo message=""/>
+    <echo message="Don't forget to add '${newmod}' to '${env.CORE_ROOT_FROM_MODULES_ROOT}/antscripts/deps/module-order.txt'!"/>
+    <echo message=""/>
+  </target>
+
+</project>

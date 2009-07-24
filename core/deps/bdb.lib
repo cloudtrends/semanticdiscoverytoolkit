@@ -1,0 +1,3 @@
+runtime:commons-cli.jar
+runtime:je.jar
+testonly:junit.jar
