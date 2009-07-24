@@ -1,0 +1,151 @@
+<project>
+
+  <property name="loadlines.default.prepend" value=""/>
+  <property name="loadlines.default.postpend" value=" "/>
+  <property name="loadlines.default.regex" value="^([^#]+)$$"/>
+  <property name="loadlines.default.replace" value="\1@{postpend}"/>
+  <property name="loadlines.default.failmsg" value="Resource mismatch!"/>
+  <property name="loadlines.default.count1" value="@{ref1}.resourcecount"/>
+  <property name="loadlines.default.ix" value="@{ref1}-ix-@{ref2}"/>
+  <property name="loadlines.default.ux" value="@{ref1}-ux-@{ref2}"/>
+
+  <!--
+    - Macro to load and flatten lines from a file into a property.
+    -  Comment lines (those beginning with '#') and blank lines are ignored.
+    -  Each line gets the prepend and postpend data attached.
+    -   NOTE: If overriding postpend, remember to add a delimiter (usu. a space)
+    -         along with the extra text.
+    -->
+  <macrodef name="loadlines">
+    <attribute name="srcfile"/>
+    <attribute name="property"/>
+    <attribute name="failonerror" default="true"/>
+    <attribute name="prepend" default="${loadlines.default.prepend}"/>
+    <attribute name="postpend" default="${loadlines.default.postpend}"/>
+    <attribute name="regex" default="${loadlines.default.regex}"/>
+    <attribute name="replace" default="${loadlines.default.replace}"/>
+
+    <sequential>
+      <loadfile srcfile="@{srcfile}" property="@{property}" failonerror="@{failonerror}">
+        <filterchain>
+          <containsregex pattern="@{regex}"/>
+          <replaceregex pattern="@{regex}" replace="@{replace}"/>
+          <prefixlines prefix="@{prepend}"/>
+          <striplinebreaks/>
+        </filterchain>
+      </loadfile>
+    </sequential>
+  </macrodef>
+
+
+  <!--
+    - Macro to verify that two resources contain the same data.
+    - 
+    - This is used in cases, for example, where both a filelist and a fileset
+    - are constructed such that the elements in the filelist (which does not
+    - guarantee that its files exist but preserves order) should match those
+    - in the fileset (which does guarantee that its files exist but does not
+    - preserve order.)
+    - 
+    - Attributes:
+    -  ref1 : (reqd) Reference to the first of the two resources to verify.
+    -  ref2 : (reqd) Reference to the second of the two resources to verify.
+    -  failmsg : (optional) The fail message for when the resources don't match.
+    -  count1 : (optional, default=ref1.resourcecount) name of property in
+    -           which to store the resourcecount of ref1.
+    -  ix : (optional, default=ref1-ix-ref2) The reference id in which to store
+    -       the intersection of the two resources.
+    -  ux : (optional, default=ref1-ux-ref2) The reference id in which to store
+    -       the union of the two resources.
+    -->
+  <macrodef name="verify-resources-match">
+    <attribute name="ref1"/>
+    <attribute name="ref2"/>
+    <attribute name="failmsg" default="${loadlines.default.failmsg}"/>
+    <attribute name="ix" default="${loadlines.default.ix}"/>
+    <attribute name="ux" default="${loadlines.default.ux}"/>
+
+    <attribute name="count1" default="${@{ref1}.resourcecount}"/>
+
+    <sequential>
+      <resourcecount property="@{ref1}.resourcecount" refid="@{ref1}"/>
+      <intersect id="@{ix}">
+        <resources refid="@{ref1}"/>
+        <resources refid="@{ref2}"/>
+      </intersect>
+      <union id="@{ux}">
+        <resources refid="@{ref1}"/>
+        <resources refid="@{ref2}"/>
+      </union>
+  
+      <echo message="count=${@{ref1}.resourcecount}"/>
+
+      <!--resourcecount property="ix.count" refid="@{ix}"/>
+      <resourcecount property="ux.count" refid="@{ux}"/>
+      <echo message="ix.count=${ix.count}"/>
+      <echo message="ux.count=${ux.count}"/-->
+      
+
+      <fail message="@{failmsg}">
+        <condition>
+          <not>
+            <and>
+              <resourcecount refid="@{ref2}" count="${@{ref1}.resourcecount}" when="eq"/>
+              <resourcecount refid="@{ix}" count="${@{ref1}.resourcecount}" when="eq"/>
+              <resourcecount refid="@{ux}" count="${@{ref1}.resourcecount}" when="eq"/>
+            </and>
+          </not>
+        </condition>
+      </fail>
+    </sequential>
+  </macrodef>
+
+
+  <!--
+    - Macro to load lines from a file that identifies files in order.
+    - 
+    - This macro reads the file lines, translating them into file paths,
+    - generating an ordered filelist (referenced by "lref"), and verifies
+    - that all of the files exist.
+    -->
+  <macrodef name="find-files">
+    <attribute name="file"/>                        <!-- property identifying file to load -->
+    <attribute name="property" default="@{file}-lines"/>                    <!-- name of property in which to store loaded lines -->
+    <attribute name="prepend" default="${loadlines.default.prepend}"/>                     <!-- text to prepend on each loaded line -->
+    <attribute name="postpend" default="${loadlines.default.postpend} "/>        <!-- text to postpend on each loaded line (must end with a space!) -->
+    <attribute name="regex" default="${loadlines.default.regex}"/>  <!-- regex to extract portion of each line loaded (in \1) -->
+    <attribute name="replace" default="${loadlines.default.replace}"/>
+    <attribute name="lref" default="@{file}.filelist"/>
+    <attribute name="sref" default="@{file.fileset"/>
+    <attribute name="failmsg" default="${loadlines.default.failmsg}"/>
+    <attribute name="ix" default="@{ref1}-ix-@{ref2}"/>
+    <attribute name="ux" default="@{ref1}-ux-@{ref2}"/>
+
+    <attribute name="basedir" default="."/>
+    <attribute name="includes"/>
+
+    <sequential>
+      <loadlines srcfile="@{file}"
+                 property="@{property}"
+                 prepend="@{prepend}"
+                 postpend="@{pospend}"
+                 regex="@{regex}"
+                 replace="@{replace}"/>
+  
+      <filelist id="@{lref}" dir="@{basedir}" files="${@{property}}"/>
+      <fileset id="@{sref}" dir="@{basedir}" includes="@{includes}"/>
+  
+      <!--path id="temp.path">
+        <fileset refid="@{sref}"/>
+      </path>
+      <echo message="${toString:temp.path}"/-->
+
+      <verify-resources-match ref1="@{lref}"
+                              ref2="@{sref}"
+                              failmsg="@{failmsg}"
+                              ix="@{ix}"
+                              ux="@{ux}"/>
+    </sequential>
+  </macrodef>
+
+</project>

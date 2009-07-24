@@ -1,8 +1,0 @@
-
-This directory contains all (externally maintained) jars that are used within
-this project's modules with the intent that all modules reference these jars
-using symbolic links that point to them. This contains jars that are used
-for building and testing as well as for runtime.
-
-See this directory's sibling directory, "lib", to find the jars that are
-relevant for runtime contexts.

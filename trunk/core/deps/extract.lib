@@ -1,0 +1,2 @@
+runtime:weka.jar
+testonly:junit.jar

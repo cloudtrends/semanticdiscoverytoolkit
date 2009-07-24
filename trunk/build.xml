@@ -12,162 +12,73 @@
 		<exec dir=".." executable="/bin/tar">
 			<arg value="-czf"/>
 			<arg value="sd-toolkit.src.${buildNumber}.tgz"/>
-			<arg value="--exclude=build/classes"/>
-			<arg value="--exclude=build/doc"/>
-			<arg value="--exclude=build/reports"/>
-			<arg value="--exclude=build/unit-test-classes"/>
+			<arg value="--exclude=build"/>
 			<arg value="--exclude=.svn"/>
 			<arg value="--exclude=*.bdb"/>
 			<arg value="--exclude=*~"/>
-      <arg value="--exclude=lib/sd-*.jar"/>
-      <arg value="--exclude=jars/sd-*.jar"/>
+      <arg value="--exclude=modlib"/>
+      <arg value="--exclude=localdist"/>
 			<arg value="semanticdiscoverytoolkit"/>
 		</exec>
   </target>
 
-	<target name="build" depends="dobuild,base-jar,all-jar,add-license" />
+  <target name="build" depends="dobuild,base-jar,toolkit-jar,javadoc"/>
+
+  <target name="p4chkn" depends="dop4chkn,base-jar,toolkit-jar,javadoc"/>
+
+  <target name="all" depends="p4chkn"/>
 
 	<target name="add-license">
-		<exec dir="license" executable="do-add-license"/>
+    <ant dir="modules" antfile="build.xml" target="add-license" inheritall="false"/>
   </target>
 
-  <target name="all-jar" depends="init">
-		<delete verbose="true" failonerror="false">
-			<fileset dir="jars" includes="sd-all*.jar"/>
-		</delete>
+  <target name="dobuild" depends="init">
+    <ant dir="tools/anttasks" antfile="build.xml" target="dist" inheritall="false"/>
+    <ant antfile="modules/build.xml" target="clean-dist" inheritall="false"/>
+  </target>
 
-    <mkdir dir="jars"/>
-    <mkdir dir="jarlinks"/>
+  <target name="dop4chkn" depends="init">
+    <ant dir="tools/anttasks" antfile="build.xml" target="dist" inheritall="false"/>
+    <ant antfile="modules/build.xml" target="p4chkn" inheritall="false"/>
+  </target>
 
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="io/build/classes"/>
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="util/build/classes" update="true"/>
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="xml/build/classes" update="true"/>
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="cio/build/classes" update="true"/>
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="nlp/build/classes" update="true"/>
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="bdb/build/classes" update="true"/>
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="text/build/classes" update="true"/>
+  <target name="toolkit-jar" depends="init">
+    <ant antfile="modules/build.xml" target="toolkit-jar" inheritall="false"/>
 
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="cluster/build/classes" update="true"/>
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="extract/build/classes" update="true"/>
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="lang/build/classes" update="true"/>
-		<jar destfile="jars/sd-all.${buildNumber}.jar" basedir="crawl/build/classes" update="true"/>
-
-    <!-- create symbolic link to jarlinks without the timestamp -->
+    <!-- create symbolic link without the timestamp -->
     <exec executable="/bin/ln">
       <arg value="-sf"/>
-      <arg value="../jars/sd-all.${buildNumber}.jar"/>
-      <arg value="jarlinks/all-base.jar"/>
+      <arg value="sd-toolkit.${buildNumber}.jar"/>
+      <arg value="core/localdist/sd-toolkit.jar"/>
     </exec>
   </target>
 
   <target name="base-jar" depends="init">
 		<delete verbose="true" failonerror="false">
-			<fileset dir="jars" includes="sd-base*.jar"/>
+			<fileset dir="core/localdist" includes="sd-base*.jar"/>
 		</delete>
 
-    <mkdir dir="jars"/>
-    <mkdir dir="jarlinks"/>
+    <mkdir dir="core/localdist"/>
 
-		<jar destfile="jars/sd-base.${buildNumber}.jar" basedir="io/build/classes"/>
-		<jar destfile="jars/sd-base.${buildNumber}.jar" basedir="util/build/classes" update="true"/>
-		<jar destfile="jars/sd-base.${buildNumber}.jar" basedir="xml/build/classes" update="true"/>
-		<jar destfile="jars/sd-base.${buildNumber}.jar" basedir="cio/build/classes" update="true"/>
-		<jar destfile="jars/sd-base.${buildNumber}.jar" basedir="nlp/build/classes" update="true"/>
-		<jar destfile="jars/sd-base.${buildNumber}.jar" basedir="bdb/build/classes" update="true"/>
-		<jar destfile="jars/sd-base.${buildNumber}.jar" basedir="text/build/classes" update="true"/>
+		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/io/build/classes"/>
+		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/util/build/classes" update="true"/>
+		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/xml/build/classes" update="true"/>
+		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/cio/build/classes" update="true"/>
+		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/nlp/build/classes" update="true"/>
+		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/bdb/build/classes" update="true"/>
+		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/text/build/classes" update="true"/>
 
-    <!-- create symbolic link to jarlinks without the timestamp -->
+    <!-- create symbolic link without the timestamp -->
     <exec executable="/bin/ln">
       <arg value="-sf"/>
-      <arg value="../jars/sd-base.${buildNumber}.jar"/>
-      <arg value="jarlinks/sd-base.jar"/>
+      <arg value="sd-base.${buildNumber}.jar"/>
+      <arg value="core/localdist/sd-base.jar"/>
     </exec>
   </target>
 
-  <target name="dobuild">
-    <ant dir="io" antfile="build.xml" target="dist"/>
-    <ant dir="util" antfile="build.xml" target="dist"/>
-    <ant dir="xml" antfile="build.xml" target="dist"/>
-    <ant dir="cio" antfile="build.xml" target="dist"/>
-    <ant dir="nlp" antfile="build.xml" target="dist"/>
-    <ant dir="bdb" antfile="build.xml" target="dist"/>
-    <ant dir="text" antfile="build.xml" target="dist"/>
-    <ant dir="cluster" antfile="build.xml" target="dist"/>
-    <ant dir="extract" antfile="build.xml" target="dist"/>
-    <ant dir="lang" antfile="build.xml" target="dist"/>
-    <ant dir="crawl" antfile="build.xml" target="dist"/>
-  </target>
-
-  <target name="clean">
-    <ant dir="io" antfile="build.xml" target="clean"/>
-    <ant dir="util" antfile="build.xml" target="clean"/>
-    <ant dir="xml" antfile="build.xml" target="clean"/>
-    <ant dir="cio" antfile="build.xml" target="clean"/>
-    <ant dir="nlp" antfile="build.xml" target="clean"/>
-    <ant dir="bdb" antfile="build.xml" target="clean"/>
-    <ant dir="text" antfile="build.xml" target="clean"/>
-    <ant dir="cluster" antfile="build.xml" target="clean"/>
-    <ant dir="extract" antfile="build.xml" target="clean"/>
-    <ant dir="lang" antfile="build.xml" target="clean"/>
-    <ant dir="crawl" antfile="build.xml" target="clean"/>
-  </target>
-
-  <target name="all" depends="each-all,base-jar,all-jar,add-license"/>
-
-  <target name="each-all">
-    <ant dir="io" antfile="build.xml" target="all"/>
-    <ant dir="util" antfile="build.xml" target="all"/>
-    <ant dir="xml" antfile="build.xml" target="all"/>
-    <ant dir="cio" antfile="build.xml" target="all"/>
-    <ant dir="nlp" antfile="build.xml" target="all"/>
-    <ant dir="bdb" antfile="build.xml" target="all"/>
-    <ant dir="text" antfile="build.xml" target="all"/>
-    <ant dir="cluster" antfile="build.xml" target="all"/>
-    <ant dir="extract" antfile="build.xml" target="all"/>
-    <ant dir="lang" antfile="build.xml" target="all"/>
-    <ant dir="crawl" antfile="build.xml" target="all"/>
-  </target>
-
-  <target name="test">
-    <ant dir="io" antfile="build.xml" target="test"/>
-    <ant dir="util" antfile="build.xml" target="test"/>
-    <ant dir="xml" antfile="build.xml" target="test"/>
-    <ant dir="cio" antfile="build.xml" target="test"/>
-    <ant dir="nlp" antfile="build.xml" target="test"/>
-    <ant dir="bdb" antfile="build.xml" target="test"/>
-    <ant dir="text" antfile="build.xml" target="test"/>
-    <ant dir="cluster" antfile="build.xml" target="test"/>
-    <ant dir="extract" antfile="build.xml" target="test"/>
-    <ant dir="lang" antfile="build.xml" target="test"/>
-    <ant dir="crawl" antfile="build.xml" target="test"/>
-  </target>
-
-  <target name="p4chkn" depends="build">
-    <ant dir="io" antfile="build.xml" target="p4chkn"/>
-    <ant dir="util" antfile="build.xml" target="p4chkn"/>
-    <ant dir="xml" antfile="build.xml" target="p4chkn"/>
-    <ant dir="cio" antfile="build.xml" target="p4chkn"/>
-    <ant dir="nlp" antfile="build.xml" target="p4chkn"/>
-    <ant dir="bdb" antfile="build.xml" target="p4chkn"/>
-    <ant dir="text" antfile="build.xml" target="p4chkn"/>
-    <ant dir="cluster" antfile="build.xml" target="p4chkn"/>
-    <ant dir="extract" antfile="build.xml" target="p4chkn"/>
-    <ant dir="lang" antfile="build.xml" target="p4chkn"/>
-    <ant dir="crawl" antfile="build.xml" target="p4chkn"/>
-  </target>
-
   <target name="javadoc">
-    <ant dir="io" antfile="build.xml" target="javadoc"/>
-    <ant dir="util" antfile="build.xml" target="javadoc"/>
-    <ant dir="xml" antfile="build.xml" target="javadoc"/>
-    <ant dir="cio" antfile="build.xml" target="javadoc"/>
-    <ant dir="nlp" antfile="build.xml" target="javadoc"/>
-    <ant dir="bdb" antfile="build.xml" target="javadoc"/>
-    <ant dir="text" antfile="build.xml" target="javadoc"/>
-    <ant dir="cluster" antfile="build.xml" target="javadoc"/>
-    <ant dir="extract" antfile="build.xml" target="javadoc"/>
-    <ant dir="lang" antfile="build.xml" target="javadoc"/>
-    <ant dir="crawl" antfile="build.xml" target="javadoc"/>
+    <ant antfile="modules/build.xml" target="javadoc" inheritall="false"/>
+    <zip destfile="core/localdist/sd-toolkit.javadocs.zip" basedir="core/localdist/javadoc"/>
   </target>
 
 </project>
