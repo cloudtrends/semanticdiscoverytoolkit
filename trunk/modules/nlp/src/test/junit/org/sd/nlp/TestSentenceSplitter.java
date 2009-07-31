@@ -81,6 +81,31 @@ public class TestSentenceSplitter extends TestCase {
 
   }
 
+  public void testProperNameEndsSentence() {
+    doSplitTest("If the Wii Remote has a Wii Remote Jacket on it, remove it before using the remote with the Wii  Wheel. Replace the jacket on the remote when you remove it from the Wii Wheel.",
+                new String[] {
+                  "If the Wii Remote has a Wii Remote Jacket on it, remove it before using the remote with the Wii  Wheel.",
+                  "Replace the jacket on the remote when you remove it from the Wii Wheel.",
+                });
+  }
+
+  public void testVariousAbbreviations() {
+
+    //note: there is still a spot in this test where the breaking isn't right, but we're living with it for now!
+
+    doSplitTest("We shouldn't split i.e. after a latin abbreviation. Neither should we after an abbreviation for Dr. Foo. Nor for Ms. Foo, D.D.S. While we should split later. Sometimes. We could also have Foo Bar, Jr., or some such, and Bar Baz, Jr. Possibly. And what about the Hon. Jdg. Judy? Can we handle her properly?",
+                new String[] {
+                  "We shouldn't split i.e. after a latin abbreviation.",
+                  "Neither should we after an abbreviation for Dr. Foo. Nor for Ms. Foo, D.D.S.",
+                  "While we should split later.",
+                  "Sometimes.",
+                  "We could also have Foo Bar, Jr., or some such, and Bar Baz, Jr. Possibly.",
+                  "And what about the Hon. Jdg. Judy?",
+                  "Can we handle her properly?",
+                });
+  }
+
+
   public static Test suite() {
     TestSuite suite = new TestSuite(TestSentenceSplitter.class);
     return suite;

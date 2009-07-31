@@ -274,7 +274,8 @@ public class SentenceSplitter {
         else if (Character.isLetter(cp)) {
           this.lastLetterPos = index;
 
-          if (Character.isUpperCase(cp)) {
+          // set lastCapPos, but don't reset unless we've seen a space since the last time!
+          if (Character.isUpperCase(cp) && lastCapPos < lastSpacePos) {
             this.lastCapPos = index;
           }
         }
@@ -297,19 +298,49 @@ public class SentenceSplitter {
 
         final int cp = codePoints[endPos];
 
-        // check for acronym or abbrev
-        // NOTE: added '!' to catch company names as non-sentence enders (like "Yahoo!")
-        if (cp == '.' || cp == '!') {
-          // '.' immediately follows a letter and last cap is after last space
-          if (lastLetterPos == endPos - 1 && lastCapPos > lastSpacePos) {
-            // NOTE: this will err when an acronmym or abbrev really is at the end of a sentence.
-            //       it is assumed that cases like this will be relatively rare; if not, add more
-            //       rules to cover.
-            result = false;
+        final boolean capFollows = findCapitalAhead(endPos);
+
+        // check for
+        //    - latin acronym or abbrev like "i.e." or "e.g."
+        //    - company name like "Yahoo!"
+        //  - that isn't followed by a cap
+        if (!capFollows) {
+          result = false;
+        }
+
+        // here a cap does follow, but we want to not break (after Xx.) when we have "Dr. Foo" or "Ms. Foo, D.D.S."
+        else {
+          if (lastCapPos > lastSpacePos) {
+            // then either the sentence ends with a capitalized word or we have
+            // smthg like an abbreviated title preceding a name
+            if (endPos - lastCapPos <= 3) {
+              // assume 3-letters or less are an abbreviation (for now)
+              // note that this fails for certain cases (see testVariousAbbreviations)
+              result = false;
+            }
           }
         }
       }
       // else, check for other valid end conditions
+
+      return result;
+    }
+
+    /**
+     * Determine whether the next encountered letter after marker is a capital.
+     */
+    protected boolean findCapitalAhead(int marker) {
+      boolean result = false;
+
+      int lookAhead = marker + 1;
+      while (lookAhead < codePoints.length) {
+        final int cp = codePoints[lookAhead];
+        if (Character.isLetter(cp)) {
+          result = Character.isUpperCase(cp);
+          break;
+        }
+        ++lookAhead;
+      }
 
       return result;
     }

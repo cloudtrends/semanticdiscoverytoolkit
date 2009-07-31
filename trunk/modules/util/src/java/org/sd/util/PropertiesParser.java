@@ -243,7 +243,7 @@ public class PropertiesParser {
    *
    * @param properties  The properties in which to load the found resources (ok if null).
    * @param name  The name of the properties resource to load.
-   * @param vebose  When true, show resources from which properties resources are loaded.
+   * @param verbose  When true, show resources from which properties resources are loaded.
    *
    * @return the loaded properties (== properties if non-null).
    */

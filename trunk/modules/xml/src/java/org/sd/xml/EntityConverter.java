@@ -19,6 +19,7 @@
 package org.sd.xml;
 
 
+import org.sd.util.MappedString;
 import org.sd.util.StringUtil;
 
 import java.util.HashMap;
@@ -316,15 +317,26 @@ public class EntityConverter {
    * Convert "&amp;&lt;entity&gt;;" to the entity's corresponsing char.
    */
   public static final String convertEntitiesToCharacters(String string) {
-    final StringBuilder result = new StringBuilder();
+    return mapEntitiesToCharacters(string).getMappedString();
+  }
+
+  /**
+   * Convert "&amp;&lt;entity&gt;;" to the entity's corresponsing char.
+   */
+  public static final MappedString mapEntitiesToCharacters(String string) {
+    final MappedString result = new MappedString();
+
     final SearchResult searchResult = new SearchResult();
     final int len = string.length();
     int fromPos = 0;
     
     while (fromPos < len) {
       if (fromPos <= len - 3 && findEntity(string, fromPos, searchResult)) {
-        result.append(string.substring(fromPos, searchResult.getStartPosition())).
-          appendCodePoint(searchResult.getCodePoint());
+        result.
+          append(string.substring(fromPos, searchResult.getStartPosition())).
+          append(searchResult.getCodePoint(),
+                 string.substring(searchResult.getStartPosition(),
+                                  searchResult.getEndPosition() + 1));
         fromPos = searchResult.getEndPosition() + 1;
       }
       else {
@@ -333,7 +345,7 @@ public class EntityConverter {
       }
     }
 
-    return result.toString();
+    return result;
   }
 
   public static final boolean isGoodAscii(int codePoint) {
