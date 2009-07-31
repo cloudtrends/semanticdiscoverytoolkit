@@ -43,7 +43,7 @@ public class SentenceSegmenter implements TextSegmenter {
 
   protected SentenceSegmenter(SentenceSplitter splitter, String text) {
     this.splitter = splitter;
-    this.setText(text);
+    this.doSetText(text);
   }
 
   /**
@@ -57,13 +57,21 @@ public class SentenceSegmenter implements TextSegmenter {
    * Set the text to be iterated over, resetting iteration to the
    * beginning of the text.
    */
-  public final void setText(String text) {
+  private final void doSetText(String text) {
     this.sentences = splitter.splitInfo(text);
     this.index = 0;
 
     this.text = text;
     this.lastStart = 0;
     this.lastEnd = 0;
+  }
+
+  /**
+   * Set the text to be iterated over, resetting iteration to the
+   * beginning of the text.
+   */
+  public void setText(String text) {
+    doSetText(text);
   }
 
   /**
