@@ -439,6 +439,48 @@ public class StringUtil {
     return result.toString();
   }
 
+  /**
+   * Remove leading and trailing space and store what was trimmed in a String array
+   * containing the trimmed prefix, the trimmed string, and the trimmed suffix
+   * If the string is null, an array containing three empty strings will be returned.
+   */
+  public static final String[] trimAndStore(String string) {
+    String[] result = new String[3];
+
+    StringBuilder prefix = new StringBuilder();
+    StringBuilder trimmed = new StringBuilder();
+    StringBuilder suffix = new StringBuilder();
+
+    if (string != null) {
+      boolean sawNonWhite = false;
+
+      final int len = string.length();
+      for (int i = 0; i < len; ++i) {
+        final int codePoint = string.codePointAt(i);
+        if (isWhite(codePoint)) {
+          if (sawNonWhite) {
+            suffix.appendCodePoint(codePoint);
+          }
+					else {
+            prefix.appendCodePoint(codePoint);
+					}
+        }
+        else {
+          sawNonWhite = true;
+
+          trimmed.append(suffix);
+          trimmed.appendCodePoint(codePoint);
+          suffix = new StringBuilder();
+        }
+      }
+    }
+        
+    result[0] = prefix.toString();
+    result[1] = trimmed.toString();
+    result[2] = suffix.toString();
+    return result;
+  }
+
   public static final String squashNonLetterOrDigit(String string) {
     final StringBuilder result = new StringBuilder();
 

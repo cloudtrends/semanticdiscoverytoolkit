@@ -23,7 +23,9 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -216,6 +218,27 @@ public class TestStringUtil extends TestCase {
 
     // should turn 'null' into ""
     assertEquals("", StringUtil.trim("   \t\n  \n\t "));
+  }
+  
+  public void testTrimAndStore() {
+    HashMap<String, String[]> results = new HashMap<String, String[]>();
+    results.put("  \tthis is a string\t ", new String[]{"  \t","this is a string","\t "});
+    results.put("\t  \tthis is a string", new String[]{"\t  \t","this is a string",""});
+    results.put("this is a string\t  \t ", new String[]{"","this is a string","\t  \t "});
+    results.put(null, new String[]{"","",""});
+    results.put("   \t\n  \n\t ", new String[]{"   \t\n  \n\t ","",""});
+
+    for(Entry<String, String[]> entry : results.entrySet())
+    {
+      String[] expected = entry.getValue();
+      String[] actual = StringUtil.trimAndStore(entry.getKey());
+      assertEquals("returned value should be an array of Strings of size 3!", 3, actual.length);
+
+      for(int i = 0; i < 3; i++)
+      {
+        assertEquals(expected[i], actual[i]);
+      }
+    }
   }
   
   public void testTrimWithCodePointBag() {
