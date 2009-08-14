@@ -114,7 +114,11 @@ public class SentenceSplitter {
   }
 
   protected String trimSentence(String sentence) {
-    return sentence.trim();
+    final InputWrapper sentenceWrapper = buildInputWrapper(sentence);
+    int start = sentenceWrapper.getTrimStart(0);
+    int end = sentenceWrapper.getTrimEnd(sentence.length());
+
+    return sentence.substring(start, end);
   }
 
 
@@ -350,11 +354,12 @@ public class SentenceSplitter {
      * boundary at pos.
      */
     protected final boolean isEndBoundary(int pos) {
-      return (pos >= codePoints.length || codePoints[pos] == ' ' || codePoints[pos] == '&');
+      return (pos >= codePoints.length || codePoints[pos] == '&' || 
+              codePoints[pos] == ' ' || isWhitespace(codePoints[pos]));
     }
 
     /**
-     * Get the index of the first non-white character at or after startPos.
+     * Get the index of the first non-white/non-Unicode space character at or after startPos.
      */
     public int getTrimStart(int startPos) {
       for (; startPos < codePoints.length; ++startPos) {
@@ -364,7 +369,7 @@ public class SentenceSplitter {
     }
 
     /**
-     * Get the index of the last non-white character before endPos.
+     * Get the index of the last non-white/non-Unicode character before endPos.
      */
     public int getTrimEnd(int endPos) {
       for (; endPos > 0; --endPos) {
