@@ -105,6 +105,15 @@ public class TestSentenceSplitter extends TestCase {
                 });
   }
 
+  public void testNonBreakingSpace() {
+    doSplitTest("This is a test with a sentence ending in a non-breaking space.\u00A0It should break this into separate sentences.\u00A0 Even cases where a breaking space follows a non-breaking space.",
+                new String[] {
+                  "This is a test with a sentence ending in a non-breaking space.",
+                  "It should break this into separate sentences.",
+                  "Even cases where a breaking space follows a non-breaking space.",
+                });
+  }
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestSentenceSplitter.class);
