@@ -308,7 +308,7 @@ public class Console {
 
       for (String responseString : responseStrings) out.println(responseString);
 
-      if (expectedResponders != null && expectedResponders.size() > 0) {
+      if (expectedResponders != null && expectedResponders.size() > 0 && responses.length != numResponders) {
         out.println("\nNot responding: " + expectedResponders + "\n");
       }
     }
