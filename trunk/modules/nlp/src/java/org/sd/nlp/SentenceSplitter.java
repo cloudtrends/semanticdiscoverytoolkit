@@ -265,7 +265,7 @@ public class SentenceSplitter {
         lastSecondaryEndPos = index;
       }
       else {
-        if (Character.isSpaceChar(cp) || Character.isWhitespace(cp)) {
+        if (isWhitespace(cp)) {
           lastSpacePos = index;
         }
         else if (Character.isDigit(cp)) {
@@ -358,7 +358,7 @@ public class SentenceSplitter {
      */
     public int getTrimStart(int startPos) {
       for (; startPos < codePoints.length; ++startPos) {
-        if (!Character.isWhitespace(codePoints[startPos])) break;
+        if (!isWhitespace(codePoints[startPos])) break;
       }
       return startPos;
     }
@@ -368,9 +368,19 @@ public class SentenceSplitter {
      */
     public int getTrimEnd(int endPos) {
       for (; endPos > 0; --endPos) {
-        if (!Character.isWhitespace(codePoints[endPos - 1])) break;
+        if (!isWhitespace(codePoints[endPos - 1])) break;
       }
       return endPos;
+    }
+
+    /**
+     * Determine whether the codepoint is whitespace.
+     * <p>
+     * Include all unicode and java whitespace chars, including non-breaking
+     * spaces.
+     */
+    private final boolean isWhitespace(int cp) {
+      return Character.isSpaceChar(cp) || Character.isWhitespace(cp);
     }
   }
 

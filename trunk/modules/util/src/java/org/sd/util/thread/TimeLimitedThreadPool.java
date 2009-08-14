@@ -63,7 +63,7 @@ public class TimeLimitedThreadPool<T> {
   }
 
   public void shutdown() {
-    workerPool.shutdown();
+    workerPool.shutdownNow();
   }
 
   public ExecutionInfo<T> execute(Collection<Callable<T>> callables, long timeLimit) {

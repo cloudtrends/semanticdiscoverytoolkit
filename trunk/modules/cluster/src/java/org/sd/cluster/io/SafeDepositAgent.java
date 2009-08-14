@@ -109,6 +109,9 @@ public class SafeDepositAgent {
                          responseTimeout + " .withdrawalTimeout=" +
                          withdrawalTimeout + " .numNodesToContact=" +
                          nodesToContact.length);
+      for (String nodeToContact : nodesToContact) {
+        System.out.print("\t" + nodeToContact);
+      }
     }
 
     this.nodeCallables = buildNodeCallables(console, message, responseTimeout, withdrawalTimeout,

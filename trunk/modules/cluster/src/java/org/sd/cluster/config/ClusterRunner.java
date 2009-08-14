@@ -150,11 +150,12 @@ public class ClusterRunner {
       if (useActiveCluster) {
         _clusterDef = getActiveClusterDefinition();
       }
-      else if (_properties != null) {
+
+      if (_clusterDef == null && _properties != null) {
         _clusterDef = ClusterDefinition.getClusterDefinition(prefix, _properties);
       }
 
-      if (_clusterDef == null || !_clusterDef.isValid()) {  // fallback to active cluster
+      if (!useActiveCluster && (_clusterDef == null || !_clusterDef.isValid())) {  // fallback to active cluster
         _clusterDef = getActiveClusterDefinition();
       }
     }
