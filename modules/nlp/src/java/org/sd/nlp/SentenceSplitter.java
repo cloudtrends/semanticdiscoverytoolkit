@@ -265,7 +265,7 @@ public class SentenceSplitter {
         lastSecondaryEndPos = index;
       }
       else {
-        if (Character.isWhitespace(cp)) {
+        if (Character.isSpaceChar(cp) || Character.isWhitespace(cp)) {
           lastSpacePos = index;
         }
         else if (Character.isDigit(cp)) {
