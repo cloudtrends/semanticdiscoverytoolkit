@@ -643,6 +643,41 @@ public class ClusterDefinition {
   }
 
   /**
+   * Get the initial user and machine through which to deploy and/or start a
+   * cluster.
+   * <p>
+   * Typically, the initial machine will be the gateway. If the gateway is
+   * "localhost" <b>and</b> there is only one node under the gateway node
+   * <b>and</b> the gateway user is the same as the cluter user, then the
+   * initial machine will be the first node under the gateway.
+   * <p>
+   * @return {topUser, topMachine}
+   */
+  public String[] getTopInfo(boolean fix) {
+    // [user@]topnode is always top node in machine tree
+    String topnode = getTopNodeName(fix);
+    final String clusterUser = getUser();
+    String user = clusterUser;  // topnode user defaults to the cluster user
+
+    // NOTE: topnode user can be overridden by including it with the gateway
+    //       name.
+    final int atpos = topnode.indexOf('@');
+    if (atpos >= 0) {
+      user = topnode.substring(0, atpos);
+      topnode = topnode.substring(atpos + 1);
+    }
+
+    // check for nullified gateway
+    if ("localhost".equals(topnode) && machineTree.numChildren() == 1 && clusterUser.equals(user)) {
+      topnode = machineTree.getChildren().get(0).getData().name;
+      if (fix) topnode = topnode.toLowerCase();
+      System.out.println("bypassing gateway. topnode override=" + topnode);
+    }
+
+    return (topnode == null) ? null : new String[]{user, topnode};
+  }
+
+  /**
    * Determine whether this definition is valid.
    */
   public boolean isValid() {

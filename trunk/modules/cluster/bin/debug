@@ -7,20 +7,11 @@
 # expect classes in ../build/classes
 # expect libs in ../lib
 #
-# NOTE: uses env CLUSTER_CLASSES if defined.
-#
+# NOTE: uses env CLUSTER_CLASSES, CLUSTER_LIBS_DIR if defined.
 #
 
-classes="$CLUSTER_CLASSES";
-if test -z "$classes"; then
-  classes="build/classes";
-fi
-if ! test -e "../$classes"; then
-  classes="target/classes";
-fi
-
-#test -z "$JAVA_HOME" && JAVA_HOME=/etc/opt/java
-JAVA_HOME=/etc/opt/java
+test -z "$JAVA_HOME" && JAVA_HOME=/etc/opt/java
+#JAVA_HOME=/etc/opt/java
 JDK_HOME=$JAVA_HOME
 
 # Set default JVM_MEM to 500m if needed.
@@ -30,15 +21,26 @@ test -z "$JVM_MEM" && JVM_MEM=500;
 #JAVA_OPTS="-Xmx500m -Dcom.sun.management.jmxremote"
 #JAVA_OPTS="-Xmx800m -Dcom.sun.management.jmxremote"
 #JAVA_OPTS="-Xmx1000m -Dcom.sun.management.jmxremote"
-JAVA_OPTS="-Xmx1500m -Dcom.sun.management.jmxremote"
+#JAVA_OPTS="-Xmx1500m -Dcom.sun.management.jmxremote"
+JAVA_OPTS="-Xmx${JVM_MEM}m -Dcom.sun.management.jmxremote"
 
 JAVA_OPTS="$JAVA_OPTS -DSDN_ROOT=.."
 
-CLASSPATH=../$classes;
-for lib in `ls -1 ../lib/*.jar`; do
+classes="$CLUSTER_CLASSES";
+if test -z "$classes"; then
+  classes="../build/classes";
+fi
+libsdir="$CLUSTER_LIBS_DIR";
+if test -z "$libsdir"; then
+  libsdir="../build/dist/lib";
+fi
+test -e "$libsdir" || libsdir="../lib";
+
+CLASSPATH=$classes;
+for lib in `ls -1 $libsdir/*.jar`; do
   CLASSPATH=$CLASSPATH:$lib
 done
 
 
-echo "jdb $JAVA_OPTS -classpath $CLASSPATH $@"
+echo "jdb $JAVA_OPTS -cp $CLASSPATH $@"
 $JAVA_HOME/bin/jdb $JAVA_OPTS -classpath $CLASSPATH $@

@@ -7,11 +7,11 @@
 # expect classes in ../build/classes
 # expect libs in ../lib
 #
-# NOTE: uses env CLUSTER_CLASSES if defined.
+# NOTE: uses env CLUSTER_CLASSES, CLUSTER_LIBS_DIR if defined.
 #
 
-#test -z "$JAVA_HOME" && JAVA_HOME=/etc/opt/java
-JAVA_HOME=/etc/opt/java
+test -z "$JAVA_HOME" && JAVA_HOME=/etc/opt/java
+#JAVA_HOME=/etc/opt/java
 JDK_HOME=$JAVA_HOME
 
 # Set default JVM_MEM to 500m if needed.
@@ -28,14 +28,16 @@ JAVA_OPTS="$JAVA_OPTS -DSDN_ROOT=.."
 
 classes="$CLUSTER_CLASSES";
 if test -z "$classes"; then
-  classes="build/classes";
+  classes="../build/classes";
 fi
-if ! test -e "../$classes"; then
-  classes="target/classes";
+libsdir="$CLUSTER_LIBS_DIR";
+if test -z "$libsdir"; then
+  libsdir="../build/dist/lib";
 fi
+test -e "$libsdir" || libsdir="../lib";
 
-CLASSPATH=../$classes;
-for lib in `ls -1 ../lib/*.jar`; do
+CLASSPATH=$classes;
+for lib in `ls -1 $libsdir/*.jar`; do
   CLASSPATH=$CLASSPATH:$lib
 done
 
