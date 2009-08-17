@@ -194,20 +194,21 @@ public class Admin {
     // create conf/active-*.txt files
     configure(heapSize);
 
-    // rsync build to top clusterDef node
-    final String topNodeName = clusterDef.getTopNodeName(true);
+    // rsync build to top clusterDef node (=gateway)
     final String binDir = ConfigUtil.getClusterDevBinDir();
-    final String userName = clusterDef.getUser();
 
-    command = "./ddeploy " + userName + " " + topNodeName;
+    final String[] topInfo = clusterDef.getTopInfo(true);
+
+    command = "./ddeploy " + topInfo[0] + " " + topInfo[1];
     if (out != null) out.println(command);
     execResult = ExecUtil.executeProcess(command, new File(binDir));
     if (out != null && execResult != null && !execResult.failed() && execResult.output != null) out.println(execResult.output);
 
     // start top clusterDef node a-deployin'
-    command = "cd ~/cluster/bin;./hdeploy";
-    if (out != null) out.println("ssh " + userName + "@" + topNodeName + " " + command);
-    execResult = ExecUtil.executeRemoteProcess(userName, topNodeName, command);
+    final String userName = clusterDef.getUser();
+    command = "cd ~/cluster/bin;./hdeploy " + userName;
+    if (out != null) out.println("ssh " + topInfo[0] + "@" + topInfo[1] + " " + command);
+    execResult = ExecUtil.executeRemoteProcess(topInfo[0], topInfo[1], command);
     if (out != null && execResult != null && !execResult.failed() && execResult.output != null) out.println(execResult.output);
   }
 
@@ -579,6 +580,7 @@ public class Admin {
     options.addOption(OptionBuilder.withArgName("jobs").withLongOpt("view jobs").isRequired(false).create('j'));
     options.addOption(OptionBuilder.withArgName("purge").withLongOpt("purge cluster").isRequired(false).create('p'));
     options.addOption(OptionBuilder.withArgName("execute").withLongOpt("execute cluster message").isRequired(false).create('e'));
+    options.addOption(OptionBuilder.withArgName("configure").withLongOpt("configure cluster").isRequired(false).create('C'));
 
     // initialize parameters
     final CommandLineParser parser = new PosixParser();
@@ -603,6 +605,7 @@ public class Admin {
       final boolean jobsOption = commandLine.hasOption('j');
       final boolean purgeOption = commandLine.hasOption('p');
       final boolean executeOption = commandLine.hasOption('e');
+      final boolean configureOption = commandLine.hasOption('C');
 //todo: implement execute option w/something like sendMessage only not static
 
       String[] theMachines = null;
@@ -650,13 +653,19 @@ public class Admin {
 //todo: configure dif't print stream than System.out
       admin = new Admin(clusterDef, System.out);
 
-      // perform requestion operations
-      if (deployOption) admin.deploy(heapSize);
-      if (startOption) admin.start(heapSize);
-      if (stopOption) admin.stop(theNodes);
-      if (pingOption) admin.ping(theNodes);
-      if (jobsOption) admin.jobs(theNodes);
-      if (purgeOption) admin.purge(theNodes);
+      // perform requested operations
+      if (configureOption) {
+        System.out.println("configuring cluster (only).");
+        admin.configure(heapSize);
+      }
+      else {
+        if (deployOption) admin.deploy(heapSize);
+        if (startOption) admin.start(heapSize);
+        if (stopOption) admin.stop(theNodes);
+        if (pingOption) admin.ping(theNodes);
+        if (jobsOption) admin.jobs(theNodes);
+        if (purgeOption) admin.purge(theNodes);
+      }
     }
     catch (ParseException e) {
       System.err.println("Command line error: " + e.getLocalizedMessage());

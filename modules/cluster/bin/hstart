@@ -2,11 +2,16 @@
 #
 # Hierarchical cluster start.
 #
+# arg1: (optional) user on remote machines
+#
 # Based on data in $CLUSTER_HOME/conf/active-cluster-hierarchy.txt, start this node and its children.
 #
 
 HTEXT="$HOME/cluster/conf/active-cluster-hierarchy.txt";
 MYNAME=`uname -n | tr "[:upper:]" "[:lower:]"`;
+USER="$1";
+
+test -n "$USER" && USER="${USER}@";
 
 # get name, called when IFS=- returns name part of name-num
 function getName() {
@@ -41,16 +46,17 @@ function doStart() {
     CURNAME=`fixName $1`;
     MAXNUM=`fixNumber $1`;
     CURNUM=$MAXNUM;
+    DEST=${USER}${CURNAME};
 
     while test $CURNUM -gt 0; do
       UIDNUM=$(($MAXNUM - $CURNUM));
-      echo "($MYNAME)starting #$UIDNUM on $CURNAME"
-      ssh $CURNAME "cd ~/cluster/bin;./startClusterNode $UIDNUM;";
+      echo "($MYNAME)starting #$UIDNUM on $DEST"
+      ssh $DEST "cd ~/cluster/bin;./startClusterNode $UIDNUM;";
       CURNUM=$(($CURNUM - 1));
     done
 
     # recurse on child that just started
-    ssh $CURNAME "cd ~/cluster/bin;./hstart;";
+    ssh $DEST "cd ~/cluster/bin;./hstart;";
 
     # shift and recurse for remaining children
     shift;

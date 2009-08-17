@@ -4,20 +4,21 @@
 #
 # Based on data in $HOME/cluster/conf/active-cluster-hierarchy.txt, rsync deployment to this node's children.
 #
+# arg1: (optional) user on remote machines
+#
 # NOTE: uses env CLUSTER_CLASSES if defined.
 #
 
 HTEXT="$HOME/cluster/conf/active-cluster-hierarchy.txt";
 MYNAME=`uname -n | tr "[:upper:]" "[:lower:]"`;
+USER="$1";
+
+test -n "$USER" && USER="${USER}@";
 
 classes="$CLUSTER_CLASSES";
 if test -z "$classes"; then
   classes="build/classes";
 fi
-if ! test -e "../$classes"; then
-  classes="target/classes";
-fi
-build=`dirname $classes`;
 
 # get name, called when IFS=- returns name part of name-num
 function getName() {
@@ -35,11 +36,11 @@ function fixName () {
 function doRsync() {
   if test $# -gt 0; then
     CURNAME=`fixName $1`;
-    DEST=$CURNAME;
+    DEST=${USER}${CURNAME};
 
-    if test "$DEST" != "$MYNAME" && "$DEST" != "localhost"; then
-      echo "($MYNAME)rsyncing ../bin ../conf ../lib ../resources ../$build ../src/jsp $DEST:cluster/;";
-      rsync -Laz --delete --delete-excluded ../bin ../conf ../lib ../resources ../$build $DEST:cluster/
+    if test "$DEST" != "$MYNAME" && test "$DEST" != "localhost"; then
+      echo "($MYNAME)rsyncing ../bin ../conf ../lib ../resources ../build ../src/jsp $DEST:cluster/;";
+      rsync -Laz --delete --delete-excluded ../bin ../conf ../lib ../resources ../build $DEST:cluster/
 			if test -e ../src/jsp; then
         rsync -az --delete --delete-excluded ../src/jsp $DEST:cluster/src/;
       fi;
