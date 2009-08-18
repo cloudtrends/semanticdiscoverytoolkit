@@ -54,12 +54,13 @@ public class BaseTextIterator implements TextIterator {
     this.start = 0;
     this.end = 0;
 
-    if (!"".equals(text)) {
+    if (text != null && !"".equals(text)) {
       breakIterator.setText(text);
-      this.start = breakIterator.first();
-      this.end = breakIterator.next();
-
-      computeNext();
+      computeNext(true);
+    }
+    else {
+      this.next = null;
+      this.end = BreakIterator.DONE;
     }
   }
 
@@ -91,7 +92,10 @@ public class BaseTextIterator implements TextIterator {
    */
   public String next() {
     final String result = next;
-    computeNext();
+    lastStart = start;
+    lastEnd = end;
+
+    computeNext(false);
     return result;
   }
 
@@ -135,28 +139,26 @@ public class BaseTextIterator implements TextIterator {
   /**
    * Get the next text.
    */
-  private void computeNext() {
+  private void computeNext(boolean isFirst) {
     String result = null;
 
-    while (result == null && computeHasNext()) {
-      if (accept(text, start, end)) {
-        result = text.substring(start, end).trim();
-      }      
+    while (result == null && (isFirst || end != BreakIterator.DONE)) {
 
-      lastStart = start;
-      lastEnd = end;
-
-      start = end;
+      start = isFirst ? breakIterator.first() : end;
       end = breakIterator.next();
+
+      if (end != BreakIterator.DONE) {
+        if (accept(text, start, end)) {
+          result = text.substring(start, end).trim();
+        }
+      }
+      else {
+        break;
+      }
+
+      isFirst = false;
     }
 
     this.next = result;
-  }
-
-  /**
-   * Determine whether there is a next text.
-   */
-  private final boolean computeHasNext() {
-    return text != null && !"".equals(text) && start != BreakIterator.DONE && end != BreakIterator.DONE;
   }
 }
