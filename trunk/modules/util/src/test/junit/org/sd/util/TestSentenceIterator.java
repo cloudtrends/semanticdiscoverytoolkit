@@ -19,6 +19,8 @@
 package org.sd.util;
 
 
+import java.util.Locale;
+
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -35,16 +37,22 @@ public class TestSentenceIterator extends TestCase {
   }
   
 
-  public void doTest(String input, String[] expected) {
+  public void doTest(String input, String[] expected, int[][] expectedIndexes) {
     final SentenceIterator iter = new SentenceIterator(input);
+    doTest(iter, expected, expectedIndexes);
+  }
+
+  public void doTest(SentenceIterator iter, String[] expected, int[][] expectedIndexes) {
     int count = 0;
     while (iter.hasNext()) {
       final String text = iter.next();
       if (expected == null) {
-        System.out.println(count + ": " + text);
+        System.out.println(count + "(" + iter.getStartIndex() + "," + iter.getEndIndex() + "): " + text);
       }
       else {
         assertEquals("(" + count + ")", expected[count], text);
+        assertEquals(expectedIndexes[count][0], iter.getStartIndex());
+        assertEquals(expectedIndexes[count][1], iter.getEndIndex());
       }
       ++count;
     }
@@ -59,6 +67,10 @@ public class TestSentenceIterator extends TestCase {
            new String[] {
              "This is a test.",
              "This is only a test.",
+           },
+           new int[][] {
+             {0, 16},
+             {16, 36},
            });
   }
 
@@ -69,6 +81,10 @@ public class TestSentenceIterator extends TestCase {
            new String[] {
              "Try parsing beyond tokens like Ph.D. and Dr.",
              "Smith, if you please.",
+           },
+           new int[][] {
+             {0, 45},
+             {45, 66},
            });
   }
 
@@ -79,6 +95,12 @@ public class TestSentenceIterator extends TestCase {
              "Machine translation (MT) is the application of computers to the task of translating texts from one natural language to another.",
              "One of the very earliest pursuits in computer science, MT has proved to be an elusive goal, but today a number of systems are available which produce output which, if not perfect, is of sufficient quality to be useful in a number of specific domains.\"",
              "A definition from the European Association for Machine Translation (EAMT), \"an organization that serves the growing community of people interested in MT and translation tools, including users, developers, and researchers of this increasingly viable technology.\"",
+           },
+           new int[][] {
+             {0, 30},
+             {30, 158},
+             {158, 410},
+             {410, 671},
            });
   }
 
@@ -90,12 +112,33 @@ public class TestSentenceIterator extends TestCase {
              "One of the very earliest pursuits in computer science, MT has proved to be an elusive goal, but today a number of systems are available which produce output which, if not perfect, is of sufficient quality to be useful in a number of specific domains.",
              "&quot; A definition from the European Association for Machine Translation (EAMT), &quot;an organization that serves the growing community of people interested in MT and translation tools, including users, developers, and researchers of this increasingly viable technology.",
              "&quot;",
+           },
+           new int[][] {
+             {0, 35},
+             {35, 163},
+             {163, 413},
+             {413, 685},
+             {685, 691},
            });
   }
 
   /** Test behavior with empty input. */
   public void testEmptyInput() {
-    doTest("", new String[0]);
+    doTest("", new String[0], null);
+  }
+
+  public void testEnglishChineseMix() {
+    doTest(new SentenceIterator(
+             "NAND flash 不是有寫入次數的限制嗎？ 這對 ioDrive™ 的使用壽命會有什麼影響？",
+             Locale.CHINESE),
+           new String[] {
+             "NAND flash 不是有寫入次數的限制嗎？",
+             "這對 ioDrive™ 的使用壽命會有什麼影響？"
+           },
+           new int[][] {
+             {0, 24},
+             {24, 48},
+           });
   }
 
 
