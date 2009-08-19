@@ -424,12 +424,17 @@ public class SafeDepositAgent {
                   if (verbose) System.out.println("\t*EstimatedTimeRemaining=" + etr + ", cr=" + completionRatio[0] + "/" + completionRatio[1] + ", atpu=" + atpu);
                   if (System.currentTimeMillis() + etr < expirationTime) {
                     // wait for about the right time to pick up the results.
-                    try {
-                      if (verbose) System.out.println("\t*Sleeping=" + etr);
-                      Thread.sleep((long)Math.floor(etr));
-                    }
-                    catch (InterruptedException e) {
-                      break;
+                    final long sleepTime = (long)Math.floor(etr);
+                    if (sleepTime > 0) {
+                      try {
+                        if (verbose) System.out.println("\t*Sleeping=" + sleepTime + " (cur=" + System.currentTimeMillis() + ")");
+                        Thread.sleep(sleepTime);
+                        if (verbose) System.out.println("\t*Slept=" + sleepTime + " (cur=" + System.currentTimeMillis() + ")");
+                      }
+                      catch (InterruptedException e) {
+                        if (verbose) System.out.println("\t*Sleep(" + sleepTime + ") interrupted! (cur=" + System.currentTimeMillis() + ")");
+                        break;
+                      }
                     }
                   }
                   else {
