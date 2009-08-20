@@ -1,0 +1,109 @@
+
+Using Emacs as an IDE
+
+- place your customized emacs-ide.el in your home directory and add lines to your .emacs file:
+
+(setq load-path (cons "." load-path))
+(load "emacs-ide.el")
+
+- Setup shell environment
+   - For the "bash" shell:
+     - .bashrc
+
+# Disable the terminal bell (if desired) so that emacs' ^G aborting command is silent:
+xset -b
+
+     - .profile
+       - NOTE: I maintain symbolic links to tools in a standard location (/etc/opt) so that I can easily upgrade or switch tool versions by updating the symbolic links. Update the *_HOME variable assignments below to match your own paths and procedures. Also, update the values for the AUTHOR and SANDBOX_NAME environment variables.
+
+######
+###
+### Development environment setup
+###
+
+## General java development:
+# Java
+export JAVA_HOME=/etc/opt/java
+export JAVA_OPTS="-Xmx640m -Dcom.sun.management.jmxremote"
+export JDK_HOME="$JAVA_HOME"
+export JAVAC="$JAVA_HOME/bin/javac"
+
+# Ant
+export ANT_HOME=/etc/opt/ant
+export ANT_OPTS="-Xmx500m"
+
+# Maven (optional)
+export M2_HOME=/etc/opt/maven
+export MAVEN_OPTS="-Xmx512m"
+
+# Tomcat (optional)
+export TOMCAT_HOME=/etc/opt/tomcat
+export CATALINA_HOME="$TOMCAT_HOME"
+
+# Update path
+export PATH=".:$HOME/bin:$ANT_HOME/bin:$JAVA_HOME/bin:$M2_HOME/bin:$PATH";
+
+## Emacs ide development
+export EDITOR=/usr/bin/emacs
+export CVSEDITOR=emacsclient
+# Set the text to accompany the @author tag for javadocs
+export AUTHOR="YOUR NAME GOES HERE"
+# Set the name of (not the path to) your working sandbox directory containing source code
+export SANDBOX_NAME="co"
+
+###
+######
+
+ - Add "bin" scripts to your $HOME/bin
+
+   - Build scripts: (scripts invoked for building)
+     - buildone -- Use to compile a single java file
+     - buildcopy -- Use to copy a single resource to the build area
+     - buildtarget -- Use to invoke a specific build target
+
+   - Auxiliary scripts:
+     - cpgen -- Generates the classpath for a module
+
+   - Helper scripts: (not expected to be called directly)
+     - cpfinder -- Used to add import statements for referenced classes
+     - findclasses -- Used by cpfinder to find classes corresponding to a directory name
+     - name2path -- Used by cpfinder and findclasses to convert a directory name to an import path
+     - files2classes -- Used by name2path
+     - file2class -- Used by files2classes
+     - dedup.pl -- Used by cpgen to remove duplicates from path
+
+- Use emacs for
+  - WYSIWYG editing
+  - Syntax highlighting
+  - Compile single classes
+  - Compile full projects
+  - Auto jump to source-code lines
+  - Execute java classes
+  - Debug java classes
+  - Find source code for classes
+  - Find source code for method usages
+  - Add import statements for referenced classes
+
+  - Key Bindings:
+      -Note: The symbol "^" should be read as "control-". For example "^c" should be read as "Control-c".
+
+    - ^cb -- Build current buffer's file (context sensitive)
+    - ^ce -- Execute current buffer's java class's main
+    - ^ci -- Insert an import statement for the cursor's current token
+    - ^cG -- Go to the source code for the class whose name is at the cursor's current token
+    - ^cU -- Find usages of the class or method at the cursor
+
+TODO: document other key bindings
+
+- NOTES:
+
+ - ^cb (Build current) will build according to context:
+   - uses "buildone" script to compile a single java file to the build area
+   - uses "buildcopy" script to copy a single resource file to the build area
+   - You can manually use a "build" script in directory or other contexts:
+     - "buildtarget" will call the current module's "ant -e" with whatever targets you supply
+ - ^ce (Executing a java class)
+   - uses ant (through the "cpgen" script) to inject the appropriate classpath into the call.
+   - to debug, you can change the "java" command to "jdb"
+     - NOTE: you must also change "-cp" to "-classpath" for jdb to work.
+   - junit test classes DO NOT need a main in order to run

@@ -9,14 +9,13 @@ test -z "$base" && base=`expr match $1 ".*\(/net/.*\)"`
 test -z "$base" && base=`expr match $1 ".*/java/\(.*\)"`
 
 if test -z "$base"; then
-  base=`expr match $1 ".*/test/unit\(/.*\)"`;
-	if test -n "$base"; then
-    CLASSES=$TOP/build/unit-test-classes;
-  fi;
+  base=`expr match $1 ".*/test/junit\(/.*\)"`;
+  if test -n "$base"; then
+    CLASSES=$TOP/build/junit-classes;
 fi;
 
 
-dest=`dirname $CLASSES$base`;
+dest=`dirname $CLASSES/$base`;
 echo Copying $1 to $dest
 mkdir -p $dest;
 cp -r $1 $dest;

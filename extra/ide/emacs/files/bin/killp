@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# Kill a named process matching a pattern.
+#
+# arg1: process name
+# arg2: pattern to match
+#
+# Example:
+#   # kill java -jar foo.jar
+#   killp java foo.jar
+#
+
+name=$1;
+pattern=$2;
+
+for pid in `ps -ealf --cols 2500 | grep $pattern | tr -s [:space:] | cut -d' ' -f4`; do
+  pname=`ps -p $pid -o comm=`;
+	if test "$name" = "$pname"; then
+    echo "killing $pid";
+  	kill -9 "$pid";
+  fi
+done;
