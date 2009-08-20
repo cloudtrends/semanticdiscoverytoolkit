@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # given a single java classpath component and the name of a class to find,
 # find all of the possible classpaths.

@@ -5,16 +5,4 @@ TOP=`pwd | sed "s/^\(.*\)\/src\/.*$/\1/1"`;
 echo "building from '$TOP' target(s)=$@";
 cd $TOP;
 
-if test -n "$ANT_BUILD_NAME"; then
-		if ! test -s "$ANT_BUILD_NAME"; then
-				ANT_BUILD_NAME="build.xml";
-    fi
-else
-		ANT_BUILD_NAME="build.xml";
-fi;
-
-if test -n "$ANT_PROJECTS_LIB"; then
-  ant -f "$ANT_BUILD_NAME" -lib $ANT_PROJECTS_LIB -emacs $@
-else
-  ant -f "$ANT_BUILD_NAME" -emacs $@
-fi
+ant -emacs $@

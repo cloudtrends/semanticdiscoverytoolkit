@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# Script to find classes with the given name according to the piped in classpath.
+#
+# arg1: name of class to find.
+# stdin: classpath data (colon-separated path elements)
+#
+# example:
+#   echo $CLASSPATH | ~/bin/findclasses Classname
+#
+
+name=$1;
+
+while read -d: path
+do
+  $HOME/bin/name2path $path $name;
+done

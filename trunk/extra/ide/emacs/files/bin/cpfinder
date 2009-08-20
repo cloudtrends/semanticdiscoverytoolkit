@@ -3,11 +3,14 @@
 # find a class scanning the full classpath
 #
 # arg1: name of class to find
+# arg2: reference file for determining classpath
 #
 # stdout: classpaths
 #
 
-name=$1;
+name="$1";
+ref="$2";
 
-$HOME/bin/name2path $JDK_HOME/jre/lib/rt.jar $name;
-echo "$CLASSPATH" | $HOME/bin/findclasses $name;
+TOP=`echo "$ref" | sed "s/^\(.*\)\/src\/.*$/\1/1"`;
+$HOME/bin/name2path $JDK_HOME/jre/lib/rt.jar "$name";
+echo "`cpgen $TOP`" | $HOME/bin/findclasses "$name";

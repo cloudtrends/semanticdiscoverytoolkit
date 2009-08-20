@@ -32,8 +32,8 @@ fi
 
 fullpath=`echo "$fullpath" | sed "s/^\.//1"`
 
-if [ "$fullpath" == "" ]; then
-  echo $class;
+if test -z "$fullpath"; then
+  echo "$class";
 else
   echo "$fullpath.$class";
 fi
