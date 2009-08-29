@@ -181,10 +181,39 @@ public class MathUtil {
    * length.
    */
   public static final String integerString(int i, int places) {
+    return integerString(i, places, ' ');
+  }
+
+  /**
+   * Create a right-justified (c-padded) string with the given
+   * length.
+   */
+  public static final String integerString(int i, int places, char c) {
     final StringBuilder result = new StringBuilder();
 
     result.append(Integer.toString(i));
-    while (result.length() < places) result.insert(0, ' ');
+    while (result.length() < places) result.insert(0, c);
+
+    return result.toString();
+  }
+
+  /**
+   * Create a right-justified (space padded) string with the given
+   * length.
+   */
+  public static final String longString(long i, int places) {
+    return longString(i, places, ' ');
+  }
+
+  /**
+   * Create a right-justified (c-padded) string with the given
+   * length.
+   */
+  public static final String longString(long i, int places, char c) {
+    final StringBuilder result = new StringBuilder();
+
+    result.append(Long.toString(i));
+    while (result.length() < places) result.insert(0, c);
 
     return result.toString();
   }

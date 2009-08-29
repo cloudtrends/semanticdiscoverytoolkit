@@ -19,6 +19,8 @@
 package org.sd.util.thread;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.sd.util.MathUtil;
@@ -71,6 +73,8 @@ public class UnitCounter {
   private long incTime;
   private final AtomicBoolean die;
   private long endTime;
+
+  private List<UnitCounter> subCounters;
 
   /**
    * Construct with an unknown number of units to be done.
@@ -244,6 +248,9 @@ public class UnitCounter {
       this.pauseTime = System.currentTimeMillis();
     }
     this.pauseCheckInterval = checkInterval;
+    if (subCounters != null) {
+      for (UnitCounter uc : subCounters) uc.pause(checkInterval);
+    }
   }
 
   /**
@@ -321,6 +328,9 @@ public class UnitCounter {
     final boolean hasEnded = hasEnded();
     die.set(true);
     if (!hasEnded) markEndNow();
+    if (subCounters != null) {
+      for (UnitCounter uc : subCounters) uc.kill();
+    }
   }
 
   /**
@@ -451,6 +461,20 @@ public class UnitCounter {
 
     if (result <= 0) result = 0;
 
+    return result;
+  }
+
+  /**
+   * Create and start a subsidiary unit counter that is tied to this.
+   * <p>
+   * A subsidiary counter maintains its own times and counts, but pauses
+   * and dies along with this counter (and vice versa).
+   */
+  public UnitCounter registerSubsidiary() {
+    final UnitCounter result = new UnitCounter();
+    result.markStartNow();
+    if (subCounters == null) subCounters = new ArrayList<UnitCounter>();
+    subCounters.add(result);
     return result;
   }
 
