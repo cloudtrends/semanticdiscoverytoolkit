@@ -16,34 +16,31 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.sd.io;
+package org.sd.cio.mapreduce;
 
+
+import org.sd.util.KVPair;
 
 /**
- * Interface for building a multi-part record of type R, one piece of type P at
- * a time.
+ * Container for a key/value pair that also retains the pair's action key.
  * <p>
  * @author Spence Koehler
  */
-public interface MultiPartRecord<P,R> {
+public abstract class MapperPair<K, V, A> extends KVPair<K, V> {
+  
+  /** Construct with the given key and value. */
+  protected MapperPair(K key, V value) {
+    super(key, value);
+  }
 
   /**
-   * Add a piece of the record to this instance.
-   *
-   * @return true if the piece was successfully added as a part of this record;
-   *         false if the piece does not belong in this record.
+   * Get this mapped pair's action key
+   * <p>
+   * The action key is used to retrieve the MapperAction instance that is
+   * relevant to this pair (see the AbstractMapperActionFactory) where the
+   * MapperAction performs the map operation on this pair, queuing the result
+   * for output through the MapperAction's FlushAction.
    */
-  public boolean addPiece(P piece);
+  public abstract A getActionKey();
 
-  /**
-   * Get the record with all of its parts.
-   */
-  public R getRecord();
-
-  /**
-   * Determine whether the record is complete.
-   *
-   * @return true if the record is complete or false if it is a partial record.
-   */
-  public boolean isComplete();
 }

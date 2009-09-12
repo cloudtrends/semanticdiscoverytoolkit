@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.sd.util.KVPair;
 import org.sd.util.NameGenerator;
 
 /**
@@ -32,13 +31,13 @@ import org.sd.util.NameGenerator;
  * <p>
  * @author Spence Koehler
  */
-public abstract class FlushAction<K, V> {
+public abstract class FlushAction<K, V, A> {
   
   /**
-   * Do the work of adding data while filling for a flush.
+   * Do the work of operating on data while filling for a flush.
    */
-  public static interface AddStrategy<K, V> {
-    public void doAdd(KVPair<K, V> data);
+  public static interface AddStrategy<K, V, A> {
+    public void operate(MapperPair<K, V, A> data);
   }
 
   /**
@@ -49,11 +48,11 @@ public abstract class FlushAction<K, V> {
   /**
    * Determine whether it is time to flush data out to a file.
    * <p>
-   * Note that this is invoked after each doAdd call in a thread-safe way such
-   * that doAdd cannot be called by another thread until after shouldFlush has
+   * Note that this is invoked after each operate call in a thread-safe way such
+   * that operate cannot be called by another thread until after shouldFlush has
    * been called.
    */
-  protected abstract boolean shouldFlush(KVPair<K, V> record);
+  protected abstract boolean shouldFlush(MapperPair<K, V, A> pair);
 
   /**
    * Flush current data to the given file, resetting to receive more add
@@ -99,7 +98,7 @@ public abstract class FlushAction<K, V> {
    *
    * @return true if flushed; otherwise, false.
    */
-  public final boolean add(KVPair<K, V> data, AddStrategy<K, V> adder) throws IOException {
+  public final boolean add(MapperPair<K, V, A> data, AddStrategy<K, V, A> adder) throws IOException {
     boolean result = false;
 
     synchronized (addMutex) {
@@ -107,7 +106,9 @@ public abstract class FlushAction<K, V> {
         initializeNextFile();
       }
 
-      adder.doAdd(data);
+      if (adder != null) {
+        adder.operate(data);
+      }
 
       // check for flush
       if (shouldFlush(data)) {
