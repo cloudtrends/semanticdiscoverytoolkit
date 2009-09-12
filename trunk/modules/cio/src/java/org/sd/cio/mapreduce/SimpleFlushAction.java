@@ -25,7 +25,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.sd.util.KVPair;
 import org.sd.util.NameGenerator;
 
 /**
@@ -34,7 +33,7 @@ import org.sd.util.NameGenerator;
  * <p>
  * @author Spence Koehler
  */
-public class SimpleFlushAction<K, V> extends FlushAction<K, V> {
+public class SimpleFlushAction<K, V, A> extends FlushAction<K, V, A> {
 
   private int maxOutRecordCount;
   private final MapContainer<K, V> data;
@@ -69,7 +68,7 @@ public class SimpleFlushAction<K, V> extends FlushAction<K, V> {
    * that doAdd cannot be called by another thread until after shouldFlush has
    * been called.
    */
-  protected boolean shouldFlush(KVPair<K, V> record) {
+  protected boolean shouldFlush(MapperPair<K, V, A> pair) {
     return (data.getMap().size() == maxOutRecordCount);
   }
 

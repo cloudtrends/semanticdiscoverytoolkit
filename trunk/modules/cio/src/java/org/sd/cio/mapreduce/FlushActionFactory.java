@@ -16,34 +16,28 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.sd.io;
+package org.sd.cio.mapreduce;
 
+
+import java.io.IOException;
 
 /**
- * Interface for building a multi-part record of type R, one piece of type P at
- * a time.
+ * Factory class for MapperAction instances to be used by a Mapper.
  * <p>
  * @author Spence Koehler
  */
-public interface MultiPartRecord<P,R> {
+public interface FlushActionFactory<K, V, A> {
+
+  /** Get (or build) the action relevant to the mapper pair. */
+  public FlushAction<K, V, A> getFlushAction(MapperPair<K, V, A> pair);
+
+  /** Get the action for the given key or null if non-existent */
+  public FlushAction<K, V, A> getFlushAction(A actionKey);
 
   /**
-   * Add a piece of the record to this instance.
-   *
-   * @return true if the piece was successfully added as a part of this record;
-   *         false if the piece does not belong in this record.
+   * Finalize when usage of this instance is complete.
+   * <p>
+   * Typically, this will flush all of the mapper action instances.
    */
-  public boolean addPiece(P piece);
-
-  /**
-   * Get the record with all of its parts.
-   */
-  public R getRecord();
-
-  /**
-   * Determine whether the record is complete.
-   *
-   * @return true if the record is complete or false if it is a partial record.
-   */
-  public boolean isComplete();
+  public void finalize() throws IOException;
 }

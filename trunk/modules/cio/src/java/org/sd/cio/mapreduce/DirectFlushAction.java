@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.sd.util.KVPair;
 import org.sd.util.NameGenerator;
 
 /**
@@ -33,7 +32,7 @@ import org.sd.util.NameGenerator;
  * <p>
  * @author Spence Koehler
  */
-public class DirectFlushAction<K, V> extends FlushAction<K, V> {
+public class DirectFlushAction<K, V, A> extends FlushAction<K, V, A> {
 
   private int maxOutRecordCount;  // num records to write before rolling files
   private final AtomicInteger numWritten = new AtomicInteger(0);
@@ -59,9 +58,9 @@ public class DirectFlushAction<K, V> extends FlushAction<K, V> {
    * that doAdd cannot be called by another thread until after shouldFlush has
    * been called.
    */
-  protected boolean shouldFlush(KVPair<K, V> record) {
+  protected boolean shouldFlush(MapperPair<K, V, A> pair) {
     try {
-      recordFileStrategy.writeRecord(record.key, record.value);
+      recordFileStrategy.writeRecord(pair.key, pair.value);
     }
     catch (IOException e) {
       throw new IllegalStateException(e);

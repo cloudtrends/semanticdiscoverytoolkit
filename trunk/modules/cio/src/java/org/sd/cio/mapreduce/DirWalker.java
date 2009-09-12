@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.sd.io.DirectorySelector;
@@ -119,7 +120,8 @@ public class DirWalker implements Governable {
                                            final FileRecordIteratorFactory<T> recordIteratorFactory,
                                            final RecordOperator<T, File> recordOperator) {
 
-    final UcOperationPerformer<T, File> performer = new UcOperationPerformer<T, File>(false/*verbose*/, uc.registerSubsidiary()) {
+    final boolean recordVerbose = false;  // note: usually, it's a bad idea to be verbose at the record level
+    final UcOperationPerformer<T, File> performer = new UcOperationPerformer<T, File>(recordVerbose, uc.registerSubsidiary()) {
       protected boolean performOperation(T record, File context) {
         return recordOperator.operate(record, context);
       }
@@ -177,9 +179,11 @@ public class DirWalker implements Governable {
                                             final MultiFileIteratorFactory<T> multiFileIteratorFactory,  // create co-file-iterator
                                             final Comparator<T> recordComparer,                          // sort, find equal records
                                             final RecordMerger<T, List<File>> recordMerger,              // merge equal records
-                                            final OutputFinalizer<List<File>> outputFinalizer) {         // flush output
+                                            final OutputFinalizer<List<File>> outputFinalizer,           // flush output
+                                            final AtomicBoolean needsReduce) {                           // output flag
 
-    final UcOperationPerformer<List<T>, List<File>> performer = new UcOperationPerformer<List<T>, List<File>>(false/*verbose*/, uc.registerSubsidiary()) {
+    final boolean recordVerbose = false;  // note: usually, it's a bad idea to be verbose at the record level
+    final UcOperationPerformer<List<T>, List<File>> performer = new UcOperationPerformer<List<T>, List<File>>(recordVerbose, uc.registerSubsidiary()) {
       protected boolean performOperation(List<T> records, List<File> context) {
         return recordMerger.merge(records, context);
       }
@@ -189,7 +193,6 @@ public class DirWalker implements Governable {
       new DirWalker(verbose, uc, rootDir, dirSelector, fileSelector,
                     new FileOperator() {
                       private MultiPartRecord<File, List<File>> groupedFiles = fileCollector.newMultiPartRecord();
-                      private List<File> prevFiles = null;
 
                       public boolean initializeHook() {return true;}
 
@@ -213,22 +216,17 @@ public class DirWalker implements Governable {
                       public void finalizeHook() {
                         // flush last collected input files
                         flush();
-
-                        //todo: flush final output
-                        if (outputFinalizer != null) {
-                          try {
-                            outputFinalizer.finalize(prevFiles);
-                          }
-                          catch (IOException e) {
-                            throw new IllegalStateException(e);
-                          }
-                        }
                       }
 
                       private final boolean flush() {
                         boolean result = true;
                         final List<File> files = groupedFiles.getRecord();  // increments
                         if (files != null && files.size() > 0) {
+
+                          // if !groupedFiles.isComplete(), then output will need to be input to another reduce phase;
+                          // otherwise, output is input suitable for a map phase.
+                          if (!groupedFiles.isComplete()) needsReduce.set(true);
+
                           MultiFileIterator<T> multiFileIterator = null;
                           try {
                             multiFileIterator = multiFileIteratorFactory.getMultiFileIterator(files, recordComparer);
@@ -246,13 +244,22 @@ public class DirWalker implements Governable {
                             if (multiFileIterator != null) {
                               try {
                                 multiFileIterator.close();
+
+                                // flush/finalize the output
+                                if (outputFinalizer != null) {
+                                  try {
+                                    outputFinalizer.finalize(files);
+                                  }
+                                  catch (IOException e) {
+                                    throw new IllegalStateException(e);
+                                  }
+                                }
                               }
                               catch (IOException e) {
                                 throw new IllegalStateException(e);
                               }
                             }
                           }
-                          this.prevFiles = files;
                         }
                         return result;
                       }
