@@ -3,7 +3,7 @@ Using Emacs as an IDE
 
 - place your customized emacs-ide.el in your home directory and add lines to your .emacs file:
 
-(setq load-path (cons "." load-path))
+(setq load-path (cons "~" load-path))
 (load "emacs-ide.el")
 
 - Setup shell environment
