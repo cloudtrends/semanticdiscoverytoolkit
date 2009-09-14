@@ -126,7 +126,32 @@
     </exec>
   </target-->
 
-  <target name="dist" depends="build-clean,test">
+  <target name="svn-diff">
+    <exec executable="svn" dir="${basedir}" outputproperty="svn.diff">
+      <arg value="diff"/>
+    </exec>
+  </target>
+
+  <target name="detect-change" depends="svn-diff">
+    <condition property="change.detected">
+      <not>
+        <matches string="${svn.diff}" pattern="^$"/>
+      </not>
+    </condition>
+  </target>
+
+  <target name="should-dist" depends="detect-change">
+    <condition property="should.dist">
+      <or>
+        <isset property="change.detected"/>
+        <not>
+          <available file="${dist}/${jar}.jar"/>
+        </not>
+      </or>
+    </condition>
+  </target>
+
+  <target name="dist" depends="should-dist,build-clean,test" "if="should.dist">
     <mkdir dir="${dist}"/>
     <jar destfile="${dist}/${jar}.jar"
          basedir="${classes}"
