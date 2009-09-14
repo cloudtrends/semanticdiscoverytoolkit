@@ -151,7 +151,7 @@
     </condition>
   </target>
 
-  <target name="dist" depends="should-dist,build-clean,test" "if="should.dist">
+  <target name="dist" depends="should-dist,build-clean,test" if="should.dist">
     <mkdir dir="${dist}"/>
     <jar destfile="${dist}/${jar}.jar"
          basedir="${classes}"
