@@ -42,6 +42,10 @@
     <ant antfile="modules/build.xml" target="p4chkn" inheritall="false"/>
   </target>
 
+  <target name="update-modlib">
+    <ant antfile="modules/build.xml" target="update-modlib" inheritall="false"/>
+  </target>
+
   <target name="toolkit-jar" depends="init">
     <ant antfile="modules/build.xml" target="toolkit-jar" inheritall="false"/>
 

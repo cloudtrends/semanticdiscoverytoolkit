@@ -114,7 +114,7 @@
 
   <target name="p4chkn" depends="add-license" description="Run each module's 'p4chkn' target in order.">
     <iterate target="p4chkn"/>
-    <iterate target="update-modlib"/>
+    <!--iterate target="update-modlib"/-->
   </target>
 
   <target name="update-modlib" description="Run each module's 'update-modlib' target in order.">

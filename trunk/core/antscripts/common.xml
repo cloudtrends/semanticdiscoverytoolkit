@@ -451,7 +451,41 @@
     </copy>
   </target>
 
-  <target name="update-modlib" depends="jar" if="build.modlib" description="Copy module's jar to modlib.">
+  <target name="svn-diff">
+    <exec executable="svn" dir="${basedir}" outputproperty="svn.diff">
+      <arg value="diff"/>
+    </exec>
+    <!--echo message="basedir=${basedir}"/-->
+    <!--echo message="${svn.diff}"/-->
+  </target>
+
+  <target name="detect-change" depends="svn-diff">
+    <!--echo message="svn.diff='${svn.diff}'"/-->
+    <condition property="change.detected">
+      <not>
+        <matches string="${svn.diff}" pattern="^$"/>
+      </not>
+    </condition>
+  </target>
+
+  <target name="should-update-modlib" depends="detect-change">
+    <!--echo message="build.modlib=${build.modlib}"/-->
+    <!--echo message="change.detected=${change.detected}"/-->
+    <condition property="should.update.modlib">
+      <and>
+        <isset property="build.modlib"/>
+        <or>
+          <isset property="change.detected"/>
+          <not>
+            <available file="${modlib}/${jarfilename}"/>
+          </not>
+        </or>
+      </and>
+    </condition>
+  </target>
+
+  <target name="update-modlib" depends="should-update-modlib,jar" if="should.update.modlib" description="Copy module's jar to modlib.">
+    <!--echo message="should.update.modlib=${should.update.modlib}"/-->
     <copy todir="${modlib}" file="${jarfile}"/>
     <copy todir="${depsroot}" flatten="true" failonerror="false">
       <fileset dir="${localdeps}">
@@ -466,7 +500,7 @@
           depends="compile,test,javadoc,jar,dist"
           description="Performs a build; runs tests; builds javadocs, jar, dist"/>
 
-  <target name="p4chkn" depends="clean,run-junit,dist" description="Executes targets required to pass prior to checkin"/>
+  <target name="p4chkn" depends="clean,run-junit,dist,update-modlib" description="Executes targets required to pass prior to checkin"/>
   <target name="p4checkin" depends="p4chkn" description="Because typing p4chkn requires to much thinking on my part ;)"/>
 
   <target name="clean-localdist" description="clean localdist area">
