@@ -103,9 +103,6 @@
   <target name="clean">
     <!-- Delete the ${build} directory tree and dist ${jar} -->
     <delete dir="${build}"/>
-    <delete verbose="true" failonerror="false">
-      <fileset dir="${dist}" includes="${jar}*.jar"/>
-    </delete>
   </target>
 
   <target name="build-clean" depends="clean,compile,copy-source-resources"/>
@@ -152,6 +149,9 @@
   </target>
 
   <target name="dist" depends="should-dist,build-clean,test" if="should.dist">
+    <delete verbose="true" failonerror="false">
+      <fileset dir="${dist}" includes="${jar}*.jar"/>
+    </delete>
     <mkdir dir="${dist}"/>
     <jar destfile="${dist}/${jar}.jar"
          basedir="${classes}"
