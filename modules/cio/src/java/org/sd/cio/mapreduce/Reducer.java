@@ -45,7 +45,7 @@ import org.sd.util.KVPairLoader;
  * <ul>
  * <li>getRootOutputFile -- to specify the root output directory.</li>
  * <li>buildMultiPartRecordFactory -- to specify groups of files over which to co-iterate.</li>
- * <li>getMultiFileIterator -- to co-iterate over a file group.</li>
+ * <li>getCoIterator -- to co-iterate over a file group.</li>
  * <li>buildRecordComparer -- for sorting and collecting like records for reduction.</li>
  * <li>buildOutputFinalizer -- for finalizing each output file when filled.</li>
  * <li>reduce -- to do the actual work of reducing equal pairs into one.</li>
@@ -72,7 +72,7 @@ public abstract class Reducer<K, V, A, R> extends MapReduceBase<K, V, A, R> {
    *
    * @return a MultiFileIterator for the files.
    */
-  protected abstract MultiFileIterator<KVPair<K, V>> getMultiFileIterator(List<File> files, Comparator<KVPair<K, V>> recordComparer) throws IOException;
+  protected abstract MultiFileIterator<KVPair<K, V>> getCoIterator(List<File> files, Comparator<KVPair<K, V>> recordComparer) throws IOException;
 
   /**
    * Build the comparer for sorting and collecting like key/value pair records
@@ -170,12 +170,12 @@ public abstract class Reducer<K, V, A, R> extends MapReduceBase<K, V, A, R> {
 
   /**
    * Helper method for building a MultiFileIteratorFactory that uses this
-   * class's getMultiFileIterator method.
+   * class's getCoIterator method.
    */
   protected MultiFileIteratorFactory<KVPair<K, V>> buildMultiFileIteratorFactory() {
     return new MultiFileIteratorFactory<KVPair<K, V>>() {
       public MultiFileIterator<KVPair<K, V>> getMultiFileIterator(List<File> files, Comparator<KVPair<K, V>> recordComparer) throws IOException {
-        return getMultiFileIterator(files, recordComparer);
+        return getCoIterator(files, recordComparer);
       }
     };
   }
@@ -195,19 +195,17 @@ public abstract class Reducer<K, V, A, R> extends MapReduceBase<K, V, A, R> {
    * @return true if the reduced pair is successfully added to the flush action.
    */
   private final boolean mergeRecords(List<KVPair<K, V>> pairs, List<File> context) throws IOException {
-    boolean result = false;
-
     final MapperPair<K, V, A> reducedPair = reduce(pairs, context);
     if (reducedPair != null) {
       final FlushAction<K, V, A> flushAction = getFlushActionFactory().getFlushAction(reducedPair);
-      result = flushAction.add(reducedPair, null);
+      flushAction.add(reducedPair, null);
     }
-    return result;
+    return true;
   }
 
 
   /**
-   * Utility method for extenders to call while implementing getMultiFileIterator.
+   * Utility method for extenders to call while implementing getCoIterator.
    * <p>
    * This is appropriate for cases where the input file contains key/value pairs
    * in a text file, one pair per line.
@@ -218,7 +216,7 @@ public abstract class Reducer<K, V, A, R> extends MapReduceBase<K, V, A, R> {
    *
    * @return the MultiFileIterator over the files.
    */
-  protected final MultiFileIterator<KVPair<K, V>> simpleTextMultiFileIterator(
+  protected final MultiFileIterator<KVPair<K, V>> simpleTextFileCoIterator(
     List<File> files, Comparator<KVPair<K, V>> recordComparer, final KVPairLoader<K, V, String> kvPairLoader)
     throws IOException {
 

@@ -144,6 +144,7 @@ public abstract class MapReduceBase<K, V, A, R> implements Governable {
    *       is after preRunHook has been invoked.
    */
   protected final FlushActionFactory<K, V, A> getFlushActionFactory() {
+    if (faf == null) initialize();
     return faf;
   }
 

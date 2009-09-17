@@ -21,6 +21,9 @@ package org.sd.cio.mapreduce;
 
 import java.io.File;
 
+import org.sd.io.DirectorySelector;
+import org.sd.util.MathUtil;
+
 /**
  * A reducer that repeats execution until done.
  * <p>
@@ -28,11 +31,21 @@ import java.io.File;
  */
 public abstract class RepeatingReducer<K, V, A, R> extends Reducer<K, V, A, R> {
 
-  private File prevOutputFile;
+  /**
+   * Given a file (or directory), determine its action key.
+   * 
+   * @return the file's (or directory's) action key or null if not applicable.
+   */
+  protected abstract A getActionKey(File file);
 
-  public RepeatingReducer() {
+
+  private File prevOutputFile;
+  private FlushActionFactory<K, V, A> priorFlushActionFactory;
+
+  public RepeatingReducer(MapReduceBase<K, V, A, R> priorPhase) {
     super();
     this.prevOutputFile = null;
+    this.priorFlushActionFactory = priorPhase.getFlushActionFactory();
   }
 
   public void run() {
@@ -53,6 +66,11 @@ public abstract class RepeatingReducer<K, V, A, R> extends Reducer<K, V, A, R> {
     } while (repeat);
   }
 
+  public void reset(int nextChainNumber) {
+    this.priorFlushActionFactory = getFlushActionFactory();  // will be reset by next run
+    super.reset(nextChainNumber);
+  }
+
   /** Override current input dir to be prior phase's output dir. */
   protected final File getCurrentInputFile() {
     File result = null;
@@ -67,6 +85,11 @@ public abstract class RepeatingReducer<K, V, A, R> extends Reducer<K, V, A, R> {
     }
 
     return result;
+  }
+
+  /** Override current output dir with a chain-based directory under the root. */
+  protected File getCurrentOutputFile() {
+    return new File(getRootOutputFile(), "phase-" + MathUtil.integerString(getChainNum(), 2, '0'));
   }
 
   /**
@@ -92,5 +115,33 @@ public abstract class RepeatingReducer<K, V, A, R> extends Reducer<K, V, A, R> {
    */
   protected boolean postReduceHook() {
     return true;
+  }
+
+  /**
+   * Apply directory selection criterea to the given directory.
+   */
+  protected DirectorySelector.Action selectDirectory(File dir) {
+    return DirectorySelector.Action.DESCEND;
+  }
+
+  /**
+   * Apply file selection criterea to the given file.
+   */
+  protected boolean selectFile(File file) {
+    boolean result = false;
+
+    final A actionKey = getActionKey(file);
+    if (actionKey != null) {
+      FlushAction flushAction = priorFlushActionFactory.getFlushAction(actionKey);
+      if (flushAction == null) {
+        // force build
+        flushAction = priorFlushActionFactory.getFlushAction(new MapperPair<K, V, A>(null, null) {
+            public A getActionKey() { return actionKey; }
+          });
+      }
+      result = flushAction.getNameGenerator().isValidName(file.getName());
+    }
+
+    return result;
   }
 }
