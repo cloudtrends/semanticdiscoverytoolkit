@@ -94,6 +94,27 @@ public abstract class FlushAction<K, V, A> {
   }
 
   /**
+   * Get this instance's flush dir.
+   */
+  public File getFlushDir() {
+    return flushDir;
+  }
+
+  /**
+   * Get this instance's record file strategy.
+   */
+  public RecordFileStrategy<K, V> getRecordFileStrategy() {
+    return recordFileStrategy;
+  }
+
+  /**
+   * Get this instance's name generator.
+   */
+  public NameGenerator getNameGenerator() {
+    return ngen;
+  }
+
+  /**
    * Add data, flushing afterwards if warranted.
    *
    * @return true if flushed; otherwise, false.

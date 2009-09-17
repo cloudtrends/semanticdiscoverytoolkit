@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.sd.io.FileUtil;
+import org.sd.util.KVPair;
 
 /**
  * A record file strategy for text records, one delimited record per line.
@@ -92,6 +93,22 @@ public abstract class TextRecordFileStrategy<K, V> implements RecordFileStrategy
     writer.newLine();
 
     return true;
+  }
+
+  /**
+   * Decode the parts of a line written by this strategy.
+   */
+  public KVPair<K, V> decodeLine(String line) {
+    KVPair<K, V> result = null;
+
+    final int delimPos = line.indexOf(delim);
+    if (delimPos >= 0) {
+      final K key = unescapeKey(line.substring(0, delimPos));
+      final V value = stringToValue(line.substring(delimPos + delim.length()));
+      result = new KVPair<K, V>(key, value);
+    }
+
+    return result;
   }
 
   public void close() throws IOException {
