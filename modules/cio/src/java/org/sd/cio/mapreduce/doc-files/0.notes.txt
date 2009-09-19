@@ -202,9 +202,21 @@ encapsulated by a Reducer impl:
 
 ==============================================================================
 
-x RepeatingReducer: Utility to repeatedly reduce until done.
-  x isa Reducer
-- CombinedMapReduce: Utility to map arbitrary input, then reduce until done.
+- Concept of a "RepeatingReducer":
+  - idea: do a partial reduce in phases, incorporating more reduced data each phase
+  - in practice:       
+    - just spread reducing out across machines instead of handle the logistics on one
+    - each phase would need to roll files over whenever a new group of files starts.
+      - this could create more (instead of fewer) files such that reduction never ends
+        when it is based on processing some limited number of files at a time.
+      - the reason for this stems from how reduction requires strictly sorted files.
+        - when starting to read from the beginning of some files,
+          - flushing to open output will be out of sorted order.
+
+==============================================================================
+
+- CombinedMapReduce: Utility to map arbitrary input, then reduce.
   - hasa Mapper, Reducer
+
 - ChainingMapReduce: Utility to process data through the application of several map/reduce operations.
   - has CombinedMapReduce instances
