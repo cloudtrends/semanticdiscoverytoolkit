@@ -38,6 +38,9 @@ public abstract class SimpleMapReduce<K extends Comparable<K>, V, A, R> extends 
   private File reduceOutDir;
   private int maxMapPairs;
   private int maxReducePairs;
+  private boolean skipMapper;
+  private boolean skipReducer;
+//   private Integer maxCoReduceFiles;
 
   /**
    * Construct with an ngrams directory with its 'n' for exploding out
@@ -50,12 +53,12 @@ public abstract class SimpleMapReduce<K extends Comparable<K>, V, A, R> extends 
    * <li>reduceOutDir -- (required) path to root directory for reduce output</li>
    * <li>maxMapPairs -- (required) maximum number of entries for collecting map terms</li>
    * <li>maxReducePairs -- (required) maximum number of entries to write before rolling reduce output files</li>
-   * <li>minN -- (optional, default=2) minimum N of N-grams to collect</li>
-   * <li>maxN -- (optional, default=5) maximum N of N-grams to collect</li>
-   * <li>normalizer -- (optional, default=IndexingNormalizer) normalizer to use on ldc ngrams</li>
-   * <li>splitOnCamelCase -- (optional, default=false) whether to split on came clase</li>
+   * <li>skipMapper -- (optional, default=false) true to skip running the mapper</li>
+   * <li>skipReducer -- (optional, default=false) true to skip running the reducer</li>
    * </ul>
    */
+//    * <li>maxCoReduceFiles -- (optional, default=null[unlimited]) maximum number of files to co-iterate over
+//    *                         while reducing.</li>
   public SimpleMapReduce(Properties properties) {
     super();
 
@@ -78,6 +81,12 @@ public abstract class SimpleMapReduce<K extends Comparable<K>, V, A, R> extends 
 
     this.maxReducePairs = Integer.parseInt(properties.getProperty("maxReducePairs", "0"));
     if (maxReducePairs <= 0) throw new IllegalArgumentException("Need 'maxReducePairs'!");
+
+    this.skipMapper = "true".equalsIgnoreCase(properties.getProperty("skipMapper", "false"));
+    this.skipReducer = "true".equalsIgnoreCase(properties.getProperty("skipReducer", "false"));
+
+//     final String maxCoReduceFiles = properties.getProperty("maxCoReduceFiles");
+//     this.maxCoReduceFiles = (maxCoReduceFiles == null) ? null : new Integer(maxCoReduceFiles);
   }
 
   // mapper
@@ -115,4 +124,16 @@ public abstract class SimpleMapReduce<K extends Comparable<K>, V, A, R> extends 
   protected int getMaxPairs(Integer chainNum) {
     return (chainNum == null || chainNum.equals(0)) ? maxMapPairs : maxReducePairs;
   }
+
+  protected boolean preMapHook() {
+    return !skipMapper;
+  }
+
+  protected boolean preReduceHook() {
+    return !skipReducer;
+  }
+
+//   protected Integer getMaxSimultaneousReducerFiles(Integer chainNum) {
+//     return maxCoReduceFiles;
+//   }
 }

@@ -90,8 +90,34 @@ public abstract class CombinedMapReduce<K extends Comparable<K>, V, A, R> implem
   public void run() {
 //todo: add some logging and control to this through overridable hooks.
     initialize();
-//    mapper.run();
-    reducer.run();
+    if (preMapHook()) {
+      mapper.run();
+    }
+    if (preReduceHook()) {
+      reducer.run();
+    }
+  }
+
+  /**
+   * Hook executed prior to running the mapper.
+   * <p>
+   * Intended for extenders to override. Default is true.
+   *
+   * @return true to run the mapper; false to skip running the mapper.
+   */
+  protected boolean preMapHook() {
+    return true;
+  }
+
+  /**
+   * Hook executed prior to running the reducer.
+   * <p>
+   * Intended for extenders to override. Default is true.
+   *
+   * @return true to run the reducer; false to skip running the reducer.
+   */
+  protected boolean preReduceHook() {
+    return true;
   }
 
   /**
