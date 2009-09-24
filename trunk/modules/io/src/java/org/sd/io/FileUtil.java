@@ -153,17 +153,56 @@ public class FileUtil {
     return result;
   }
 
-  public static boolean copyFile(File source, File dest) {
+  /**
+   * Copy the contents of a directory
+	 *
+	 * @param source Source directory
+	 * @param dest Destination directory
+	 * @returns true if the directory successfully copied all contents, false if any files failed
+	 * @throws IOException if the destination directory already exists
+	 * @throws FileNotFoundException if the source directory does not exist, or the source path is not a directory, or the destination directory cannot be created
+   */
+  public static boolean copyDir(File source, File dest) 
+		throws IOException
+	{
+		boolean result = true;
+
+		if(!source.exists())
+			throw new FileNotFoundException("Source directory('" + source.getAbsolutePath() + "') cannot be found");
+		else if(!source.isDirectory())
+			throw new FileNotFoundException("Source file('" + source.getAbsolutePath() + "') is not a directory");
+
+		if(dest.exists())
+			throw new IOException("Unable to overwrite existing destination file('" + dest.getAbsolutePath() + "')");
+		else if(!dest.mkdirs())
+			throw new FileNotFoundException("Unable to create parent directories for destination file('" + dest.getAbsolutePath() + "')");
+			
+		for(File subFile : source.listFiles())
+		{
+			File destSubFile = new File(dest, subFile.getName());
+			if(subFile.isDirectory())
+			{
+				if(!copyDir(subFile, destSubFile))
+					result = false;
+			}
+			else
+			{
+				if(!copyFile(subFile, destSubFile))
+					result = false;
+			}
+		}
+
+		return result;
+	}
+
+  public static boolean copyFile(File source, File dest) 
+	{
     boolean result = true;
 
-//     if (dest.getFreeSpace() < source.length() + 1073741824) {
-//       return false;  // not enough disk space to copy and leave 1G buffer for other data.
-//     }
-
-    FileInputStream in =  null;
+    FileInputStream in = null;
     FileOutputStream out = null;
-    final byte[] buffer = new byte[32768];  // 32K buffer
 
+    final byte[] buffer = new byte[32768];  // 32K buffer
     try {
       in = new FileInputStream(source);
       out = new FileOutputStream(dest);
