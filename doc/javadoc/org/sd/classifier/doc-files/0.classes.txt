@@ -1,0 +1,59 @@
+
+
+              +----- (((TextContainer)))
+              |    1
+              | 1
+             < >
+Iterator<LabeledInput>
+         ^
+         |            generates                        1       
+   RawLabeledData --------+----->> ExtractedFeatures <>------------------+----------------------+
+                          ^                                              |                      |
+                          ^                                              |                      |
+                          |                                              |                      |
+    +---------------------+                                              |                      |
+    |                                                                    |                      |
+    |                           <<abstract>>                             | 1                    |
+    |                       BaseClassifierRunner <>----------+--- FeatureDictionary             |
+    |                                 ^                      |                                  |
+    |                                 |                      |                                  |
+    |  +------------------------------+                      |                                  |
+    |  |                              |                      |                                  |
+ClassifierTrainer      +----<> ClassifierRunner              |                                  |
+                       |                                     |                                  |
+                <<interface>>                                |                                  |
+                  Classifier                                 |                                  |
+                   |                                   <<abstract>>        populates            | *         1
+                   |                                 FeatureExtractor --------------------> FeatureVector <>-----------+
+                   | generates                               ^                                                         |
+                   +----------->> ClassificationResult       |                                                         |
+                                                             |                                                         |
+         +------------------------------+--------------------+--------------------+                                    |
+         |                              |                                         |               1 *                  |
+StepFeatureExtractor         FeatureExtractionPipeline       +-------<> PrimaryFeatureExtractor <>--- (((Extractor)))  |
+                                                             |                    ^                                    |
+                                                             |                    |                                    |
+                                                             |           BagOfWordsExtractor                           |
+                                                             |                                                         |
+                                                    AttributeConstraints <>--- AttributeType                           |
+                                                                           1 1                                         |
+                                <<interface>>  *                                                                       |
+                              FeatureAttribute ------------------------------------------------------------------------+
+                                      ^
+                                      |
+                                 <<abstract>>
+                             BaseFeatureAttribute
+                                      ^
+                                      |
+                 +--------------------+--------------------+
+                 |                                         |
+       NominalFeatureAttribute                        <<abstract>>
+                                                 NumericFeatureAttribute
+                                                           ^
+                                                           |
+                                      +--------------------+--------------------+
+                                      |                                         |
+                           IntegerFeatureAttribute                     RealFeatureAttribute
+
+
+FeatureDictionary is a FeatureAttribute Factory accessed through AttributeConstraints.

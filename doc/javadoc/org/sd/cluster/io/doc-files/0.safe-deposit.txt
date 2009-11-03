@@ -1,0 +1,65 @@
+
+
+Safe Deposit abstraction:
+
+- A SafeDepositBox has Drawers for holding the contents (output) of a process.
+- A SafeDepositMessage initiates generation of the contents or retrieves the current status or finished contents.
+- A SafeDepositReceipt is the return value from sending a SafeDepositMessage.
+- A SafeDepositAgent is used to send SafeDepositMessage instances to multiple nodes and collect all responses.
+	- it works under time limits to ensure at least a partial response when nodes die, fail, or fail to respond in time.
+	- For each node (or node group), the message is sent via a console and the responses are collected.
+		- The message is repeatedly sent until
+			- the generated contents are available or
+			- time expires or
+			- the estimated time to completion would exceed the expiration time
+
+==============================================================================
+
+SafeDepositConsole (in cluster.config)
+
+- Administrative tasks
+	- Inspect/adjust free memory limit
+	- Inspect/Cancel/Reset expiration monitor
+
+- Management tasks
+	- Statistics
+		- num drawers
+			- with contents
+			- awaiting contents
+			- no-deposit/expired/retrieved/unreserved
+		- times
+	- Inspect drawers
+		- keys, claim numbers, unit counters
+		- retrieve contents (only show toString on request?)
+			- by key
+			- all w/keys (as a map)
+		- ?forward contents?
+
+
+Total drawers: NEXT_NUM.get()
+  Active: claimNum2Drawer.size()
+  Incinerated: total - active
+
+Cleanup Monitor:
+  Delay: MONITOR_DELAY MONITOR_UNIT
+  Memory Limit: freeMemoryLimit
+  Current free memory: Runtime.getRuntime().freeMemory()
+
+key2claimNum
+claimNum2Drawer
+
+
+Drawer:
+	shouldIncinerate
+  isExpired
+  isAged
+	getUnitCounter
+	getContents     // has side effect on withdrawalTime and agedTime -- just grab drawer.publishable
+	setContents     // has side effect on depositTime, withdrawalTime, publishable -- ?just set drawer.publishable?
+	hasDeposit
+  depositHasBeenWithdrawn
+  getExpirationTime (show current time/time until expiration)
+  expire          // side effect
+  getOpenedTime
+  getDepositTime
+	getWithdrawalTime

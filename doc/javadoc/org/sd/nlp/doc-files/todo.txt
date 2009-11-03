@@ -1,0 +1,31 @@
+
+MODEL
+
+Lexicon
+ - finds the Categories (definition) for a (word/sub)string (token) of input
+
+LexicalTokenizer
+ <>-- DelimitedString
+ <>-- Lexicon
+ - uses a DelimitedString to tokenize text.
+ - finds those strings that have definitions according to a lexicon
+   or the smallest token that does not have any definition.
+ - finds definitions from longest tokens to shortest tokens.
+ - creates a LexicalEntry for the first longest definable token or for the smallest undefined token.
+
+LexicalTokenizer.Pointer
+ <>-- string token
+ <>-- Categories
+ - maintains token and position information relative to original string through a DelimitedString.
+ - manages navigation through smaller and next definable tokens.
+
+LexicalEntry
+ <>-- LexicalTokenizer.Pointer
+ <>-- newDefinition:Categories
+ - keeps track of original, new, and combined definitions for a token.
+ - helps manage navigation through smaller and next definable tokens.
+
+LexicalToken
+ <>-- LexicalEntry
+ - wrapper around LexicalEntry for interface to FSM.
+ - helps manage navigation through smaller and next definable tokens.

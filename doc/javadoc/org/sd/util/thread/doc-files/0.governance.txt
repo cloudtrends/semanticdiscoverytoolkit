@@ -1,0 +1,111 @@
+
+The "governance" classes are intended for use in cases where there is a long
+running operation that we would like to monitor, pause/resume, and/or kill.
+
+The requirement is for the operation to have the property that it can be
+divided into units.
+
+The full operation is executed within an implementation of the *Governable*
+interface such that a *UnitCounter* is kept up-to-date with the progress
+from its start, through its incrementing through units, and at its finish.
+The implementation also checks for pause, resume, and kill messages
+communicated to it through the *UnitCounter*.
+
+As a usable reference implementation of the *Governable* interface, see
+*BaseGovernable* and interactions in *TestGovernableThread*.
+
+A *GovernableThread* is constructed with a *Governable* instance and
+facilitates monitoring, pausing, resuming and killing the process.
+
+
+                         <<interface>>
+                           Runnable                 Thread
+                              ^                        ^
+                              |                        |
+                  1      <<interface>>      1          |
+      UnitCounter -----<> Governable --------<> GovernableThread
+                      1       ^      1
+                              .
+                              .
+                         <<abstract>>
+                        BaseGovernable
+
+
+Uninterrupted Flow:
+
+  t:GovernableThread                g:Governable                uc:UnitCounter
+  ------------------                ------------                --------------
+  start() |                              |                            |
+ -------->|                       run()  |                            |
+          |----------------------------->|            markStartNow()  |
+          |                              |--------------------------->|
+          |               iteration  +---|            isTimeToQuit()  |
+          |                    loop  |   |--------------------------->|
+          |                          |   |  true/false                |
+          |           break if false |<==|<- - - - - - - - - - - - - -|
+          |                     |    |   |                            |
+          |                     |    |   |-- do current unit's        |
+          |                     |    |   |   operation                |
+          |                     |    |   |                            |
+          |                     |    |   |                     inc()  |
+          |                     |    |   |--------------------------->|
+          |                          |   |  true/false                |
+          |           break if false |<==|<- - - - - - - - - - - - - -|
+          |                     |    |   |                            |
+          |                     |    |   |                            |
+          |                     +--> +---|                            |
+          |                              |              markEndNow()  |
+          |                              |--------------------------->|
+          |                              |                            |
+
+
+Flow with Pause/Resume (during iteration loop):
+
+                       uc:UnitCounter                g:Governable
+                       --------------                ------------ 
+                         ... |                        ... |
+                             |                            |
+                             |                            |
+                    pause()  |                            |
+    ------------------------>| isTimeToQuit()             |
+                             |<---------------------------|
+                             |                            |
+     BLOCKS until resume() ==|==                          |
+                             |                            |
+                   resume()  |                            |
+    ------------------------>|                     false  |
+                             |- - - - - - - - - - - - - ->|
+                             |                            |
+                             |                            |
+
+
+Flow with Kill before operation is performed (during beginning of iteration loop):
+
+                       uc:UnitCounter                g:Governable
+                       --------------                ------------ 
+                         ... |                        ... |
+                             |                            |
+                             |                            |
+                     kill()  |                            |
+    ------------------------>| isTimeToQuit()             |
+                             |<---------------------------|
+                             |                      true  |
+                             |- - - - - - - - - - - - - ->|
+                             |                            |
+                             |                            |
+
+
+Flow with Kill after the operation is performed (at end of iteration loop):
+
+                       uc:UnitCounter                g:Governable
+                       --------------                ------------ 
+                         ... |                        ... |
+                             |                            |
+                             |                            |
+                     kill()  |                            |
+    ------------------------>| inc()                      |
+                             |<---------------------------|
+                             |                      true  |
+                             |- - - - - - - - - - - - - ->|
+                             |                            |
+                             |                            |

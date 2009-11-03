@@ -1,0 +1,91 @@
+A single analyzer is used to tokenize all "TOKENIZED" fields the same way in a document
+ document.add(new Field(label, data, store, index, termVector))
+ indexWriter.addDocument(document, analyzer)
+
+OR
+
+An appropriate analyzer can be used to tokenize each field and the field indexed as "UN_TOKENIZED"
+ document.add(new Field(label, data, store, index, termVector))
+ indexWriter.addDocument(document)
+
+
+LuceneStore <>-- LuceneFieldId.class  <>-- Analyzer, fields <>-- label, data, store, index, termVector, analyzer, positionIncrementGap
+            <>-- IndexWriter
+
+LuceneFieldId.class  <>-- Analyzer (class level)
+                     <>-- fields <>-- label, data, store, index, termVector, analyzer (field-level), positionIncrementGap
+
+Analyzer <>-- positionIncrementGap  // 0 for searching across separate added terms as if part of same phrase; else 1
+
+
+fields <>-- label       // constant
+       <>-- data        // provided when added. passed through or split with tokenizer when present
+       <>-- store       // constant
+       <>-- index       // constant (overridden by presence of tokenizer)
+       <>-- termVector  // constant
+
+       <>-- analyzer    // field-level (overrides index)
+       <>-- tokenizer   // pre-tokenizer
+
+making fields:
+- tokenize data (if present) and add a field instance with each token to document or with the analyzer (if present)
+
+making queries:
+- tokenize data (if present) and build query with tokens and/or analyzer (if present)
+
+FieldAnalyzer: checks fieldID for its analyzer, and use/delegate to that analyzer
+
+
+data -- FieldId --> [tokenized] --> query(analyzer)
+                                --> index(analyzer)
+
+
+TOKENIZATION
+
+   * Keeps urls (optionally), email addresses (optionally), and complex numbers intact with normalization
+     * complex numbers include alpha-numerics like product numbers that are identified by the presence of dashes and/or dots.
+   * Splits other words at punctuation characters, removing punctuation.
+   * Splits at camel-casing. (optionally)
+   * Replaces diacritics. (optionally)
+   * Lowercases all letters.
+   * Keeps all asian chars. (optionally)
+
+==============================================================================
+
+FYI: Default stopwords are: 
+
+a
+an
+and
+are
+as
+at
+be
+but
+by
+for
+if
+in
+into
+is
+it
+no
+not
+of
+on
+or
+such
+that
+the
+their
+then
+there
+these
+they
+this
+to
+was
+will
+with
+
+org.apache.lucene.index.IndexWriter.DEFAULT_RAM_BUFFER_SIZE_MB = 16.0

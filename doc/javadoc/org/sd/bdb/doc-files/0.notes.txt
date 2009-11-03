@@ -1,0 +1,68 @@
+
+Generic BerkeleyDB:
+
+- key:String or Long
+  - make sure long keys sort in numerical order
+
+- value:String
+  - intent is for consumers to control (de-)serializing db objects as Strings
+    - typical conversions will use 'json'
+  - automatically wrap the string in a 'record' with timestamp info when using db as a queue
+
+- Automatic time-based Secondary keys for using db as a queue:
+  - "universal time" long time stamp mapped to "secondary key" for FIFO/LIFO cursor access.
+  - NOTE: when secondary keys are used, no duplicate primary keys are allowed so
+    - DatabaseConfig.setSortedDuplicates(false)
+
+- Configuration
+  - DtabaseConfig.setAllowCreate(true);
+  - DatabaseConfig.setSortedDuplicates(false);
+  - DatabaseConfig.setTransactional(true);
+
+- operations:
+  - open
+  - put(key, value):KeyValuePair, put(kvPair:KeyValuePair):KeyValuePair
+    - inserts key/value pair into database
+  - pop(lifo/fifo-flag):KeyValuePair
+    - retrieves and deletes the last/first element from the queue as an atomic transaction
+  - peek(lifo/fifo-flag):KeyValuePair
+    - used for admin/instrumentation ... admin console should do DataBaseConfig.setReadOnly(true);
+  - get(key, deleteFlag):KeyValuePair
+    - retrieves the value for the key and optionally deletes as an atomic transaction
+  - update(key, newValue)
+  - delete(key)
+  - close
+
+
+BerkeleyDB
+- Factory for its own instances.
+- Container/Factory for a BerkeleyDb environment and its databases.
+- Auto lazy opens environment and databases.
+
+DbHandle
+- Automatically provides queue functionality.
+- Provisions for string or long keys.
+- Currently assumes non-duplicate keys for all databases.
+  - Even though this is only strictly necessary for queue (timestamped) dbs.
+- Provisions for operations on a database in an environment:
+  - close, put, get, delete, update, popEarliest, popLatest, peekEarliest, peekLatest
+- Container for dbInfo
+
+DbInfo
+- Accessors for database & environment info.
+- Utility methods for interacting with databases.
+
+==============================================================================
+Typical Usage:
+
+BerkeleyDb bdb = null;
+
+try {
+  dbDir.mkdirs();
+  bdb = BerkeleyDb.getInstance(dbDir, readOnly);
+  final DbHandle dbHandle = bdb.get(dbName, timestamped);
+  ...work with dbHandle get/put/etc. operations...
+}
+finally {
+  if (bdb != null) bdb.close();
+}

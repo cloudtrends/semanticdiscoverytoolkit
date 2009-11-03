@@ -1,0 +1,38 @@
+
+PropertySchema
+ - Definition of possible property tree structure
+ - has a Map<String, Tree<PropertyDefinition>> defining property nodes, each of one of the forms:
+     (label children) or label or (label)
+   where children can be "label1 label2 label3 ..."
+   and label is "and", "or", or "<name>[+]",
+   where name is the name of the property and the optional '+' indicates a repeating property when present.
+
+PropertyDefinition
+ - it's type is its class: {or, and, name}
+ - has an IntegerNumberRange representing its instance cardinality
+
+          PropertyDefinition
+           +getLabel():String
+           +isAnd():boolean
+           +isOr():boolean
+           +isNamed():boolean
+           +asAnd():AndPropertyDefinition
+           +asOr():OrPropertyDefinition
+           +asNamed():NamedPropertyDefinition
+
+     LogicalPropertyDefinition                     NamedPropertyDefinition
+                                                     +getCardinality():IntegerNumberRange
+OrPropertyDefinition   AndPropertyDefinition
+
+
+  - need to/from string tree construction
+    - see SimpleTreeBuilder and TreeBuilderStrategy
+
+CorrelatedProperties
+(PropertyTree)
+ - Instance of tree-structured properties
+ - can dump contents to a flat property file
+ - has text serialization/deserialization
+
+(PropertyTreeBuilder)
+ - Builds a PropertyTree using a schema and input

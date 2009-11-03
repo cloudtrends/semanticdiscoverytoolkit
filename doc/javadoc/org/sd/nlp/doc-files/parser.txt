@@ -1,0 +1,93 @@
+
+(1) defineCategories
+CategoryFactory
+
+(2) loadGrammar, cross-checking with defined categories
+GrammarImpl.loadGrammar(grammarInputStream, ExtendedGrammarTokenFactory.getInstance(cfactory), ParseStateDecoder.getInstance())
+
+(3) loadLexicons (with normalizers), cross-checking with defined categories
+LexiconLoader.loadCsvLexicon(cfactory, lexiconInputStream, null)
+
+(4) build parser with grammar and lexicon
+Parser(Grammar grammar, Lexicon lexicon, boolean ignoreExtraInput)
+
+  FSMImpl(grammar)
+
+  (5) build token pointer factory with lexicon using appropriate tokenization strategy
+  TokenizationStrategy
+    TokenPointerFactory
+      DefaultTokenPointerFactory          strategy: seek defs from longest to shortest
+      LslTokenPointerFactory              strategy: seek defs from longest, then shortest to longest
+      SoTokenPointerFactory               strategy: seek defs from shortest tokens only
+
+  (6) build lexicalTokenizer with input (as string or string wrapper with break strategy) and token pointer factory
+  LexicalTokenizer
+
+  (7) parse input
+  parse(LexicalTokenizer tokenizer, Category[] acceptCategories)
+
+     builds initial token pointers using the tokenizer's token pointer factory
+
+     token pointers build remaining token pointers in strategy order using lexicon lookups
+      and bridge with fsm tokens through ?Categories and ?ExtendedGrammarTokens
+        revise, next
+
+==============================================================================
+
+Parser.java  (uses fsm, Grammar, Lexicon, Tokenization to parse input)
+
+Lexicon.java  (assigns categories to tokens)
+  AbstractLexicon.java  (isa Lexicon)
+    GenericLexicon.java  (isa AbstractLexicon)
+    LexiconImpl.java  (isa AbstractLexicon)
+    DigitLexicon.java  (isa AbstractLexicon)
+    HasDigitLexicon.java  (isa AbstractLexicon)
+    WordLexicon.java  (isa AbstractLexicon)
+  LexiconPipeline.java  (isa Lexicon, has Lexicon instances)
+
+Categories.java (has Category instances)
+CategoryFactory.java  (defines Categories)
+Category.java  (classifies a token)
+
+Normalizer.java  (normalizes input for lexicon lookups)
+  GeneralNormalizer.java  (isa Normalizer)
+
+StringWrapper.java  (hasa BreakStrategy)
+
+Break.java  (enumeration of break types)
+
+BreakStrategy.java  (specifies Breaks)
+  GeneralBreakStrategy.java  (isa BreakStrategy)
+  DefaultBreakStrategy.java  (isa BreakStrategy)
+
+LexicalTokenizer.java (creates LexicalEntry instances)
+  DelimitedStringLexicalTokenizer.java  (isa LexicalTokenizer)
+  StringWrapperLexicalTokenizer.java  (isa LexicalTokenizer)
+
+LexicalEntry.java  (has existing and new Categories, hasa TokenPointer)
+
+TokenizationStrategy.java  (creates TokenPointerFactory instances)
+
+TokenPointerFactory.java  (creates TokenPointer instances)
+  DefaultTokenPointerFactory.java  (isa TokenPointerFactory)
+    LslTokenPointerFactory.java  (isa DefaultTokenPointerFactory)
+    SoTokenPointerFactory.java  (isa DefaultTokenPointerFactory)
+
+TokenPointer.java  (defines tokenization strategy, creates token pointer instances)
+  DelimitedStringTokenPointer.java  (isa TokenPointer)
+  StringWrapperTokenPointer.java  (isa TokenPointer)
+    LslStringWrapperTokenPointer.java  (isa StringWrapperTokenPointer)
+    SoStringWrapperTokenPointer.java  (isa StringWrapperTokenPointer)
+
+
+TreeHelper.java  (utility to work with parser output)
+
+LexiconLoader.java  (utility to load a csv lexicon)
+
+
+ParseStateDecoder.java  (isa AbstractStateDecoder, bridges nlp to fsm)
+
+LexicalToken.java  (isa AbstractToken<LexicalEntry>, bridges nlp to fsm)
+
+ExtendedGrammarToken.java  (isa GrammarToken, bridges nlp to fsm)
+ExtendedGrammarTokenFactory.java  (creates GrammarTokens, bridges nlp to fsm)
