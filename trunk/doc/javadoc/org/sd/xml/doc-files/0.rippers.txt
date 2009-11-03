@@ -1,0 +1,22 @@
+
+An Xml Ripper
+- inrementally iterates over an xml file,
+- interpreting the xml structure (tags) and
+- identifying text nodes with their content
+- without pre-loading the full document into memory.
+
+XmlDataRipper: wrapper around any XmlRipper to always bundle xmlNode and tagStack.
+
+XmlRipper: primary interface for ripping tags and text from an xml file, allowing optional overhead for tag stacks.
+XmlLeafNodeRipper: an XmlRipper that returns only non-empty leaf text nodes from the file.
+XmlNodeRipper: an XmlRipper that pulls xml subtrees that appear to be "complete text nodes."
+
+XmlTagRipper: a Ripper that iterates over each xml "Tag."
+XmlTextRipper: a Ripper that iterates over each leaf xml text String.
+
+HtmlTitleRipper: uses an XmlTextRipper to grab the title from a file.
+MetaTagRipper: uses an XmlTagRipper to grab meta content from a file.
+MultiFunctionTextRipper: wrapper around an XmlTextRipper to call multiple functions on each iteration.
+XmlWordRipper: uses an XmlTextRipper to grab "top words" from the file.
+XmlNodeIterator: uses an XmlNodeRipper to iterate over Tree<XmlLite.Data> nodes with text.
+XmlIterator: iterates over each Tree<XmlLite.Data> node just under the root.

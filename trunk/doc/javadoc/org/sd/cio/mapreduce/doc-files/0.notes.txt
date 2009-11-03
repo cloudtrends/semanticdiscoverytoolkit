@@ -1,0 +1,222 @@
+
+
+Main Ideas:
+
+- DirWalker
+  - Walks over (sorted) directories and files
+    - Selecting directories (using DirectorySelector) to:
+      - descend (walk over each of its children)
+      - select (apply the operation to the directory itself)
+      - ignore (skip the directory)
+      - stop (halt iteration)
+    - Selecting files (using FileSelector) to apply FileOperator.operate
+
+  - Summary:
+    - The DirWalker walks over directories and files to provide the input for the FileOperator, which is responsible for processing the input and generating output.
+    - The DirWalker also keeps track of progress and provides governable control over the iteration.
+
+- FileOperator
+  - operates on a file,
+    - iterating over its records and
+    - applying a function to each record and
+    - generating output as appropriate for the operation.
+
+- A mapper
+  - is a DirWalker that
+  - iterates over the records in each file
+  - applies an operator to each record,
+    - merging in memory as necessary
+  - generates output as a result of applying the operations
+    - output records are accumulated in memory
+      - until a limit is reached and
+      - the records are flushed to disk
+        - in sorted order
+        - as rolling numbered files
+
+- A reducer
+  - is a DirWalker that
+  - collects files
+    - that have been written through a mapper
+  - co-iterates over collected files such that
+    - sorted records are
+      - processed in order,
+        - merging equal records
+      - written to disk
+        - without accumulating in memory
+        - in sorted order
+        - as rolling numbered files
+
+==============================================================================
+
+DirWalker - - > Governable
+  <>-- uc:UnitCounter
+  <>-- rootDir:File
+  <>-- dirSelector:DirectorySelector
+  <>-- fileSelector:FileSelector
+  <>-- fileOperator:FileOperator
+
+  <>-- performer:UcOperationPerformer
+         <>-- fileOperator:FileOperator
+
+
+     dirWalker         fileOperator
+     ---------         ------------
+   run() |                  |
+  ------>| initializeHook() |
+         |----------------->|
+         |                  |
+        ... file selection ...
+         |                  |
+         | operate(curFile) |
+         |----------------->|
+        ...                ...
+         |   finalizeHook() |
+         |----------------->|
+         |                  |
+
+==============================================================================
+
+mapperDirWalker = DirWalker.mapper(...)
+  <>-- fileOperator
+         <>-- recIterFactory:RecordIteratorFactory
+         <>-- recordOperator:RecordOperator
+
+encapsulated by a Mapper impl:
+
+
+                                                                                                                   mapperAction:
+          fileOperator  recIterFactory   recordOperator                   mapper               flushActionFactory   FlushAction
+          ------------  --------------   --------------                   ------               ------------------   -----------
+ operate(file) |             |                 |                            |                          |                 |
+-------------->|   get(file) |                 |                            |                          |                 |
+               |------------>|     recIter     |                            |                          |                 |
+               | recIter     |     -------     |                            |                          |                 |
+               |<- - - - - - |        |        |                            |                          |                 |
+               |             |        |        |                            |                          |                 |
+              ...           ...      ...       |                            |                          |                 |
+               |             | next() |        |                            |                          |                 |
+               |             |------->|        |                            |                          |                 |
+               |             | record |        |                            |                          |                 |
+               | record      |<- - - -|        |                            |                          |                 |
+               |<- - - - - - |        |        |                            |                          |                 |
+              ...           ...      ...       |                            |                          |                 |
+               |                     operate() |                            |                          |                 |
+               |------------------------------>| processRecord(record,file) |                          |                 |
+               |                               |--------------------------->| transformRecord(record)  |                 |
+               |                               |                            |----------------------+   |                 |
+               |                               |                            | pairs                |   |                 |
+               |                               |                            |<- - - - - - - - - .  |   |                 |
+               |                               |                            |- - - - - - - - - -   |   |                 |
+               |                               |                            |<---------------------+   |                 |
+               |                              ...            for each pair ...                         |                 |
+               |                               |                            |     getFlushAction(pair) |                 |
+               |                               |                            |------------------------->|                 |
+               |                               |                            | mapperAction             |                 |
+               |                               |                            |<- - - - - - - - - - - - -|                 |
+               |                               |                            |                         ...                |
+               |                               |                            |                                            |
+               |                               |                            |                             add(pair,this) |
+               |                               |                            |------------------------------------------->|
+               |                               |                            |                                           ...init output...
+               |                               |                            | doAdd(pair) == map(pair) == operate(pair)  |
+               |                               |                            |<-------------------------------------------|
+               |                               |                            |- - - - - - - - - - - - - - - - - - - - - ->|
+               |                               |                            |                                           ...flush output...
+               |                               |                            |<- - - - - - - - - - - - - - - - - - - - - -|
+               |                               |<- - - - - - - - - - - - - -|                                            |
+               |<- - - - - - - - - - - - - - - |                            |                                            |
+<- - - - - - - |                               |                            |                                            |
+
+==============================================================================
+
+reducerDirWalker = DirWalker.reducer(...)
+  <>-- fileOperator
+         <>-- fileCollector:MultiPartRecordFactory<File, List<File>>
+         <>-- multiFileIteratorFactory:MultiFileIteratorFactory<T>
+         <>-- recordComparer:Comparator<T>
+         <>-- recordMerger:RecordMerger<T, List<File>>
+         <>-- outputFinalizer:OutputFinalizer<List<File>>
+
+encapsulated by a Reducer impl:
+
+                                                groupedFiles:
+          fileOperator          fileCollector  MultiPartRecord
+          ------------          -------------  ---------------
+ operate(file) |                      |              |
+-------------->| newMultiPartRecord() |              |
+           [A] |--------------------->|              |
+               | groupdFiles          |              |
+               |<- - - - - - - - - - -|              |
+               |                     ...             |
+               |                      addPiece(file) |
+               |------------------------------------>|
+               | added:boolean                       |
+               |<- - - - - - - - - - - - - - - - - - |
+               | if !added, flush, goto [A]          |
+              ...                                   ...
+<- - - - - - - |                                     |
+
+       flush() |                                     |
+-------------->|                         getRecord() |
+               |------------------------------------>|  multiFileIteratorFactory
+               | files:List<File>                    |  ------------------------
+               |<- - - - - - - - - - - - - - - - - - |             |   fileCollector:
+               |                                    ...            |  MultiFileIterator
+               |           getFileCollector(files, recordComparer) |  -----------------
+               |-------------------------------------------------->|         |
+               |                                                  ...        |
+               |                                                      next() |
+               |------------------------------------------------------------>|  recordMerger
+               | records:List<T>                                             |  ------------
+               |<- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |       |
+               |                                                            ...      |
+               |                                               merge(records, files) |
+               |-------------------------------------------------------------------->|
+               |<- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |
+<- - - - - - - |                                                                     |
+
+
+                                                                                               reducerAction:
+                  recordMerger                     reducer                 flushActionFactory   FlushAction
+                  ------------                     -------                 ------------------   -----------
+ merge(records, files) |                              |                             |                |
+---------------------->| mergeRecords(records, files) |                             |                |
+                       |----------------------------->| reduce(pairs, context)      |                |
+                       |                              |-----------------------+     |                |
+                       |                              | reducedPair           |     |                |
+                       |                              |<- - - - - - - - - - . |     |                |
+                       |                              |- - - - - - - - - - -  |     |                |
+                       |                              |<----------------------+     |                |
+                       |                              |                             |                |
+                       |                              | getFlushAction(reducedPair) |                |
+                       |                              |---------------------------->|                |
+                       |                              | reducerAction               |                |
+                       |                              |<- - - - - - - - - - - - - - |                |
+                       |                              |                            ...               |
+                       |                              |                              add(pair, null) |
+                       |                              |--------------------------------------------->|
+                       |                              |                                             ...write pair...
+                       |                              |<- - - - - - - - - - - - - - - - - - - - - - -|
+                       |<- - - - - - - - - - - - - - -|                                              |
+<- - - - - - - - - - - |                              |                                              |
+
+==============================================================================
+
+- Concept of a "RepeatingReducer":
+  - idea: do a partial reduce in phases, incorporating more reduced data each phase
+  - in practice:       
+    - just spread reducing out across machines instead of handle the logistics on one
+    - each phase would need to roll files over whenever a new group of files starts.
+      - this could create more (instead of fewer) files such that reduction never ends
+        when it is based on processing some limited number of files at a time.
+      - the reason for this stems from how reduction requires strictly sorted files.
+        - when starting to read from the beginning of some files,
+          - flushing to open output will be out of sorted order.
+
+==============================================================================
+
+- CombinedMapReduce: Utility to map arbitrary input, then reduce.
+  - hasa Mapper, Reducer
+
+- ChainingMapReduce: Utility to process data through the application of several map/reduce operations.
+  - has CombinedMapReduce instances

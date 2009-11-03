@@ -1,0 +1,252 @@
+
+Utility classes to connect to a cluster as a service (instead of as a job).
+
+- The main usage is to create a ClusterService to which SafeDepositMessage instances are submitted as service tasks.
+- The response to submitting a service task is a ProcessHandle that can be monitored for completion and queried for the ServiceResults
+	- the ServiceResults instance holds the service task and the generated contents from the service task run on each cluster node.
+
+=============== old ===============
+ClusterService (servlet2.BasePacketServlet)
+
+ClusterServiceConnector (servlet2.ClusterServletConnector)
+  --> ServiceConnector (servlet2.ServletConnector)
+         <>-- CachedThreadPool
+               - executes ?Governable? instances
+
+ServiceTask (servlet2.ServletPacket<R>)
+  --> SafeDepositMessage
+
+ProcessHandle (= servlet2.ServletPacketProcessor<R>)
+ProcessCache (= servlet2.ProcessorCache)
+
+TaskResult (?= ScoredPacketResult + PropertiesPacketResult? -vs- ?=Publishable?)
+===================================
+
+SURFACE:
+
+- ClusterService
+  - submits tasks for ProcessHandle instances
+- ProcessHandle instances
+  - are monitored for status and completion
+  - provide the task results (not combined) from cluster nodes
+  - must be released/closed/shutdown when finished?
+
+LOW-DOWN:
+
+- ClusterService
+  - has a ClusterServiceConnector
+- ClusterServiceConnector
+  - has cluster Console instances with knowledge of nodes to contact
+  - has a ClusterProcessController
+  - gets a process handle for a task by
+    - building a ClusterProcessHandle to which it supplies a (new) ClusterProcessController
+    - ServiceConnector.getProcessHandle
+			- checks its cache for the running process or
+      - creates and starts the process(handle) in its thread pool
+
+    - The ProcessController processess the task (SafeDepositMessage) by
+			- using SafeDepositAgents (one per console which is one per cluster)
+  		  - to submit the task (SafeDepositMessage) to the cluster nodes
+				- and collect responses (SafeDepositBox.Withdrawals) from the cluster nodes (one per node)
+				- using a TimeLimitedThreadPool
+
+- We can execute more than one task through a single service
+	- each ClusterServiceConnector creates a new ClusterProcessController for each task
+		- This re-uses the cluster consoles, but creates new agents and response collectors
+	- Each processHandle needs to be properly closed to release the resources
+
+	- If we create a new ClusterService for each client/task, then
+		- ClusterProcessControllers (and their) SafeDepositAgents are re-used by updating their message
+    - this may be used when a single user submits only one task at a time and can reuse the service,
+			- then each user can have his/her own service.
+
+	- Future consideration(s):
+		- New/alternate tasks could be executed using the same underlying resources through a ProcessHandle
+			- This would mean aborting (and handling interactions to abort on the backend) active processes.
+			- If we decide to do this, add appropriate interface methods and implementations to ProcessHandle.
+		- Could also consider controlling multiple active tasks through a ProcessHandle
+			- but this seems to make things unnecessarily complicated
+
+- TODO: Think about processes that can't be distributed and use a single node (in a multinode cluster) -vs-
+	- those that can be distributed and use all nodes -vs-
+	- those that use some group(s) of nodes
+  - maybe each case calls for a different cluster service and we don't need to muck at the low-level for reuse?
+
+===================================
+
+                         ClusterService        ClusterServiceConnector
+                                |                         
+       --- init(properties) --->|                         
+                                |--- init(properties) --->|
+                                |< - - - - - - - - - - - -|
+                                |                         |
+    --- submit(serviceTask) --->|                         |
+                                |--- getProcessHandle --->|
+                                |                         |
+                                |     ph                  |
+            ph:ProcessHandle    |< - - - - - - - - - - - -|
+       < - - - - - - - - - - - -|                         |
+                                |                         |
+
+
+
+                  sc:ServiceConnector      pc:ProcessCache
+                  -------------------      ---------------
+                           |                      |
+    -- getProcessHandle -->|                      |
+                           |------ get(key) ----->|
+                           | ph:ProcessHandle     |
+      ph:ProcessHandle     |<- - - - - - - - - - -|
+    <- - - - - - - - - - - |                      :
+       (if non-null)       |                      
+                           |                csc:ClusterServiceConnector
+                           |                ---------------------------
+                           |--- getProcessController() -->|
+                           | cpc:ClusterProcessController |    ph:ProcessHandle
+                           |<- - - - - - - - - - - - - - -|    ----------------
+                           |                              |            |
+                           |-- new(cpc,serviceTask,timeOut,verbose) -->|
+                           | ph:ProcessHandle                          |
+                           |<- - - - - - - - - - - - - - - - - - - - - |
+                           |                                           |
+                           |              threadPool                   |
+                           |              ----------                   |
+                           |-- execute(ph) --\|-------- run() -------->|
+                           |
+                           |                      .(pc:ProcessCache)
+                           |                      :
+                           |---- put(key,ph) ---->|
+                           |                      |
+                           |---- remove(key) ---->|
+                           |  (if ph has result)  |
+      ph:ProcessHandle     |
+    <- - - - - - - - - - - |
+
+
+            ProcessHandle                    csc:ClusterServiceConnector
+            -------------                    ---------------------------
+    --- run() --->|                                       |   consolePool:TimeLimitedThreadPool
+                  |-- doProcessing(serviceTask,timeOut) ->|   ---------------------------------
+                  |                                       |---- execute() --->|  sda[i]:SafeDepositAgent
+                  |                                       |                   |  -----------------------
+                  |                                       |                   |-- call() -->|   cluster
+                  |                                       |                   |             |   -------
+                  |                                       |                   |             |-...->|
+                  |                                       |                   | result:tr   |<- - -|
+                  |                                       | results           |<- - - - - - |
+                  |  results:List<TransactionResult>      |<- - - - - - - - - |
+                  |<- - - - - - - - - - - - - - - - - - - |
+                  |                                       |
+
+
+        ClusterService
+				  + submit(st:ServiceTask):ProcessHandle
+				  + submit(st:ServiceTask, requestTimeOut:long, verbose:boolean):ProcessHandle
+
+            1 1
+          <>--- ClusterServiceConnector
+
+
+        ClusterServiceConnector
+          ---> ServiceConnector
+
+            1 1
+          <>--- ClusterServiceConnector.ConsoleInfo
+
+            1 1
+          <>--- ProcessController
+
+					#getProcessController():ProcessController
+
+
+        ServiceConnector
+
+            1 1
+          <>--- cachedThreadPool:ExecutorService
+
+            1 1
+          <>--- ProcessCache
+
+          + getProcessHandle(st:ServiceTask,
+														 requestTimeOut:long,
+														 verbose:boolean):ProcessHandle
+
+					#getProcessController():ProcessController
+
+
+        ClusterServiceConnector.ConsoleInfo
+
+            1 1
+          <>--- Console
+
+            1 *
+          <>--- nodesToContact:String
+
+
+        ProcessHandle
+          - - -> Runnable
+
+          +getError():Throwable
+					+finished():boolean
+          +kill():void
+          +hasResults():boolean
+          +getResults():ServiceResults
+          +getProcessingTime():long
+          +getCompletionRatio():long[]
+          +close():void
+				  +runUntilDone(checkInterval:long, die:AtomicBoolean):boolean
+
+
+        ClusterProcessHandle
+
+          #getProcessorController():ProcessorController
+
+
+        ServiceResults
+
+            1 1
+				  <>--- serviceTask:SafeDepositMessage
+
+            1 *
+				  <>--- serviceTaskResult:SafeDepositAgent.TransactionResult
+
+          +getServiceTask():SafeDepositMessage
+          +clear():void
+          +add(result:SafeDepositAgent.TransactionResult):void
+          +getTxnResults():List<SafeDepositAgent.TransactionResult>
+          +getNumResults():int
+          +getAllResults():List<Publishable>
+          +getAllResults(merger:ResultsMerger):Publishable
+
+
+        ProcessController
+
+				  +doProcessing(serviceTask:SafeDepositMessage, timeOut:long):SafeDepositAgent.TransactionResult
+          +getNumResponses():int
+					+getNumResponders():int
+					+close():void
+
+
+        ClusterProcessController
+
+            1 +
+				  <>--- consoleInfo:ClusterServiceConnector.ConsoleInfo
+
+            1 +
+				  <>--- sda:SafeDepositAgent
+
+            1 +
+				  <>--- consolePool:TimeLimitedThreadPool<SafeDepositAgent.TransactionResult>
+
+
+
+        SafeDepositAgent.TransactionResult
+
+          +message:SafeDepositMessage
+					+withdrawals:List<SafeDepositBox.Withdrawal>
+					+queryTimes:StatsAccumulator
+					+responseCount:int
+					+receipts:Map<String, SafeDepositReceipt>
+					+missingResponses:List<String>
+
+					+hasWithdrawals():boolean

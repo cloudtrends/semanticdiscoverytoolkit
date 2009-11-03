@@ -1,0 +1,293 @@
+WordNet package notes
+
+The approach to using WordNet here is to build classes around the files rather than using the tools provided. See wnintro(5WN) for overviews to the file formats.
+
+
+The 'dict' path will default to: the "SDWN" environment variable's value, or (if empty), $CLUSTER_HOME/resources/data/WordNet
+On a development box, set it in ~/.bashrc to "$SANDBOX/sdnew/projects/core/resources/data/WordNet"
+
+--------------------
+
+High Level Usage:
+
+- Use a WordSenseContainer for a word for
+  - getting all word senses
+  - determining parts of speech
+  - determining whether a word has a particular part of speech
+  - getting WordSenseWrapper instances
+
+- Use a WordSenseWrapper for
+  - traversing a word sense's relationships
+  - setting/getting properties for a word sense
+
+  - To obtain WordSenseWrapper instances for an input string (word)
+      (a) Precompute and access WordSenseWrappers from a WordSenseContainer.
+   or (b) Iterate over WordSenseWrapper instances provided by a WordSenseIterator.
+   or (c) Construct from a word sense served by the SenseIndex.
+   or (d) Traversing to other WordSenseWrapper instances through [A] getNext() or [B] expand()
+
+  - [A] Use WordSenseWrapper.getNext(filterStrategy:PointerFilter)
+    - to get related, wrapped WordSense instances meeting the filter's criteria
+
+  - [B] Use WordSenseWrapper.expand(operator:WordSenseOperator, filterStrategy:PointerFilter)
+    - to recursively visit related, wrapped WordSense instances meeting the filter's criteria
+    - and applying the operator to each.
+
+- Use a SenseIndex to get all WordSense instances for a word.
+
+- Use WordNetFile to look up a word by part of speech to get its WordNetFile.Entry instances.
+
+--------------------
+
+Usage Examples/Utilities:
+
+Word2Dot
+     -- uses WordSenseIterator
+     -- creates a single graph for all WordSenses of a word
+     -- requires a maximum depth to be specified
+
+GraphGenerator
+     -- uses WordSenseContainer
+     -- creates a graph for each WordSense of a word
+     -- default maxDepth for each graph is unlimited (currently unconfigurable)
+
+CommonSenseFinder
+     -- uses WordSenseContainer
+     -- TODO: implement this!
+
+--------------------
+
+High Level Classes:
+
+WordSenseContainer
+     -- Utility to manage word senses for an input word.
+     -- Uses a WordSenseIterator to collect all WordSenseWrapper instances.
+     -- Catalogs word sense wrappers by part of speech.
+  +getInputWord():String
+  +getNumWordSenses():int
+  +getNumWordSenses(partOfSpeech:POS):int
+  +getWrappedWordSenses():List<WordSenseWrapper>  // get all wrapped word senses for all parts of speech
+  +getWrappedWordSenses(partOfSpeech:POS):List<WordSenseWrapper>  // just those for the part of speech
+  +hasPartOfSpeech(partOfSpeech:POS):boolean
+
+WordSenseIterator
+     -- Iterator over WordSenseWrapper instances for an input string (word).
+     -- Uses SenseIndex to get WordSense instances from the input string.
+     -- Constructs a WordSenseWrapper for each WordSense while iterating.
+
+WordSenseWrapper
+     -- Wrapper around a word sense for relationship traversal and context preservation.
+  <>-- -expanded:Set<WordId>   // cache of WordSense expansions
+  +getWordId():WordId
+  +getWordSense():WordSense
+  +getSynonyms():String[]
+  +getLexName():String
+  +getWord():String
+  +setProperty(attribute:String, value:String)
+  +getProperty(attribute:String)
+  +getRelationFromSource():PointerSymbol
+  +resetExpanded():void   // clear expanded cache
+  +getNext(filterStrategy:PointerFilter):List<WordSenseWrapper>
+  +expand(operator:WordSenseOperator, filterStrategy:PointerFilter):UnwindOperatorException
+  +getSource():WordSenseWrapper
+  +getDepth():int
+  +getRelationChain(relation:PointerSymbol):List<WordSenseWrapper>
+
+WordSense
+     -- Structure to hold a WordSense
+     -- Created by SenseIndex
+  +getPartOfSpeech():POS
+  +getSynsetOffset():long
+  +getWordForm():WordForm
+  +getIndexEntry():SenseIndex.Entry
+  +getFileEntry():WordNetFile.Entry
+  +getInstance(partOfSpeech:POS, synsetOffset:long):WordSense
+
+--------------------
+
+Core Classes:
+
+<<enum>>
+  POS
+     -- Enumeration of WordNet parts of speech.
+     -- Each POS provides access to the WordNet Index, Data, and Exception files.
+     -- Statically maps names and abbreviations to POS instances.
+
+<<enum>>
+LexName
+     -- Enumeration of lexicographer file names, which denote semantic classes.
+
+   <<enum>>
+PointerSymbol
+     -- Enumeration of WordNet pointer symbols, which identify semantic relations.
+
+
+ <<impl>>
+WordNetFile
+     -- Wrapper around a WordNet data file for a part of speech.
+     -- Uses a RandomAccessFile instance to hop around the data file.
+  +getEntries(word:String):List<WordNetFile.Entry>
+  +getEntry(synsetOffset):WordNetFile.Entry
+  +close():void
+
+WordNetFile.Entry
+     -- container for a line of information from a WordNet data file.
+  <>-- +synsetOffset:long               // use as check
+  <>-- +lexFilenum:int                  // lexicographer file number
+  <>-- +partOfSpeech:POS                // synset type
+  <>-- +words:Word[];                   // words in synset
+  <>-- +pointers:WordNetFile.Pointer[]; // pointers to other synsets
+  <>-- +frames:WordNetFile.Frames[];    // frames (non-null for verbs only)
+  <>-- +gloss:String                    // gloss string
+  +getLexName():LexName                 // lexicographer file name for this entry
+
+WordNetFile.Word
+     -- container for a Word in an Entry
+  <>-- +word:String
+  <>-- +lexId:int
+  +getLexName():LexName
+
+WordNetFile.Pointer
+     -- container for a Pointer in an Entry
+  <>-- +pointerSymbol:PointerSymbol  // semantic relation type
+  <>-- +synsetOffset:long            // offset in file
+  <>-- +partOfSpeech:POS             // part of speech
+  <>-- +sourceOffset:int             // source offset
+  <>-- +targetOffset:int             // target offset
+
+WordNetFile.Frame
+     -- container for verb frame information
+  <>-- frameNum:int
+  <>-- wordNum:int
+
+
+WordNetIndex
+     -- Container for a WordNet index file for a part of speech.
+     -- Loads the index into a DbMap.
+     -- Used by WordNetFile to build WordNetFile.Entry instances.
+  <>-- -word2entry:Map<String, WordNetIndex.Entry>
+  +lookup(normalizedWord:String):WordNetIndex.Entry
+
+WordNetIndex.Entry
+     -- Container for a line of information form a WordNet index file.
+  <>-- +lemma:String
+  <>-- +partOfSpeech:POS
+  <>-- +pointerSymbols:PointerSymbol[]
+  <>-- +senseOffsets:long[]
+  <>-- +tagsenseCount:int
+
+
+WordForm
+     -- container for a potential Form of a word.
+     -- iterator for subsequent potential word forms.
+     -- Entry point for WordNetFile and SenseIndex for building Entry and WordSense instances.
+     -- Computes all potential valid base word forms and parts of speech without using resources.
+     -- Consumers are to validate forms against resources.
+
+  <<enum>>
+WordForm.Form
+     -- Enumeration of form types (BASE, REGULAR, IRREGULAR).
+
+SenseIndex
+     -- Wrapper around a WordNet sense index file.
+     -- Loads the index into a DbMap.
+  <>-- -word2entries:Map<String, List<SenseIndex.Entry>>
+  +getWordSenses(word:String):List<WordSense>
+  +getWordSenses(wordForm:WordForm):List<WordSense>
+
+SenseIndex.Entry
+     -- Container for a line of information form the WordNet sense index file.
+  <>-- +lemma:String
+  <>-- +partOfSpeech:POS
+  <>-- +lexFileNum:int
+  <>-- +lexId:int
+  <>-- +headWord:String
+  <>-- +headId:int
+  <>-- +synsetOffset:long
+  <>-- +senseNumber:int
+  <>-- +tagCount:int
+
+WordId
+     -- Structure to uniquely identify a word.
+  +partOfSpeech:POS   // word's part of speech
+  +synsetOffset:long  // offset of word's synset in its part of speech file
+  +wordNum:int        // number of word in synset (1-based; 0 means all)
+
+
+IrregularInflections
+     -- Class to manage WordNet irregular inflection file data.
+     -- Loads the exception files into memory.
+        -- NOTE: there are only ~6,000 total entries, so don't replace w/backing bdb.
+     -- Used to build alternate WordForm instances.
+  <>-- -inflect2bases:Map<String, List<String>>
+  <>-- -base2pos:Map<String, Set<POS>>
+  +getBases(inflectedString:String):List<TaggedWord>
+
+TaggedWord
+     -- Structure to hold a word with its possible parts of speech.
+     -- Served through IrregularInflections.getBases.
+  +word:String
+  +partsOfSpeech:POS[]
+
+
+UnwindOperatorException
+     -- An exception to use as a mechanism to halt recursive word sense expansion.
+     -- Triggered through WordSenseOperator.
+  +getChildWrapper():WordSenseWrapper
+  +getParentWrapper():WordSenseWrapper
+
+
+ <<interface>>
+WordSenseOperator
+     -- Interface for operating on a word sense.
+  +operate(childWrapper:WordSenseWrapper, parentWrapper:WordSenseWrapper):void throws UnwindOperatorException
+  +handleUnwind(e:UnwindOperatorException):void
+
+      <<impl>>
+CollectSensesOperator
+     -- A word sense operator to collect word senses.
+
+     <<impl>>
+CommonSenseOperator
+     -- A word sense operator to find a common (or shared) sense along the relation chain of one sense while expanding another.
+
+    <<impl>>
+ShowSenseOperator
+     -- A word sense operator for showing related senses.
+
+   <<impl>>
+Word2DotOperator
+     -- A word sense operator for generating a dot-formatted graph from a word sense and its expansions.
+
+
+ <<interface>>
+ PointerFilter
+     -- A strategy for filtering pointers from expansion by a word sense wrapper.
+  +accept(pointer:WordNetFile.Pointer, source:WordSenseWrapper):boolean
+  +accept(expanded:WordSenseWrapper, source:WordSenseWrapper):boolean
+
+    <<impl>>
+BasePointerFilter - - > PointerFilter
+     -- Base implementation of the pointer filter interface.
+
+    <<impl>>
+ConsistentPointerFilter --> BasePointerFilter
+     -- A pointer filter that only accepts expansions to senses that are consistent with their sources. That is, only expand to the same part of speech and lexName. Extenders can further constrain or specify which types of pointers to expand.
+
+     <<impl>>
+SingleRelationFilter --> ConsistentPointerFilter
+     -- A pointer filter that only expands along a single relation.
+
+    <<impl>>
+UnlimitedPointerFilter --> BasePointerFilter
+     -- A pointer filter with no limits (other than not expanding directly back to a source).
+
+
+WordNetUtils
+     -- Static utility methods.
+     -- Normalization, etc.
+
+--------------------
+
+  -rw-r--r--  1 sbk sbk 3314 2007-10-21 17:09 NounBag.java
+  -rw-r--r--  1 sbk sbk 1524 2007-09-27 07:59 NounTagger.java

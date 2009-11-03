@@ -1,0 +1,139 @@
+------------------------------------------------------------------------------
+
+The Record: A relational model of information.
+
+------------------------------------------------------------------------------
+
+Definition of a record:
+
+- A record is a collection of attribute/value pairs (called fields)
+- A field value can be another record or a terminal value
+- Internally represented as xml where
+  - (simple) attribtutes are (literal) tag( name)s
+  - terminal values are strings (in text nodes)
+  - (complex) attributes are tag paths (according to a view)
+
+- Record fields
+  - paths to text are (complex) attributes
+  - while the terminal text at the end of the path is the value
+
+- Repeating paths delineate records for dividing (or combining)
+
+
+Pseudo/Flattened-Composite Pattern:
+
+                +--------+
+                |        |
+              Record <>--+
+                ^
+                |
+              Value
+  
+
+Record.View -- Strategy for determining (simple and complex) attribute names.
+               Default attribute name is the simple attribute (tag name).
+               Alternatives include using values from xml tag attributes.
+
+Record.Field -- Container for (simple or complex)attribute/value pairs.
+
+==============================================================================
+XML Model uses Tree<XmlLite.Data> instances.
+
+Building record model "on top of" the XML Model (not as an alternate or copy).
+Using (transient) properties in XmlLite.Data to cache record information:
+
+- _noRecord:Boolean -- identifies nodes that should not be considered as records.
+                       usually, nodes that lead to only empty terminal text.
+- _record:Record -- backpointer from the tree's node to its record instance.
+- _pathId:Integer -- unique identifer for each leaf participating in records in order.
+- _pathNum:Integer -- unique identifier for each non-empty leaf in order.
+- _sibid:Integer -- node's child number.
+- _groupId:Integer -- unique identifier linking records having the same key.
+- _key:String -- unnumbered path from tree's root to the top of a record (inclusive) according to a view.
+                 used to correlate like records (harmonization).
+
+- todo: persist/load properties? inside xml? outside xml?
+
+==============================================================================
+
+Given arbitrary html, the text can be correlated and grouped into records.
+
+Choices to be made include:
+- (A) Granularity -- the nodes or groups of nodes that encapsulate a "record" of information.
+                     nodes closer to the root are larger (>=) and hold more information (fields).
+                     nodes closer to the leaves are smaller (<=) and hold less information.
+- (B) Meaningful Content -- for each application, choosing which records hold the meaningful content.
+
+- An application using records will create a DivideStrategy to make both of these choices.
+- Separating the tasks of (A) and (B) can lead to more maintainable, modular code.
+  - Often (B) will take the form of a FilterStrategy built from a DivideStrategy for (A).
+
+- Notes
+  - records can be consecutive sequences of text
+  - while different records can hold the same paths (by creating new nodes),
+    this should be avoided because the tree operations will be broken.
+  - different records can hold paths that interleave with other records by
+    creating new nodes that essentially re-organize/restructure the original
+    tree.
+
+==============================================================================
+
+General divide strategy ideas for html:
+
+- Find repeating fields (attribute value pairs), optionally including the values (text).
+  - group most frequent, equally frequent groups of paths together into a record
+  - distribute occurrences of path fields across records
+
+- Find repeating hrefs
+  - group same hrefs together into a record
+
+- Find nodes with children having repeating names (according to a view).
+  - in some cases, each child is a record (like for td's).
+  - in other cases, the parent is a record (like for li's).
+
+- FillInTheBlanks (compound) divide strategy
+  - pick up consecutive blocks (or nodes) "missed" by another divide strategy.
+
+- HTML-specific
+  - Hn tags
+    - become "own record"
+  - li tags
+    - become "own record" if they cover multiple text nodes
+    - parent becomes record if all (or most?) are single text nodes (consecutive paths for each li)
+  - formatting tags are ignored for finding differences from top to bottom
+    - a, b, u, i
+
+==============================================================================
+
+TODO:
+
+- clean up View abstraction
+  - add setting/getting properties for the view name
+  - each record is built under a view?
+  - but a different view can be applied to any record?
+    - tricky because of groupIds and keys
+    - alternative is to have a copy of the data in order to apply a different view
+    - this could work if properties can be 1 property to many values
+    - as multiple views are unlikely in practice, avoiding complexity and forcing duplication seems best.
+      - multiple views may be necessary for
+        - determining the "best" view
+        - simultaneously applying different models of meaning to the same records
+  - does each record hold (a pointer to) the view?
+    - could store (and retrieve) view(s) (or default view) as a property in the root of the xml tree.
+  - or is the view passed in as an argument to every record method?
+    - danger: different view instance output could clash with cached properties
+    - alternative: don't (auto)cache view-determined properties (like key and groupId)
+      - or parameterize cache usage through view methods
+
+
+- enable exporting a model of record selection
+  - as list of xpaths
+  - encapsulated by specialized divide/filter strategy
+
+- be able to assign alternate (simple) names to (simple and complex) attributes
+  - use View and properties
+
+- CSV export of records
+
+- Import from CSV
+  - maybe just a csv2xml converter?
