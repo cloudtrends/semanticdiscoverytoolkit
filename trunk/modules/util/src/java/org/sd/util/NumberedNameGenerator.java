@@ -86,7 +86,7 @@ public class NumberedNameGenerator implements NameGenerator {
       result =
         new StringBuilder().
         append(prefix).
-        append(MathUtil.longString(nextNumber, numDigits, '0')).
+        append(MathUtil.longString(nextNumber, 10, numDigits, '0')).
         append(postfix);
     }
 

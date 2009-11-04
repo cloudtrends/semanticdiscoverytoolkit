@@ -31,8 +31,11 @@ import java.util.List;
  */
 public abstract class AbstractWordGramSplitter implements WordGramSplitter {
   
+  public static final char DEFAULT_CONCAT_DELIM = ' ';
+
   private Normalizer normalizer;
   private WordAcceptor wordAcceptor;
+  private char concatDelim = DEFAULT_CONCAT_DELIM;
 
   /**
    * Default constructor creates an instance with null normalizer and
@@ -64,6 +67,17 @@ public abstract class AbstractWordGramSplitter implements WordGramSplitter {
    */
   protected void setWordAcceptor(WordAcceptor wordAcceptor) {
     this.wordAcceptor = wordAcceptor;
+  }
+
+  /**
+   * Set the concatDelim.
+   * <p>
+   * Note that if never set, the concatDelim defaults to a single space.
+   * To set the concatDelim as "nothing", use (char)0. This would be useful
+   * for asian character strings, for example.
+   */
+  public void setConcatDelim(char concatDelim) {
+    this.concatDelim = concatDelim;
   }
 
   /**
@@ -227,6 +241,6 @@ public abstract class AbstractWordGramSplitter implements WordGramSplitter {
    * This implementation adds a single space char.
    */
   protected void concatDelim(StringBuilder builder) {
-    builder.append(' ');
+    if (concatDelim > 0) builder.append(concatDelim);
   }
 }

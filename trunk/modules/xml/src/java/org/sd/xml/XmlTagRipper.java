@@ -288,11 +288,13 @@ public class XmlTagRipper implements Iterator<XmlLite.Tag> {
   private final Tree<XmlLite.Data> readNode(XmlLite.Tag tag, XmlLite xmlLite) {
     Tree<XmlLite.Data> result = new Tree<XmlLite.Data>(tag);
 
-    try {
-      result = xmlLite.getNextChild(xmlInputStream, result);
-    }
-    catch (IOException e) {
-      result = null;
+    if (!tag.isSelfTerminating()) {
+      try {
+        xmlLite.readFullNode(xmlInputStream, result);
+      }
+      catch (IOException e) {
+        result = null;
+      }
     }
 
 /*

@@ -86,11 +86,9 @@ public class TestXmlTagRipper extends TestCase {
     final String filename = FileUtil.getFilename(this.getClass(), TEST3_XML);
     final XmlTagRipper ripper = new XmlTagRipper(filename, true, null);
 
-    final String expectedC = "<c><d><e>4</e></d></c>";
-
     boolean foundScriptAsTag = false;
 
-    // iterate up to the "C" node.
+    // iterate up to the "script" node.
     while (ripper.hasNext()) {
       final XmlLite.Tag tag = ripper.next();
       if ("script".equals(tag.name)) {
@@ -100,6 +98,36 @@ public class TestXmlTagRipper extends TestCase {
     }
 
     assertTrue(foundScriptAsTag);
+  }
+
+  public void testRipMultipleChildren() throws IOException {
+    final String filename = FileUtil.getFilename(this.getClass(), TEST3_XML);
+    final XmlTagRipper ripper = new XmlTagRipper(filename, true, null);
+
+    // iterate up to the "ul" node.
+    while (ripper.hasNext()) {
+      final XmlLite.Tag tag = ripper.next();
+      if ("ul".equals(tag.name)) {
+        final Tree<XmlLite.Data> ulNode = ripper.ripNode(XmlFactory.XML_LITE_IGNORE_COMMENTS);
+        assertEquals(3, ulNode.numChildren());
+        break;
+      }
+    }
+  }
+
+  public void testRipNoChildren() throws IOException {
+    final String filename = FileUtil.getFilename(this.getClass(), TEST3_XML);
+    final XmlTagRipper ripper = new XmlTagRipper(filename, true, null);
+
+    // iterate up to the "head" node.
+    while (ripper.hasNext()) {
+      final XmlLite.Tag tag = ripper.next();
+      if ("head".equals(tag.name)) {
+        final Tree<XmlLite.Data> ulNode = ripper.ripNode(XmlFactory.XML_LITE_IGNORE_COMMENTS);
+        assertEquals(0, ulNode.numChildren());
+        break;
+      }
+    }
   }
 
   public static Test suite() {

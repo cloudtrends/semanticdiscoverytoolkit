@@ -115,6 +115,22 @@ public class ExecUtil {
     return result;
   }
 
+  public static int executeProcess(String pipedInput, String command, BufferedWriter redirectedOutput) {
+    int result = 0;
+    try {
+      final Process process = Runtime.getRuntime().exec(command);
+      pipeIntoProcess(pipedInput, process);
+      result = redirectProcessOutput(process, redirectedOutput);
+    }
+    catch (IOException e) {
+      //eating this is ok as null result signals a problem.
+      System.err.println(new Date() + ": ExecUtil.executeProcess died! -- eating exception:");
+      e.printStackTrace(System.err);
+      result = -1;
+    }
+    return result;
+  }
+
   /**
    * Executes a series of commands (serially).
    * 

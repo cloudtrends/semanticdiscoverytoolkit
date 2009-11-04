@@ -22,9 +22,9 @@
 		</exec>
   </target>
 
-  <target name="build" depends="dobuild,base-jar,toolkit-jar,javadoc"/>
+  <target name="build" depends="dobuild,base-jar,toolkit-jar"/>
 
-  <target name="p4chkn" depends="dop4chkn,base-jar,toolkit-jar,javadoc"/>
+  <target name="p4chkn" depends="dop4chkn,base-jar,toolkit-jar"/>
 
   <target name="all" depends="p4chkn"/>
 
@@ -82,6 +82,10 @@
 
   <target name="javadoc">
     <ant antfile="modules/build.xml" target="javadoc" inheritall="false"/>
+    <mkdir dir="doc/javadoc"/>
+    <copy todir="doc/javadoc">
+      <fileset dir="core/localdist/javadoc"/>
+    </copy>
     <zip destfile="core/localdist/sd-toolkit.javadocs.zip" basedir="core/localdist/javadoc"/>
   </target>
 
