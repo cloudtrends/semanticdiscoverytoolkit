@@ -202,17 +202,25 @@ public class MathUtil {
    * length.
    */
   public static final String longString(long i, int places) {
-    return longString(i, places, ' ');
+    return longString(i, 10, places, ' ');
+  }
+
+  /**
+   * Create a right-justified (0 padded) string with the given
+   * length in the given radix.
+   */
+  public static final String longString(long i, int radix, int places) {
+    return longString(i, radix, places, '0');
   }
 
   /**
    * Create a right-justified (c-padded) string with the given
-   * length.
+   * length in the given radix.
    */
-  public static final String longString(long i, int places, char c) {
+  public static final String longString(long i, int radix, int places, char c) {
     final StringBuilder result = new StringBuilder();
 
-    result.append(Long.toString(i));
+    result.append(Long.toString(i, radix));
     while (result.length() < places) result.insert(0, c);
 
     return result.toString();

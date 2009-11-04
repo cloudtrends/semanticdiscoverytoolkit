@@ -140,7 +140,7 @@ public class XmlLite {
       if (keepGoing[0]) {
         curNode = doReadText(inputStream, curNode, data, keepGoing);
         if (keepGoing[0]) {
-          curNode = readTag(inputStream, curNode, data, keepGoing, true);
+          curNode = readTag(inputStream, curNode, data, keepGoing, true, null);
 
           // kick out when read first node
           if (root != curNode) {
@@ -186,6 +186,18 @@ public class XmlLite {
   public Tree<Data> getNextChild(XmlInputStream inputStream, Tree<Data> altTopNode) throws IOException {
     final Tree<Data> result = readText(inputStream, new StringBuilder(), true, null, true, altTopNode);
     return result;
+  }
+
+  /**
+   * Read the full xml node after having read its open tag.
+   */
+  public void readFullNode(XmlInputStream inputStream, Tree<Data> tagNode) throws IOException {
+    if (tagNode != null) {
+      final XmlLite.Tag tag = tagNode.getData().asTag();
+      if (!tag.isSelfTerminating()) {
+        readText(inputStream, new StringBuilder(), false, null, false, tagNode);
+      }
+    }
   }
 
   public static void writeXml(Tree<Data> tree, BufferedWriter writer) throws IOException {
@@ -328,7 +340,7 @@ public class XmlLite {
 
   private final Tree<Data> readText(XmlInputStream inputStream, StringBuilder data, boolean incremental, AtomicBoolean die, boolean forceIgnoreComments, Tree<XmlLite.Data> altTopNode) throws IOException {
     Tree<Data> topNode = altTopNode == null ? new Tree<Data>(new Tag("root bogus=\"true\"")) : altTopNode;
-    doReading(inputStream, topNode, data, incremental, die, forceIgnoreComments);
+    doReading(inputStream, topNode, data, incremental, die, forceIgnoreComments, altTopNode);
 
     if (altTopNode == null) {
       final List<Tree<Data>> children = topNode.getChildren();
@@ -344,14 +356,14 @@ public class XmlLite {
     return topNode;
   }
 
-  private final void doReading(XmlInputStream inputStream, Tree<Data> curNode, StringBuilder data, boolean incremental, AtomicBoolean die, boolean forceIgnoreComments) throws IOException {
+  private final void doReading(XmlInputStream inputStream, Tree<Data> curNode, StringBuilder data, boolean incremental, AtomicBoolean die, boolean forceIgnoreComments, Tree<Data> stopNode) throws IOException {
     final Tree<Data> origNode = curNode;
 
     boolean[] keepGoing = new boolean[]{true};
     while (keepGoing[0] && (die == null || !die.get())) {
       curNode = doReadText(inputStream, curNode, data, keepGoing);
       if (keepGoing[0]) {
-        curNode = readTag(inputStream, curNode, data, keepGoing, forceIgnoreComments);
+        curNode = readTag(inputStream, curNode, data, keepGoing, forceIgnoreComments, stopNode);
 
         // kick out now when incremental
         if (incremental && curNode == origNode) {
@@ -381,7 +393,7 @@ public class XmlLite {
     return curNode;
   }
 
-  private final Tree<Data> readTag(XmlInputStream inputStream, Tree<Data> curNode, StringBuilder data, boolean[] keepGoing, boolean forceIgnoreComments) throws IOException {
+  private final Tree<Data> readTag(XmlInputStream inputStream, Tree<Data> curNode, StringBuilder data, boolean[] keepGoing, boolean forceIgnoreComments, Tree<Data> stopNode) throws IOException {
     final XmlTagParser.TagResult tagResult = xmlTagParser.readTag(inputStream, data, forceIgnoreComments);
 
     if (tagResult != null) {
@@ -411,6 +423,11 @@ public class XmlLite {
         }
         else { // (tagNode != null)
           curNode = closeTag(tagNode);
+
+          if (stopNode != null && tagNode == stopNode) {
+            keepGoing[0] = false;
+            return curNode;
+          }
         }
       }
 
