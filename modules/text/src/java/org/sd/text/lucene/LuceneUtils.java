@@ -359,7 +359,8 @@ public class LuceneUtils {
 
     final Class fieldIdClass = fieldIdSplit.getFieldIdClass();
 
-    final String[] terms = queryString.split("[^\\w\\d:+^-]+");
+    //final String[] terms = queryString.split("[^\\w\\d:+^-]+");
+    final String[] terms = splitTerms(queryString);
 
     for (String term : terms) {
       final String[] pieces = term.split(":");
@@ -388,6 +389,30 @@ public class LuceneUtils {
     }
 
     return result;
+  }
+
+  private static final String[] splitTerms(String queryString) {
+    // essentially "queryString.split("[^\\w\\d:+^-]+");", which doesn't work
+    // when there are asian chars.
+    final List<String> result = new ArrayList<String>();
+    final StringBuilder builder = new StringBuilder();
+    final int len = queryString.length();
+    for (int i = 0; i < len; ++i) {
+      final int cp = queryString.codePointAt(i);
+      if (!Character.isLetterOrDigit(cp) && cp != ':' && cp != '+' && cp != '^' && cp != '-') {
+        if (builder.length() > 0) {
+          result.add(builder.toString());
+          builder.setLength(0);
+        }
+      }
+      else {
+        builder.appendCodePoint(cp);
+      }
+    }
+    if (builder.length() > 0) {
+      result.add(builder.toString());
+    }
+    return result.toArray(new String[result.size()]);
   }
 
   public static final Query toQuery(Class fieldIdClass, String fieldNameString, String[] phraseTerms, Collection<String> termCollector) {

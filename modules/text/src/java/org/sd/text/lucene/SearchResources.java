@@ -79,7 +79,8 @@ public class SearchResources {
     //final int divisor = (int)((mbytes - 100) / 50) + 1;  // 100=1, 150=2, 200=3, ...
 
     this.indexReader = IndexReader.open(directory);
-    indexReader.setTermInfosIndexDivisor(divisor);
+    //2009-11-13 disabling due to lucene-2.9.0 upgrade differences to be resolved later
+    //indexReader.setTermInfosIndexDivisor(divisor);
 
     this.indexSearcher = new IndexSearcher(indexReader);
   }
