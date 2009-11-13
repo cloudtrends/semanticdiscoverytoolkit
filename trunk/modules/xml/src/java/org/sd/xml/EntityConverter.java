@@ -283,6 +283,7 @@ public class EntityConverter {
     new Entity("rlm",     8207, null),
     new Entity("ndash",   8211,   45),   //(int)'-'
     new Entity("mdash",   8212,   45),   //(int)'-'
+    new Entity("apos",      39,   39),   //(int)'\''
     new Entity("lsquo",   8216,   39),   //(int)'\''
     new Entity("rsquo",   8217,   39),   //(int)'\''
     new Entity("sbquo",   8218,   39),   //(int)'\''

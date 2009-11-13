@@ -83,6 +83,8 @@ public class DependenciesTask extends Task {
   private boolean flatlibs;         // (default=true) if true, then loaded libs.txt paths will be flattened
   private String modorder;          // space delimited string of all module names in order from having the least to the most dependencies
   private String antBuildName;      // name of module ant build files (default="build.xml")
+  private File libMapFile;          // path to lib map file for mapping library names to versioned forms.
+  private String libMapSplit;       // delimiter on which to split libMapFile entries (default=':').
 
   // NOTE: deps search path is (1) module's own area, (2) localdist area, (3) common area
   private String localDepsPath;     // (defaults to "deps") path to local module dependencies root containing <moduleName>.dep and <moduleName>.lib (overriding depsRoot if existing)
@@ -263,6 +265,27 @@ public class DependenciesTask extends Task {
   }
 
   /**
+   * Set the lib mapping file containing entries that map a generic library (jar)
+   * name to a versioned jar name using the libMapSplit delimiter, which defaults
+   * to ":".
+   * <p>
+   * For example, an entry like "foo.jar:foo-2.1.3.jar" gives a mapping from
+   * "foo.jar" to "foo-2.1.3.jar".
+   */
+  public void setLibMapFile(File libMapFile) {
+    this.libMapFile = libMapFile;
+  } 
+
+  /**
+   * Set the delimiter on which to split entries in the lib map file.
+   * <p>
+   * If never set, then the default is ":".
+   */
+  public void setLibMapSplit(String libMapSplit) {
+    this.libMapSplit = libMapSplit;
+  }
+
+  /**
    * Execute this task.
    */
   public void execute() throws BuildException {
@@ -331,7 +354,7 @@ public class DependenciesTask extends Task {
                             depsRoot, modulesDirPattern, classesPath, moduleRegex,
                             depsFilePattern, libsFilePattern, libsFilterRegex,
                             moduleJarPattern, testRefId, failOnMissing, flatlibs,
-                            modorder, antBuildName, localDepsPath);
+                            modorder, antBuildName, localDepsPath, libMapFile, libMapSplit);
 
     //
     // create path for cpid (if warranted)
@@ -483,9 +506,12 @@ public class DependenciesTask extends Task {
     private String[] modorder;        // strings of all module names in order from having the least to the most dependencies
     private String antBuildName;      // name of module ant build files (default="build.xml")
     private String localDepsPath;     // (defaults to "deps") path to local module dependencies root containing <moduleName>.dep and <moduleName>.lib (overriding depsRoot if existing)
+    private File libMapFile;          // path to lib map file for mapping library names to versioned forms.
+    private String libMapSplit;       // delimiter on which to split libMapFile entries (default=':').
 
     private Map<String, ModuleDeps> mod2deps;  // map from moduleName to its ModuleDeps instance.
     private Map<String, ModuleLibs> mod2libs;  // map from moduleName to its ModuleLibs instance.
+    private Map<String, String> _libmap;        // map from generic library names to versioned forms.
 
     public DependencyBuilder(Project project, File modulesRoot, File libsRoot,
                              File moduleJarsRoot, File localdist, File depsRoot,
@@ -494,7 +520,8 @@ public class DependenciesTask extends Task {
                              String libsFilePattern, String libsFilterRegex,
                              String moduleJarPattern, String testRefId,
                              boolean failOnMissing, boolean flatlibs, String modorder,
-                             String antBuildName, String localDepsPath) {
+                             String antBuildName, String localDepsPath,
+                             File libMapFile, String libMapSplit) {
       this.project = project;
       this.modulesRoot = modulesRoot;
       this.libsRoot = libsRoot;
@@ -514,9 +541,12 @@ public class DependenciesTask extends Task {
       this.modorder = (modorder == null) ? null : modorder.split("\\s+");
       this.antBuildName = (antBuildName == null) ? "build.xml" : antBuildName;
       this.localDepsPath = localDepsPath == null ? "deps" : localDepsPath;
+      this.libMapFile = libMapFile;
+      this.libMapSplit = libMapSplit == null ? "\\s*:\\s*" : libMapSplit;
 
       this.mod2deps = new HashMap<String, ModuleDeps>();
       this.mod2libs = new HashMap<String, ModuleLibs>();
+      this._libmap = null;
     }
 
     /**
@@ -867,6 +897,7 @@ public class DependenciesTask extends Task {
 
       final ModuleLibs moduleLibs = getLibs(moduleName, isFirst);
       if (moduleLibs.libs != null) {
+        final Map<String, String> libmap = getLibMap();
         for (String lib : moduleLibs.libs) {
           if (!applyLibsFilter || passesLibsFilter(lib)) {
 
@@ -877,6 +908,7 @@ public class DependenciesTask extends Task {
               lib = libpath[libpath.length - 1];
             }
             
+            lib = applyLibMap(libmap, lib);
             final File libFile = new File(libsRoot, lib);
             
             if (libFile.exists()) {
@@ -960,6 +992,38 @@ public class DependenciesTask extends Task {
       }
 
       return result;
+    }
+
+    private final String applyLibMap(Map<String, String> libmap, String lib) {
+      String result = lib;
+
+      final File libFile = new File(lib);
+      final String libFileName = libFile.getName();
+      final String mappedLib = libmap.get(libFileName);
+      if (mappedLib != null) {
+        result = lib.replace(libFileName, mappedLib);
+      }
+
+      return result;
+    }
+
+    private final Map<String, String> getLibMap() throws BuildException {
+      if (_libmap == null && libMapFile != null) {
+        _libmap = new HashMap<String, String>();
+        try {
+          final List<String> libmaplines = loadLines(libMapFile);
+          for (String libmapline : libmaplines) {
+            final String[] pieces = libmapline.split(libMapSplit);
+            if (pieces.length == 2) {
+              _libmap.put(pieces[0], pieces[1]);
+            }
+          }
+        }
+        catch (IOException e) {
+          throw new BuildException(e);
+        }
+      }
+      return _libmap;
     }
 
     /**
