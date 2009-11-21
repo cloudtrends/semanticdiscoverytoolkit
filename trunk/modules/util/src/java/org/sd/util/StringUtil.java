@@ -382,25 +382,93 @@ public class StringUtil {
 
   public static final boolean isAsianCodePoint(int cp) {
 
-    // from "http://en.wikipedia.org/wiki/CJK_Unified_Ideographs", unicode ranges are:
-    // 4E00-9FFF, 3400-4DBF, 20000-2A6DF, 3200-32FF, 2F00-2FDF, 2E80-2EFF, 3000-303F, 31C0-31EF, 2FF0-2FFF, 3300-33FF, F900-FAFF, 2F800-2FA1F, FE30-FE4F
+    // from http://www.unicode.org/Public/UNIDATA/Blocks.txt, asian/ideographic unicode ranges are:
+    // 2E80..2EFF; CJK Radicals Supplement
+    // 2F00..2FDF; Kangxi Radicals
+    // 2FF0..2FFF; Ideographic Description Characters
+    // 3000..303F; CJK Symbols and Punctuation
+    // 3040..309F; Hiragana
+    // 30A0..30FF; Katakana
+    // 3100..312F; Bopomofo
+    // 3130..318F; Hangul Compatibility Jamo
+    // 3190..319F; Kanbun
+    // 31A0..31BF; Bopomofo Extended
+    // 31C0..31EF; CJK Strokes
+    // 31F0..31FF; Katakana Phonetic Extensions
+    // 3200..32FF; Enclosed CJK Letters and Months
+    // 3300..33FF; CJK Compatibility
+    // 3400..4DBF; CJK Unified Ideographs Extension A
+    // 4DC0..4DFF; Yijing Hexagram Symbols
+    // 4E00..9FFF; CJK Unified Ideographs
+    // A000..A48F; Yi Syllables
+    // A490..A4CF; Yi Radicals
+    // A4D0..A4FF; Lisu
+    // F900..FAFF; CJK Compatibility Ideographs
+    // FE30..FE4F; CJK Compatibility Forms
+    // 1F200..1F2FF; Enclosed Ideographic Supplement
+    // 20000..2A6DF; CJK Unified Ideographs Extension B
+    // 2A700..2B73F; CJK Unified Ideographs Extension C
+    // 2F800..2FA1F; CJK Compatibility Ideographs Supplement
     // 
     // or, sorted, the ranges are:
-    // 2E80-2EFF, 2F00-2FDF, 2FF0-2FFF, 3000-303F, 31C0-31EF, 3200-32FF, 3300-33FF, 3400-4DBF, 4E00-9FFF, F900-FAFF, FE30-FE4F, 20000-2A6DF, 2F800-2FA1F
+    // 2E80..A4FF
+    // F900..FAFF
+    // FE30..FE4F
+    // 1F200..1F2FF
+    // 20000-2A6DF
+    // 2A700-2B73F
+    // 2F800..2FA1F
 
     if (cp < 0x2E80 || cp > 0x2FA1F) return false;
-    if (cp <= 0x2FDF) return true;                    // 2E80-2EFF, 2F00-2FDF
+    if (cp <= 0xA4FF) return true;                      // 2E80-A4FF
     if (cp < 0x20000) {
-      if (cp >= 0x2FF0 && cp <= 0x303F) return true;  // 2FF0-2FFF, 3000-303F
-      if (cp >= 0x31C0 && cp <= 0x31EF) return true;  // 31C0-31EF
-      if (cp >= 0x3200 && cp <= 0x4DBF) return true;  // 3200-32FF, 3300-33FF, 3400-4DBF
+      if (cp >= 0xF900 && cp <= 0xFAFF) return true;    // F900-FAFF
+      if (cp >= 0xFE30 && cp <= 0xFE4F) return true;    // FE30-FE4F
+      if (cp >= 0x1F200 && cp <= 0x1F2FF) return true;  // 1F200-1F2FF
+    }
+    else {
+      if (cp < 0x2A6DF) return true;                    // 20000-2A6DF
+      if (cp >= 0x2A700 && cp <= 0x2B73F) return true;  // 2A700-2B73F
+      else if (cp >= 0x2F800) return true;              // 2F800-2FA1F
+    }
+
+    return false;
+  }
+
+  public static final boolean hasChineseChar(String string) {
+    if (string == null) return false;
+    for (StringIterator iter = new StringIterator(string); iter.hasNext(); ) {
+      StringPointer pointer = iter.next();
+      if (isChineseCodePoint(pointer.codePoint)) return true;
+    }    
+    return false;
+  }
+
+  public static final boolean isChineseCodePoint(int cp) {
+
+    // from "http://en.wikipedia.org/wiki/CJK_Unified_Ideographs" (2009-11-16), unicode ranges are:
+    // 4E00-9FFF (original)
+    // 3400-4DBF (extension A: 1999)
+    // 20000-2A6DF (extension B: 2001)
+    // 2A700-2B73f (extension C: 2009)
+    // F900-FAFF
+    // 
+    // or, sorted, the ranges are:
+    // 3400-4DBF (extension A: 1999)
+    // 4E00-9FFF (original)
+    // F900-FAFF
+    // 20000-2A6DF (extension B: 2001)
+    // 2A700-2B73F (extension C: 2009)
+
+    if (cp < 0x3400 || cp > 0x2B73f) return false;
+    if (cp <= 0x4DBF) return true;                    // 3400-4DBF
+    if (cp < 0x20000) {
       if (cp >= 0x4E00 && cp <= 0x9FFF) return true;  // 4E00-9FFF
       if (cp >= 0xF900 && cp <= 0xFAFF) return true;  // F900-FAFF
-      if (cp >= 0xFE30 && cp <= 0xFE4F) return true;  // FE30-FE4F
     }
     else {
       if (cp < 0x2A6DF) return true;        // 20000-2A6DF
-      else if (cp >= 0x2F800) return true;  // 2F800-2FA1F
+      else if (cp >= 0x2A700) return true;  // 2F700-2B73F
     }
 
     return false;

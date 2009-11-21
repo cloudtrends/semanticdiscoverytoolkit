@@ -39,7 +39,7 @@ import org.apache.lucene.store.FSDirectory;
 public class LuceneStore {
 
 //todo: remove this flag. should always be true.
-  private static final boolean DISABLE_AUTO_FLUSH = false;
+  private static final boolean DISABLE_AUTO_FLUSH = true;
 
 
   private final File dirPath;
