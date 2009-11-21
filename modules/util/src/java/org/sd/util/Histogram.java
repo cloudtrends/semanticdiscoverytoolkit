@@ -87,6 +87,20 @@ public class Histogram <T> {
   }
 
   /**
+   * Get the total count across all frequencies.
+   */
+  public int getTotalCount() {
+    int result = 0;
+
+    final int numRanks = getNumRanks();
+    for (int i = 0; i < numRanks; ++i) {
+      result += getFrequencyCount(i);
+    }
+
+    return result;
+  }
+
+  /**
    * Convenience method to get the maximum frequency count.
    */
   public int getMaxFrequencyCount() {
@@ -195,10 +209,14 @@ public class Histogram <T> {
   }
 
   public String toString() {
+    return toString(20);
+  }
+
+  public String toString(int maxRanks) {
     final StringBuilder result = new StringBuilder();
 
     result.append("h(").append(getNumRanks()).append(")");
-    for (int i = 0; i < 20 && i < getNumRanks(); ++i) {
+    for (int i = 0; i < maxRanks && i < getNumRanks(); ++i) {
       result.append("\n  ").append(i).append(": ").append(getFrequency(i));
     }
 
