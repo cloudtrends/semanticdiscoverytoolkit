@@ -39,7 +39,8 @@ public class NodePath<T> {
   private final DataMatcherMaker<T> defaultDataMatcherMaker = new DataMatcherMaker<T>() {
     public DataMatcher<T> makeDataMatcher(final String dataString) {
       return new DataMatcher<T>() {
-        public boolean matches(T dataInNode) {
+        public boolean matches(Tree<T> node) {
+          final T dataInNode = node.getData();
           boolean result = dataInNode == dataString;
           if (!result && dataInNode != null) {
             final String string = dataInNode.toString();
@@ -50,6 +51,12 @@ public class NodePath<T> {
       };
     }
   };
+
+  private final PatternSplitter defaultPatternSplitter = new PatternSplitter() {
+      public String[] split(String patternString) {
+        return patternString.split("\\.");
+      }
+    };
 
   /**
    * Default constructor. Build the path using the add methods.
@@ -74,7 +81,7 @@ public class NodePath<T> {
    */
   public NodePath(String patternString) {
     this();
-    buildNodePath(patternString, defaultDataMatcherMaker);
+    buildNodePath(patternString, defaultDataMatcherMaker, null);
   }
 
   /**
@@ -93,11 +100,31 @@ public class NodePath<T> {
    */
   public NodePath(String patternString, DataMatcherMaker<T> dataMatcherMaker) {
     this();
-    buildNodePath(patternString, dataMatcherMaker);
+    buildNodePath(patternString, dataMatcherMaker, null);
   }
 
-  private final void buildNodePath(String patternString, DataMatcherMaker<T> dataMatcherMaker) {
-    final String[] pieces = patternString.split("\\.");
+  /**
+   * Path pattern constructor.
+   * <p>
+   * Constructs a path from a string of the form p1.p2. ... .pN
+   * <p>
+   * where pi is of the form:
+   * <ul>
+   * <li>"x" -- matches when the dataMatcher created with x matches the node's data or </li>
+   * <li>"x[subscript]" -- matches as for "x" AND the 0-based local sibling
+   *                       index is a member of the comma-delimited list of
+   *                       'subscript' integers and/or hyphenated ranges or </li>
+   * <li>"**" -- matches any "x" down any number of nodes along the path.</li>
+   * </ul>
+   */
+  public NodePath(String patternString, DataMatcherMaker<T> dataMatcherMaker, PatternSplitter patternSplitter) {
+    this();
+    buildNodePath(patternString, dataMatcherMaker, patternSplitter);
+  }
+
+  private final void buildNodePath(String patternString, DataMatcherMaker<T> dataMatcherMaker, PatternSplitter patternSplitter) {
+    if (patternSplitter == null) patternSplitter = defaultPatternSplitter;
+    final String[] pieces = patternSplitter.split(patternString);
     for (String piece : pieces) {
       if ("**".equals(piece)) {
         // add "skip" path element
@@ -308,6 +335,10 @@ public class NodePath<T> {
     public DataMatcher<T> makeDataMatcher(String dataString);
   }
 
+  public static interface PatternSplitter {
+    public String[] split(String patternString);
+  }
+
   /**
    * Class to represent an element in the path.
    * <p>
@@ -330,7 +361,8 @@ public class NodePath<T> {
 
     public void setDataMatcher(final String dataString) {
       this.dataMatcher = new DataMatcher<T>() {
-        public boolean matches(T dataInNode) {
+        public boolean matches(Tree<T> node) {
+          final T dataInNode = node.getData();
           boolean result = dataInNode == dataString;
           if (!result && dataInNode != null) {
             final String string = dataInNode.toString();
@@ -345,7 +377,8 @@ public class NodePath<T> {
       if (pattern == null) this.dataMatcher = null;
       else {
         this.dataMatcher = new DataMatcher<T>() {
-          public boolean matches(T dataInNode) {
+          public boolean matches(Tree<T> node) {
+            final T dataInNode = node.getData();
             boolean result = false;
             if (dataInNode != null) {
               final String string = dataInNode.toString();
@@ -360,7 +393,8 @@ public class NodePath<T> {
 
     public void setDataMatcher(final T dataToMatch) {  // set to match (equals) the given data
       this.dataMatcher = new DataMatcher<T>() {
-        public boolean matches(T dataInNode) {
+        public boolean matches(Tree<T> node) {
+          final T dataInNode = node.getData();
           return (dataToMatch == dataInNode) || (dataToMatch != null && dataToMatch.equals(dataInNode));
         }
       };
@@ -396,7 +430,7 @@ public class NodePath<T> {
     }
 
     public boolean dataMatches(Tree<T> node) {
-      return (dataMatcher == null) || dataMatcher.matches(node.getData());
+      return (dataMatcher == null) || dataMatcher.matches(node);
     }
 
     public boolean subscriptMatches(int index) {
@@ -410,7 +444,7 @@ public class NodePath<T> {
    * @author Spence Koehler
    */
   public static interface DataMatcher<T> {
-    public boolean matches(T data);
+    public boolean matches(Tree<T> data);
   }
 
   /**
@@ -421,7 +455,7 @@ public class NodePath<T> {
    *
    * @author Spence Koehler
    */
-  public static interface SubscriptMatcher<T> {
+  public static interface SubscriptMatcher {
     public boolean matches(int subscript);
   }
 }

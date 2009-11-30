@@ -80,6 +80,26 @@ public class TestMathUtil extends TestCase {
     assertEquals("2", MathUtil.doubleString(1.5, 0));
   }
   
+  public void testIntegerString() {
+    assertEquals("  0", MathUtil.integerString(0, 3));
+    assertEquals("  1", MathUtil.integerString(1, 3));
+    assertEquals("100", MathUtil.integerString(100, 3));
+    assertEquals("999", MathUtil.integerString(999, 3));
+    assertEquals("1000", MathUtil.integerString(1000, 3));
+  }
+
+  public void testNumDigits() {
+    assertEquals(1, MathUtil.getNumDigits(0));
+    assertEquals(1, MathUtil.getNumDigits(1));
+    assertEquals(1, MathUtil.getNumDigits(9));
+    assertEquals(2, MathUtil.getNumDigits(10));
+    assertEquals(2, MathUtil.getNumDigits(99));
+    assertEquals(3, MathUtil.getNumDigits(100));
+    assertEquals(3, MathUtil.getNumDigits(999));
+    assertEquals(4, MathUtil.getNumDigits(1000));
+    assertEquals(4, MathUtil.getNumDigits(9999));
+  }
+
   public void testToInt() {
     assertTrue(10 == MathUtil.toInt(10.0));
     assertTrue(10 == MathUtil.toInt(10.499999999999));

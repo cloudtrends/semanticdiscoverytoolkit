@@ -24,7 +24,7 @@ package org.sd.util;
  * <p>
  * @author Spence Koehler
  */
-public class KVPair<K,V> {
+public class KVPair<K, V> {
 
   public final K key;
   public final V value;
@@ -32,5 +32,49 @@ public class KVPair<K,V> {
   public KVPair(K key, V value) {
     this.key = key;
     this.value = value;
+  }
+
+  public boolean equals(Object o) {
+    boolean result = false;
+
+    if (o instanceof KVPair) {
+      final KVPair other = (KVPair)o;
+
+      if (key == null || value == null) {
+        if (key == null && value != null) {
+          result = (other.key == null) && value.equals(other.value);
+        }
+        else if (value == null && key != null) {
+          result = other.value == null && key.equals(other.key);
+        }
+        else {
+          result = (other.key == null && other.value == null);
+        }
+      }
+      else {
+        result = key.equals(other.key) && value.equals(other.value);
+      }
+    }
+
+    return result;
+  }
+
+  public int hashCode() {
+    int result = 1;
+
+    if (key != null) {
+      result = (result * 17) + key.hashCode();
+    }
+    if (value != null) {
+      result = (result * 17) + value.hashCode();
+    }
+
+    return result;
+  }
+
+  public String toString() {
+    final StringBuilder result = new StringBuilder();
+    result.append('(').append(key).append(':').append(value).append(')');
+    return result.toString();
   }
 }
