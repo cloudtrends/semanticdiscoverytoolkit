@@ -90,6 +90,7 @@ public class PathHelper {
   public static final int NUM_CONSEC_LOCAL_SIBS          = (1 << 16);
   public static final int NUM_CONSEC_LEVEL_SIBS          = (1 << 17);
   public static final int TEXT_DATA                      = (1 << 18);
+  public static final int CLASS_ATTRIBUTE                = (1 << 19);
 
   public String buildPathKey(Tree<XmlLite.Data> node) {
     return buildPathKey(getPathToNode(node));
@@ -103,7 +104,7 @@ public class PathHelper {
    * default: show local_repeat_index and text w/out names.
    */
   public String buildPathKey(List<Tree<XmlLite.Data>> path) {
-    return buildPathKey(path, LOCAL_REPEAT_INDEX | TEXT_DATA, false);
+    return buildPathKey(path, LOCAL_REPEAT_INDEX | TEXT_DATA | CLASS_ATTRIBUTE, false);
   }
 
   public String buildPathKey(List<Tree<XmlLite.Data>> path, int includeMask, boolean showAttributeNames) {
@@ -144,6 +145,7 @@ public class PathHelper {
           if ((includeMask & NUM_LEVEL_REPEAT_SIBS) == NUM_LEVEL_REPEAT_SIBS) didOne = doAppend(sb, "nlevrs", info.numLevelRepeatSiblings, didOne, showAttributeNames);
           if ((includeMask & NUM_CONSEC_LOCAL_SIBS) == NUM_CONSEC_LOCAL_SIBS) didOne = doAppend(sb, "nclocs", info.numConsecutiveLocalSiblings, didOne, showAttributeNames);
           if ((includeMask & NUM_CONSEC_LEVEL_SIBS) == NUM_CONSEC_LEVEL_SIBS) didOne = doAppend(sb, "nclevs", info.numConsecutiveLevelSiblings, didOne, showAttributeNames);
+          if ((includeMask & CLASS_ATTRIBUTE) == CLASS_ATTRIBUTE && tag.getAttribute("class") != null) didOne = doAppend(sb, "class", tag.getAttribute("class"), didOne, true);
 
           if (includeMask != TEXT_DATA) sb.append(']');
         }
@@ -187,7 +189,7 @@ public class PathHelper {
     return result;
   }
 
-  private boolean doAppend(StringBuilder sb, String name, int value, boolean didOne, boolean showAttributeNames) {
+  private boolean doAppend(StringBuilder sb, String name, Object value, boolean didOne, boolean showAttributeNames) {
     if (didOne) sb.append(',');
     if (showAttributeNames && name != null) sb.append(name).append('=');
     sb.append(value);

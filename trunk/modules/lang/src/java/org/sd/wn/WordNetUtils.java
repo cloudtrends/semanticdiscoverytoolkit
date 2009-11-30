@@ -43,14 +43,18 @@ public class WordNetUtils {
 
     String dictPath = System.getenv(DEFAULT_DICT_PATH_ENV_NAME);
 
-    if (dictPath == null || "".equals(dictPath)) {
+    if (dictPath == null || "".equals(dictPath) || !FileUtil.getFile(dictPath).exists()) {
       final String rootDir = getRootDir();
       if (rootDir != null) {
         dictPath = rootDir + DICT_PATH;
       }
     }
 
-    return dictPath == null ? null : FileUtil.getFile(dictPath);
+    final File result = dictPath == null ? null : FileUtil.getFile(dictPath);
+
+    System.out.println("WordNetUtils.defaultDictDir=" + result);
+
+    return result;
   }
 
   private static final String getRootDir() {

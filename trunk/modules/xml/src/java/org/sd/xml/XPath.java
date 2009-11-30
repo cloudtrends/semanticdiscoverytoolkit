@@ -23,6 +23,8 @@ import org.sd.util.tree.NodePath;
 import org.sd.util.tree.TraversalIterator;
 import org.sd.util.tree.Tree;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -44,6 +46,8 @@ public class XPath {
     }
   };
 
+  private final NodePath.PatternSplitter patternSplitter = new XmlPatternSplitter();
+
   /**
    * Construct with a NodePath pattern.
    * <p>
@@ -63,10 +67,10 @@ public class XPath {
   }
 
   private final void buildNodePath(String patternString) {
-    this.nodePath = new NodePath<XmlLite.Data>(patternString, xmlDataMatcherMaker);
+    this.nodePath = new NodePath<XmlLite.Data>(patternString, xmlDataMatcherMaker, patternSplitter);
 
     this.shortNodePath = patternString.endsWith(".**") ?
-      new NodePath<XmlLite.Data>(patternString.substring(0, patternString.length() - 3), xmlDataMatcherMaker) :
+      new NodePath<XmlLite.Data>(patternString.substring(0, patternString.length() - 3), xmlDataMatcherMaker, patternSplitter) :
       null;
   }
 
@@ -363,34 +367,55 @@ public class XPath {
     final XmlDataMatcher matcher = (XmlDataMatcher)nodePath.getDataMatcher(nodePathIndex);
     final String tagString = matcher.getTagString();
 
-    for (Tree<XmlLite.Data> parentNode : nodes) {
-      final Tree<XmlLite.Data> child = new Tree<XmlLite.Data>(new XmlLite.Tag(tagString));
-      parentNode.addChild(child);
-      result.add(child);
+    if (tagString != null) {
+      for (Tree<XmlLite.Data> parentNode : nodes) {
+        final Tree<XmlLite.Data> child = new Tree<XmlLite.Data>(new XmlLite.Tag(tagString));
+        parentNode.addChild(child);
+        result.add(child);
+      }
     }
 
     return result;
   }
 
-  private final class XmlDataMatcher implements NodePath.DataMatcher<XmlLite.Data> {
-    private String tagString;
 
-    XmlDataMatcher(String tagString) {
-      this.tagString = tagString.toLowerCase();
-    }
+//java -Xmx640m -classpath `cpgen /home/sbk/co/googlecode/semanticdiscoverytoolkit/modules/xml` org.sd.xml.XPath ~/tmp/seo/2009-10-28/2.html '**.body.**.ol.li{class=g}[0-9]'
+//java -Xmx640m -classpath `cpgen /home/sbk/co/googlecode/semanticdiscoverytoolkit/modules/xml` org.sd.xml.XPath ~/tmp/seo/2009-10-28/2.html '**.body.div.div/~\bWeb Wesuwts\b'
 
-    public boolean matches(XmlLite.Data dataInNode) {
-      boolean result = false;
-      final XmlLite.Tag tag = dataInNode.asTag();
-      if (tag != null) {
-        final String tagName = tag.name;
-        result = tagName.equals(tagString);
+  public static void main(String[] args) throws IOException {
+    //arg0: xmlFile
+    //args1+: xpaths
+
+    final String filename = args[0];
+    final File file = new File(filename);
+    final Tree<XmlLite.Data> xmlTree = XmlFactory.readXmlTree(file, true, filename.endsWith(".html"), false);
+
+    final XPathHelper xpathHelper =
+      new XPathHelper(xmlTree).
+      setShowAttributes(true).
+//      setShowNonTextLeaves(true).
+      addIncludeAttribute("id").
+      addIncludeAttribute("class");
+
+    for (int i = 1; i < args.length; ++i) {
+      final String pattern = args[i];
+
+      System.out.println("pattern: " + pattern);
+
+      final XPath xpath = new XPath(pattern);
+      final List<Tree<XmlLite.Data>> nodes = xpath.getNodes(xmlTree);
+
+      if (nodes == null) {
+        System.out.println("\tNo results.");
       }
-      return result;
-    }
-
-    public String getTagString() {
-      return tagString;
+      else {
+        System.out.println("\t" + nodes.size() + " results:");
+        int num = 0;
+        for (Tree<XmlLite.Data> node : nodes) {
+          System.out.println("\nPath #" + (num++) + ":");
+          System.out.println(xpathHelper.asString(node));
+        }
+      }
     }
   }
 }

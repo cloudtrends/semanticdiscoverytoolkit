@@ -298,7 +298,7 @@ public class XPathApplicator {
     Tree<XmlLite.Data> tree = XmlFactory.readXmlTree(new File(args[0]), true, true, false);
     for (int i = 1; i < args.length; ++i) {
       List<String> matches = x.getText(args[i], tree, true);
-      System.out.println("\n" + args[i] + "-->\n" + matches + "\n");
+      System.out.println("\n" + args[i] + "--(" + matches.size() + ")-->\n" + matches + "\n");
     }
   }
 }

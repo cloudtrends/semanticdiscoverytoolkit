@@ -637,7 +637,7 @@ public class XmlLite {
 
   public static final class Tag extends AbstractData {
     public final String name;
-    private final Map<String, String> attributes;
+    public final Map<String, String> attributes;
     private boolean selfTerminating;
     private int numChildren;
     private int childNum;

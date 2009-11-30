@@ -1,0 +1,40 @@
+XPath syntax:
+
+x
+x[subscript]
+**
+
+where 'subscript' is a range of numbers of the form "a,b,c-d,e,..."
+
+where 'x' can be of the form:
+
+  tag{attributes}
+
+where 'tag' can be of the form:
+
+   tag -- a tag name to match (case-insensitive)
+   ~pattern -- a pattern to match against the tag name
+   
+   /text -- match (literal) text in the text node
+   /~pattern -- match a pattern in the text node
+   //text -- match (literal) text across all child text nodes
+   //~pattern -- match a pattern across all child text nodes
+
+where 'attributes' can be of the form:
+
+   attribute -- matches tags where the attribute exists
+   ^attribute -- matches tags where the attribute doesn't exist
+
+where 'attribute' can be of the form
+
+   attr=value
+
+where 'attr' can be of the form
+
+   attr -- an attribute name to match (case-insensitive)
+   ~pattern -- a pattern to match against the attribute name
+
+where 'value' can be of the form
+
+   text -- value text to match
+   ~pattern -- a pattern to match against the value text

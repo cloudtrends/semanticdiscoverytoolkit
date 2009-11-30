@@ -227,6 +227,20 @@ public class MathUtil {
   }
 
   /**
+   * Get the number of digits for the num.
+   */
+  public static final int getNumDigits(int num) {
+    int result = (num < 1) ? 1 : 0;
+
+    while (num >= 1) {
+      num /= 10;
+      ++result;
+    }
+
+    return result;
+  }
+
+  /**
    * Add commas to a numeric string.
    */
   public static final String addCommas(String doubleString) {
