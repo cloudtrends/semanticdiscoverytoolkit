@@ -28,12 +28,11 @@ import org.sd.text.DetailedUrl;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
@@ -68,23 +67,7 @@ import org.apache.lucene.search.Query;
  */
 public abstract class LuceneFieldId {
 
-  /**
-   * A minimal set of english stopwords.
-   */
-//  private static final String[] DEFAULT_STOPWORD_STRINGS = new String[] {"an", "the", "to"};
-  private static final String[] DEFAULT_STOPWORD_STRINGS = StopAnalyzer.ENGLISH_STOP_WORDS;
-
-  /**
-   * A minimal set of english stopwords: an, the, to
-   */
-  public static final Set<String> DEFAULT_STOPWORDS = new HashSet<String>();
-  static {
-    for (String stopword : DEFAULT_STOPWORD_STRINGS) {
-      DEFAULT_STOPWORDS.add(stopword);
-    }
-  }
-
-  protected static final Analyzer DEFAULT_ANALYZER = new SdAnalyzer(null, DEFAULT_STOPWORDS, true);
+  protected static final Analyzer DEFAULT_ANALYZER = new SdAnalyzer(null, LuceneUtils.DEFAULT_STOPWORDS, true);
 
   public static final Analyzer getDefaultAnalyzer() {
     return DEFAULT_ANALYZER;
@@ -253,11 +236,20 @@ public abstract class LuceneFieldId {
     String[] result = null;
 
     if (string != null && !"".equals(string)) {
-      final NormalizedString nString = normalize(string);
-      if (nString != null) {
-        result = nString.split(stopwords);
+      if (normalizer != null) {
+        final NormalizedString nString = normalize(string);
+        if (nString != null) {
+          result = nString.split(stopwords);
+        }
       }
-      else {
+      else if (analyzer != null) {
+        final List<String> tokens = LuceneUtils.getTokenTexts(analyzer, label, string);
+        if (tokens != null && tokens.size() > 0) {
+          result = tokens.toArray(new String[tokens.size()]);
+        }
+      }
+
+      if (result == null) {
         final String norm = string.toLowerCase();
         if (stopwords == null || !stopwords.contains(norm)) {
           result = new String[]{norm};

@@ -48,7 +48,7 @@ public class SearchResources {
   public final AtomicBoolean isOpen = new AtomicBoolean(true);
 
   public SearchResources(File dirPath) throws IOException {
-    this.directory = FSDirectory.getDirectory(dirPath);
+    this.directory = FSDirectory.open(dirPath);
 
     //
     // NOTE:
@@ -78,7 +78,7 @@ public class SearchResources {
     final int divisor = (int)(mbytes / 100) + 1;  // 100=1, 200=2, 300=3, ...
     //final int divisor = (int)((mbytes - 100) / 50) + 1;  // 100=1, 150=2, 200=3, ...
 
-    this.indexReader = IndexReader.open(directory);
+    this.indexReader = IndexReader.open(directory, true);
     //2009-11-13 disabling due to lucene-2.9.0 upgrade differences to be resolved later
     //indexReader.setTermInfosIndexDivisor(divisor);
 

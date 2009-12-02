@@ -59,35 +59,43 @@ public class BufferedStringReader {
    * Read all data from the reader as a string.
    */
   public String readFully(Reader reader) throws IOException {
+    int numLoaded = -1;
 
     grabChars();  // grab any pending characters
 
-    while (loadChars(reader) > 0) {
+    while ((numLoaded = loadChars(reader)) > 0) {
       if (!grabChars()) {
         break;
       }
     }
 
-    final String result = stringBuilder.toString();
-    stringBuilder.setLength(0);
+    final String result = (numLoaded < 0 && stringBuilder.length() == 0) ? null : stringBuilder.toString();
+    stringBuilder.setLength(0);  // reset
+
     return result;
   }
 
   /**
    * Read all characters until (and not including) the given character is
    * encountered or the end of the reader is reached.
+   *
+   * @return the read characters up to, but not including 'c' (possibly empty)
+   *         or null if the stream has no more characters.
    */
   public String readUntil(Reader reader, char c) throws IOException {
+    int numLoaded = -1;
+
     if (!grabUntil(c)) {
-      while (loadChars(reader) > 0) {
+      while ((numLoaded = loadChars(reader)) > 0) {
         if (grabUntil(c)) {
           break;
         }
       }
     }
 
-    final String result = stringBuilder.toString();
-    stringBuilder.setLength(0);
+    final String result = (numLoaded < 0 && stringBuilder.length() == 0) ? null : stringBuilder.toString();
+    stringBuilder.setLength(0);  // reset
+
     return result;
   }
 
@@ -97,16 +105,19 @@ public class BufferedStringReader {
    * @return the read characters, possibly empty.
    */
   public String readWhile(Reader reader, char c) throws IOException {
+    int numLoaded = -1;
+
     if (grabWhile(c)) {
-      while (loadChars(reader) > 0) {
+      while ((numLoaded = loadChars(reader)) > 0) {
         if (!grabWhile(c)) {
           break;
         }
       }
     }
 
-    final String result = stringBuilder.toString();
-    stringBuilder.setLength(0);
+    final String result = (numLoaded < 0 && stringBuilder.length() == 0) ? null : stringBuilder.toString();
+    stringBuilder.setLength(0);  // reset
+
     return result;
   }
 

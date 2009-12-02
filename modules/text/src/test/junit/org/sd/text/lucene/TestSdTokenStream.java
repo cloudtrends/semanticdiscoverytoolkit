@@ -33,6 +33,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * JUnit Tests for the SdTokenStream class.
@@ -49,11 +50,9 @@ public class TestSdTokenStream extends TestCase {
   private final void verifyTokens(TokenStream tokenStream, String[] expected) throws IOException {
     int index = 0;
     Token token = new Token();
-    for (token = tokenStream.next(token); token != null; token = tokenStream.next(token)) {
-      final char[] termBuffer = token.termBuffer();
-      final int len = token.termLength();
-      final String term = new String(termBuffer, 0, len);
-
+    while (tokenStream.incrementToken()) {
+      final TermAttribute termAttribute = (TermAttribute)tokenStream.getAttribute(TermAttribute.class);
+      final String term = termAttribute.term();
       if (expected != null) {
         assertTrue("got " + term + " at index=" + index, index < expected.length);
         assertEquals("got " + term + " at index=" + index, expected[index], term);
@@ -71,10 +70,9 @@ public class TestSdTokenStream extends TestCase {
 
   public void testNormalizedStringForm() throws IOException {
     final IndexingNormalizer normalizer = IndexingNormalizer.getInstance(IndexingNormalizer.ALL_OPTIONS);
-    final NormalizedString nString = normalizer.normalize("a foo b bar c baz");
     final String[] expected = new String[]{"a", "foo", "b", "bar", "c", "baz"};
 
-    final SdTokenStream tokenStream = new SdTokenStream(nString);
+    final SdTokenStream tokenStream = new SdTokenStream(new StringReader("a foo b bar c baz"), normalizer);
     tokenStream.reset();
     verifyTokens(tokenStream, expected);
 

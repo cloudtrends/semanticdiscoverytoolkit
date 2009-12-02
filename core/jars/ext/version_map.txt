@@ -1,6 +1,6 @@
 commons-cli.jar:commons-cli-1.1.jar
 je.jar:je-3.3.75.jar
 junit.jar:junit-4.5.jar
-lucene-core.jar:lucene-core-2.9.1.jar
-lucene-highlighter.jar:lucene-highlighter-2.9.1.jar
+lucene-core.jar:lucene-core-3.0.0.jar
+lucene-highlighter.jar:lucene-highlighter-3.0.0.jar
 weka.jar:weka-3-6-0.jar

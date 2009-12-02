@@ -65,6 +65,11 @@ public class TestBufferedStringReader extends TestCase {
     // check
     assertEquals(string, got);
     assertEquals(string.length(), bsr.getCharOffset());
+
+    // verify finished
+    assertNull(bsr.readFully(reader));
+    assertNull(bsr.readUntil(reader, 'a'));
+    assertNull(bsr.readWhile(reader, 'a'));
   }
 
   public void testReadUntilWhileAndFully() throws IOException {
