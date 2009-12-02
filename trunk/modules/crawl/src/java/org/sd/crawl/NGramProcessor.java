@@ -27,6 +27,7 @@ import org.sd.text.IndexingNormalizer;
 import org.sd.text.NGramFreq;
 import org.sd.text.WordGramStats;
 import org.sd.text.WordGramSplitter.WordAcceptor;
+import org.sd.text.lucene.LuceneUtils;
 import org.sd.util.tree.Tree;
 import org.sd.xml.XmlLite;
 import org.sd.xml.XmlTreeHelper;
@@ -39,8 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import org.apache.lucene.analysis.StopAnalyzer;
 
 /**
  * A crawled page processor that builds NGrams from the content.
@@ -75,7 +74,7 @@ public class NGramProcessor extends CrawledPageRipperProcessor {
     this.nGramLimit = Integer.parseInt(properties.getProperty("nGramLimit", "10"));
 
 //todo: get params for word acceptor from properties
-    final String[] stopwords = StopAnalyzer.ENGLISH_STOP_WORDS;
+    final String[] stopwords = LuceneUtils.DEFAULT_STOPWORDS_ARRAY;
     final WordAcceptor wordAcceptor = new GeneralWordAcceptor(stopwords);
 
     final int lowN = Integer.parseInt(properties.getProperty("lowN", "1"));

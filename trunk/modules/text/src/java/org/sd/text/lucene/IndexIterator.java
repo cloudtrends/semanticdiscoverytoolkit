@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.store.FSDirectory;
 
 /**
  * Utility to iterate over the documents of an index.
@@ -38,6 +39,7 @@ import org.apache.lucene.index.IndexReader;
 public class IndexIterator implements Iterator<Document> {
 
   private File indexDir;
+  private boolean readOnly;
   private IndexReader indexReader;
   private int numDocs;
   private int nextDocNum;
@@ -46,9 +48,14 @@ public class IndexIterator implements Iterator<Document> {
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
   public IndexIterator(File indexDir) {
+    this(indexDir, true);
+  }
+
+  public IndexIterator(File indexDir, boolean readOnly) {
     this.indexDir = indexDir;
+    this.readOnly = readOnly;
     try {
-      this.indexReader = IndexReader.open(indexDir);
+      this.indexReader = IndexReader.open(FSDirectory.open(indexDir), readOnly);
     }
     catch (Exception e) {
       throw new IllegalStateException(e);
@@ -125,6 +132,7 @@ public class IndexIterator implements Iterator<Document> {
    * iterator instance if not used in a single thread.
    */
   public void remove() {
+    if (readOnly) throw new IllegalStateException("Can't delete when readOnly");
     try {
       indexReader.deleteDocument(nextDocNum - 1);
     }

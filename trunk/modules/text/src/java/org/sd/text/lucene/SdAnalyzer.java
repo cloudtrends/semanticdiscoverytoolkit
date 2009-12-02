@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.Version;
 
 import org.sd.text.IndexingNormalizer;
 
@@ -42,9 +43,6 @@ public class SdAnalyzer extends Analyzer {
   private Set<String> stopwords;
   private int positionIncrementGap;
 
-  private SdTokenStream sdTokenStream;
-  private TokenStream reusableTokenStream;
-
   public SdAnalyzer() {
     this(null, null, true);
   }
@@ -53,33 +51,47 @@ public class SdAnalyzer extends Analyzer {
     this.normalizer = normalizer != null ? normalizer : IndexingNormalizer.getInstance(IndexingNormalizer.ALL_OPTIONS);
     this.stopwords = stopwords;
     this.positionIncrementGap = treatMultipleAddsAsContinuous ? 0 : 1;
-
-    this.sdTokenStream = null;
-    this.reusableTokenStream = null;
   }
 
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    this.sdTokenStream = new SdTokenStream(reader, normalizer);
-    this.reusableTokenStream = (stopwords != null) ? new StopFilter(sdTokenStream, stopwords) : sdTokenStream;
-
-    return reusableTokenStream;
+    return buildSavedStreams(fieldName, reader).result;
   }
 
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    TokenStream result = null;
-
-    if (reusableTokenStream != null) {
-      sdTokenStream.setReader(reader);
-      result = reusableTokenStream;
+    SavedStreams streams = (SavedStreams)getPreviousTokenStream();
+    if (streams == null) {
+      streams = buildSavedStreams(fieldName, reader);
+      setPreviousTokenStream(streams);
     }
     else {
-      result = tokenStream(fieldName, reader);
+      streams.source.reset(reader);
     }
-
-    return result;
+    return streams.result;
   }
 
   public int getPositionIncrementGap(String fieldName) {
     return positionIncrementGap;
   }
+
+
+  private final SavedStreams buildSavedStreams(String fieldName, Reader reader) {
+    final SdTokenStream sdTokenStream = new SdTokenStream(reader, normalizer);
+
+    final TokenStream result = (stopwords != null) ?
+      new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(Version.LUCENE_CURRENT), sdTokenStream, stopwords) :
+      sdTokenStream;
+
+    return new SavedStreams(sdTokenStream, result);
+  }
+
+
+  private class SavedStreams {
+    public final SdTokenStream source;
+    public final TokenStream result;
+
+    SavedStreams(SdTokenStream source, TokenStream result) {
+      this.source = source;
+      this.result = result;
+    }
+  };
 }

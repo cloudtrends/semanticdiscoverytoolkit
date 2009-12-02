@@ -19,169 +19,103 @@
 package org.sd.text.lucene;
 
 
+import java.io.IOException;
+import java.io.Reader;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.sd.io.BufferedStringReader;
 import org.sd.nlp.NormalizedString;
 import org.sd.nlp.Normalizer;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
 
 /**
  * A token stream using a normalizer to tokenize.
  * <p>
  * @author Spence Koehler
  */
-public class SdTokenStream extends TokenStream {
+public class SdTokenStream extends Tokenizer {
 
-  private BufferedReader reader;
+  private static final int IO_BUFFER_SIZE = 1024;
+
+  private BufferedStringReader reader = new BufferedStringReader(IO_BUFFER_SIZE);
   private Normalizer normalizer;
-
-  private NormalizedString nString;
+  private int baseOffset;
   private NormalizedString.Token nextToken;
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
 
-  private List<NormalizedString.Token> tokens;         // for reset
-  private Iterator<NormalizedString.Token> tokenIter;  // for reset
 
-  private boolean didFirst;
+  public SdTokenStream(Reader in, Normalizer normalizer) {
+    super(in);
+    init(normalizer);
+  }
 
-  public SdTokenStream(Reader reader, Normalizer normalizer) {
-    this.reader = new BufferedReader(reader);
+  private final void init(Normalizer normalizer) {
     this.normalizer = normalizer;
-    this.nString = null;
-    this.tokens = new ArrayList<NormalizedString.Token>();
-    this.tokenIter = null;
-
-    init();
+    this.baseOffset = 0;
+    this.nextToken = null;
+    this.termAtt = (TermAttribute)addAttribute(TermAttribute.class);
+    this.offsetAtt = (OffsetAttribute)addAttribute(OffsetAttribute.class);
   }
 
-  public SdTokenStream(NormalizedString nString) {
-    this.reader = null;
-    this.normalizer = null;
-    this.nString = nString;
-    this.tokens = new ArrayList<NormalizedString.Token>();
-    this.tokenIter = null;
+  public boolean incrementToken() throws IOException {
+    clearAttributes();
 
-    init();
-  }
-  
-  /**
-   * Set the reader (to re-use this instance.)
-   */
-  public void setReader(Reader reader) {
-    if (reader != null) {
-      try {
-        reader.close();
-      }
-      catch (IOException e) {
-        throw new IllegalStateException(e);
-      }
-    }
-
-    this.reader = new BufferedReader(reader);
-    this.nString = null;
-    this.tokens.clear();
-    this.tokenIter = null;
-
-    init();
-  }
-
-  private final void init() {
-    try {
-      loadNextToken();
-    }
-    catch (IOException e) {
-      throw new IllegalStateException(e);
-    }
-    didFirst = false;
-  }
-
-  private final void loadNextToken() throws IOException {
+    boolean result = false;
 
     if (nextToken != null) {
       nextToken = nextToken.getNext(true);
     }
 
-    if (nextToken == null) {
-      if (nString == null && reader != null) {
-        String line = reader.readLine();
-        for (; line != null; line = reader.readLine()) {
-          nString = normalizer.normalize(line);
-          this.nextToken = nString.getToken(0, true);
-          if (nextToken != null) {
-            nString = null;
-            break;
-          }
-        }
+    if (nextToken == null) {  // time to read (more)
 
-        if (line == null) {
-          close();
-          reader = null;
+      // skip past any new lines
+      if (reader.readWhile(input, '\n') != null) {
+
+        // read up to the next new line
+        baseOffset = reader.getCharOffset();
+        final String string = reader.readUntil(input, '\n');
+
+        if (string != null && !"".equals(string)) {
+          final NormalizedString nstring = normalizer.normalize(string);
+          nextToken = nstring.getToken(0, true);
         }
       }
-      else if (nString != null) {
-        this.nextToken = nString.getToken(0, true);
-        nString = null;
-      }
     }
 
-    if (nextToken != null) tokens.add(nextToken);
-  }
+    // fill in attribute info
+    if (nextToken != null) {
+      final char[] tokenChars = nextToken.getNormalizedString().getNormalizedChars();
+      final int startPos = nextToken.getStartPos();
+      final int endPos = nextToken.getEndPos();
+      termAtt.setTermBuffer(tokenChars, startPos, endPos - startPos);
 
-  public Token next(Token result) throws IOException {
-
-    didFirst = true;
-
-    if (tokenIter != null) {
-      nextToken = tokenIter.hasNext() ? tokenIter.next() : null;
+      offsetAtt.setOffset(baseOffset + startPos, baseOffset + endPos);
+      result = true;
     }
-
-    if (nextToken == null) return null;
-
-    if (result == null) {
-      result = new Token();
-    }
-    else {
-      result.clear();
-    }
-
-    // set text (in the term buffer)
-    final String text = nextToken.getNormalized();
-    final char[] chars = text.toCharArray();
-
-    char[] termBuffer = result.resizeTermBuffer(chars.length);
-
-    for (int i = 0; i < chars.length; ++i) {
-      termBuffer[i] = chars[i];
-    }
-
-    result.setTermLength(chars.length);
-
-    // set other info
-    result.setStartOffset(nextToken.getStartPos());
-    result.setEndOffset(nextToken.getEndPos());
-    //result.setPositionIncrement(int);
-    //result.setType(String);
-
-    if (tokenIter == null) loadNextToken();
 
     return result;
   }
 
-  public void close() throws IOException {
-    if (reader != null) {
-      reader.close();
-    }
-  }
 
-  public final void reset() throws IOException {
-    if (didFirst) {
-      this.tokenIter = tokens.iterator();
-    }
+  public final void end() {
+    // set final offset
+    final int finalOffset = baseOffset + reader.getCharOffset();
+    this.offsetAtt.setOffset(finalOffset, finalOffset);
+  }
+    
+  public void reset() throws IOException {
+    super.reset();
+    input.reset();
+    reader.reset();
+    this.baseOffset = 0;
+    this.nextToken = null;
+  }
+    
+  public void reset(Reader reader) throws IOException {
+    super.reset(reader);
+    reset();
   }
 }

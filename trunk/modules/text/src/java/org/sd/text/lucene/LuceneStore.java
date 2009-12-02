@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 
 /**
  * A lucene database.
@@ -48,7 +49,7 @@ public class LuceneStore {
   private IndexWriter indexWriter;
 
   protected Analyzer analyzer;
-  protected static final Analyzer DEFAULT_ANALYZER = new StandardAnalyzer();
+  protected static final Analyzer DEFAULT_ANALYZER = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
   private long ramBufferSize;                 // flush when ramSizeInBytes() returns value larger than this buffer size
   private String keyField;                      // the field label of the Field to be used in de-duping.  the field label passed must be an untokenized field
@@ -112,7 +113,7 @@ public class LuceneStore {
    * Get the default stopwords.
    */
   public static final String[] getStopWords() {
-    return StopAnalyzer.ENGLISH_STOP_WORDS;
+    return LuceneUtils.DEFAULT_STOPWORDS_ARRAY;
   }
 
   public void setBufferSize(long size) {
@@ -129,8 +130,8 @@ public class LuceneStore {
    */
   public void open() throws IOException {
     final boolean create = !dirPath.exists();
-    if (this.analyzer == null) this.analyzer = new StopAnalyzer();
-    this.directory = FSDirectory.getDirectory(dirPath);
+    if (this.analyzer == null) this.analyzer = new StopAnalyzer(Version.LUCENE_CURRENT);
+    this.directory = FSDirectory.open(dirPath);
 //todo: parameterize MaxFieldLength
     this.indexWriter = new IndexWriter(directory, analyzer, create, IndexWriter.MaxFieldLength.UNLIMITED);
     this.indexWriter.setMergeFactor(1000);
@@ -223,7 +224,7 @@ public class LuceneStore {
 
   public void addIndex(File index, boolean optimize) throws IOException {
     FSDirectory[] dirs = new FSDirectory[1];
-    dirs[0] = FSDirectory.getDirectory(index);
+    dirs[0] = FSDirectory.open(index);
       
     indexWriter.addIndexesNoOptimize(dirs);
     if (optimize) optimize();
@@ -233,7 +234,7 @@ public class LuceneStore {
     FSDirectory[] dirs = new FSDirectory[indexes.length];
 
     for (int i = 0; i < indexes.length; ++i) {
-      dirs[i] = FSDirectory.getDirectory(indexes[i]);
+      dirs[i] = FSDirectory.open(indexes[i]);
     }
       
     indexWriter.addIndexesNoOptimize(dirs);

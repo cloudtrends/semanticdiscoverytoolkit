@@ -56,13 +56,13 @@ public class XFieldId extends LuceneFieldId {
   /** Core Content -- core content can run together */
   public static final XFieldId TEXT = new XFieldId("text", Field.Store.YES,
                                                    IndexingNormalizer.DEFAULT_INDEXING_OPTIONS,
-                                                   DEFAULT_STOPWORDS,
+                                                   LuceneUtils.DEFAULT_STOPWORDS,
                                                    true);
 
   /** Title Text -- don't want titles running together */
   public static final XFieldId TITLE = new XFieldId("title", Field.Store.YES,
                                                     IndexingNormalizer.DEFAULT_INDEXING_OPTIONS,
-                                                    DEFAULT_STOPWORDS,
+                                                    LuceneUtils.DEFAULT_STOPWORDS,
                                                     false);
 
   /** Day Resolution Date */

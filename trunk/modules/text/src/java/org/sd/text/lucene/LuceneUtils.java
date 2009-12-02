@@ -22,8 +22,9 @@ package org.sd.text.lucene;
 import org.sd.util.ReflectUtil;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -37,8 +38,10 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * General lucene utilities.
@@ -48,23 +51,27 @@ import java.util.List;
 public class LuceneUtils {
 
   /**
+   * A minimal set of english stopwords.
+   */
+  public static final Set<String> DEFAULT_STOPWORDS = new HashSet<String>();
+  static {
+    for (Object stopword : StopAnalyzer.ENGLISH_STOP_WORDS_SET) {
+      if (stopword instanceof String) {
+        DEFAULT_STOPWORDS.add((String)stopword);
+      }
+    }
+  }
+
+  /**
+   * A minimal set of english stopwords.
+   */
+  public static final String[] DEFAULT_STOPWORDS_ARRAY = DEFAULT_STOPWORDS.toArray(new String[DEFAULT_STOPWORDS.size()]);
+
+  /**
    * Split the string into tokens using the LuceneStore's default analyzer.
    */
   public static final List<String> getTokenTexts(String string) {
     return getTokenTexts(LuceneStore.getDefaultAnalyzer(), null, string);
-  }
-
-  public static final String getTermText(Token token) {
-    final StringBuffer result = new StringBuffer();
-
-    final char[] buffer = token.termBuffer();
-    final int len = token.termLength();
-
-    for (int i = 0; i < len; ++i) {
-      result.append(buffer[i]);
-    }
-
-    return result.toString();
   }
 
   /**
@@ -77,11 +84,11 @@ public class LuceneUtils {
 
     if (analyzer != null) {
       final TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(string));
-      Token token = new Token();
 
       try {
-        while ((token = tokenStream.next(token)) != null) {
-          result.add(getTermText(token));
+        while (tokenStream.incrementToken()) {
+          final TermAttribute termAttribute = (TermAttribute)tokenStream.getAttribute(TermAttribute.class);
+          result.add(termAttribute.term());
         }
         tokenStream.close();
       }
