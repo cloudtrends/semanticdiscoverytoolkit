@@ -531,10 +531,6 @@ public final class NormalizedString {
   public Token[] tokenize() {
     final List<Token> result = new ArrayList<Token>();
     for (Token token = getToken(0, true); token != null; token = token.getNext(true)) {
-      if (splitOnCamelCase && token.hasAlt()) {
-        result.add(token.getAltToken());
-      }
-
       result.add(token);
     }
     return result.toArray(new Token[result.size()]);
@@ -546,10 +542,6 @@ public final class NormalizedString {
   public String[] split() {
     final List<String> result = new ArrayList<String>();
     for (Token token = getToken(0, true); token != null; token = token.getNext(true)) {
-      if (splitOnCamelCase && token.hasAlt()) {
-        result.add(token.getAlt());
-      }
-
       result.add(token.getNormalized());
     }
     return result.toArray(new String[result.size()]);
@@ -561,13 +553,6 @@ public final class NormalizedString {
   public String[] split(Set<String> stopwords) {
     final List<String> result = new ArrayList<String>();
     for (Token token = getToken(0, true); token != null; token = token.getNext(true)) {
-      if (splitOnCamelCase && token.hasAlt()) {
-        final String atoken = token.getAlt();
-        if (stopwords == null || !stopwords.contains(atoken)) {
-          result.add(atoken);
-        }
-      }
-
       final String ntoken = token.getNormalized();
       if (stopwords == null || !stopwords.contains(ntoken)) {
         result.add(ntoken);
@@ -608,11 +593,20 @@ public final class NormalizedString {
     private NormalizedString nString;
     private int startPos;
     private int endPos;
+    private Token _next;
+    private boolean _gotAlt;
 
     Token(NormalizedString nString, int startPos, int endPos) {
       this.nString = nString;
       this.startPos = startPos;
       this.endPos = endPos;
+      this._next = null;
+      this._gotAlt = false;
+    }
+
+    private Token(NormalizedString nString, int startPos, int endPos, Token next) {
+      this(nString, startPos, endPos);
+      this._next = next;
     }
 
     /**
@@ -662,6 +656,30 @@ public final class NormalizedString {
      * start break first.
      */
     public Token getNext(boolean skipToBreak) {
+      Token result = null;
+
+      if (splitOnCamelCase) {
+        if (_next != null) {
+          // this is an alt token. time to get deferred from _next
+          result = _next.doGetNext(skipToBreak);
+          //System.out.println("next(" + getNormalized() + ")=" + (result != null ? result.getNormalized() : "<null>") + " [from alt]");
+        }
+        else if (hasAlt()) {
+          // defer next until after getting the alt token
+          result = getAltToken();
+          //System.out.println("next(" + getNormalized() + ")=" + (result != null ? result.getNormalized() : "<null>") + " [to alt]");
+        }
+      }
+
+      if (result == null) {
+        result = doGetNext(skipToBreak);
+        //System.out.println("next(" + getNormalized() + ")=" + (result != null ? result.getNormalized() : "<null>") + " [no alt]");
+      }
+
+      return result;
+    }
+
+    private final Token doGetNext(boolean skipToBreak) {
       return nString.getToken(endPos, skipToBreak);
     }
 
@@ -694,7 +712,7 @@ public final class NormalizedString {
     public Token getAltToken() {
       int newEndPos = endPos;
       while (newEndPos < nlen && Character.isLetter(getNormalizedChar(newEndPos))) ++newEndPos;
-      return new Token(nString, startPos, newEndPos);
+      return new Token(nString, startPos, newEndPos, this);
     }
 
     /**

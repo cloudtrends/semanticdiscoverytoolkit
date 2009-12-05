@@ -108,7 +108,10 @@ public class SdTokenStream extends Tokenizer {
     
   public void reset() throws IOException {
     super.reset();
-    input.reset();
+    try {
+      input.reset();
+    }
+    catch (IOException eat) {}
     reader.reset();
     this.baseOffset = 0;
     this.nextToken = null;

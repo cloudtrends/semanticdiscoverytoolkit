@@ -614,7 +614,7 @@ public class IndexingNormalizer extends AbstractNormalizer {
 
 
   public static void main(String[] args) throws IOException {
-    final IndexingNormalizer normalizer = IndexingNormalizer.getInstance(DEFAULT_NORMALIZATION_OPTIONS);
+    final IndexingNormalizer normalizer = IndexingNormalizer.getInstance(DEFAULT_NORMALIZATION_OPTIONS/*DEFAULT_WEB_OPTIONS*//*DEFAULT_INDEXING_OPTIONS*/);
     doNormalize(normalizer, args);
   }
 }

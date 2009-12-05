@@ -1,0 +1,27 @@
+
+The idea behind the lucene classes is to provide a way to
+  (1) abstract the search engine implementation to try/plugin alternates
+  (2) unite text preparation (i.e. normalization and tokenization) for
+      - index creation
+      - query submission
+
+An initial attempt uses a pseudo enum pattern to wrap information for each field using LuceneFieldId. This method will soon be deprecated and/or removed. If it remains, see TestLuceneFieldId for the way to use it.
+- todo: deprecate/remove (now using LuceneFields instead. see tests.)
+  - LuceneFieldId
+  - FieldAnalyzer
+
+The current wrapper is encapsulated by LuceneFields, whose use is exemplified in TestLuceneFields.
+- LuceneFields -- base class for defining fields with parameters
+- SdAnalyzer -- lucene analyzer implementation using an SdTokenStream
+- SdTokenStream -- lucene Tokenizer for using an org.sd.nlp.Normalizer
+- SearchHit -- container for information from a search hit
+- QueryContainer -- container for query information including original query text and a built lucene query object.
+- SearchResult -- container for results returned from a search
+- HitCallback -- interface for managing each hit returned by a search
+  - SearchHitCallback -- implementation of HitCallback for collecting SearchHits
+- FieldQueryRunner -- utility for submitting a query to a field or to multiple fields with result merging
+- FieldedLuceneStore -- container for a lucene store and its lucene fields instance
+
+Related classes:
+- Normalizer
+  - IndexingNormalizer
