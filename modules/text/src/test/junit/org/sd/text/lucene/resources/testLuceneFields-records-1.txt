@@ -1,0 +1,37 @@
+#
+# A collection of records for testing indexing/searching tools.
+#
+# This file contains records of the form:
+#
+#   id|key|text|title|date|url|email
+#
+
+# This record should be found with  text:B.Y.U., byu, b.y.u., B.Y.U
+0|aaa|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #1|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+1|BBB|Here we're testing indexing things like acronyms i.e. B.Y.U. U.S.A, and Ph.D. at least for this content.|This is test record number 2|1204310474029|http://www.fooBar.com/bar.html|baz@fooBar.com
+2|ccc|Let's do a mix of chinese 獨孤 森林 and english for this content.|this is test record #3|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+3|DDD|This one has the url http://www.foobar.com/baz.html inline and the url should be a single token.|this is test record #4|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+
+#I'm here...changing content in records to test different kinds of searches...
+4|eee|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #5|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+5|FFF|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #6|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+6|ggg|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #7|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+7|HHH|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #8|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+8|iii|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #9|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+9|JJJ|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #10|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+10|kkk|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #11|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+11|LLL|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #12|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+12|mmm|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #13|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+13|NNN|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #14|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+14|ooo|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #15|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+15|PPP|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #16|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+16|qqq|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #17|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+17|RRR|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #18|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+18|sss|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #19|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+19|TTT|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #20|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+20|uuu|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #21|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+21|VVV|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #22|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+22|www|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #23|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+23|XXX|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #24|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+24|yyy|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #25|1204310474029|http://www.foo.com/bar.html|baz@foo.com
+25|ZZZ|Here we're testing indexing things like acronyms i.e. byu, usa, and ph.d., at least for this content.|this is test record #26|1204310474029|http://www.foo.com/bar.html|baz@foo.com

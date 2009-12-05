@@ -105,8 +105,8 @@ public class TestNormalizedString extends TestCase {
 
     tokens = nString.split();
     assertEquals(4, tokens.length);
-    assertEquals("thisisatest", tokens[0]);  // alt form
-    assertEquals("this", tokens[1]);         // first token
+    assertEquals("this", tokens[0]);         // first token
+    assertEquals("thisisatest", tokens[1]);  // alt form
     assertEquals("is", tokens[2]);           // second token
     assertEquals("atest", tokens[3]);        // camel-casing algorithm currently doesn't split these
 

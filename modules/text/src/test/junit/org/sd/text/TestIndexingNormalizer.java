@@ -57,8 +57,8 @@ public class TestIndexingNormalizer extends TestCase {
              "baz",
              "com",
              "foo@bar.co.uk",
-             "barbaz",
              "bar",
+             "barbaz",
              "baz",
              "14159",
              "foo.com/",
@@ -84,7 +84,7 @@ public class TestIndexingNormalizer extends TestCase {
   }
 
   public void testCamelCasing() {
-    doTest(IndexingNormalizer.DEFAULT_NORMALIZATION_OPTIONS, "myBlogFeed 31st", "myblogfeed 31st", new String[]{"myblogfeed", "my", "blog", "feed", "31", "st"});
+    doTest(IndexingNormalizer.DEFAULT_NORMALIZATION_OPTIONS, "myBlogFeed 31st", "myblogfeed 31st", new String[]{"my", "myblogfeed", "blog", "feed", "31", "st"});
   }
 
   public void testDots() {

@@ -24,6 +24,7 @@ import org.sd.io.Publishable;
 import org.sd.nlp.NormalizedString;
 import org.sd.nlp.Normalizer;
 import org.sd.text.DetailedUrl;
+import org.sd.text.IndexingNormalizer;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -67,7 +68,10 @@ import org.apache.lucene.search.Query;
  */
 public abstract class LuceneFieldId {
 
-  protected static final Analyzer DEFAULT_ANALYZER = new SdAnalyzer(null, LuceneUtils.DEFAULT_STOPWORDS, true);
+  protected static final Analyzer DEFAULT_ANALYZER =
+    new SdAnalyzer(IndexingNormalizer.getInstance(IndexingNormalizer.DEFAULT_INDEXING_OPTIONS),
+                   LuceneUtils.DEFAULT_STOPWORDS,
+                   true);
 
   public static final Analyzer getDefaultAnalyzer() {
     return DEFAULT_ANALYZER;

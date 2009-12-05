@@ -87,8 +87,10 @@ public class LuceneUtils {
 
       try {
         while (tokenStream.incrementToken()) {
-          final TermAttribute termAttribute = (TermAttribute)tokenStream.getAttribute(TermAttribute.class);
-          result.add(termAttribute.term());
+          if (tokenStream.hasAttribute(TermAttribute.class)) {
+            final TermAttribute termAttribute = (TermAttribute)tokenStream.getAttribute(TermAttribute.class);
+            result.add(termAttribute.term());
+          }
         }
         tokenStream.close();
       }
@@ -131,21 +133,25 @@ public class LuceneUtils {
     Query result = null;
 
     if (analyzer != null) {
-      final List<String> pieces = getTokenTexts(analyzer, fieldName, string);
+      final TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(string));
+      
+      PhraseQuery phraseQuery = null;
+      try {
+        while (tokenStream.incrementToken()) {
+          if (tokenStream.hasAttribute(TermAttribute.class)) {
+            final TermAttribute termAttribute = (TermAttribute)tokenStream.getAttribute(TermAttribute.class);
+            final String term = termAttribute.term();
 
-      if (pieces.size() > 1) {
-        final PhraseQuery phraseQuery = new PhraseQuery();
-        for (String term : pieces) {
-          phraseQuery.add(new Term(fieldName, term));
-          if (termCollector != null) termCollector.add(term);
+            if (phraseQuery == null) phraseQuery = new PhraseQuery();
+            phraseQuery.add(new Term(fieldName, term));
+            if (termCollector != null) termCollector.add(term);
+          }
         }
-        result = phraseQuery;
       }
-      else if (pieces.size() == 1) {
-        final String term = pieces.get(0);
-        result = new TermQuery(new Term(fieldName, term));
-        if (termCollector != null) termCollector.add(term);
+      catch (IOException e) {
+        throw new IllegalStateException(e);
       }
+      result = phraseQuery;
     }
 
     if (result == null) {

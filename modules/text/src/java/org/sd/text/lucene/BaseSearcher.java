@@ -21,9 +21,13 @@ package org.sd.text.lucene;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 
@@ -118,6 +122,52 @@ public abstract class BaseSearcher implements Searcher {
     releaseResources(resources);
 
     return result;
+  }
+
+  /**
+   * Submit the queryContainer's query, collecting stored fields in up to
+   * maxHits search hits through the given LuceneFields instance.
+   *
+   * @param queryContainer  Containing the query to submit.
+   * @param maxHits  The maximum number of hits to collect.
+   * @param luceneFields  LuceneFields for collecting SearchHit instances
+   *                      with stored fields.
+   *
+   * @return a SearchResult with SearchHits.
+   */
+  public SearchResult search(QueryContainer queryContainer, int maxHits, LuceneFields luceneFields) throws IOException {
+    final SearchHitCallback searchHitCallback = new SearchHitCallback(luceneFields);
+    final SearchResult searchResult = search(queryContainer, maxHits, searchHitCallback);
+    searchResult.setSearchHits(searchHitCallback.getSearchHits());
+    return searchResult;
+  }
+
+  /**
+   * Submit the queryContainer's query, calling the hitCallback (if present)
+   * on up to the maxHits top hits.
+   *
+   * @param queryContainer  Containing the query to submit.
+   * @param maxHits  The maximum number of hits to collect.
+   * @param hitCallback  Optional HitCallback function.
+   *
+   * @return a SearchResult without SearchHits.
+   */
+  public SearchResult search(QueryContainer queryContainer, int maxHits, HitCallback hitCallback) throws IOException {
+
+    final TopDocs topDocs = search(queryContainer.query, maxHits);
+    if (topDocs == null) return null;
+
+    int rank = 0;
+    for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+      final int docID = scoreDoc.doc;
+      final Document doc = getDocument(docID);
+      if (hitCallback != null) {
+        hitCallback.handleHit(rank, scoreDoc.score, docID, doc);
+      }
+      ++rank;
+    }
+
+    return new SearchResult(queryContainer, maxHits, topDocs.totalHits, hitCallback);
   }
 
   /**
