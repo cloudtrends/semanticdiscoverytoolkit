@@ -68,6 +68,21 @@ public class SearchHit implements Comparable<SearchHit> {
   }
 
   /**
+   * Get the stored field's value if it exists.
+   *
+   * @return the stored field's value or null.
+   */
+  public String getStoredField(String fieldName) {
+    String result = null;
+
+    if (storedFields != null) {
+      result = storedFields.get(fieldName);
+    }
+
+    return result;
+  }
+
+  /**
    * Compare this searchHit to the other to sort primarily by
    * rank (increasing) and secondarily by docID (increasing).
    */

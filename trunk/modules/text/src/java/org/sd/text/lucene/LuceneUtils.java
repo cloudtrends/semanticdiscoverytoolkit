@@ -24,6 +24,7 @@ import org.sd.util.ReflectUtil;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -105,6 +106,51 @@ public class LuceneUtils {
     return result;
   }
 
+  public static final List<List<String>> getPhraseTexts(Analyzer analyzer, String fieldName, String string) {
+    if (string == null) return null;
+
+    final List<List<String>> result = new ArrayList<List<String>>();
+    List<String> curPhrase = new ArrayList<String>();
+    result.add(curPhrase);
+
+    if (analyzer != null) {
+      final TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(string));
+      int lastEndOffset = 0;
+
+      try {
+        while (tokenStream.incrementToken()) {
+          boolean incPhrase = true;
+          if (tokenStream.hasAttribute(OffsetAttribute.class)) {
+            final OffsetAttribute offsetAttribute = (OffsetAttribute)tokenStream.getAttribute(OffsetAttribute.class);
+            if (offsetAttribute.startOffset() == lastEndOffset) {
+              incPhrase = false;
+            }
+            lastEndOffset = offsetAttribute.endOffset();
+          }
+
+          if (tokenStream.hasAttribute(TermAttribute.class)) {
+            final TermAttribute termAttribute = (TermAttribute)tokenStream.getAttribute(TermAttribute.class);
+            if (incPhrase) {
+              curPhrase = new ArrayList<String>();
+              result.add(curPhrase);
+            }
+
+            curPhrase.add(termAttribute.term());
+          }
+        }
+        tokenStream.close();
+      }
+      catch (IOException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+    else {
+      curPhrase.add(string);
+    }
+
+    return result;
+  }
+
   /**
    * Build a phrase query from the tokens in the given string using LuceneStore's
    * default analyzer.
@@ -135,12 +181,29 @@ public class LuceneUtils {
     if (analyzer != null) {
       final TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(string));
       
+      BooleanQuery booleanQuery = null;
       PhraseQuery phraseQuery = null;
+      int lastEndOffset = 0;
+
       try {
         while (tokenStream.incrementToken()) {
           if (tokenStream.hasAttribute(TermAttribute.class)) {
             final TermAttribute termAttribute = (TermAttribute)tokenStream.getAttribute(TermAttribute.class);
             final String term = termAttribute.term();
+
+            // check offset attribute
+            if (tokenStream.hasAttribute(OffsetAttribute.class)) {
+              final OffsetAttribute offsetAttribute = (OffsetAttribute)tokenStream.getAttribute(OffsetAttribute.class);
+              if (offsetAttribute.startOffset() != lastEndOffset) {
+                // time to increment phrase
+                if (phraseQuery != null) {
+                  if (booleanQuery == null) booleanQuery = new BooleanQuery();
+                  booleanQuery.add(phraseQuery, BooleanClause.Occur.SHOULD);
+                  phraseQuery = null;
+                }
+              }
+              lastEndOffset = offsetAttribute.endOffset();            
+            }
 
             if (phraseQuery == null) phraseQuery = new PhraseQuery();
             phraseQuery.add(new Term(fieldName, term));
@@ -151,7 +214,12 @@ public class LuceneUtils {
       catch (IOException e) {
         throw new IllegalStateException(e);
       }
-      result = phraseQuery;
+
+      if (phraseQuery != null) {
+        if (booleanQuery == null) booleanQuery = new BooleanQuery();
+        booleanQuery.add(phraseQuery, BooleanClause.Occur.SHOULD);
+      }
+      result = booleanQuery;
     }
 
     if (result == null) {
