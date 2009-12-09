@@ -19,13 +19,16 @@
 package org.sd.text.lucene;
 
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.sd.io.FileUtil;
 import org.sd.util.PropertiesParser;
 import org.sd.util.ReflectUtil;
 
@@ -36,6 +39,9 @@ import org.sd.util.ReflectUtil;
  */
 public class FieldQueryRunner {
   
+  public static final String MERGED_FIELD_KEY = "__MergedFieldNameKey__";
+
+
   private LuceneSearcher luceneSearcher;
   private LuceneFields luceneFields;
 
@@ -65,7 +71,7 @@ public class FieldQueryRunner {
     final SearchResult searchResult =
       luceneFields.getSearchResult(luceneSearcher, field, queryString, maxHits, true);
 
-    return new MergedHits(searchResult);
+    return new MergedHits(searchResult, field);
   }
 
   /**
@@ -85,14 +91,15 @@ public class FieldQueryRunner {
   /**
    * Format a hit for MergedHits.showResults.
    */
-  protected String formatHit(SearchHit searchHit) {
+  protected String formatHit(SearchHit searchHit, MergedHits mergedHits, int hitNum) {
     final StringBuilder result = new StringBuilder();
 
     result.
       append(searchHit.rank).
       append('(').
       append(searchHit.score).
-      append(')');
+      append(")/").
+      append(mergedHits.getHitField(searchHit));
 
     if (searchHit.getStoredFields() != null) {
       for (Map.Entry<String, String> storedField : searchHit.getStoredFields().entrySet()) {
@@ -122,13 +129,13 @@ public class FieldQueryRunner {
      * Construct an empty instance.
      */
     public MergedHits() {
-      this(null);
+      this(null, null);
     }
 
     /**
      * Construct an instance with the searchResult's info.
      */
-    public MergedHits(SearchResult searchResult) {
+    public MergedHits(SearchResult searchResult, String field) {
       if (searchResult == null) {
         this.orderedHits = null;
         this.maxHits = 0;
@@ -136,7 +143,15 @@ public class FieldQueryRunner {
         this.query = null;
       }
       else {
-        this.orderedHits = new LinkedList<SearchHit>(searchResult.getSearchHits());
+        this.orderedHits = new LinkedList<SearchHit>();
+        for (SearchHit searchHit : searchResult.getSearchHits()) {
+          if (searchHit.getStoredFields() == null) {
+            final Map<String, String> storedFields = new HashMap<String, String>();
+            searchHit.setStoredFields(storedFields);
+          }
+          searchHit.getStoredFields().put(MERGED_FIELD_KEY, field);
+          this.orderedHits.add(searchHit);
+        }
         this.maxHits = searchResult.maxHits;
         this.totalHits = searchResult.totalHits;
         this.query = searchResult.queryContainer;
@@ -170,6 +185,10 @@ public class FieldQueryRunner {
      */
     public QueryContainer getQueryContainer() {
       return query;
+    }
+
+    public String getHitField(SearchHit searchHit) {
+      return searchHit.getStoredField(MERGED_FIELD_KEY);
     }
 
     /**
@@ -223,11 +242,15 @@ public class FieldQueryRunner {
     /**
      * Show the ordered hits.
      */
-    public void showResults() {
-      System.out.println("\n" + query + "' yielded " + totalHits + " results, " + size() + " hits:");
+    public void showResults(BufferedWriter writer, boolean includeHeader) throws IOException {
+      if (includeHeader) {
+        writer.write("\n" + query + "' yielded " + totalHits + " results, " + size() + " hits:\n");
+      }
       if (orderedHits != null) {
+        int hitNum = 0;
         for (SearchHit hit : orderedHits) {
-          System.out.println("\t" + formatHit(hit));
+          if (includeHeader) writer.write("\t");
+          writer.write("" + formatHit(hit, this, hitNum++) + "\n");
         }
       }
     }
@@ -272,7 +295,7 @@ public class FieldQueryRunner {
     for (String queryString : args) {
       System.out.println("\n");
       MergedHits mergedHits = fieldQueryRunner.query(field, queryString, maxHits);
-      mergedHits.showResults();
+      mergedHits.showResults(FileUtil.getWriter(System.out), true);
     }
 
     fieldQueryRunner.close();
