@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -109,7 +110,7 @@ public class LuceneUtils {
   public static final List<List<String>> getPhraseTexts(Analyzer analyzer, String fieldName, String string) {
     if (string == null) return null;
 
-    final List<List<String>> result = new ArrayList<List<String>>();
+    final List<List<String>> result = new LinkedList<List<String>>();
     List<String> curPhrase = new ArrayList<String>();
     result.add(curPhrase);
 
@@ -130,7 +131,7 @@ public class LuceneUtils {
 
           if (tokenStream.hasAttribute(TermAttribute.class)) {
             final TermAttribute termAttribute = (TermAttribute)tokenStream.getAttribute(TermAttribute.class);
-            if (incPhrase) {
+            if (incPhrase && curPhrase.size() > 0) {
               curPhrase = new ArrayList<String>();
               result.add(curPhrase);
             }
@@ -176,6 +177,17 @@ public class LuceneUtils {
    * analyzer.
    */
   public static final Query toQuery(Analyzer analyzer, String fieldName, String string, Collection<String> termCollector) {
+    return toQuery(analyzer, fieldName, string, termCollector, BooleanClause.Occur.SHOULD);
+  }
+
+  /**
+   * Build a phrase query from the tokens in the given string using the given
+   * analyzer.
+   * <p>
+   * Use a BooleanClause.Occur.MUST for exact matches and BooleanClause.Occur.SHOULD
+   * for fuzzy matches.
+   */
+  public static final Query toQuery(Analyzer analyzer, String fieldName, String string, Collection<String> termCollector, BooleanClause.Occur occur) {
     Query result = null;
 
     if (analyzer != null) {
@@ -198,7 +210,7 @@ public class LuceneUtils {
                 // time to increment phrase
                 if (phraseQuery != null) {
                   if (booleanQuery == null) booleanQuery = new BooleanQuery();
-                  booleanQuery.add(phraseQuery, BooleanClause.Occur.SHOULD);
+                  booleanQuery.add(phraseQuery, occur);
                   phraseQuery = null;
                 }
               }
@@ -255,10 +267,18 @@ public class LuceneUtils {
    * the given analyzer.
    */
   public static final Query toQuery(Analyzer analyzer, String fieldName, String[] strings, Collection<String> termCollector) {
+    return toQuery(analyzer, fieldName, strings, termCollector, BooleanClause.Occur.SHOULD);
+  }
+
+  /**
+   * Create a phrase query from all of the tokens in all of the strings using
+   * the given analyzer.
+   */
+  public static final Query toQuery(Analyzer analyzer, String fieldName, String[] strings, Collection<String> termCollector, BooleanClause.Occur occur) {
     Query result = null;
 
     if (strings.length == 1) {
-      result = toQuery(analyzer, fieldName, strings[0], termCollector);
+      result = toQuery(analyzer, fieldName, strings[0], termCollector, occur);
     }
     else if (strings.length > 1) {
       final PhraseQuery phraseQuery = new PhraseQuery();

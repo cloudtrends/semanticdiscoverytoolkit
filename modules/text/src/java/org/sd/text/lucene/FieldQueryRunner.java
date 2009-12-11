@@ -23,11 +23,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import org.sd.io.FileUtil;
 import org.sd.util.PropertiesParser;
 import org.sd.util.ReflectUtil;
@@ -61,15 +63,15 @@ public class FieldQueryRunner {
   /**
    * Query the comma-delimited field(s), merging results by rank.
    */
-  public MergedHits query(String field, String queryString, int maxHits) throws IOException {
+  public MergedHits query(String field, String queryString, int maxHits, boolean matchAll) throws IOException {
 
     if (field.indexOf(',') >= 0) {
       // handle a comma separated list of fields
-      return query(field.split("\\s*,\\s*"), queryString, maxHits);
+      return query(field.split("\\s*,\\s*"), queryString, maxHits, matchAll);
     }
 
     final SearchResult searchResult =
-      luceneFields.getSearchResult(luceneSearcher, field, queryString, maxHits, true);
+      luceneFields.getSearchResult(luceneSearcher, field, queryString, maxHits, true/*collectStoredFields*/, matchAll);
 
     return new MergedHits(searchResult, field);
   }
@@ -77,11 +79,11 @@ public class FieldQueryRunner {
   /**
    * Query the field(s), merging results by rank.
    */
-  public synchronized MergedHits query(String[] fields, String queryString, int maxHits) throws IOException {
+  public synchronized MergedHits query(String[] fields, String queryString, int maxHits, boolean matchAll) throws IOException {
     final MergedHits result = new MergedHits();
 
     for (String field : fields) {
-      final MergedHits mergedHits = query(field, queryString, maxHits);
+      final MergedHits mergedHits = query(field, queryString, maxHits, matchAll);
       result.merge(mergedHits);
     }
 
@@ -119,6 +121,7 @@ public class FieldQueryRunner {
    * Container for merged hits.
    */
   public class MergedHits {
+    private Set<Integer> docIDs;
     private List<SearchHit> orderedHits;
 
     private int maxHits;
@@ -136,6 +139,7 @@ public class FieldQueryRunner {
      * Construct an instance with the searchResult's info.
      */
     public MergedHits(SearchResult searchResult, String field) {
+      this.docIDs = new HashSet<Integer>();
       if (searchResult == null) {
         this.orderedHits = null;
         this.maxHits = 0;
@@ -150,7 +154,7 @@ public class FieldQueryRunner {
             searchHit.setStoredFields(storedFields);
           }
           searchHit.getStoredFields().put(MERGED_FIELD_KEY, field);
-          this.orderedHits.add(searchHit);
+          addSearchHit(searchHit, null);
         }
         this.maxHits = searchResult.maxHits;
         this.totalHits = searchResult.totalHits;
@@ -212,7 +216,7 @@ public class FieldQueryRunner {
       for (Iterator<SearchHit> newIter = other.getOrderedHits().iterator(); newIter.hasNext(); ) {
         final SearchHit newHit = newIter.hasNext() ? newIter.next() : null;
         if (oldHit == null) {
-          orderedHits.add(newHit);
+          addSearchHit(newHit, null);
         }
         else if (oldHit.docID != newHit.docID) {
           // increment old pointer up through the new's rank
@@ -222,11 +226,12 @@ public class FieldQueryRunner {
           }
 
           if (oldHit == null) {
-            orderedHits.add(newHit);
+            addSearchHit(newHit, null);
           }
           else {
-            orderedHits.add(oldHitIndex, newHit);
-            ++oldHitIndex;
+            if (addSearchHit(newHit, oldHitIndex)) {
+              ++oldHitIndex;
+            }
           }
         }
       }
@@ -254,6 +259,23 @@ public class FieldQueryRunner {
         }
       }
     }
+
+    private final boolean addSearchHit(SearchHit searchHit, Integer position) {
+      boolean result = false;
+
+      if (!docIDs.contains(searchHit.docID)) {
+        docIDs.add(searchHit.docID);
+        if (position == null) {
+          this.orderedHits.add(searchHit);
+        }
+        else {
+          this.orderedHits.add(position, searchHit);
+        }
+        result = true;
+      }
+
+      return result;
+    }
   }
 
 
@@ -268,6 +290,7 @@ public class FieldQueryRunner {
    *              to augment results.</li>
    * <li>maxHits -- maximum number of hits to show</li>
    * <li>fieldsClass -- LuceneFields class for analyzing fields, etc.
+   * <li>matchAll -- (optional, default=false) true or false.
    * </ul>
    * Arguments (non-property):
    * <ol>
@@ -284,17 +307,19 @@ public class FieldQueryRunner {
     final String field = properties.getProperty("field");
     final int maxHits = Integer.parseInt(properties.getProperty("maxHits", "25"));
     final LuceneFields luceneFields = (LuceneFields)ReflectUtil.buildInstance(properties.getProperty("fieldsClass"), properties);
+    final boolean matchAll = "true".equalsIgnoreCase(properties.getProperty("matchAll", "false"));
 
     System.out.println("storeDir=" + storeDir);
     System.out.println("field=" + field);
     System.out.println("maxHits=" + maxHits);
+    System.out.println("matchAll=" + matchAll);
 
     final FieldQueryRunner fieldQueryRunner = new FieldQueryRunner(storeDir, luceneFields);
     fieldQueryRunner.open();
 
     for (String queryString : args) {
       System.out.println("\n");
-      MergedHits mergedHits = fieldQueryRunner.query(field, queryString, maxHits);
+      MergedHits mergedHits = fieldQueryRunner.query(field, queryString, maxHits, matchAll);
       mergedHits.showResults(FileUtil.getWriter(System.out), true);
     }
 

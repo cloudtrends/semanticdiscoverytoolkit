@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.PerFieldAnalyzerWrapper;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.sd.cio.MessageHelper;
@@ -115,14 +116,18 @@ public class LuceneFields {
   /**
    * Get a query container with the query for the field.
    *
+   * @param field  The field to query.
+   * @param query  The text to query.
+   * @param matchAll  True to construct to match all ("must" instead of "should").
+   *
    * @return the QueryContainer or null if the field is unknown.
    */
-  public QueryContainer getQueryContainer(String field, String query) {
+  public QueryContainer getQueryContainer(String field, String query, boolean matchAll) {
     QueryContainer result = null;
 
     final FieldInfo fieldInfo = get(field);
     if (fieldInfo != null) {
-      result = new QueryContainer(fieldInfo.getQuery(query, null), query);
+      result = new QueryContainer(fieldInfo.getQuery(query, null, matchAll), query);
     }
 
     return result;
@@ -130,8 +135,9 @@ public class LuceneFields {
 
   public SearchResult getSearchResult(LuceneSearcher searcher, String field,
                                       String query, int maxHits,
-                                      boolean collectStoredFields) throws IOException {
-    return getSearchResult(searcher, getQueryContainer(field, query),
+                                      boolean collectStoredFields,
+                                      boolean matchAll) throws IOException {
+    return getSearchResult(searcher, getQueryContainer(field, query, matchAll),
                            maxHits, collectStoredFields);
   }
 
@@ -429,11 +435,20 @@ public class LuceneFields {
     //
 
     /**
-     * Get a query for this field having the given value.
+     * Get a (fuzzy) query for this field having the given value.
      * <p>
      * If termCollector is non-null, collect query terms in it, discarding "not" terms.
      */
     public Query getQuery(String value, Collection<String> termCollector) {
+      return getQuery(value, termCollector, false);
+    }
+
+    /**
+     * Get a query for this field having the given value.
+     * <p>
+     * If termCollector is non-null, collect query terms in it, discarding "not" terms.
+     */
+    public Query getQuery(String value, Collection<String> termCollector, boolean matchAll) {
       Query result = null;
 
       String termValue = value;
@@ -442,7 +457,9 @@ public class LuceneFields {
       }
 
       if (analyzer != null) {
-        result = LuceneUtils.toQuery(analyzer, name, termValue, termCollector);
+        result = LuceneUtils.toQuery(
+          analyzer, name, termValue, termCollector,
+          matchAll ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD);
       }
       else {
         final String[] tokens = tokenize(termValue);
@@ -455,11 +472,20 @@ public class LuceneFields {
     }
 
     /**
-     * Get a query for this field having the given values.
+     * Get a (fuzzy) query for this field having the given values.
      * <p>
      * If termCollector is non-null, collect query terms in it, discarding "not" terms.
      */
     public Query getQuery(String[] values, Collection<String> termCollector) {
+      return getQuery(values, termCollector, false);
+    }
+
+    /**
+     * Get a query for this field having the given values.
+     * <p>
+     * If termCollector is non-null, collect query terms in it, discarding "not" terms.
+     */
+    public Query getQuery(String[] values, Collection<String> termCollector, boolean matchAll) {
       Query result = null;
 
       if (values == null || values.length == 0) return result;
@@ -472,7 +498,9 @@ public class LuceneFields {
       }
 
       if (analyzer != null) {
-        result = LuceneUtils.toQuery(analyzer, name, termValues, termCollector);
+        result = LuceneUtils.toQuery(
+          analyzer, name, termValues, termCollector,
+          matchAll ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD);
       }
       else {
         if (termValues.length == 1) {
