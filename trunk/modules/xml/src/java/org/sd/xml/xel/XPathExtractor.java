@@ -212,6 +212,24 @@ public class XPathExtractor implements XelExtraction {
   }
 
   /**
+   * Get this instance's extracted nodes as extractors.
+   */
+  public List<XPathExtractor> asXPathExtractors() {
+    List<XPathExtractor> result = null;
+
+    if (nodes != null) {
+      result = new ArrayList<XPathExtractor>();
+      for (Tree<XmlLite.Data> node : nodes) {
+        result.add(new XPathExtractor(xpathHelper, xpathApplicator, node,
+                                      excludeNodes == null ? null : new ArrayList<Tree<XmlLite.Data>>(excludeNodes), // copy
+                                      null, null, this));
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Extract from the rootNode.
    */
   private final XelExtraction extractFromRoot(String xpathKey) {
