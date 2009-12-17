@@ -25,6 +25,7 @@ import junit.framework.TestSuite;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -459,6 +460,38 @@ public class TestStringUtil extends TestCase {
     assertNull(strings[0]);
     assertNull(strings[1]);
     assertEquals("abc", strings[3]);
+  }
+
+  /**
+   * Verify that the map contains all expected pairs of the form
+   * {key1, value1, key2, value2, ...}.
+   */
+  private final void verifyMappings(String[] expectedPairs, Map<String, String> map) {
+    for (int i = 0; i < expectedPairs.length; i += 2) {
+      assertEquals(expectedPairs[i + 1], map.get(expectedPairs[i]));
+    }
+  }
+
+  public void testToMap() {
+    verifyMappings(
+      new String[]{"a", "b", "c", "d"},
+      StringUtil.toMap(new String[][]{{"a", "b"}, {"c", "d"}}));
+
+    verifyMappings(
+      new String[]{"a", "b", "c", "d"},
+      StringUtil.toMap(new String[][]{{"a", "b", "c", "d"}}));
+
+    verifyMappings(
+      new String[]{"a", "b", "c", "d"},
+      StringUtil.toMap(new String[][]{{"a", "b", "c", "d", "e"}}));
+
+    verifyMappings(
+      new String[]{"a", "b", "c", "d", "e", "f"},
+      StringUtil.toMap(new String[][]{{"a", "b"}, {"c", "d"}, {"e", "f", "g"}}));
+
+    verifyMappings(
+      new String[]{"a", "b", "c", "d", "e", "f"},
+      StringUtil.toMap(new String[]{"a", "b", "c", "d", "e", "f", "g"}));
   }
 
 

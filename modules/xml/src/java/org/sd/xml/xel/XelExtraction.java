@@ -55,4 +55,9 @@ public interface XelExtraction extends XelExtractor {
    */
   public XelExtractor getExtractor();
 
+  /**
+   * Re-cast this extraction's nodes as XelExtractors with each node
+   * as the root node.
+   */
+  public List<XelExtractor> asExtractors();
 }

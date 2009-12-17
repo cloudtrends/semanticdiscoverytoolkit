@@ -20,6 +20,7 @@ package org.sd.xml.xel;
 
 
 import java.util.List;
+import java.util.Map;
 import org.sd.util.tree.Tree;
 import org.sd.xml.XmlLite;
 
@@ -63,4 +64,10 @@ public interface XelExtractor {
    */
   public boolean isExcluded(Tree<XmlLite.Data> node, boolean inherit);
 
+  /**
+   * Get text resulting from applying the given keys, associating results
+   * with the same labels. For example, for each label=foo, xpath=bar, the
+   * result should hold key=foo, value=extract(bar).getText().
+   */
+  public Map<String, List<String>> getText(Map<String, String> label2key);
 }

@@ -23,9 +23,11 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -1497,6 +1499,43 @@ public class StringUtil {
         }
       }
     }
+  }
+
+  /**
+   * Create a map from an array of string arrays as follows:
+   * <p>
+   * For {{key1, value1}, {key2, value2}, ...}, create a map of the keys
+   * to values. Ignore array elements with fewer than 2 entries, map
+   * pairs of even elements when there are 2 or more elements and
+   * ignore extra (odd) array elements.
+   */
+  public static final Map<String, String> toMap(String[][] strings) {
+    final Map<String, String> result = new HashMap<String, String>();
+
+    for (String[] array : strings) {
+      for (int i = 0; i < array.length - 1; i += 2) {
+        result.put(array[i], array[i + 1]);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Create a map from an array of strings of the form:
+   * <p>
+   * {key1, value1, key2, value2, ...}
+   * <p>
+   * NOTE: extra (odd) entries will be ignored.
+   */
+  public static final Map<String, String> toMap(String[] strings) {
+    final Map<String, String> result = new HashMap<String, String>();
+
+    for (int i = 0; i < strings.length - 1; i += 2) {
+      result.put(strings[i], strings[i + 1]);
+    }
+
+    return result;    
   }
 
   public static final class StringIterator implements Iterator<StringPointer> {
