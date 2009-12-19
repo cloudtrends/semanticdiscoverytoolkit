@@ -19,6 +19,8 @@
 package org.sd.xml;
 
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -286,5 +288,22 @@ public class XPathHelper {
     if (result != null) result.append('}');
 
     return (result == null) ? null : result.toString();
+  }
+
+
+  public static void main(String[] args) throws IOException {
+    //arg0: xmlFile
+
+    final String filename = args[0];
+    final File file = new File(filename);
+    final boolean isHtml = filename.endsWith(".html") || filename.endsWith(".htm");
+    final Tree<XmlLite.Data> xmlTree = XmlFactory.readXmlTree(file, true, isHtml, false);
+
+    final XPathHelper xpathHelper =
+      new XPathHelper(xmlTree).
+      setShowAttributes(true).
+      setShowNonTextLeaves(true);
+
+    System.out.println(xpathHelper.asString(xmlTree));
   }
 }
