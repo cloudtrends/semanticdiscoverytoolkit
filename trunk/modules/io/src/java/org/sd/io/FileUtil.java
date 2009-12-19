@@ -284,7 +284,34 @@ public class FileUtil {
    * @throws IOException
    */
   public static BufferedReader getReader(File file) throws IOException {
-    return getReader(file, "UTF-8");
+    return getReader(file, getCharsetName(file));
+  }
+
+  /**
+   * Read the unicode byte order marker (BOM) of the file and return
+   * the appropriate charset. If there is no byte order marker, then
+   * default to UTF-8.
+   * <ul>
+   * <li>FEFF == UTF-16BE (big endian)</li>
+   * <li>FFFE == UTF-16LE (little endian)</li>
+   * </ul>
+   */
+  public static final String getCharsetName(File file) throws IOException {
+    String result = "UTF-8";
+
+    final FileInputStream fis = new FileInputStream(file);
+    final byte[] bytes = new byte[2];
+    fis.read(bytes);
+    fis.close();
+
+    if (bytes[0] == -1/*0xFF*/ && bytes[1] == -2/*0xFE*/) {
+      result = "UTF-16LE";
+    }
+    else if (bytes[0] == -2/*0xFE*/ && bytes[1] == -1/*0xFF*/) {
+      result = "UTF-16BE";
+    }
+
+    return result;
   }
 
   /**
