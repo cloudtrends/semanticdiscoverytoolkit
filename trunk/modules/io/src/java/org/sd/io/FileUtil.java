@@ -277,14 +277,35 @@ public class FileUtil {
   }
 
   /**
-   * Get a buffered reader for a UTF-8 and possibly gzipped file.
+   * Get a buffered reader for a UTF-* and possibly gzipped file.
    *
    * @param file - file to read from.
    * @return BufferedReader that handles gzipped files (if filename ends with ".gz") and UTF-8 encoding.
    * @throws IOException
    */
   public static BufferedReader getReader(File file) throws IOException {
-    return getReader(file, getCharsetName(file));
+    InputStream inputStream = getInputStream(file);
+
+    // prepare for reset if possible
+    if (inputStream.markSupported()) {
+      inputStream.mark(2);
+    }
+
+    // decode BOM
+    final String charsetName = getCharsetName(inputStream);
+
+    // reset the input stream if we didn't find BOM
+    if (charsetName == null) {
+      if (inputStream.markSupported()) {
+        inputStream.reset();
+      }
+      else {
+        inputStream.close();
+        inputStream = getInputStream(file);
+      }
+    }
+
+    return getReader(inputStream, charsetName == null ? "UTF-8" : charsetName);
   }
 
   /**
@@ -297,13 +318,26 @@ public class FileUtil {
    * </ul>
    */
   public static final String getCharsetName(File file) throws IOException {
-    String result = "UTF-8";
 
-    final FileInputStream fis = new FileInputStream(file);
+    final InputStream inputStream = getInputStream(file);
+    final String result = getCharsetName(inputStream);
+    inputStream.close();
+
+    return result == null ? "UTF-8" : result;
+  }
+
+  /**
+   * Read the 2 bytes from the inputStream and decode as a BOM if possible.
+   *
+   * @return the charset-name indicated by the BOM, or null if the bytes cannot
+   *         be intepreted as a BOM.
+   */
+  public static final String getCharsetName(InputStream inputStream) throws IOException {
+    String result = null;
+
     final byte[] bytes = new byte[2];
-    fis.read(bytes);
-    fis.close();
-
+    inputStream.read(bytes);
+    
     if (bytes[0] == -1/*0xFF*/ && bytes[1] == -2/*0xFE*/) {
       result = "UTF-16LE";
     }
