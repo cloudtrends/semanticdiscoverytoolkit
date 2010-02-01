@@ -211,7 +211,7 @@ public abstract class AbstractExtractor implements Extractor {
   /**
    * Apply the text splitter to the doc text to find the pieces to be extracted.
    *
-   * @todo This needs to be refactored to StringWrapper.SubString return values,
+   * todo: This needs to be refactored to StringWrapper.SubString return values,
    *       which entails making LexicalTokenizers use the same and to be aware
    *       of substring boundaries.
    */

@@ -158,7 +158,7 @@ public class FileUtil {
 	 *
 	 * @param source Source directory
 	 * @param dest Destination directory
-	 * @returns true if the directory successfully copied all contents, false if any files failed
+	 * @return true if the directory successfully copied all contents, false if any files failed
 	 * @throws IOException if the destination directory already exists
 	 * @throws FileNotFoundException if the source directory does not exist, or the source path is not a directory, or the destination directory cannot be created
    */

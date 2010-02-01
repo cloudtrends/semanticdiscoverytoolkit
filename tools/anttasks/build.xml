@@ -8,16 +8,16 @@
   <property name="docs" value="${build}/doc"/>
   <property name="lib" value="jars"/>
   <property name="dist" value="../../core/jars/ext"/>
-	<property name="jar" value="sd-anttasks"/>
+  <property name="jar" value="sd-anttasks"/>
   <property name="junit.test.src" value="src/test/junit"/>
   <property name="junit.test.classes" value="${build}/junit-test-classes"/>
 
   <path id="project.class.path">
-		<!-- reference project classes and tests -->
+    <!-- reference project classes and tests -->
     <pathelement location="${classes}"/>
     <pathelement location="${junit.test.classes}"/>
 
-		<!-- reference dependent jars -->
+    <!-- reference dependent jars -->
     <fileset dir="${lib}">
       <include name="**/*.jar"/>
     </fileset>
@@ -43,7 +43,8 @@
     <mkdir dir="${classes}"/>
     <!-- Compile the java code from ${src} into ${classes} -->
     <javac srcdir="${src}" destdir="${classes}"
-           debug="on" source="1.6" encoding="utf-8">
+           debug="on" source="1.6" encoding="utf-8"
+           includeAntRuntime="false">
       <classpath refid="project.class.path"/>
       <compilerarg value="-Xlint"/>
     </javac>
@@ -53,7 +54,8 @@
     <mkdir dir="${junit.test.classes}"/>
     <!-- Compile the java code from ${src} into ${classes} -->
     <javac srcdir="${junit.test.src}" destdir="${junit.test.classes}"
-           debug="on" source="1.6" encoding="utf-8">
+           debug="on" source="1.6" encoding="utf-8"
+           includeAntRuntime="false">
       <classpath refid="project.class.path"/>
       <compilerarg value="-Xlint"/>
     </javac>
@@ -109,7 +111,7 @@
 
   <target name="build" depends="compile,copy-source-resources"/>
 
-	<target name="build-junit-test" depends="compile-junit-test,copy-junit-test-resources"/>
+  <target name="build-junit-test" depends="compile-junit-test,copy-junit-test-resources"/>
 
   <!--target name="dist" depends="build-clean,test">
     <mkdir dir="${dist}"/>
