@@ -18,6 +18,7 @@
 */
 package org.sd.xml;
 
+import org.sd.util.PropertiesParser;
 import org.sd.util.tree.KeyFunction;
 import org.sd.util.tree.Tree;
 import org.sd.util.tree.TreeAnalyzer;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -208,7 +210,15 @@ public class PathHelper {
   }
 
   public static void main(String[] args) throws IOException {
-    final Tree<XmlLite.Data> xmlTree = XmlFactory.readXmlTree(new File(args[0]), true, true, false);
+    final PropertiesParser pp = new PropertiesParser(args);
+    final Properties properties = pp.getProperties();
+    args = pp.getArgs();
+
+    final boolean ignoreComments = "true".equalsIgnoreCase(properties.getProperty("ignoreComments", "true"));
+    final boolean htmlFlag = "true".equalsIgnoreCase(properties.getProperty("htmlFlag", "false"));
+    final boolean requireXmlTag = "true".equalsIgnoreCase(properties.getProperty("requireXmlTag", "false"));
+
+    final Tree<XmlLite.Data> xmlTree = XmlFactory.readXmlTree(new File(args[0]), ignoreComments, htmlFlag, requireXmlTag);
     dumpPaths(xmlTree);
 
 /*
