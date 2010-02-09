@@ -13,32 +13,16 @@ USER="$1";
 
 test -n "$USER" && USER="${USER}@";
 
-# get name, called when IFS=- returns name part of name-num
-function getName() {
-  echo "$1";
-}
-
-# get number, called when IFS=- returns name part of name-num
-function getNumber() {
-  NUMBER=$2;
-  test -z "$NUMBER" && NUMBER=1;
-  echo "$NUMBER";
-}
-
-# set IFS for getName, getName, restore IFS
+# strip -N from machine-name-N (=arg1)
 function fixName () {
-  NORMAL_IFS="$IFS";
-  IFS="-";
-  echo `getName $1`;
-  IFS="$NORMAL_IFS";
+  echo `expr match "$1" "^\(.\\+\)\(-[[:digit:]]\\+\|$\)"`;
 }
 
-# set IFS for getNumber, getNumber, restore IFS
+# get N from machine-name-N (=arg1), returning "1" if "-N" is missing.
 function fixNumber () {
-  NORMAL_IFS="$IFS";
-  IFS="-";
-  echo `getNumber $1`;
-  IFS="$NORMAL_IFS";
+  result=`expr match "$1" "^.\\+-\([[:digit:]]\\+\|$\)"`;
+  test -z "$result" && result=1;
+  echo "$result";
 }
 
 function doStart() {
