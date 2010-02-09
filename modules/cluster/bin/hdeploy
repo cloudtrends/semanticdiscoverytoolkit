@@ -20,17 +20,9 @@ if test -z "$classes"; then
   classes="build/classes";
 fi
 
-# get name, called when IFS=- returns name part of name-num
-function getName() {
-  echo "$1";
-}
-
-# set IFS for getName, getName, restore IFS
+# strip -N from machine-name-N (=arg1)
 function fixName () {
-  NORMAL_IFS="$IFS";
-  IFS="-";
-  echo `getName $1`;
-  IFS="$NORMAL_IFS";
+  echo `expr match "$1" "^\(.\\+\)\(-[[:digit:]]\\+\|$\)"`;
 }
 
 function doRsync() {
