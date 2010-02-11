@@ -54,7 +54,18 @@ import java.util.Properties;
  */
 public class ClusterDefinition {
   
+  /**
+   * The "Config Resources" identifies the location of the cluster config
+   * resources directory to override the default directory of Config.class/resources.
+   */
+  public static final String CLUSTERS_DIR_ENV = "CLUSTERS_DIR";
+  public static final String CLUSTERS_DIR_PROPERTY = "clustersDir";
+
+  /**
+   * Default location of 'clusters' from Config.class.
+   */
   public static final String CLUSTER_DEFINITIONS_PATH = "resources/clusters/";
+
   public static final String ALL_NODES_GROUP = "_ALL_";
 
   /**
@@ -190,6 +201,10 @@ public class ClusterDefinition {
   public static final List<ClusterDefinition> getClusterDefinitions(String prefix, Properties properties) {
     List<ClusterDefinition> result = new ArrayList<ClusterDefinition>();
 
+    // config resources dir
+    final String defaultClustersDir = PropertiesParser.getProperty(properties, prefix, ClusterDefinition.CLUSTERS_DIR_ENV);
+    final String clusterDefDir = PropertiesParser.getProperty(properties, prefix, ClusterDefinition.CLUSTERS_DIR_PROPERTY, defaultClustersDir);
+
     // gateway
     final String[] defaultGateways = PropertiesParser.getMultiValues(properties, prefix, ClusterDefinition.CLUSTER_GATEWAY_ENV);
     String[] gateways = PropertiesParser.getMultiValues(properties, prefix, ClusterDefinition.CLUSTER_GATEWAY_PROPERTY, defaultGateways);
@@ -237,7 +252,7 @@ public class ClusterDefinition {
 
         if (defName != null && !"".equals(defName)) {
           try {
-            final ClusterDefinition clusterDef = new ClusterDefinition(theUser, defName, theGateway, theMachines);
+            final ClusterDefinition clusterDef = new ClusterDefinition(theUser, defName, theGateway, theMachines, clusterDefDir);
             result.add(clusterDef);
           }
           catch (IOException e) {
@@ -255,7 +270,7 @@ public class ClusterDefinition {
 
         if (defName != null && !"".equals(defName)) {
           try {
-            final ClusterDefinition clusterDef = new ClusterDefinition(theUser, defName, theGateway, theMachines);
+            final ClusterDefinition clusterDef = new ClusterDefinition(theUser, defName, theGateway, theMachines, clusterDefDir);
             result.add(clusterDef);
           }
           catch (IOException e) {

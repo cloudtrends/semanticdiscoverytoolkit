@@ -309,7 +309,7 @@ public class Admin {
     configureActiveMachines(confDir, clusterDef);
     configureHeapSize(confDir, heapSize);
     configureLogSettings(confDir);
-    configureActivePortOverride(confDir, ConfigUtil.getPortOverride());
+    configureActivePortOverride(confDir, ConfigUtil.getPortRange(clusterDef.getUser()));
   }
 
   private static  final void configureActiveClusterName(String confDir, ClusterDefinition clusterDef) throws IOException {
@@ -566,6 +566,7 @@ public class Admin {
     final Options options = new Options();
 
     // define options
+    options.addOption(OptionBuilder.withArgName("clusters").withLongOpt("set clusters root").hasArg().isRequired(false).create('R'));
     options.addOption(OptionBuilder.withArgName("cluster").withLongOpt("set cluster").hasArg().isRequired(false).create('c'));
     options.addOption(OptionBuilder.withArgName("machines").withLongOpt("set cluster machines").hasArg().isRequired(false).create('m'));
     options.addOption(OptionBuilder.withArgName("nodes").withLongOpt("set targeted nodes").hasArg().isRequired(false).create('n'));
@@ -590,13 +591,14 @@ public class Admin {
       final CommandLine commandLine = parser.parse(options, args);
 
       // get args
+      final String clustersDir = commandLine.getOptionValue('R');  // clusters directory (default Config.class/resources/clusters directory)
       final String clusterName = commandLine.getOptionValue('c');
       final String machines = commandLine.getOptionValue('m');
       final String nodes = commandLine.getOptionValue('n');
       final String gateway = commandLine.getOptionValue('g');
       final String userName = commandLine.getOptionValue('u');
       final String heapSize = commandLine.getOptionValue('h');
-      final String rootDir = commandLine.getOptionValue('r');
+      final String rootDir = commandLine.getOptionValue('r');    // root directory for deployed cluster "~/cluster"
 
       final boolean deployOption = commandLine.hasOption('d');
       final boolean startOption = commandLine.hasOption('s');
@@ -605,7 +607,7 @@ public class Admin {
       final boolean jobsOption = commandLine.hasOption('j');
       final boolean purgeOption = commandLine.hasOption('p');
       final boolean executeOption = commandLine.hasOption('e');
-      final boolean configureOption = commandLine.hasOption('C');
+      final boolean configureOption = commandLine.hasOption('C');  // creat configuration files in ClusterDevDir
 //todo: implement execute option w/something like sendMessage only not static
 
       String[] theMachines = null;
@@ -631,6 +633,9 @@ public class Admin {
 
       if (gateway != null && gateway.length() > 0) {
         properties.setProperty(ClusterDefinition.CLUSTER_GATEWAY_PROPERTY, gateway);
+      }
+      if (clustersDir != null && !"".equals(clustersDir.trim())) {
+        properties.setProperty(ClusterDefinition.CLUSTERS_DIR_PROPERTY, clustersDir);
       }
       if (clusterName != null && clusterName.length() > 0) {
         properties.setProperty(ClusterDefinition.CLUSTER_DEFINITION_NAME_PROPERTY, clusterName);

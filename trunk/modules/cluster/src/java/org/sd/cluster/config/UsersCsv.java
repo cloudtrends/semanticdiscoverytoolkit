@@ -118,7 +118,8 @@ public class UsersCsv {
 
     // check USERS_CSV environment variable, fallback to classpath, fallback to USERS_CSV_RESOURCE
 
-    final String override = System.getenv("USERS_CSV");
+    String override = System.getProperty("usersCSV");
+    if (override == null) override = System.getenv("USERS_CSV");
     if (override != null) {
       final File file = FileUtil.getFile(override);
       if (file.exists()) {
