@@ -534,7 +534,7 @@ public class ClusterDefinition {
     }
     else {
       // read the given stream
-      doRead(cdInputStream);
+      result = doRead(cdInputStream);
 
       if (result == null) {
         // fallback to default

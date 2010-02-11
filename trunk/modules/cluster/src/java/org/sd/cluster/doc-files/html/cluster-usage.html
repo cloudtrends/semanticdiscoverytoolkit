@@ -5,14 +5,148 @@
 <body>
 <h1>SD Cluster Usage</h1>
 <ul>
-<li><a href="#running">Running a cluster.</a></li>
-<li><a href="#jobs">Creating a cluster job.</a></li>
+<li><a href="#defining">Defining a cluster.</a>
+  <ul>
+    <li><a href="#machines">Setting up cluster machines.</a></li>
+    <li><a href="#cgen">Using ConfigGenerator.</a></li>
+  </ul></li>
+<li><a href="#using">Using a cluster.</a>
+  <ul>
+    <li><a href="#vars">Properties and Environment Variables.</a></li>
+    <li><a href="#wrapper">Creating a dedicated cluster wrapper script.</a></li>
+  </ul></li>
+<li><a href="#jobs">Working with cluster jobs.</a></li>
 </ul>
-<a name="running"/>
-<h2>Running a cluster</h2>
-<br>
+<a name="defining"/>
+<h2>Defining a cluster.</h2>
+To define a cluster, the machines to use must be identified and their specifications noted for their intended roles.
+<br/><br/>
+Important characteristics to consider are:
+<ul>
+<li>the architecture of the machine (32- versus 64-bit)
+  <ul>
+    <li>determines the maximum allowable jvm size for any cluster node on the machine</li>
+    <li>determines the version of auxiliary tools to install (like the jre/jdk)</li>
+  </ul></li>
+<li>the amount of memory
+  <ul>
+    <li>determines the maximum jvm size for any cluster node on the machine</li>
+    <li>constrains the number of nodes (jvms) that can be run on a machine at a jvm size</li>
+  </ul></li>
+<li>the amount of disk space
+  <ul>
+    <li>factors into determining roles of machines with respect to generating and using data from the disk</li>
+    <li>factors into determining the number of nodes (jvms) to run on a machine when considering seeks and performance</li>
+  </ul></li>
+<li>the number of processors
+  <ul>
+    <li>factors into determining the number of nodes (jvms) to run on a machine while taking performance needs into consideration.</li>
+  </ul></li>
+</ul>
+<br/>
+<h3>Setting up cluster machines.</h3>
+<pre>
+linux [currently using kubuntu]
+bash shell by default
+number of file handles
+tools
+  system installed/maintained packages:
+    ssh:openssh-server,pdsh;
+    editor:[emacs];
+    maintenance:apt-dater, apt-dater-host;
+  manually installed/maintained packages:
+    /etc/opt/java -> /usr/local/java/jdkX
+users
+  config: .bashrc, .profile, [.emacs, emacs-ide.el], .ssh (keys, known_hosts)
+  administrative users
+  cluster users
+</pre>
+<br/>
+<h3>Using ConfigGenerator.</h3>
+<pre>
+module=".../my-module";
+dest=".../modules/my-module/resources/clusters";
+groups="extractor:node1-1,node2-1,node3-2,node4-2,node5-4,node6-4";
+java -Xmx640m -classpath `cpgen "$module"` org.sd.cluster.config.ConfigGenerator "$dest" $groups</pre>
+<br/>
+<a name="using"/>
+<h2>Using a cluster.</h2>
+Once defined, a cluster is used by performing the following steps (see the <a href="#wrapper">helper script</a> for notes on performing these functions through the admin tool):
+<ul>
+<li><b>Deploying</b> the cluster
+  <ul>
+    <li>Spray the compiled cluster, application code, and configuration data out to all machines.</li>
+    <li>Repeat (re-deploy) whenever there are changes.</li>
+  </ul></li>
+<li><b>Starting</b> the cluster
+   <ul>
+     <li>Remember to make sure any "old" cluster is stopped before starting a new cluster.
+        <ul><li>NOTE: If the cluster configuration changes, "stop" the cluster using the "old" cluster configuration before restarting under a "new" cluster configuration!</li></ul></li>
+     <li>Send the signal to start all cluster nodes.</li>
+   </ul></li>
+<li><b>Pinging</b> the cluster
+  <ul>
+    <li>Verify that all cluster nodes are up and properly responding by sending the "ping" signal.</li>
+    <li>Repeat to verify all nodes are "up" or to find those nodes that are "down".</li>
+  </ul></li>
+<li><b>Starting Jobs</b> in the cluster and monitoring as described <a href="#jobs">below</a></li>
+<li><b>Stopping</b> the cluster
+  <ul>
+    <li>Send the signal to "stop" to cleanly take the cluster down.
+        <ul><li>NOTE: If nodes do not properly stop on their own, kill the cluster using "pdsh killall -9 java" and find/fix the underlying code problem that is preventing a clean shutdown. Usually, this is caused by unterminated thread pools, threads, or file/stream handles within the application code.</li></ul></li>
+  </ul></li></ul>
+These operations are typically performed through the "admin" tool (org.sdn.cluster.config.Admin) which uses the following parameters, properties, and environment variables for settings.
+<br/><br/>
+<a name="vars"/>
+<h3>Parameters, Properties, and Environment Variables.</h3>
+<table border="1">
+<tr><td style="text-align: center;font-weight: bolder;">Parameter</td><td style="text-align: center;font-weight: bolder;">Property</td><td style="text-align: center;font-weight: bolder;">Env</td><td style="text-align: center;font-weight: bolder;">Description</td></tr>
+<tr><td>user</td><td>n/a</td><td>n/a</td><td>Linux user name for running the cluster.</td></tr>
+<tr><td>clusterDef</td><td>n/a</td><td>n/a</td><td>Name of the cluster definition to use.</td></tr>
+<tr><td>machines</td><td>n/a</td><td>n/a</td><td>Comma-delimited list of machine names participating in the cluster.</td></tr>
+<tr><td>heap</td><td>n/a</td><td>n/a</td><td>Size (SSSS) in MB for jvm (interpreted as -XmxSSSSm).</td></tr>
+<tr><td>n/a</td><td>USERS_CSV</td><td>usersCSV</td><td>Overrides where to find the "users.csv" file.</td></tr>
+<tr><td>n/a</td><td>CLUSTERS_DIR</td><td>clustersDir</td><td>Overrides location of Config.class/resources/clusters directory.</td></tr>
+<tr><td>n/a</td><td>CLUSTER_GATEWAY</td><td>gateway</td><td>Identifies the cluster gateway machine.</td></tr>
+</table>
+<br/>
+<a name="wrapper"/>
+<h3>Creating a dedicated cluster wrapper script.</h3>
+A dedicated cluster wrapper script can be used to simplify performing common tasks for a configured cluster.
+<br/><br/>
+Such a script will usually
+<ul>
+<li>Locate the appropriate cluster 'bin' directory.</li>
+<li>Define environment variables such as USERS_CSV, CLUSTERS_DIR, and CLUSTER_GATEWAY.</li>
+<li>Define admin parameters user, clusterDef, machines, and heap.</li>
+<li>Call the 'bin/_admin' script with the appropriate parameters.</li>
+</ul>
+For example:<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<textarea cols="65" rows="20" readonly="yes">
+#!/bin/bash
+#
+# arg1: command {deploy, start, stop, jobs}
+#
+
+command="$1";
+cwd=`pwd`;
+bin="$cwd/../../bin";
+
+export USERS_CSV="$cwd/../conf/users.csv"
+export CLUSTERS_DIR="$cwd/../clusters"
+export CLUSTER_GATEWAY="cluster-gateway"
+
+user="cluster01";
+clusterDef="6m14n.1-5-8";
+machines="server01,server02,server03,server04,server05,server06";
+heap="1024";
+
+cd "$bin";
+_admin "$command" "$user" "$clusterDef" "$machines" "$heap";
+</textarea>
+<br/>
 <a name="jobs"/>
-<h2>Creating a cluster job</h2>
-<br>
+<h2>Working with cluster jobs</h2>
+<br/>
 </body>
 </html>
