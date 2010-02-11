@@ -31,6 +31,7 @@ function doRsync() {
     DEST=${USER}${CURNAME};
 
     if test "$DEST" != "$MYNAME" && test "$DEST" != "localhost"; then
+      test -e ../build || mkdir ../build;
       echo "($MYNAME)rsyncing ../bin ../conf ../lib ../resources ../build ../src/jsp $DEST:cluster/;";
       rsync -Laz --delete --delete-excluded ../bin ../conf ../lib ../resources ../build $DEST:cluster/
 			if test -e ../src/jsp; then

@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# Helper script for invoking 'admin' script, given a properly configured
+# environment.
+#
+# arg1: command {deploy, start, stop, jobs}
+# arg2: user
+# arg3: clusterDef (e.g. "1m1n.1")
+# arg4: machines (e.g."m01,m02,...,mNN")
+# arg5: heap (e.g. "1024")
+#
+# Environment:
+#   CLUSTER_GATEWAY -- (required) set to the cluster gateway machine
+#   USERS_CSV -- set to override path to users.csv if override necessary.
+#   CLUSTERS_DIR -- set to override path to clusters dir (for finding clusterDef.def) if override necessary.
+#
+
+command="$1";
+user="$2";
+clusterDef="$3";
+machines="$4";
+heap="$5";
+
+case "$command" in
+  deploy)
+    echo "deploy $user@$clusterDef";
+    "./deploy" "$user" "$clusterDef" "$machines" "$heap" "$CLUSTER_GATEWAY"
+    ;;
+  start)
+    echo "start $user@$clusterDef";
+    ssh "$user@$CLUSTER_GATEWAY" "cd cluster/bin;./hstart;";
+    ;;
+  ping)
+    echo "ping $user@$clusterDef";
+    ssh "$user@$CLUSTER_GATEWAY" "cd cluster/bin;./admin -a;";
+    ;;
+  stop)
+    echo "stop $user@$clusterDef";
+    ssh "$user@$CLUSTER_GATEWAY" "cd cluster/bin;./admin -k;";
+    ;;
+  jobs)
+    echo "jobs $user@$clusterDef";
+    ssh "$user@$CLUSTER_GATEWAY" "cd cluster/bin;./admin -j;";
+    ;;
+esac
