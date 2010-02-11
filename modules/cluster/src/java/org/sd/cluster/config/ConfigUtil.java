@@ -198,6 +198,22 @@ public class ConfigUtil {
   }
 
   /**
+   * Get the port range for the user.
+   * <p>
+   * Note that if an override has been set, the override will be returned.
+   */
+  public static int[] getPortRange(String user) {
+    int[] result = portOverride;
+
+    if (result == null) {
+      final UsersCsv usersCsv = UsersCsv.getInstance();
+      result = new int[]{usersCsv.getLowPort(user), usersCsv.getHighPort(user)};
+    }
+
+    return result;
+  }
+
+  /**
    * Get the server port for the given jvmNum and the current user.
    *
    * @return the server port or 0.

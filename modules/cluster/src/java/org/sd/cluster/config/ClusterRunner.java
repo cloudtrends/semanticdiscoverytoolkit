@@ -53,7 +53,6 @@ public class ClusterRunner {
   public static final String CLUSTER_PORT_RANGE_ENV = "CLUSTER_PORT_RANGE";
   public static final String CLUSTER_PORT_RANGE_PROPERTY = "portRange";
 
-
   private boolean useActiveCluster;
   private String prefix;
   private Properties _properties;
