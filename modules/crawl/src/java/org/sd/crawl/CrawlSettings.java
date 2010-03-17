@@ -54,6 +54,7 @@ public class CrawlSettings {
   private boolean verbose;
   private File cacheDir;
   private String userAgent;
+  private String robotName;
 
   private boolean ignoreRobots;
   private long crawlDelay;       // delay to apply when revisiting a site
@@ -86,6 +87,7 @@ public class CrawlSettings {
    * <li>cacheDir -- (default=null) path to cache directory. If empty, then no cache will be used.</li>
    * <li>userAgent -- (default="Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)")
    *                  The user agent string to send identifying the crawler.
+   * <li>robotName -- (default=null) name of robot to check for against robots.txt exclusions.
    * <li>ignoreRobots -- If "true" (default=false), then ignore robots.txt directives.</li>
    * <li>crawlDelay -- (default=5000) millis to wait before revisiting a domain.</li>
    * <li>maxNumRobots -- (default=20) maximum number of robots.txt instances to
@@ -106,6 +108,7 @@ public class CrawlSettings {
     final String cacheDirString = properties.getProperty("cacheDir", "");
     this.cacheDir = "".equals(cacheDirString) ? null : new File(cacheDirString);
     this.userAgent = properties.getProperty("userAgent", DEFAULT_USER_AGENT);
+    this.robotName = properties.getProperty("robotName");
 
     this.ignoreRobots = "true".equals(properties.getProperty("ignoreRobots", "false"));
     this.crawlDelay = Long.parseLong(properties.getProperty("crawlDelay", Long.toString(DEFAULT_CRAWL_DELAY)));
@@ -130,6 +133,7 @@ public class CrawlSettings {
     this.verbose = other.verbose;
     this.cacheDir = other.cacheDir;
     this.userAgent = other.userAgent;
+    this.robotName = other.robotName;
     this.ignoreRobots = other.ignoreRobots;
     this.crawlDelay = other.crawlDelay;
     this.maxCrawlDelay = other.crawlDelay;
@@ -263,6 +267,20 @@ public class CrawlSettings {
    */
   public String getUserAgent() {
     return userAgent;
+  }
+
+  /**
+   * Set the user agent.
+   */
+  public void setRobotName(String robotName) {
+    this.robotName = robotName;
+  }
+
+  /**
+   * Get the user agent.
+   */
+  public String getRobotName() {
+    return robotName;
   }
 
   /**

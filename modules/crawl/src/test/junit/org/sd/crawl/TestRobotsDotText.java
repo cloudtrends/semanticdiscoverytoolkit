@@ -46,7 +46,7 @@ public class TestRobotsDotText extends TestCase {
 
   public void doDisallowTest(InputStream robotsTextStream, String[] allowUrls, String[] disallowUrls, Long crawlDelay) throws IOException {
 
-    final RobotsDotText robots = new RobotsDotText(robotsTextStream);
+    final RobotsDotText robots = new RobotsDotText(robotsTextStream, "semanticdiscovery");
 
     if (allowUrls != null) {
       for (String allowUrl : allowUrls) {
