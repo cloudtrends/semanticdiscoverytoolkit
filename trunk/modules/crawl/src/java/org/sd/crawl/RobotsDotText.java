@@ -67,6 +67,7 @@ public class RobotsDotText {
 
   private Long crawlDelay;
   private Set<String> disallowPatterns;
+  private String robotName;
 
   /**
    * Construct an instance for the site of the given url.
@@ -81,6 +82,7 @@ public class RobotsDotText {
     final String robotsTextContent = robotsPage.getContent();
     final InputStream robotsTextStream = robotsPage.getInputStream();
 
+    this.robotName = pageCrawler.getCrawlSettings().getRobotName();
     init(robotsTextStream);
 
     if (robotsTextStream != null) {
@@ -91,8 +93,23 @@ public class RobotsDotText {
   /**
    * Construct with the input stream for the robots.txt data.
    */
-  public RobotsDotText(InputStream robotsTextStream) throws IOException {
+  public RobotsDotText(InputStream robotsTextStream, String robotName) throws IOException {
+    this.robotName = robotName;
     init(robotsTextStream);
+  }
+
+  /**
+   * Set the user agent.
+   */
+  public void setRobotName(String robotName) {
+    this.robotName = robotName;
+  }
+
+  /**
+   * Get the user agent.
+   */
+  public String getRobotName() {
+    return robotName;
   }
 
   private final void init(InputStream robotsTextStream) throws IOException {
@@ -102,6 +119,9 @@ public class RobotsDotText {
 
     final BufferedReader reader = FileUtil.getReader(robotsTextStream);
     String line = null;
+    String agent = null;
+    String robotName = this.robotName == null ? null : this.robotName.toLowerCase();
+    boolean allowAll = false;
 
     while ((line = reader.readLine()) != null) {
       if ("".equals(line)) continue;
@@ -112,45 +132,38 @@ public class RobotsDotText {
       // User-agent: *
       // User-agent: semanticdiscovery
       if (line.startsWith("user-agent:")) {
-        final String attr = line.substring(11).trim();
-        if ("*".equals(attr) || "semanticdiscovery".equals(attr)) {
-          boolean allowAll = false;
+        agent = line.substring(11).trim();
+      }
 
-          // this is our section
-          while ((line = reader.readLine()) != null) {
-            if ("".equals(line)) continue;
-            line = line.trim().toLowerCase();
+      if (agent != null && ("*".equals(agent) || agent.equals(robotName))) {
 
-            // parse "Disallow: X"
-            if (line.startsWith("disallow:")) {
-              final String disallow = line.substring(9).trim();
-              if (!"".equals(disallow)) {
-                disallowPatterns.add(disallow);
-              }
-              else {
-                // empty disallow string means allow everything.
-                allowAll = true;
-              }
-            }
-
-            // parse "Crawl-delay: X"
-            else if (line.startsWith("crawl-delay:")) {
-              final String crawlDelayString = line.substring(12).trim();
-              if (!"".equals(crawlDelayString)) {
-                try {
-                  this.crawlDelay = new Long(crawlDelayString);
-                }
-                catch (NumberFormatException ignore) {}
-              }
-            }
+        // parse "Disallow: X"
+        if (line.startsWith("disallow:")) {
+          final String disallow = line.substring(9).trim();
+          if (!"".equals(disallow)) {
+            disallowPatterns.add(disallow);
           }
+          else {
+            // empty disallow string means allow everything.
+            allowAll = true;
+          }
+        }
 
-          if (allowAll) {
-            disallowPatterns.clear();
-            return;
+        // parse "Crawl-delay: X"
+        else if (line.startsWith("crawl-delay:")) {
+          final String crawlDelayString = line.substring(12).trim();
+          if (!"".equals(crawlDelayString)) {
+            try {
+              this.crawlDelay = new Long(crawlDelayString);
+            }
+            catch (NumberFormatException ignore) {}
           }
         }
       }
+    }
+
+    if (allowAll) {
+      disallowPatterns.clear();
     }
   }
 
