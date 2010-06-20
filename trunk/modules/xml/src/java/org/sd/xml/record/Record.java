@@ -315,6 +315,7 @@ public class Record {
   public Record(String name, List<Tree<XmlLite.Data>> xmlTrees) {
     this.name = name == null ? "" : name;
     this._xmlTree = new Tree<XmlLite.Data>(new XmlLite.Tag(name));
+    this._xmlTree.getData().setContainer(this._xmlTree);
     for (Tree<XmlLite.Data> xmlTree : xmlTrees) {
       _xmlTree.addChild(xmlTree);
     }
@@ -481,6 +482,7 @@ public class Record {
   public void addValue(Value value) {
     final Tree<XmlLite.Data> xmlTree = asTree();
     final Tree<XmlLite.Data> child = new Tree<XmlLite.Data>(new XmlLite.Tag(value.getName()));
+    child.getData().setContainer(child);
     xmlTree.addChild(child);
     child.addChild(value.asTree());
   }
@@ -851,8 +853,9 @@ public class Record {
   public Tree<XmlLite.Data> asTree() {
     if (_xmlTree == null) {
       final XmlLite.Tag tag = new XmlLite.Tag(name);
-        tag.setProperty("_record", this);
+      tag.setProperty("_record", this);
       _xmlTree = new Tree<XmlLite.Data>(tag);
+      tag.setContainer(_xmlTree);
     }
     return _xmlTree;
   }

@@ -130,6 +130,7 @@ public class XmlLite {
    */
   public Tree<Data> getTop(XmlInputStream inputStream) throws IOException {
     Tree<Data> root = new Tree<Data>(new Tag("root bogus=\"true\""));
+    root.getData().setContainer(root);
     Tree<Data> curNode = root;
 
     final boolean[] keepGoing = new boolean[]{true};
@@ -339,7 +340,11 @@ public class XmlLite {
   }
 
   private final Tree<Data> readText(XmlInputStream inputStream, StringBuilder data, boolean incremental, AtomicBoolean die, boolean forceIgnoreComments, Tree<XmlLite.Data> altTopNode) throws IOException {
-    Tree<Data> topNode = altTopNode == null ? new Tree<Data>(new Tag("root bogus=\"true\"")) : altTopNode;
+    Tree<Data> topNode = altTopNode;
+    if (topNode == null) {
+      topNode = new Tree<Data>(new Tag("root bogus=\"true\""));
+      topNode.getData().setContainer(topNode);
+    }
     doReading(inputStream, topNode, data, incremental, die, forceIgnoreComments, altTopNode);
 
     if (altTopNode == null) {
@@ -387,6 +392,7 @@ public class XmlLite {
       else if (!keepGoing[0]) {
         final Text textData = new Text(text);
         curNode = new Tree<Data>(textData);
+        textData.setContainer(curNode);
       }
     }
 
@@ -404,6 +410,7 @@ public class XmlLite {
         final Tree<Data> commentNode = new Tree<Data>(comment);
         if (curNode == null) {
           curNode = new Tree<Data>(new Tag("xml invented=\"true\""));
+          curNode.getData().setContainer(curNode);
         }
         curNode.addChild(commentNode);
       }
@@ -419,6 +426,7 @@ public class XmlLite {
           final Tag tag = new Tag(endTag);
           tag.setSelfTerminating();
           tagNode = new Tree<Data>(tag);
+          tag.setContainer(tagNode);
           curNode.addChild(tagNode);
         }
         else { // (tagNode != null)
@@ -447,6 +455,7 @@ public class XmlLite {
       else if (tagResult.hasTag()) {
         final Tag tag = tagResult.getTag();
         final Tree<Data> tagNode = new Tree<Data>(tag);
+        tag.setContainer(tagNode);
 
         final boolean isOptionalEndTag = isOptionalEndTag(tag.name, curNode);
         if (curNode == null) {
@@ -509,13 +518,15 @@ public class XmlLite {
         if (textData != null) {
           final Text newTextData = new Text(textData.text + " " + text);
           lastChild.setData(newTextData);
+          newTextData.setContainer(lastChild);
           return;
         }
       }
     }
 
     // otherwise, create a new text child
-    node.addChild(new Text(text));
+    Tree<Data> child = node.addChild(new Text(text));
+    child.getData().setContainer(child);
   }
 
   private final boolean isOptionalEndTag(String tagName, Tree<Data> curNode) {
@@ -587,9 +598,15 @@ public class XmlLite {
     public void clearProperties();
     public void removeProperty(String name);
     public boolean hasProperty(String name);
+
+    public DomNode asDomNode();
+
+    public void setContainer(Tree<Data> container);
+    public Tree<Data> getContainer();
   }
 
   public static abstract class AbstractData implements Data {
+    protected Tree<Data> container;
     protected final Map<String, Object> properties = new HashMap<String, Object>();
 
     public Text asText() { return null; }
@@ -602,10 +619,16 @@ public class XmlLite {
     public void clearProperties() {properties.clear();}
     public void removeProperty(String name) {properties.remove(name);}
     public boolean hasProperty(String name) {return properties.containsKey(name);}
+
+    public DomNode asDomNode() {return null;}
+
+    public void setContainer(Tree<Data> container) {this.container = container;}
+    public Tree<Data> getContainer() {return container;}
   }
 
   public static final class Text extends AbstractData {
-    public final String text;
+    public String text;
+    private DomText domText;
 
     public Text(String text) {
       this.text = text;
@@ -613,6 +636,13 @@ public class XmlLite {
 
     public final Text asText() {
       return this;
+    }
+
+    public DomNode asDomNode() {
+      if (domText == null && container != null) {
+        domText = new DomText(this);
+      }
+      return domText;
     }
 
     public String toString() {
@@ -641,6 +671,7 @@ public class XmlLite {
     private boolean selfTerminating;
     private int numChildren;
     private int childNum;
+    private DomElement domElement;
 
     /**
      * Construct with the name and attributes string.
@@ -669,6 +700,7 @@ public class XmlLite {
      * Copy constructor.
      */
     public Tag(Tag other) {
+      super.container = other.container;
       this.name = other.name;
       this.attributes = new LinkedHashMap<String, String>(other.attributes);
       this.selfTerminating = other.selfTerminating;
@@ -809,6 +841,13 @@ public class XmlLite {
 
     public final Tag asTag() {
       return this;
+    }
+
+    public DomNode asDomNode() {
+      if (domElement == null && container != null) {
+        domElement = new DomElement(this);
+      }
+      return domElement;
     }
 
     public String toString() {

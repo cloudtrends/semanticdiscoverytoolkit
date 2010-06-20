@@ -272,6 +272,7 @@ public class XmlTreeHelper {
    */
   public static Tree<XmlLite.Data> addText(Tree<XmlLite.Data> node, String text) {
     final Tree<XmlLite.Data> result = new Tree<XmlLite.Data>(new XmlLite.Text(text));
+    result.getData().setContainer(result);
     node.addChild(result);
     return result;
   }
@@ -388,7 +389,7 @@ public class XmlTreeHelper {
         result.append(tagName);
       }
       if (includeSiblingNumbers) {
-        final int sibNum = deepNode.getLocalSiblingPosition();
+        final int sibNum = deepNode.getSiblingPosition();
         result.append('[').append(sibNum).append(']');
       }
     }

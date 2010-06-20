@@ -68,6 +68,7 @@ public class XmlLeafNodeRipper implements XmlRipper {
     final String text = textRipper.next();
     if (text != null) {
       result = new Tree<XmlLite.Data>(new XmlLite.Text(text));
+      result.getData().setContainer(result);
     }
 
     return result;

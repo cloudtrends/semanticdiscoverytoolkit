@@ -75,7 +75,9 @@ public class Value extends Record {
    * Get this value as a tree.
    */
   public Tree<XmlLite.Data> asTree() {
-    return new Tree<XmlLite.Data>(data);
+    Tree<XmlLite.Data> result = new Tree<XmlLite.Data>(data);
+    data.setContainer(result);
+    return result;
   }
 
   /**

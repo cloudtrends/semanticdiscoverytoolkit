@@ -370,6 +370,7 @@ public class XPath {
     if (tagString != null) {
       for (Tree<XmlLite.Data> parentNode : nodes) {
         final Tree<XmlLite.Data> child = new Tree<XmlLite.Data>(new XmlLite.Tag(tagString));
+        child.getData().setContainer(child);
         parentNode.addChild(child);
         result.add(child);
       }
