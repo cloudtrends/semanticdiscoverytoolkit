@@ -287,6 +287,7 @@ public class XmlTagRipper implements Iterator<XmlLite.Tag> {
    */
   private final Tree<XmlLite.Data> readNode(XmlLite.Tag tag, XmlLite xmlLite) {
     Tree<XmlLite.Data> result = new Tree<XmlLite.Data>(tag);
+    tag.setContainer(result);
 
     if (!tag.isSelfTerminating()) {
       try {

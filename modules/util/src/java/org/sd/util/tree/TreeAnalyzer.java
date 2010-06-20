@@ -307,7 +307,7 @@ public class TreeAnalyzer<T> {
         this.consecutiveLevelRepeatId = 0;
       }
       else {
-        final List<Tree<T>> localSiblings = node.getLocalSiblings();
+        final List<Tree<T>> localSiblings = node.getSiblings();
         final List<Tree<T>> levelSiblings = nodes; //node.getGlobalSiblings();
         this.numSiblings = localSiblings.size();
         this.numLevelNodes = levelSiblings.size();

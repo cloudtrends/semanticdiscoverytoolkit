@@ -201,12 +201,14 @@ public class XmlNodeRipper implements XmlRipper {
               final XmlLite.Tag theTag = tagStack.popTag();
               if (theTag != null) {
                 result = new Tree<XmlLite.Data>(theTag);
+                theTag.setContainer(result);
               }
               // else, ignore text before the first open tag.
             }
 
             if (result != null) {
-              result.addChild(new XmlLite.Text(theText));
+              Tree<XmlLite.Data> tchild = result.addChild(new XmlLite.Text(theText));
+              tchild.getData().setContainer(tchild);
             }
           }
 
@@ -224,9 +226,11 @@ public class XmlNodeRipper implements XmlRipper {
               if (result == null) {
                 if (theText.length() > 0 || DONT_IGNORE_EMPTIES) {
                   result = new Tree<XmlLite.Data>(theTag);
+                  theTag.setContainer(result);
                 
                   if (addEmpty) {
-                    result.addChild(new XmlLite.Text(""));
+                    Tree<XmlLite.Data> child = result.addChild(new XmlLite.Text(""));
+                    child.getData().setContainer(child);
                     break;
                   }
                 }
@@ -234,10 +238,13 @@ public class XmlNodeRipper implements XmlRipper {
               else {
                 if (addEmpty) {
                   final Tree<XmlLite.Data> child = result.addChild(theTag);
-                  child.addChild(new XmlLite.Text(""));
+                  theTag.setContainer(child);
+                  final Tree<XmlLite.Data> tchild = child.addChild(new XmlLite.Text(""));
+                  tchild.getData().setContainer(tchild);
                 }
                 else {
                   result = result.addChild(theTag);
+                  theTag.setContainer(result);
                 }
               }
             }

@@ -212,7 +212,7 @@ public class XPathHelper {
 
     final String tagName = node.getData().asTag().name;
 
-    for (Tree<XmlLite.Data> sibling : node.getLocalSiblings()) {
+    for (Tree<XmlLite.Data> sibling : node.getSiblings()) {
       final XmlLite.Tag tag = node.getData().asTag();
       if (tag != null) {
         if (tagName.equals(tag.name)) {

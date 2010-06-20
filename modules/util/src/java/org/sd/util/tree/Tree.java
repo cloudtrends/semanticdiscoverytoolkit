@@ -21,10 +21,12 @@ package org.sd.util.tree;
 
 import org.sd.util.Escaper;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A tree data structure.
@@ -42,6 +44,8 @@ public class Tree<T> {
   private List<Tree<T>> children;
   private Tree<T> parent;
   private int transientId;
+  private Map<String, Object> attributes;
+
 
   private LinkedList<Tree<T>> _path;
 
@@ -50,6 +54,7 @@ public class Tree<T> {
     children = null;
     parent = null;
     this.transientId = 0;
+    this.attributes = null;
   }
 
   public String toString() {
@@ -155,6 +160,15 @@ public class Tree<T> {
     return parent;
   }
 
+  public Map<String, Object> getAttributes() {
+    if (this.attributes == null) this.attributes = new HashMap<String, Object>();
+    return this.attributes;
+  }
+
+  public boolean hasAttributes() {
+    return attributes != null && attributes.size() > 0;
+  }
+
   /**
    * Get the depth of this node in its tree, where the root is at depth 0.
    */
@@ -201,7 +215,7 @@ public class Tree<T> {
   /**
    * Get this tree's siblings (including this tree), all having the same parent.
    */
-  public List<Tree<T>> getLocalSiblings() {
+  public List<Tree<T>> getSiblings() {
     List<Tree<T>> result = new ArrayList<Tree<T>>();
 
     if (parent == null) {
@@ -215,9 +229,9 @@ public class Tree<T> {
   }
 
   /**
-   * Get this node's local sibling position.
+   * Get this node's sibling position.
    */
-  public int getLocalSiblingPosition() {
+  public int getSiblingPosition() {
     int result = 0;
 
     if (parent != null) {
@@ -625,6 +639,43 @@ public class Tree<T> {
     }
     else {
       result.add(path);
+    }
+
+    return result;
+  }
+
+  /**
+   * Get this node's leaves' data as a concatenated string (with a space for
+   * the delimiter).
+   */
+  public final String getLeafText() {
+    final StringBuilder result = new StringBuilder();
+
+    final List<Tree<T>> leaves = gatherLeaves();
+    for (Tree<T> leaf : leaves)
+    {
+      if (result.length() > 0) result.append(' ');
+      result.append(leaf.data.toString());
+    }
+
+    return result.toString();
+  }
+
+  /**
+   * Set the child at the given position to be the new child, returning the
+   * oldChild or add the newChild, returning null.
+   */
+  public Tree<T> setChild(int childPos, Tree<T> newChild) {
+    Tree<T> result = null;
+
+    if (children != null && children.size() < childPos && childPos >= 0) {
+      result = children.get(childPos);
+      result.prune();
+      children.set(childPos, newChild);
+      newChild.parent = this;
+    }
+    else {
+      addChild(newChild);
     }
 
     return result;
