@@ -82,7 +82,9 @@ public class RobotsDotText {
     final String robotsTextContent = robotsPage.getContent();
     final InputStream robotsTextStream = robotsPage.getInputStream();
 
+    // the name of the robot as a (partial) user-agent in a robots.txt file
     this.robotName = pageCrawler.getCrawlSettings().getRobotName();
+
     init(robotsTextStream);
 
     if (robotsTextStream != null) {
@@ -98,20 +100,6 @@ public class RobotsDotText {
     init(robotsTextStream);
   }
 
-  /**
-   * Set the user agent.
-   */
-  public void setRobotName(String robotName) {
-    this.robotName = robotName;
-  }
-
-  /**
-   * Get the user agent.
-   */
-  public String getRobotName() {
-    return robotName;
-  }
-
   private final void init(InputStream robotsTextStream) throws IOException {
     this.disallowPatterns = new HashSet<String>();
 
@@ -119,9 +107,6 @@ public class RobotsDotText {
 
     final BufferedReader reader = FileUtil.getReader(robotsTextStream);
     String line = null;
-    String agent = null;
-    String robotName = this.robotName == null ? null : this.robotName.toLowerCase();
-    boolean allowAll = false;
 
     while ((line = reader.readLine()) != null) {
       if ("".equals(line)) continue;
@@ -132,39 +117,54 @@ public class RobotsDotText {
       // User-agent: *
       // User-agent: semanticdiscovery
       if (line.startsWith("user-agent:")) {
-        agent = line.substring(11).trim();
-      }
+        if (appliesToUs(line)) {
+          boolean allowAll = false;
 
-      if (agent != null && ("*".equals(agent) || agent.equals(robotName))) {
+          // this is our section
+          while ((line = reader.readLine()) != null) {
+            if ("".equals(line)) continue;
+            line = line.trim().toLowerCase();
 
-        // parse "Disallow: X"
-        if (line.startsWith("disallow:")) {
-          final String disallow = line.substring(9).trim();
-          if (!"".equals(disallow)) {
-            disallowPatterns.add(disallow);
-          }
-          else {
-            // empty disallow string means allow everything.
-            allowAll = true;
-          }
-        }
-
-        // parse "Crawl-delay: X"
-        else if (line.startsWith("crawl-delay:")) {
-          final String crawlDelayString = line.substring(12).trim();
-          if (!"".equals(crawlDelayString)) {
-            try {
-              this.crawlDelay = new Long(crawlDelayString);
+            // parse "Disallow: X"
+            if (line.startsWith("disallow:")) {
+              final String disallow = line.substring(9).trim();
+              if (!"".equals(disallow)) {
+                disallowPatterns.add(disallow);
+              }
+              else {
+                // empty disallow string means allow everything.
+                allowAll = true;
+              }
             }
-            catch (NumberFormatException ignore) {}
+
+            // parse "Crawl-delay: X"
+            else if (line.startsWith("crawl-delay:")) {
+              final String crawlDelayString = line.substring(12).trim();
+              if (!"".equals(crawlDelayString)) {
+                try {
+                  this.crawlDelay = new Long(crawlDelayString);
+                }
+                catch (NumberFormatException ignore) {}
+              }
+            }
+
+            else if (line.startsWith("user-agent:")) {
+              if (!appliesToUs(line)) break;
+            }
+          }
+
+          if (allowAll) {
+            disallowPatterns.clear();
+            return;
           }
         }
       }
     }
+  }
 
-    if (allowAll) {
-      disallowPatterns.clear();
-    }
+  private final boolean appliesToUs(String userAgentLine) {
+    final String attr = userAgentLine.substring(11).trim();
+    return ("*".equals(attr) || attr.indexOf(robotName) >= 0);
   }
 
   /**
@@ -207,5 +207,21 @@ public class RobotsDotText {
    */
   public Set<String> getDisallowPatterns() {
     return disallowPatterns;
+  }
+
+  /**
+   * Set the robot name as would be found as a (partial) user-agent in a
+   * robots.txt file.
+   */
+  public void setRobotName(String robotName) {
+    this.robotName = robotName;
+  }
+
+  /**
+   * Set the robot name as would be found as a (partial) user-agent in a
+   * robots.txt file.
+   */
+  public String getRobotName() {
+    return robotName;
   }
 }

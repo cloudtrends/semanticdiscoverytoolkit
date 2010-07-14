@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." name="atn">
+  <property environment="env" />
+  <property name="env.CORE_ROOT" value="../../core" />
+  <import file="${env.CORE_ROOT}/antscripts/common.xml" />
+</project>

@@ -52,11 +52,11 @@ public class DomNamedNodeMap implements NamedNodeMap {
     return (lookupValue(namespacePrefix, localName, name) != null);
   }
 
-  XmlLite.Tag getTag() {
+  public XmlLite.Tag getTag() {
     return containingNode.getBackReference().asTag();
   }
 
-  Map<String, String> getAttributes() {
+  public Map<String, String> getAttributes() {
     return getTag().attributes;
   }
 

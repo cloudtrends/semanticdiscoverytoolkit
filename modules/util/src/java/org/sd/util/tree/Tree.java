@@ -44,6 +44,7 @@ public class Tree<T> {
   private List<Tree<T>> children;
   private Tree<T> parent;
   private int transientId;
+  private LinkedList<Tree<T>> rootPath;
   private Map<String, Object> attributes;
 
 
@@ -54,11 +55,12 @@ public class Tree<T> {
     children = null;
     parent = null;
     this.transientId = 0;
+    this.rootPath = null;
     this.attributes = null;
   }
 
   public String toString() {
-    return toString(SimpleTreeBuilder.getEscaper());
+    return toString(SimpleTreeBuilder.getVisualEscaper());
   }
 
   public String toString(Escaper escaper) {
@@ -317,6 +319,36 @@ public class Tree<T> {
   }
 
   /**
+   * The RootPath holds tree nodes from the root to this node (inclusive).
+   */
+  public LinkedList<Tree<T>> getRootPath() {
+    if (this.rootPath == null) {
+      this.rootPath = new LinkedList<Tree<T>>();
+      Tree<T> curNode = this;
+      while (curNode != null) {
+        this.rootPath.addFirst(curNode);
+        curNode = curNode.parent;
+      }
+    }
+    return this.rootPath;
+  }
+
+  public boolean isAncestor(Tree<T> other, boolean selfIsAncestor) {
+    boolean result = false;
+
+    Tree<T> parent = selfIsAncestor ? other : other.parent;
+    while (parent != null) {
+      if (parent == this) {
+        result = true;
+        break;
+      }
+      parent = parent.parent;
+    }
+
+    return result;
+  }
+
+  /**
    * Determine whether this node is an ancestor of the other.
    * <p>
    * Note that a node is not its own ancestor.
@@ -326,12 +358,7 @@ public class Tree<T> {
    * @return true if this node is an ancestor of other.
    */
   public boolean isAncestor(Tree<T> other) {
-    Tree<T> parent = other.parent;
-    while (parent != null) {
-      if (parent == this) return true;
-      parent = parent.parent;
-    }
-    return false;
+    return isAncestor(other, false);
   }
 
   /**
@@ -345,6 +372,19 @@ public class Tree<T> {
    */
   public boolean isDescendant(Tree<T> other) {
     return other.isAncestor(this);
+  }
+
+  /**
+   * Determine whether this node is a descendant of the other.
+   * <p>
+   * Note that a node is not its own descendant.
+   *
+   * @param other  The other node.
+   *
+   * @return true if this node is an descendant of other.
+   */
+  public boolean isDescendant(Tree<T> other, boolean selfIsDescendant) {
+    return other.isAncestor(this, selfIsDescendant);
   }
 
   /**
@@ -484,7 +524,6 @@ public class Tree<T> {
   }
 
 
-//todo: implement these
   /**
    * Collect the nodes whose data equals the given data.
    */
@@ -652,8 +691,7 @@ public class Tree<T> {
     final StringBuilder result = new StringBuilder();
 
     final List<Tree<T>> leaves = gatherLeaves();
-    for (Tree<T> leaf : leaves)
-    {
+    for (Tree<T> leaf : leaves) {
       if (result.length() > 0) result.append(' ');
       result.append(leaf.data.toString());
     }
@@ -668,7 +706,7 @@ public class Tree<T> {
   public Tree<T> setChild(int childPos, Tree<T> newChild) {
     Tree<T> result = null;
 
-    if (children != null && children.size() < childPos && childPos >= 0) {
+    if (children != null && childPos < children.size() && childPos >= 0) {
       result = children.get(childPos);
       result.prune();
       children.set(childPos, newChild);

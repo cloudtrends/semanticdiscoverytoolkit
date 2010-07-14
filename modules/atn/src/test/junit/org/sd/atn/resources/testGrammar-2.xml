@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<grammar>
+
+	<classifiers>
+		<eventKeyword>
+			<jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+			<classifierClass>NLP.RoteListClassifier</classifierClass>
+			<terms caseSensitive="false">
+				<term eventClass="marriage">married</term>
+			</terms>
+		</eventKeyword>
+
+		<eventKeywordPreposition>
+			<jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+			<classifierClass>NLP.RoteListClassifier</classifierClass>
+			<terms caseSensitive="true">
+				<term>at</term>
+				<term>in</term>
+				<term>on</term>
+			</terms>
+		</eventKeywordPreposition>
+
+
+		<relKeyword>
+			<jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+			<classifierClass>NLP.RoteListClassifier</classifierClass>
+			<terms caseSensitive="false">
+				<term relClass="wife">wife</term>
+			</terms>
+		</relKeyword>
+
+		<eventKeywordPreposition>
+			<jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+			<classifierClass>NLP.RoteListClassifier</classifierClass>
+			<terms caseSensitive="true">
+				<term>of</term>
+				<term>to</term>
+				<term>for</term>
+			</terms>
+		</eventKeywordPreposition>
+	</classifiers>
+
+	<rules>
+
+		<person start='true'>
+			<personName />
+			<event optional='true' repeats='true' />
+			<relationship optional='true' repeats='true' />
+		</person>
+
+		<event start='true'>
+			<eventType optional='true' />
+			<date optional='true' />
+			<place />
+		</event>
+
+		<event start='true'>
+			<eventType optional='true' />
+			<place optional='true' />
+			<date />
+		</event>
+
+		<eventType>
+			<eventKeyword />
+			<eventKeywordPreposition optional='true' />
+		</eventType>
+
+
+		<relationship>
+			<relType optional='true' />
+			<personName repeats='true' />
+		</relationship>
+
+		<relType>
+			<relKeyword />
+			<relKeywordPreposition optional='true' />
+		</relType>
+
+	</rules>
+
+</grammar>

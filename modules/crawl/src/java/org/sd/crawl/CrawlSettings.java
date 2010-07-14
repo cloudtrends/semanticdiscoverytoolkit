@@ -43,6 +43,7 @@ public class CrawlSettings {
   public static final long DEFAULT_CRAWL_DELAY = 5000;
   public static final int DEFAULT_MAX_NUM_ROBOTS = 20;
   public static final String DEFAULT_USER_AGENT = "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)";
+  public static final String DEFAULT_ROBOT_NAME = "semanticdiscovery";
 
 
   private int connectTimeout;
@@ -54,12 +55,12 @@ public class CrawlSettings {
   private boolean verbose;
   private File cacheDir;
   private String userAgent;
-  private String robotName;
 
   private boolean ignoreRobots;
   private long crawlDelay;       // delay to apply when revisiting a site
   private long maxCrawlDelay;    // maximum crawl delay
   private int maxNumRobots;      // at least as many as crawling threads
+  private String robotName;      // as would be found in a user-agent string in a robots.txt
 
   private Map<String, Long> host2time;
   private boolean cleaningUpDelays;
@@ -87,13 +88,13 @@ public class CrawlSettings {
    * <li>cacheDir -- (default=null) path to cache directory. If empty, then no cache will be used.</li>
    * <li>userAgent -- (default="Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)")
    *                  The user agent string to send identifying the crawler.
-   * <li>robotName -- (default=null) name of robot to check for against robots.txt exclusions.
    * <li>ignoreRobots -- If "true" (default=false), then ignore robots.txt directives.</li>
    * <li>crawlDelay -- (default=5000) millis to wait before revisiting a domain.</li>
    * <li>maxNumRobots -- (default=20) maximum number of robots.txt instances to
    *                     cache; should be at least as many as the number of
    *                     threads that will be used to crawl using these
    *                     settings.</li>
+   * <li>robotName -- (default=semanticdiscovery) robot name as a (partial) user-agent in a robots.txt file.
    * </ul>
    */
   public CrawlSettings(Properties properties) {
@@ -108,12 +109,12 @@ public class CrawlSettings {
     final String cacheDirString = properties.getProperty("cacheDir", "");
     this.cacheDir = "".equals(cacheDirString) ? null : new File(cacheDirString);
     this.userAgent = properties.getProperty("userAgent", DEFAULT_USER_AGENT);
-    this.robotName = properties.getProperty("robotName");
 
     this.ignoreRobots = "true".equals(properties.getProperty("ignoreRobots", "false"));
     this.crawlDelay = Long.parseLong(properties.getProperty("crawlDelay", Long.toString(DEFAULT_CRAWL_DELAY)));
     this.maxCrawlDelay = crawlDelay;
     this.maxNumRobots = Integer.parseInt(properties.getProperty("maxNumRobots", Integer.toString(DEFAULT_MAX_NUM_ROBOTS)));
+    this.robotName = properties.getProperty("robotName", DEFAULT_ROBOT_NAME);
 
     this.host2time = null;
     this.cleaningUpDelays = false;
@@ -133,11 +134,11 @@ public class CrawlSettings {
     this.verbose = other.verbose;
     this.cacheDir = other.cacheDir;
     this.userAgent = other.userAgent;
-    this.robotName = other.robotName;
     this.ignoreRobots = other.ignoreRobots;
     this.crawlDelay = other.crawlDelay;
     this.maxCrawlDelay = other.crawlDelay;
     this.maxNumRobots = other.maxNumRobots;
+    this.robotName = other.robotName;
     this.host2time = other.host2time;
     this.cleaningUpDelays = false;
     this.host2robots = other.host2robots;
@@ -269,19 +270,6 @@ public class CrawlSettings {
     return userAgent;
   }
 
-  /**
-   * Set the user agent.
-   */
-  public void setRobotName(String robotName) {
-    this.robotName = robotName;
-  }
-
-  /**
-   * Get the user agent.
-   */
-  public String getRobotName() {
-    return robotName;
-  }
 
   /**
    * Set the ignore robots flag.
@@ -332,6 +320,23 @@ public class CrawlSettings {
    */
   public int getMaxNumRobots() {
     return maxNumRobots;
+  }
+
+
+  /**
+   * Set the robot name as would be found as a (partial) user-agent in a
+   * robots.txt file.
+   */
+  public void setRobotName(String robotName) {
+    this.robotName = robotName;
+  }
+
+  /**
+   * Set the robot name as would be found as a (partial) user-agent in a
+   * robots.txt file.
+   */
+  public String getRobotName() {
+    return robotName;
   }
 
 

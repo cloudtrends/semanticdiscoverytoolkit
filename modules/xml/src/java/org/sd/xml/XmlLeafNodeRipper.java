@@ -48,7 +48,7 @@ public class XmlLeafNodeRipper implements XmlRipper {
    * Construct a default instance suitable for processing html.
    */
   public XmlLeafNodeRipper(InputStream inputStream, boolean isHtml, Set<String> ignoreTags, boolean keepEmpties, String[] tagsToSave) throws IOException {
-    this.textRipper = new XmlTextRipper(inputStream,
+    this.textRipper = new XmlTextRipper(inputStream, isHtml,
                                         isHtml ? new HtmlTagStack() : new XmlTagStack(),
                                         isHtml ? XmlFactory.HTML_TAG_PARSER_IGNORE_COMMENTS : XmlFactory.XML_TAG_PARSER_IGNORE_COMMENTS,
                                         ignoreTags, tagsToSave, keepEmpties);

@@ -38,6 +38,7 @@ public class XmlTagRipper implements Iterator<XmlLite.Tag> {
 
   private boolean hitEnd;
   private XmlInputStream xmlInputStream;
+  private boolean commonCase;
   private XmlLite.Tag next;
   private boolean curHitEncodingException;
   private boolean nextHitEncodingException;
@@ -116,6 +117,7 @@ public class XmlTagRipper implements Iterator<XmlLite.Tag> {
   public XmlTagRipper(InputStream inputStream, boolean isHtml, Set<String> ignoreTags, boolean requireXmlTag) throws IOException {
     this.hitEnd = false;
     this.xmlInputStream = new XmlInputStream(inputStream);
+    this.commonCase = isHtml;
     if (requireXmlTag && !xmlInputStream.foundXmlTag()) {
       this.hitEnd = true;
       xmlInputStream.close();
@@ -259,7 +261,7 @@ public class XmlTagRipper implements Iterator<XmlLite.Tag> {
         }
 
         // read tag
-        final XmlTagParser.TagResult tagResult = xmlTagParser.readTag(xmlInputStream, tags, false);
+        final XmlTagParser.TagResult tagResult = xmlTagParser.readTag(xmlInputStream, tags, false, commonCase);
 
         if (tagResult != null) {
           if (tagResult.hasTag()) {

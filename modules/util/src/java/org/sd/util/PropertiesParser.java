@@ -166,7 +166,16 @@ public class PropertiesParser {
   }
 
   private final void setProperty(Properties properties, String arg) {
-    final String[] pieces = arg.split("=");
+    String[] pieces = null;
+
+    final int eqPos = arg.indexOf('=');
+
+    if (eqPos < 0) {
+      pieces = new String[]{arg};
+    }
+    else {
+      pieces = new String[]{arg.substring(0, eqPos), arg.substring(eqPos + 1)};
+    }
 
     if (pieces.length == 1) {
       properties.setProperty(pieces[0], "");

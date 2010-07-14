@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<tests>
+
+	<test>
+		<id>test3</id>
+
+		<inputs>
+
+			<parseConfig>
+
+				<compoundParser>
+					<id>parser1</id>
+			
+					<parser>
+						<id>person</id>
+					  <grammar>${TEST_RESOURCES}/testGrammar-2.xml</grammar>
+			
+						<parseSelector>
+              <jclass>org.sd.atn.LongestParseSelector</jclass>
+						</parseSelector>
+			
+					  <tokenizer>
+							<tokens>
+								<token start='0' end='24'>personName</token>
+								<token start='25' end='37'>date</token>
+								<token start='38' end='49'>date</token>
+								<token start='55' end='76'>personName</token>
+							</tokens>
+						</tokenizer>
+			
+						<tokenizerOptions>
+							<revisionStrategy>LSL</revisionStrategy>
+							<lowerUpperBreak>ZERO_WIDTH_SOFT_BREAK</lowerUpperBreak>
+							<upperLowerBreak>NO_BREAK</upperLowerBreak>
+							<upperDigitBreak>NO_BREAK</upperDigitBreak>
+							<lowerDigitBreak>ZERO_WIDTH_SOFT_BREAK</lowerDigitBreak>
+							<digitUpperBreak>NO_BREAK</digitUpperBreak>
+							<digitLowerBreak>NO_BREAK</digitLowerBreak>
+							<nonEmbeddedDoubleDashBreak>SINGLE_WIDTH_HARD_BREAK</nonEmbeddedDoubleDashBreak>
+							<embeddedDoubleDashBreak>SINGLE_WIDTH_HARD_BREAK</embeddedDoubleDashBreak>
+							<leftBorderedDashBreak>NO_BREAK</leftBorderedDashBreak>
+							<rightBorderedDashBreak>NO_BREAK</rightBorderedDashBreak>
+							<freeStandingDashBreak>SINGLE_WIDTH_HARD_BREAK</freeStandingDashBreak>
+							<whitespaceBreak>SINGLE_WIDTH_SOFT_BREAK</whitespaceBreak>
+							<quoteAndParenBreak>SINGLE_WIDTH_HARD_BREAK</quoteAndParenBreak>
+						</tokenizerOptions>
+			
+						<parseOptions>
+							<consumeAllText>false</consumeAllText>
+							<skipTokenLimit>0</skipTokenLimit>
+							<firstParseOnly>false</firstParseOnly>
+						</parseOptions>
+			
+			    </parser>
+				</compoundParser>
+
+			</parseConfig>
+
+			<input3>Clinton Merrill Thornton Feb 15, 1918 Dec 9, 1989 wife Katherine Pearl Adams</input3>
+
+		</inputs>
+
+		<expectations>
+
+			<expectedText-3a>
+				<list>
+					<list>
+						<item>Clinton Merrill Thornton Feb 15, 1918 Dec 9, 1989 wife Katherine Pearl Adams</item>
+					</list>
+				</list>
+			</expectedText-3a>
+
+
+			<expectedTrees-3a>
+				<list>
+					<list>
+						<item>(person (personName Clinton&space;Merrill&space;Thornton) (event (date Feb&space;15,&space;1918)) (event (date Dec&space;9,&space;1989)) (relationship (relType (relKeyword wife)) (personName Katherine&space;Pearl&space;Adams)))</item>
+					</list>
+				</list>
+			</expectedTrees-3a>
+
+		</expectations>
+
+	</test>
+
+</tests>

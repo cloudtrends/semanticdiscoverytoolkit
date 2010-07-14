@@ -369,7 +369,8 @@ public class XPath {
 
     if (tagString != null) {
       for (Tree<XmlLite.Data> parentNode : nodes) {
-        final Tree<XmlLite.Data> child = new Tree<XmlLite.Data>(new XmlLite.Tag(tagString));
+        final boolean commonCase = parentNode.getData().asTag().commonCase;
+        final Tree<XmlLite.Data> child = new Tree<XmlLite.Data>(new XmlLite.Tag(tagString, commonCase));
         child.getData().setContainer(child);
         parentNode.addChild(child);
         result.add(child);

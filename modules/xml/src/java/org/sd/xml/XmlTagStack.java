@@ -72,12 +72,20 @@ public class XmlTagStack extends MutableTagStack {
   public XmlLite.Tag popTag(String tagName) {
     XmlLite.Tag result = null;
 
-    tagName = tagName.toLowerCase();
+    final String lTagName = tagName.toLowerCase();
     while (tags.size() > 0) {
       final XmlLite.Tag tag = tags.removeLast();
-      if (tag.name.equals(tagName)) {
-        result = tag;
-        break;
+      if (tag.commonCase) {
+        if (tag.name.equals(lTagName)) {
+          result = tag;
+          break;
+        }
+      }
+      else {
+        if (tag.name.equals(tagName)) {
+          result = tag;
+          break;
+        }
       }
     }
 

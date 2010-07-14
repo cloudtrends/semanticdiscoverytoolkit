@@ -34,11 +34,23 @@ public class DomText extends DomNode implements Text {
     super(textData, "#text", "#text", textData.text);
   }
 
+  public String getTextContent() {
+    return nodeValue;
+  }
+
   public String getHyperTrimmedText() {
     if (_hyperTrimmedText == null) {
       _hyperTrimmedText = hyperTrim(nodeValue);
     }
     return _hyperTrimmedText;
+  }
+
+  public boolean isAncestor(DomNode descendant, boolean selfIsAncestor) {
+    return this.asTree().isAncestor(descendant.asTree(), selfIsAncestor);
+  }
+
+  public int getDepth() {
+    return this.asTree().depth();
   }
 
   public short getNodeType() {
@@ -98,24 +110,20 @@ public class DomText extends DomNode implements Text {
     return nodeValue.substring(offset, offset + count);
   }
 
-  private static final String hyperTrim(String p)
-  {
+  private static final String hyperTrim(String p) {
     final StringBuilder result = new StringBuilder();
 
     boolean sawWhite = false;
 
-    for (int charIndex = 0; charIndex < p.length(); ++charIndex)
-    {
+    for (int charIndex = 0; charIndex < p.length(); ++charIndex) {
       final char c = p.charAt(charIndex);
 
       final boolean isWhite = Character.isWhitespace(c);
 
-      if (isWhite)
-      {
+      if (isWhite) {
         sawWhite = true;
       }
-      else
-      {
+      else {
         if (sawWhite && result.length() > 0) result.append(' ');
         result.append(c);
         sawWhite = false;

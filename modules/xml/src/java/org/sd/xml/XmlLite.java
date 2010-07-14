@@ -83,10 +83,16 @@ public class XmlLite {
 
   private XmlTagParser xmlTagParser;
   private Set<String> ignoreTags;
+  private boolean commonCase;
 
   public XmlLite(XmlTagParser xmlTagParser, Set<String> ignoreTags) {
+    this(xmlTagParser, ignoreTags, true);
+  }
+
+  public XmlLite(XmlTagParser xmlTagParser, Set<String> ignoreTags, boolean commonCase) {
     this.xmlTagParser = xmlTagParser;
     this.ignoreTags = ignoreTags;
+    this.commonCase = commonCase;
   }
 
   public Tree<Data> parse(XmlInputStream inputStream) throws IOException {
@@ -129,7 +135,7 @@ public class XmlLite {
    * NOTE: comments will be ignored regardless of this instance's setting.
    */
   public Tree<Data> getTop(XmlInputStream inputStream) throws IOException {
-    Tree<Data> root = new Tree<Data>(new Tag("root bogus=\"true\""));
+    Tree<Data> root = new Tree<Data>(new Tag("root bogus=\"true\"", commonCase));
     root.getData().setContainer(root);
     Tree<Data> curNode = root;
 
@@ -239,12 +245,14 @@ public class XmlLite {
   }
 
   public static Tree<XmlLite.Data> findTag(Tree<XmlLite.Data> node, String tagName) {
-    tagName = tagName.toLowerCase();
     while (node != null) {
       final XmlLite.Data data = node.getData();
       final XmlLite.Tag tag = data.asTag();
-      if (tag != null && tag.name.equals(tagName)) {
-        return node;
+      if (tag != null) {
+        if (tag.commonCase) tagName = tagName.toLowerCase();
+        if (tag.name.equals(tagName)) {
+          return node;
+        }
       }
       node = node.getParent();
     }
@@ -342,7 +350,7 @@ public class XmlLite {
   private final Tree<Data> readText(XmlInputStream inputStream, StringBuilder data, boolean incremental, AtomicBoolean die, boolean forceIgnoreComments, Tree<XmlLite.Data> altTopNode) throws IOException {
     Tree<Data> topNode = altTopNode;
     if (topNode == null) {
-      topNode = new Tree<Data>(new Tag("root bogus=\"true\""));
+      topNode = new Tree<Data>(new Tag("root bogus=\"true\"", commonCase));
       topNode.getData().setContainer(topNode);
     }
     doReading(inputStream, topNode, data, incremental, die, forceIgnoreComments, altTopNode);
@@ -352,9 +360,23 @@ public class XmlLite {
       if (children == null || children.size() == 0) {
         topNode = null;
       }
-      else if (children.size() == 1) {
-        topNode = children.get(0);
-        topNode.prune();
+      else {
+        Tree<Data> onlyTagChild = null;
+        for (Tree<Data> child : children) {
+          if (child.getData().asTag() != null) {
+            if (onlyTagChild == null) {
+              onlyTagChild = child;
+            }
+            else {
+              onlyTagChild = null;
+              break;
+            }
+          }
+        }
+        if (onlyTagChild != null) {
+          topNode = onlyTagChild;
+          topNode.prune();
+        }
       }
     }
 
@@ -400,7 +422,7 @@ public class XmlLite {
   }
 
   private final Tree<Data> readTag(XmlInputStream inputStream, Tree<Data> curNode, StringBuilder data, boolean[] keepGoing, boolean forceIgnoreComments, Tree<Data> stopNode) throws IOException {
-    final XmlTagParser.TagResult tagResult = xmlTagParser.readTag(inputStream, data, forceIgnoreComments);
+    final XmlTagParser.TagResult tagResult = xmlTagParser.readTag(inputStream, data, forceIgnoreComments, commonCase);
 
     if (tagResult != null) {
 
@@ -409,7 +431,7 @@ public class XmlLite {
         final Comment comment = tagResult.getComment();
         final Tree<Data> commentNode = new Tree<Data>(comment);
         if (curNode == null) {
-          curNode = new Tree<Data>(new Tag("xml invented=\"true\""));
+          curNode = new Tree<Data>(new Tag("xml invented=\"true\"", commonCase));
           curNode.getData().setContainer(curNode);
         }
         curNode.addChild(commentNode);
@@ -423,7 +445,7 @@ public class XmlLite {
         if (tagNode == null) {
           // didn't find a tag, make a self-terminating version so
           // that we get a break between text nodes.
-          final Tag tag = new Tag(endTag);
+          final Tag tag = new Tag(endTag, commonCase);
           tag.setSelfTerminating();
           tagNode = new Tree<Data>(tag);
           tag.setContainer(tagNode);
@@ -667,6 +689,7 @@ public class XmlLite {
 
   public static final class Tag extends AbstractData {
     public final String name;
+    public final boolean commonCase;
     public final Map<String, String> attributes;
     private boolean selfTerminating;
     private int numChildren;
@@ -676,7 +699,8 @@ public class XmlLite {
     /**
      * Construct with the name and attributes string.
      */
-    public Tag(String nameAndAttributesString) {
+    public Tag(String nameAndAttributesString, boolean commonCase) {
+      this.commonCase = commonCase;
       this.attributes = new LinkedHashMap<String, String>();
       this.selfTerminating = false;
       this.numChildren = 0;
@@ -702,6 +726,7 @@ public class XmlLite {
     public Tag(Tag other) {
       super.container = other.container;
       this.name = other.name;
+      this.commonCase = other.commonCase;
       this.attributes = new LinkedHashMap<String, String>(other.attributes);
       this.selfTerminating = other.selfTerminating;
       this.numChildren = other.numChildren;
@@ -710,11 +735,11 @@ public class XmlLite {
     }
 
     public String getAttribute(String name) {
-      return attributes.get(fixText(name.toLowerCase()));
+      return attributes.get(fixText(commonCase ? name.toLowerCase() : name));
     }
 
     public void setAttribute(String name, String value) {
-      attributes.put(fixText(name.toLowerCase()), fixText(value));
+      attributes.put(fixText(commonCase ? name.toLowerCase() : name), fixText(value));
     }
 
     /**
@@ -725,7 +750,7 @@ public class XmlLite {
     }
 
     public void removeAttribute(String name) {
-      attributes.remove(fixText(name.toLowerCase()));
+      attributes.remove(fixText(commonCase ? name.toLowerCase() : name));
     }
 
     public Set<Map.Entry<String, String>> getAttributeEntries() {
@@ -779,13 +804,14 @@ public class XmlLite {
       if (nameBoundary < nameAndAttributesString.length()) {
         extractAttributes(nameAndAttributesString.substring(nameBoundary + 1), attributes);
       }
-      return name.toLowerCase();
+      return commonCase ? name.toLowerCase() : name;
     }
 
     private final void extractAttributes(String attributesString, Map<String, String> attributes) {
       final int eqPos = attributesString.indexOf('=');
       if (eqPos >= 0) {
-        final String att = attributesString.substring(0, eqPos).toLowerCase();
+        String att = attributesString.substring(0, eqPos);
+        if (commonCase) att = att.toLowerCase();
         final int alen = attributesString.length();
         final int endAttPos = endAttributePos(attributesString, eqPos + 1);
         final int eap = (endAttPos < alen) ? endAttPos : alen;
