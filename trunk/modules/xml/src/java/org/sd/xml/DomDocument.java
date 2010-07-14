@@ -19,6 +19,11 @@
 package org.sd.xml;
 
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathFactory;
+import org.sd.util.tree.Tree;
 import org.w3c.dom.Attr;
 import org.w3c.dom.CDATASection;
 import org.w3c.dom.Comment;
@@ -46,17 +51,41 @@ public class DomDocument extends DomNode implements Document {
   private String xmlEncoding;
   private boolean xmlStandalone;
   private String xmlVersion;
+  private DataProperties dataProperties;
+  private DomContext _domContext;
+
+  protected static final XPathFactory XPATH_FACTORY = javax.xml.xpath.XPathFactory.newInstance();
+
+  protected static final XPath newXPath() { return XPATH_FACTORY.newXPath(); }
 
   DomDocument(XmlLite.Tag rootTag) {
     super(rootTag, "#document", "#document", null);
 
-    this.documentElement = (DomElement)rootTag.asDomNode();
+    this.documentElement = rootTag == null ? null : (DomElement)rootTag.asDomNode();
     this.documentUri = null;
     this.xmlEncoding = null;
     this.xmlStandalone = false;
     this.xmlVersion = null;
+    this.dataProperties = null;
 
     setOwnerDocument(this);
+  }
+
+  public void writeTo(BufferedWriter writer) throws IOException {
+    if (documentElement != null) {
+      final Tree<XmlLite.Data> tree = documentElement.asTree();
+      if (tree != null) {
+        XmlLite.writeXml(tree, writer);
+      }
+    }
+  }
+
+  DataProperties doGetDataProperties() {
+    return this.dataProperties;
+  }
+
+  void doSetDataProperties(DataProperties dataProperties) {
+    if (this.dataProperties == null) this.dataProperties = dataProperties;
   }
 
   public short getNodeType() {
@@ -69,6 +98,12 @@ public class DomDocument extends DomNode implements Document {
 
   public Attr createAttribute(String name) {
     final DomAttribute result = new DomAttribute(name);
+    result.setOwnerDocument(this);
+    return result;
+  }
+
+  public DomAttribute createDomAttribute(DomElement containingNode, String name, String value) {
+    final DomAttribute result = new DomAttribute(containingNode, name, value);
     result.setOwnerDocument(this);
     return result;
   }
@@ -98,7 +133,11 @@ public class DomDocument extends DomNode implements Document {
   }
 
   public Element createElement(String tagName) {
-    final DomElement result = new DomElement(new XmlLite.Tag(tagName));
+    final XmlLite.Tag elementTag = new XmlLite.Tag(tagName, commonCase());
+    final Tree<XmlLite.Data> elementNode = new Tree<XmlLite.Data>(elementTag);
+    elementTag.setContainer(elementNode);
+    final DomElement result = (DomElement)elementTag.asDomNode();
+    result.setOwnerDocument(this);
     return result;
   }
 
@@ -107,7 +146,11 @@ public class DomDocument extends DomNode implements Document {
 
     nsContainer.addUri(this);
 
-    final DomElement result = new DomElement(new XmlLite.Tag(qualifiedName));
+    final XmlLite.Tag elementTag = new XmlLite.Tag(qualifiedName, commonCase());
+    final Tree<XmlLite.Data> elementNode = new Tree<XmlLite.Data>(elementTag);
+    elementTag.setContainer(elementNode);
+    final DomElement result = (DomElement)elementTag.asDomNode();
+
     result.setNamespaceURI(namespaceURI);
     result.setOwnerDocument(this);
 
@@ -132,6 +175,14 @@ public class DomDocument extends DomNode implements Document {
 
   public Element getDocumentElement() {
     return documentElement;
+  }
+
+  public DomElement getDocumentDomElement() {
+    return documentElement;
+  }
+
+  public DomContext getDomContext() {
+    return documentElement.getDomContext();
   }
 
   public String getDocumentURI() {

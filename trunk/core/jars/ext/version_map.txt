@@ -4,3 +4,6 @@ junit.jar:junit-4.5.jar
 lucene-core.jar:lucene-core-3.0.0.jar
 lucene-highlighter.jar:lucene-highlighter-3.0.0.jar
 weka.jar:weka-3-6-0.jar
+xalan.jar:xalan-j_2_7_1.jar
+xercesImpl.jar:xercesImpl_2_7_1.jar
+xml-apis.jar:xml-apis_2_7_1.jar

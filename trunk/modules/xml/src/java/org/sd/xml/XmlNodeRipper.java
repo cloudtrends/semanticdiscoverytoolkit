@@ -45,6 +45,7 @@ public class XmlNodeRipper implements XmlRipper {
 
   private boolean hitEnd;
   private XmlInputStream xmlInputStream;
+  private boolean commonCase;
   private Tree<XmlLite.Data> next;
   private boolean curHitEncodingException;
   private boolean nextHitEncodingException;
@@ -76,6 +77,7 @@ public class XmlNodeRipper implements XmlRipper {
 
   private final void init(InputStream inputStream, boolean isHtml, Set<String> ignoreTags, boolean requireXmlTag) throws IOException {
     this.xmlInputStream = new XmlInputStream(inputStream);
+    this.commonCase = isHtml;
     if (requireXmlTag && !xmlInputStream.foundXmlTag()) {
       this.hitEnd = true;
       xmlInputStream.close();
@@ -188,7 +190,7 @@ public class XmlNodeRipper implements XmlRipper {
         }
 
         // read tag
-        final XmlTagParser.TagResult tagResult = xmlTagParser.readTag(xmlInputStream, tags, false);
+        final XmlTagParser.TagResult tagResult = xmlTagParser.readTag(xmlInputStream, tags, false, commonCase);
 
         if (tagResult != null) {
           // if we've not found any text, this'll go on the tag stack; otherwise into the tree.

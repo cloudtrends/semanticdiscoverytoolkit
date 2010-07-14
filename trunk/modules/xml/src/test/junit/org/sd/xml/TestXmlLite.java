@@ -59,7 +59,7 @@ public class TestXmlLite extends TestCase {
     validate(xmlLite, "", "");
     validate(xmlLite, "<foo bar=baz/>", "<foo bar=\"baz\"/>");
     validate(xmlLite, "<foo bar=baz>foobarbaz</foo>", "<foo bar=\"baz\">foobarbaz</foo>");
-    validate(xmlLite, "testing123", "testing123");
+    validate(xmlLite, "testing123", "<root bogus=\"true\">testing123</root>");
     validate(xmlLite, "<foo><bar>baz</bar></baz>", "<foo><bar>baz</bar><baz/></foo>");
     validate(xmlLite, "<foo><!-- junk! even has < and > in it! and an extra -- to boot! --></foo>", "<foo/>");
     validate(xmlLite, "<foo><!-- junk! even has < and > in it! and an extra -- to boot! --><bar>baz</bar></foo>", "<foo><bar>baz</bar></foo>");

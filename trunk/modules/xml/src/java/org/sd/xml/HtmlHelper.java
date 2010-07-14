@@ -42,7 +42,7 @@ public class HtmlHelper {
    */
   public static final String[] DEFAULT_IGNORE_TAG_STRINGS = new String[] {
     /*"meta", "link",*/ "style", "script", /*"form",*/ "select", "input", "option",
-    "optgroup", "textarea", "button",
+    "optgroup", "textarea", "button", "iframe",
   };
   public static final Set<String> DEFAULT_IGNORE_TAGS = new HashSet<String>();
   static {

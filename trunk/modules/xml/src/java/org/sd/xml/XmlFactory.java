@@ -42,10 +42,73 @@ public class XmlFactory {
   public static final XmlTagParser HTML_TAG_PARSER_IGNORE_COMMENTS = new XmlTagParser(true, true);
   public static final XmlTagParser HTML_TAG_PARSER_KEEP_COMMENTS = new XmlTagParser(true, false);
 
-  public static final XmlLite XML_LITE_IGNORE_COMMENTS = new XmlLite(XML_TAG_PARSER_IGNORE_COMMENTS, null);   // ignore comments
-  public static final XmlLite XML_LITE_KEEP_COMMENTS = new XmlLite(XML_TAG_PARSER_KEEP_COMMENTS, null);       // keep comments
-  public static final XmlLite HTML_LITE_IGNORE_COMMENTS = new XmlLite(HTML_TAG_PARSER_IGNORE_COMMENTS, HtmlHelper.DEFAULT_IGNORE_TAGS); // ignore comments
-  public static final XmlLite HTML_LITE_KEEP_COMMENTS = new XmlLite(HTML_TAG_PARSER_KEEP_COMMENTS, HtmlHelper.DEFAULT_IGNORE_TAGS);     // keep comments
+  public static final XmlLite XML_LITE_IGNORE_COMMENTS = new XmlLite(XML_TAG_PARSER_IGNORE_COMMENTS, null, false);   // ignore comments
+  public static final XmlLite XML_LITE_KEEP_COMMENTS = new XmlLite(XML_TAG_PARSER_KEEP_COMMENTS, null, false);       // keep comments
+  public static final XmlLite HTML_LITE_IGNORE_COMMENTS = new XmlLite(HTML_TAG_PARSER_IGNORE_COMMENTS, HtmlHelper.DEFAULT_IGNORE_TAGS, true); // ignore comments
+  public static final XmlLite HTML_LITE_KEEP_COMMENTS = new XmlLite(HTML_TAG_PARSER_KEEP_COMMENTS, HtmlHelper.DEFAULT_IGNORE_TAGS, true);     // keep comments
+
+  public static final String XML_FILENAME_ATTRIBUTE = "_xmlFilename";
+
+
+  /**
+   * Load the file as a DOM document.
+   */
+  public static final DomDocument loadDocument(File file, boolean htmlFlag) throws IOException {
+    return loadDocument(file, htmlFlag, null);
+  }
+
+  /**
+   * Load the file as a DOM document.
+   */
+  public static final DomDocument loadDocument(File file, boolean htmlFlag, DataProperties options) throws IOException {
+    final Tree<XmlLite.Data> domTree = readXmlTree(file, true, htmlFlag, false);
+    domTree.getAttributes().put(XML_FILENAME_ATTRIBUTE, file);
+
+    final DomNode domNode = domTree.getData().asDomNode();
+    final DomDocument domDocument = domNode.getOwnerDomDocument();
+    if (options != null) domDocument.setDataProperties(options);
+
+    return domDocument;
+  }
+
+  public static final DomDocument loadDocument(InputStream inputStream, boolean htmlFlag, DataProperties options) throws IOException {
+    final Tree<XmlLite.Data> domTree = readXmlTree(inputStream, null, true, htmlFlag, null, false);
+
+    final DomNode domNode = domTree.getData().asDomNode();
+    final DomDocument domDocument = domNode.getOwnerDomDocument();
+    if (options != null) domDocument.setDataProperties(options);
+
+    return domDocument;
+  }
+
+  /**
+   * Load the file as a DOM document.
+   */
+  public static final DomDocument loadDocument(String xml, boolean htmlFlag) throws IOException {
+    final Tree<XmlLite.Data> domTree = buildXmlTree(xml, true, htmlFlag);
+
+    final DomNode domNode = domTree.getData().asDomNode();
+    final DomDocument domDocument = domNode.getOwnerDomDocument();
+    return domDocument;
+  }
+
+
+  /**
+   * If the tree holds XmlLite.Data instances, get its corresponding DomDocument;
+   * otherwise, null.
+   */
+  public static final <T> DomDocument getDomDocument(Tree<T> tree) {
+    DomDocument result = null;
+
+    final T data = tree.getData();
+    if (data instanceof XmlLite.Data) {
+      final XmlLite.Data xmlData = (XmlLite.Data)data;
+      result = xmlData.asDomNode().getOwnerDomDocument();
+    }
+
+    return result;
+  }
+
 
   /**
    * Read the xml tree from the given file, unless the time limit is reached.
@@ -138,6 +201,8 @@ public class XmlFactory {
   }
 
   public static final Tree<XmlLite.Data> readXmlTree(InputStream inputStream, Encoding encoding, boolean ignoreComments, boolean htmlFlag, AtomicBoolean die, boolean requireXmlTag) throws IOException {
+
+    if (encoding == null) encoding = Encoding.UTF8;
     final XmlLite xmlLite = getXmlLite(ignoreComments, htmlFlag);
 
     Tree<XmlLite.Data> result = null;

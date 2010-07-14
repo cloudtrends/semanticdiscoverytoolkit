@@ -19,11 +19,13 @@
 package org.sd.xml;
 
 
+import java.util.List;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.TypeInfo;
+import org.sd.util.tree.Tree;
 
 /**
  * Wrapper for a dom element node as provided through XmlLite.Tag.
@@ -34,19 +36,52 @@ public class DomElement extends DomNode implements Element {
   
   private String _localName;
   private DomNamedNodeMap _attributes;
+  private String _textContent;
 
   DomElement(XmlLite.Tag tagData) {
     super(tagData, tagData.name, tagData.name, null);
 
     this._localName = null;
     this._attributes = null;
+    this._textContent = null;
+  }
+
+  /**
+   * Get this element's text content.
+   *
+   * NOTE: Original whitespace formatting is *NOT* preserved through this
+   *       implementation. Whitespace across nodes is normalized to a single
+   *       space between nodes (even when there was no whitespace between the
+   *       nodes when the DOM is loaded. Whitespace within nodes is left as
+   *       found. That is, it is *not*  hypertrimmed.
+   */
+  public String getTextContent() {
+    if (_textContent == null) {
+      final Tree<XmlLite.Data> myTree = asTree();
+      if (myTree != null) {
+        final StringBuilder result = new StringBuilder();
+        final List<Tree<XmlLite.Data>> leaves = myTree.gatherLeaves();
+        for (Tree<XmlLite.Data> leaf : leaves) {
+          final XmlLite.Text text = leaf.getData().asText();
+          if (text != null && text.text != null && !"".equals(text.text)) {
+            if (result.length() > 0) result.append(' ');
+            result.append(text.text);
+          }
+        }
+        _textContent = result.toString();
+      }
+      else {
+        _textContent = getNodeValue();
+      }
+    }
+    return _textContent;
   }
 
   public NamedNodeMap getAttributes() {
     return getDomAttributes();
   }
 
-  private DomNamedNodeMap getDomAttributes() {
+  public DomNamedNodeMap getDomAttributes() {
     if (_attributes == null) {
       _attributes = new DomNamedNodeMap(this);
     }
@@ -70,6 +105,64 @@ public class DomElement extends DomNode implements Element {
 
   public boolean hasAttributes() {
     return backref.asTag().attributes.size() > 0;
+  }
+
+  public String getAttributeValue(String attributeName) {
+    final String result = getAttributeValue(attributeName, null);
+
+    if (result == null) {
+      throw new IllegalArgumentException("Element '" + getLocalName() + " is missing required attribute '" + attributeName + "'!");
+    }
+
+    return result;
+  }
+
+  public String getAttributeValue(String attributeName, String defaultValue) {
+    String result = defaultValue;
+
+    if (hasAttributes()) {
+      result = backref.asTag().attributes.get(attributeName);
+    }
+
+    return result;
+  }
+
+  public boolean getAttributeBoolean(String attributeName) {
+    final String result = getAttributeValue(attributeName, null);
+
+    if (result == null) {
+      throw new IllegalArgumentException("Element '" + getLocalName() + "' is missing required attribute '" + attributeName + "'!");
+    }
+
+    return "true".equalsIgnoreCase(result);
+  }
+
+  public boolean getAttributeBoolean(String attributeName, boolean defaultValue) {
+    final String result = getAttributeValue(attributeName, null);
+    return result == null ? defaultValue : "true".equalsIgnoreCase(result);
+  }
+
+  public int getAttributeInt(String attributeName) {
+    final String result = getAttributeValue(attributeName, null);
+
+    if (result == null) {
+      throw new IllegalArgumentException("Element '" + getLocalName() + "' is missing required attribute '" + attributeName + "'!");
+    }
+
+    return Integer.parseInt(result);
+  }
+
+  public int getAttributeInt(String attributeName, int defaultValue) {
+    final String result = getAttributeValue(attributeName, null);
+    return result == null ? defaultValue : Integer.parseInt(result);
+  }
+
+  public boolean isAncestor(DomNode descendant, boolean selfIsAncestor) {
+    return this.asTree().isAncestor(descendant.asTree(), selfIsAncestor);
+  }
+
+  public int getDepth() {
+    return this.asTree().depth();
   }
 
   public short getNodeType() {
@@ -190,8 +283,7 @@ public class DomElement extends DomNode implements Element {
   }
 
   public void setAttribute(String name, String value) {
-    final DomAttribute attr = (DomAttribute)(getOwnerDocument().createAttribute(name));
-    attr.setValue(value);
+    final DomAttribute attr = getOwnerDomDocument().createDomAttribute(this, name, value);
     setAttributeNode(attr);
   }
 

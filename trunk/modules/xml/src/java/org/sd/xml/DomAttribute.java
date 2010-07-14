@@ -42,6 +42,10 @@ public class DomAttribute extends DomNode implements Attr {
     this.containingNode = containingNode;
   }
 
+  public String getTextContent() {
+    return nodeValue;
+  }
+
   public String getLocalName() {
     String result = nodeName;
 

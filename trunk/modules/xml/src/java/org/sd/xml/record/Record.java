@@ -314,7 +314,8 @@ public class Record {
    */
   public Record(String name, List<Tree<XmlLite.Data>> xmlTrees) {
     this.name = name == null ? "" : name;
-    this._xmlTree = new Tree<XmlLite.Data>(new XmlLite.Tag(name));
+    boolean commonCase = xmlTrees.get(0).getData().asTag().commonCase;
+    this._xmlTree = new Tree<XmlLite.Data>(new XmlLite.Tag(name, commonCase));
     this._xmlTree.getData().setContainer(this._xmlTree);
     for (Tree<XmlLite.Data> xmlTree : xmlTrees) {
       _xmlTree.addChild(xmlTree);
@@ -481,7 +482,8 @@ public class Record {
    */
   public void addValue(Value value) {
     final Tree<XmlLite.Data> xmlTree = asTree();
-    final Tree<XmlLite.Data> child = new Tree<XmlLite.Data>(new XmlLite.Tag(value.getName()));
+    final boolean commonCase = xmlTree.getData().asTag().commonCase;
+    final Tree<XmlLite.Data> child = new Tree<XmlLite.Data>(new XmlLite.Tag(value.getName(), commonCase));
     child.getData().setContainer(child);
     xmlTree.addChild(child);
     child.addChild(value.asTree());
@@ -852,7 +854,7 @@ public class Record {
    */
   public Tree<XmlLite.Data> asTree() {
     if (_xmlTree == null) {
-      final XmlLite.Tag tag = new XmlLite.Tag(name);
+      final XmlLite.Tag tag = new XmlLite.Tag(name, false); //todo: parameterize commonCase?
       tag.setProperty("_record", this);
       _xmlTree = new Tree<XmlLite.Data>(tag);
       tag.setContainer(_xmlTree);

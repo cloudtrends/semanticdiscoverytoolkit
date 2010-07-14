@@ -48,16 +48,16 @@ public class TestXmlIterator extends TestCase {
     final Tree<XmlLite.Data> top = xmlIter.getTop();
     final XmlLite.Tag topTag = top.getData().asTag();
 
-    assertEquals("rdf", topTag.name);
+    assertEquals("RDF", topTag.name);
 
-    final String[] childTags = new String[]{"d:title", "d:creator", "d:subject",
-                                            "d:description", "d:publisher", "d:date",
-                                            "d:identifier", "d:language", "d:rights", 
-                                            "d:rights", "restaurant", "dinerreview",
-                                            "dinerreview", "restaurant", "dinerreview",
-                                            "restaurant", "restaurant", "dinerreview",
-                                            "dinerreview", "dinerreview", "restaurant",
-                                            "dinerreview", "dinerreview"};
+    final String[] childTags = new String[]{"d:Title", "d:Creator", "d:Subject",
+                                            "d:Description", "d:Publisher", "d:Date",
+                                            "d:Identifier", "d:Language", "d:Rights", 
+                                            "d:Rights", "Restaurant", "DinerReview",
+                                            "DinerReview", "Restaurant", "DinerReview",
+                                            "Restaurant", "Restaurant", "DinerReview",
+                                            "DinerReview", "DinerReview", "Restaurant",
+                                            "DinerReview", "DinerReview"};
 
     int index = 0;
     while (xmlIter.hasNext()) {

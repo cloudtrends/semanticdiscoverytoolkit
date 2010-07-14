@@ -91,7 +91,7 @@ public class XmlTagParser {
    * @return a TagResult containing the result of the read, or null if nothing
    *         of significance read but there is still something more to be read.
    */
-  public final TagResult readTag(XmlInputStream inputStream, StringBuilder data, boolean forceIgnoreComments) throws IOException {
+  public final TagResult readTag(XmlInputStream inputStream, StringBuilder data, boolean forceIgnoreComments, boolean commonCase) throws IOException {
     TagResult result = null;
     final boolean doIgnoreComments = forceIgnoreComments || ignoreComments;
     int codePoint = inputStream.read();
@@ -151,7 +151,7 @@ public class XmlTagParser {
           result = new TagResult(script, pos < 0);
         }
         else {
-          final XmlLite.Tag tag = new XmlLite.Tag(text);
+          final XmlLite.Tag tag = new XmlLite.Tag(text, commonCase);
           if (isOptionalEndTag(tag.name)) tag.setSelfTerminating();
           result = new TagResult(tag);
         }
@@ -338,7 +338,7 @@ public class XmlTagParser {
 
     public TagResult(XmlLite.Script script, boolean endOfStream) {
       this();
-      this.tag = new XmlLite.Tag("script");
+      this.tag = new XmlLite.Tag("script", true);
       this.script = script;
       this.endOfStream = endOfStream;
     }

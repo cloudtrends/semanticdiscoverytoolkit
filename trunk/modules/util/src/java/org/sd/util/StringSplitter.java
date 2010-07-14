@@ -43,11 +43,24 @@ public class StringSplitter {
    */
   public static String hypertrim(String data) {
     final StringBuilder result = new StringBuilder();
-    final String[] pieces = splitOnWhitespace(data);
-    for (int i = 0; i < pieces.length; ++i) {
-      result.append(pieces[i]);
-      if (i + 1 < pieces.length) result.append(' ');
+
+    boolean sawWhite = false;
+
+    for (int charIndex = 0; charIndex < data.length(); ++charIndex) {
+      final char c = data.charAt(charIndex);
+
+      final boolean isWhite = Character.isWhitespace(c);
+
+      if (isWhite) {
+        sawWhite = true;
+      }
+      else {
+        if (sawWhite && result.length() > 0) result.append(' ');
+        result.append(c);
+        sawWhite = false;
+      }
     }
+
     return result.toString();
   }
 

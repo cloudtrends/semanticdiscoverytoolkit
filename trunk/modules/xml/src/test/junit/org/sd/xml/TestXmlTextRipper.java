@@ -82,7 +82,7 @@ public class TestXmlTextRipper extends TestCase {
 
   public void test1() throws IOException {
     final String filename = FileUtil.getFilename(this.getClass(), TEST1_XML);
-    final XmlTextRipper ripper = new XmlTextRipper(filename);
+    final XmlTextRipper ripper = new XmlTextRipper(filename, true);
 
     final String[] expected = new String[] {
       "1", "2", "3", "4", "5",
@@ -94,7 +94,7 @@ public class TestXmlTextRipper extends TestCase {
 
   public void test2NoEmpties() throws IOException {
     final InputStream inputStream = FileUtil.getInputStream(this.getClass(), TEST1_XML);
-    final XmlTextRipper ripper = new XmlTextRipper(inputStream, new XmlTagStack(), new XmlTagParser(false, true), null, null, false);
+    final XmlTextRipper ripper = new XmlTextRipper(inputStream, true, new XmlTagStack(), new XmlTagParser(false, true), null, null, false);
 
     final String[] expectedText = new String[] {
       "1", "2", "3", "4", "5",
@@ -109,7 +109,7 @@ public class TestXmlTextRipper extends TestCase {
 
   public void test2WithEmpties() throws IOException {
     final InputStream inputStream = FileUtil.getInputStream(this.getClass(), TEST1_XML);
-    final XmlTextRipper ripper = new XmlTextRipper(inputStream, new XmlTagStack(), new XmlTagParser(false, true), null, null, true);
+    final XmlTextRipper ripper = new XmlTextRipper(inputStream, true, new XmlTagStack(), new XmlTagParser(false, true), null, null, true);
 
     final String[] expectedText = new String[] {
       "1", "2", "", "3", "4", "5",

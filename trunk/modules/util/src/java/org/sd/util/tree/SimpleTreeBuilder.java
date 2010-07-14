@@ -42,6 +42,8 @@ public class SimpleTreeBuilder<T> implements TreeBuilder<T> {
   /**
    * Our formatting is (A (B "C")), so symbols to escape are
    * the delimiters: ( ) space " [ ]
+   * <p>
+   * For completely reversible escaping.
    */
   private static final Escaper escaper = new Escaper(
     new String[][]{
@@ -58,8 +60,22 @@ public class SimpleTreeBuilder<T> implements TreeBuilder<T> {
 
     }, 2);
 
+  /**
+   * Formatting for visual escaping, which may not be completely reversible.
+   */
+  private static final Escaper visualEscaper = new Escaper(
+    new String[][]{
+      {"(", "\\("},
+      {")", "\\)"},
+      {"\"", "\\\""},
+    }, 2);
+
   public static Escaper getEscaper() {
     return escaper;
+  }
+
+  public static Escaper getVisualEscaper() {
+    return visualEscaper;
   }
 
   /**

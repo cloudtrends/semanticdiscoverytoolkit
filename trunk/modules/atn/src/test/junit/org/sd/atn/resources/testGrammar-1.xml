@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<grammar>
+
+	<tokenFilter id="contiguous">
+		<jclass>org.sd.atn.ContiguousTokenFilter</jclass>
+
+		<innerdelim>
+			<disallowall />
+			<allow type='substr'>,</allow>
+			<allow type='substr'>.</allow>
+			<allow type='exact'>-</allow>
+			<allow type='substr'>(</allow>
+			<allow type='substr'>)</allow>
+			<allow type='substr'>/</allow>
+			<allow type='substr'>\</allow>
+			<allow type='substr'>"</allow>
+			<allow type='substr'>'</allow>
+		</innerdelim>
+
+		<!-- only allow lower/upper letters, single-quotes, dashes and periods within a token's text -->
+		<tokenreg>[A-Za-z'\-.]</tokenreg>
+
+	</tokenFilter>
+
+	<tokenFilter id='onlywhite'>
+		<jclass>org.sd.atn.ContiguousTokenFilter</jclass>
+
+		<!-- only allow lower/upper letters, single-quotes, dashes and periods within a token's text -->
+		<tokenreg>[A-Za-z'\-.]</tokenreg>
+
+		<innerdelim>
+			<disallowall/>
+		</innerdelim>
+	</tokenFilter>
+
+	<classifiers>
+		<namePart>
+			<jclass>org.sd.token.plugin.CapitalizedWordClassifier</jclass>
+      <terms><term>of</term><term>the</term></terms>
+		</namePart>
+
+		<nameMod>
+			<jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+      <terms><term>Jr</term><term>Sr</term></terms>
+		</nameMod>
+
+	</classifiers>
+
+	<rules>
+
+		<!-- namePart+ , nameMod* namePart+ ,? nameMod* -->
+		<genericName start='true' tokenFilter='contiguous'>
+			<namePart repeats='true'>
+			</namePart>
+
+			<delim consumeToken='false' ignoreToken='true'>
+				<predelim>
+					<disallowall />
+					<require type='substr'>,</require>'
+				</predelim>
+			</delim>
+
+			<nameMod optional='true' repeats='true' />
+			<namePart repeats='true'>
+				<predelim>
+					<disallowall />
+					<allow type='substr'>.</allow>
+					<allow type='exact'>-</allow>
+					<allow type='substr'>(</allow>
+					<allow type='substr'>)</allow>
+					<allow type='substr'>/</allow>
+					<allow type='substr'>"</allow>
+					<allow type='substr'>'</allow>
+				</predelim>
+			</namePart>
+			<nameMod optional='true' repeats='true' />
+
+		</genericName>
+
+		<genericName start='true' tokenFilter='contiguous'>
+			<nameMod optional='true' repeats='true' />
+			<namePart repeats='true'>
+			</namePart>
+			<nameMod optional='true' repeats='true' />
+		</genericName>
+
+	</rules>
+
+</grammar>

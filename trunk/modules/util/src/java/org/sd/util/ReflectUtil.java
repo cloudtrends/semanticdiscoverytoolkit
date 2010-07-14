@@ -22,6 +22,9 @@ package org.sd.util;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -341,6 +344,129 @@ public class ReflectUtil {
       catch (InstantiationException e) {
         throw new IllegalArgumentException(theClass.getName() + "(" + arg.getClass().getName() + " " + arg + ")", e);
       }
+    }
+
+    return result;
+  }
+
+
+  /**
+   * Construct an instance of the class from its constructor taking a single
+   * argument of the object parameter's type.
+   */
+  public static Object constructInstance(Class<?> theClass, Class<?>[] theArgTypes, Object[] args) {
+    Object result = null;
+
+    try {
+      final Constructor<?> constructor = theClass.getConstructor(theArgTypes);
+      result = constructor.newInstance(args);
+    }
+    catch (NoSuchMethodException e) {
+      throw new IllegalArgumentException(theClass.getName() + "(" + theArgTypes.length + " args)", e);
+    }
+    catch (IllegalAccessException e) {
+      throw new IllegalArgumentException(theClass.getName() + "(" + theArgTypes.length + " args)", e);
+    }
+    catch (InvocationTargetException e) {
+      throw new IllegalArgumentException(theClass.getName() + "(" + theArgTypes.length + " args)", e);
+    }
+    catch (InstantiationException e) {
+      throw new IllegalArgumentException(theClass.getName() + "(" + theArgTypes.length + " args)", e);
+    }
+
+    return result;
+  }
+
+/*
+  public static Object constructInstance(Class<?> theClass, Object[] args) {
+    Object result = null;
+
+    final List<Collection<Class<?>>> classCollections = new ArrayList<Collection<Class<?>>>();
+
+    for (Object arg : args) {
+      final List<Class<?>> classList = new ArrayList<Class<?>>();
+      Class<?> argClass = arg.getClass();
+      while (argClass != null) {
+        classList.add(argClass);
+        argClass = argClass.getSuperclass();
+      }
+      classCollections.add(classList);
+    }
+
+    final List<Collection<Class<?>>> combos = GeneralUtil.combine(classCollections);
+    NoSuchMethodException nsme = null;
+
+    for (Collection<Class<?>> classList : combos) {
+      final Class<?>[] argTypes = classList.toArray(new Class<?>[classList.size()]);
+
+      try {
+        final Constructor<?> constructor = theClass.getConstructor(argTypes);
+        result = constructor.newInstance(args);
+      }
+      catch (NoSuchMethodException e) {
+        // ignore and try next combo
+        nsme = e;
+      }
+      catch (IllegalAccessException e) {
+        throw new IllegalArgumentException(theClass.getName() + "(" + args.length + " args)", e);
+      }
+      catch (InvocationTargetException e) {
+        throw new IllegalArgumentException(theClass.getName() + "(" + args.length + " args)", e);
+      }
+      catch (InstantiationException e) {
+        throw new IllegalArgumentException(theClass.getName() + "(" + args.length + " args)", e);
+      }
+
+      if (result != null) {
+        break;
+      }
+    }
+
+    if (result == null && nsme != null) {
+      throw new IllegalArgumentException(theClass.getName() + "(" + args.length + " args) " + combos, nsme);
+    }
+
+    return result;
+  }
+*/
+
+  public static Object constructInstance(Class<?> theClass, Object[] args) {
+    Object result = null;
+
+    try {
+      Constructor<?> constructor = null;
+      
+      final Constructor<?>[] constructors = theClass.getConstructors();
+      for (Constructor<?> c : constructors) {
+        final Class<?>[] params = c.getParameterTypes();
+        if (params.length == args.length) {
+          boolean paramsMatch = true;
+          for (int i = 0; i < params.length; ++i) {
+            if (!params[i].isAssignableFrom(args[i].getClass())) {
+              paramsMatch = false;
+            }
+          }
+          if (paramsMatch) {
+            constructor = c;
+            break;
+          }
+        }
+      }
+
+      if (constructor == null) {
+        throw new IllegalArgumentException(theClass.getName() + "(" + args.length + " args) constructor not found!");
+      }
+
+      result = constructor.newInstance(args);
+    }
+    catch (IllegalAccessException e) {
+      throw new IllegalArgumentException(theClass.getName() + "(" + args.length + " args)", e);
+    }
+    catch (InvocationTargetException e) {
+      throw new IllegalArgumentException(theClass.getName() + "(" + args.length + " args)", e);
+    }
+    catch (InstantiationException e) {
+      throw new IllegalArgumentException(theClass.getName() + "(" + args.length + " args)", e);
     }
 
     return result;

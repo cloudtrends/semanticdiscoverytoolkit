@@ -43,7 +43,7 @@ public class TestXmlNodeIterator extends TestCase {
   public void test1() throws IOException {
     final File file = FileUtil.getFile(this.getClass(), "resources/xml-node-iterator-test-data-1.xml");
     final XmlNodeIterator iter = new XmlNodeIterator(file, false, null);
-    final String[] path = new String[]{"a", "b", "c", "foo"};
+    final String[] path = new String[]{"a", "b", "c", "Foo"};
     Tree<XmlLite.Data> node = null;
     Tree<XmlLite.Data> recordNode = null;
 
@@ -70,7 +70,7 @@ public class TestXmlNodeIterator extends TestCase {
     assertEquals("Foo-1", XmlTreeHelper.getAllText(node));
     assertTrue(iter.hasPath(path));
     recordNode = iter.getNode(path);
-    assertEquals("foo", recordNode.getData().asTag().name);
+    assertEquals("Foo", recordNode.getData().asTag().name);
     assertEquals(3, recordNode.getChildren().size());
     assertEquals("Foo-1 Bar-1 Baz-1", XmlTreeHelper.getAllText(recordNode));
 
@@ -79,7 +79,7 @@ public class TestXmlNodeIterator extends TestCase {
     assertEquals("Foo-2", XmlTreeHelper.getAllText(node));
     assertTrue(iter.hasPath(path));
     recordNode = iter.getNode(path);
-    assertEquals("foo", recordNode.getData().asTag().name);
+    assertEquals("Foo", recordNode.getData().asTag().name);
     assertEquals(3, recordNode.getChildren().size());
     assertEquals("Foo-2 Bar-2 Baz-2", XmlTreeHelper.getAllText(recordNode));
 

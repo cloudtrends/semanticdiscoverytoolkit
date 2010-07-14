@@ -146,11 +146,11 @@ public class TestBlogSnippetExtractor extends TestCase {
           {42, 53},
           {54, 66}},
         new String[] {
-          "[(DATE_TIME (DATE (WEEKDAY 'lundi') (DAY '4') (MONTH 'février') (YEAR '2008')) (TIME (HOUR '12') (MINUTE '38&space;-')))]",
-          "[(DATE_TIME (DATE (WEEKDAY 'jeudi') (DAY '31') (MONTH 'janvier') (YEAR '2008')) (TIME (HOUR '13') (MINUTE '55&space;-')))]",
-          "[(DATE_TIME (DATE (WEEKDAY 'samedi') (DAY '1') (MONTH 'décembre') (YEAR '2007')) (TIME (HOUR '13') (MINUTE '06&space;-')))]",
-          "[(DATE_TIME (DATE (WEEKDAY 'samedi') (DAY '17') (MONTH 'novembre') (YEAR '2007')) (TIME (HOUR '08') (MINUTE '04&space;-')))]",
-          "[(DATE_TIME (DATE (WEEKDAY 'mercredi') (DAY '7') (MONTH 'novembre') (YEAR '2007')) (TIME (HOUR '17') (MINUTE '36&space;-')))]"});
+          "[(DATE_TIME (DATE (WEEKDAY 'lundi') (DAY '4') (MONTH 'février') (YEAR '2008')) (TIME (HOUR '12') (MINUTE '38 -')))]",
+          "[(DATE_TIME (DATE (WEEKDAY 'jeudi') (DAY '31') (MONTH 'janvier') (YEAR '2008')) (TIME (HOUR '13') (MINUTE '55 -')))]",
+          "[(DATE_TIME (DATE (WEEKDAY 'samedi') (DAY '1') (MONTH 'décembre') (YEAR '2007')) (TIME (HOUR '13') (MINUTE '06 -')))]",
+          "[(DATE_TIME (DATE (WEEKDAY 'samedi') (DAY '17') (MONTH 'novembre') (YEAR '2007')) (TIME (HOUR '08') (MINUTE '04 -')))]",
+          "[(DATE_TIME (DATE (WEEKDAY 'mercredi') (DAY '7') (MONTH 'novembre') (YEAR '2007')) (TIME (HOUR '17') (MINUTE '36 -')))]"});
 
     verifySnippets(snippetizer, FileUtil.getFile(this.getClass(), "resources/cache/cache-9999/ad/adwords-de.blogspot.html.gz"),
         new int[][] {

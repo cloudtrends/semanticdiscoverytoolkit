@@ -78,9 +78,9 @@ public class TestParser extends TestCase {
      "(S (Subject (NP (noun 'fruit') (noun 'flies'))) (Direct_Object (VP (verb 'like') (NP (det 'an') (noun 'apple')))))",
      "(S (Subject (NP (noun 'fruit'))) (Direct_Object (VP (verb_intrans 'flies')) (PP (prep 'like') (NP (det 'an') (noun 'apple')))))"},
     {"the boy ate potato salad",
-     "(S (Subject (NP (det 'the') (noun 'boy'))) (Direct_Object (VP (verb 'ate') (NP (noun 'potato&space;salad')))))"},
+     "(S (Subject (NP (det 'the') (noun 'boy'))) (Direct_Object (VP (verb 'ate') (NP (noun 'potato salad')))))"},
     {"the circus clown ate potato salad",
-     "(S (Subject (NP (det 'the') (noun 'circus&space;clown'))) (Direct_Object (VP (verb 'ate') (NP (noun 'potato&space;salad')))))"}
+     "(S (Subject (NP (det 'the') (noun 'circus clown'))) (Direct_Object (VP (verb 'ate') (NP (noun 'potato salad')))))"}
   };
 
 

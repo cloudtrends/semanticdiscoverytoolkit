@@ -1,0 +1,220 @@
+/*
+    Copyright 2009 Semantic Discovery, Inc. (www.semanticdiscovery.com)
+
+    This file is part of the Semantic Discovery Toolkit.
+
+    The Semantic Discovery Toolkit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    The Semantic Discovery Toolkit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
+*/
+package org.sd.xml;
+
+
+import java.io.File;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.Properties;
+import org.sd.util.PropertiesParser;
+
+/**
+ * DOM-backed properties container.
+ * <p>
+ * @author Spence Koehler
+ */
+public class DataProperties extends BaseDataProperties {
+
+
+  private LinkedList<DomDataProperties> domDataProperties;
+  private Properties properties;
+  private String[] remainingArgs;
+
+  /**
+   * Construct containing only environment variables.
+   */
+  public DataProperties() {
+    init(new String[]{});
+  }
+
+  /**
+   * Args of form:
+   *  - X.default.properties -- load env's DEFAULT_PROPERTIES_DIR's X.properties file
+   *  - X.properties -- load X.properties file
+   *  - property=value -- set property
+   *  - X.xml -- load X.xml dom config file
+   *
+   * NOTEs:
+   *  - Properties trump config (xml) mappings.
+   *  - Later specified properties trump formerly specified properties.
+   */
+  public DataProperties(String[] args) {
+    init(args);
+  }
+
+  public DataProperties(DomElement domElement) {
+    init(new String[]{});
+
+    final DomDataProperties ddp = new DomDataProperties(domElement);
+    doAddDataProperties(ddp);
+
+    final DataProperties elementProperties = domElement.getDataProperties();
+    if (elementProperties != null) {
+      this.properties = elementProperties.properties;
+    }
+  }
+
+  public DataProperties(File xmlFile) throws IOException {
+    init(new String[]{});
+
+    final DomDataProperties ddp = new DomDataProperties(xmlFile);
+    doAddDataProperties(ddp);
+  }
+
+  private final void init(String[] args) {
+    try {
+      this.domDataProperties = new LinkedList<DomDataProperties>();
+
+      final PropertiesParser pp = new PropertiesParser(args, true);
+      this.properties = pp.getProperties();
+      this.remainingArgs = pp.getArgs();
+
+      for (String arg : pp.getArgs()) {
+        if (arg.endsWith(".xml")) {
+          final DomDataProperties ddp = new DomDataProperties(new File(arg));
+          doAddDataProperties(ddp);
+        }
+      }
+    }
+    catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private final void doAddDataProperties(DomDataProperties ddp) {
+    domDataProperties.addFirst(ddp);
+    ddp.getDomElement().setDataProperties(this);
+  }
+
+  public String[] getRemainingArgs() {
+    return remainingArgs;
+  }
+
+  public Properties getProperties() {
+    return properties;
+  }
+
+  public DomElement getDomElement() {
+    return domDataProperties.size() > 0 ? domDataProperties.getFirst().getDomElement() : null;
+  }
+
+  public DomDataProperties getDomDataProperties() {
+    return domDataProperties.size() > 0 ? domDataProperties.getFirst() : null;
+  }
+
+  /**
+   * Build an instance of the domNode's class specified by its relative
+   * classXPath that takes the domNode object as its sole construction
+   * parameter.
+   */
+  public Object buildInstance(DomNode domNode, String classXPath) {
+    return domDataProperties.size() > 0 ? domDataProperties.getFirst().buildInstance(domNode, classXPath) : null;
+  }
+
+  /**
+   * Add a new property or override an existing.
+   */
+  public void set(String key, String value) {
+    properties.setProperty(key, value);
+  }
+
+  /**
+   * Add a new property or override an existing.
+   */
+  public void set(String key, boolean value) {
+    properties.setProperty(key, Boolean.toString(value));
+  }
+
+  /**
+   * Add a new property or override an existing.
+   */
+  public void set(String key, int value) {
+    properties.setProperty(key, Integer.toString(value));
+  }
+
+
+  /**
+   * Replace segments of the form "${x}" with getString(x) iff getString(x) != null.
+   */
+  public String replaceVariables(String text) {
+    final StringBuilder result = new StringBuilder();
+
+    while (doReplaceVariables(text, result)) {
+      text = result.toString();
+      result.setLength(0);
+    }
+
+    return text;
+  }
+
+  private final boolean doReplaceVariables(String text, StringBuilder result) {
+    boolean replaced = false;
+
+    int ptr = 0;
+    int varEndPos = 0;
+    for (int varStartPos = text.indexOf("${"); varStartPos >= 0 && ptr < text.length(); varStartPos = text.indexOf("${", varEndPos + 1)) {
+      if (varStartPos > ptr) {
+        result.append(text.substring(ptr, varStartPos));
+        ptr = varStartPos;
+      }
+
+      varEndPos = text.indexOf('}', varStartPos + 2);
+      if (varEndPos < 0) {
+        break;
+      }
+
+      final String var = text.substring(varStartPos + 2, varEndPos);
+      final String val = getValueString(var);
+      if (val != null) {
+        // replace variable with value
+        result.append(val);
+        replaced = true;
+      }
+      else {
+        // keep variable text unchanged
+        result.append(text.substring(varStartPos, varEndPos + 1));
+      }
+
+      ptr = varEndPos + 1;
+    }
+
+    if (ptr < text.length()) result.append(text.substring(ptr));
+
+    return replaced;
+  }
+
+
+  protected String getValueString(String key) {
+    String result = properties.getProperty(key);
+
+    if (result == null) {
+      for (DomDataProperties ddp : domDataProperties) {
+        result = ddp.getValueString(key);
+        if (result != null) {
+          // cache the result for faster access next time
+          //set(key, result);
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+}

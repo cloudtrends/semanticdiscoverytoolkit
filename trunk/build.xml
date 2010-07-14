@@ -71,6 +71,7 @@
 		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/io/build/classes"/>
 		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/util/build/classes" update="true"/>
 		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/xml/build/classes" update="true"/>
+		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/atn/build/classes" update="true"/>
 		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/cio/build/classes" update="true"/>
 		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/nlp/build/classes" update="true"/>
 		<jar destfile="core/localdist/sd-base.${buildNumber}.jar" basedir="modules/bdb/build/classes" update="true"/>

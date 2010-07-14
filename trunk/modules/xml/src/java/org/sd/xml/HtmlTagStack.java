@@ -60,8 +60,6 @@ public class HtmlTagStack extends XmlTagStack {
   public XmlLite.Tag popTag(String tagName) {
     XmlLite.Tag result = null;
 
-    tagName = tagName.toLowerCase();
-
     // if don't find match, ignore and leave everything
     if (findTag(tagName)) {
       result = super.popTag(tagName);
@@ -71,9 +69,18 @@ public class HtmlTagStack extends XmlTagStack {
   }
 
   private final boolean findTag(String tagName) {
+    final String lTagName = tagName.toLowerCase();
+
     for (XmlLite.Tag tag : tags) {
-      if (tag.name.equals(tagName)) {
-        return true;
+      if (tag.commonCase) {
+        if (tag.name.equals(lTagName)) {
+          return true;
+        }
+      }
+      else {
+        if (tag.name.equals(tagName)) {
+          return true;
+        }
       }
     }
     return false;

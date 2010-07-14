@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<tests>
+
+	<test>
+		<id>test2</id>
+
+		<inputs>
+
+			<parseConfig>
+
+				<compoundParser>
+					<id>1</id>
+
+					<parser>
+						<id>1.1</id>
+						<grammar>
+							<rules>
+								<A start='true'>
+									<X repeats='true'/>
+								</A>
+							</rules>
+						</grammar>
+
+						<parseSelector>
+              <jclass>org.sd.atn.LongestParseSelector</jclass>
+						</parseSelector>
+					</parser>
+
+					<parser>
+						<id>1.2</id>
+						<grammar>
+							<rules>
+								<B start='true'>
+									<M/>
+									<D/>
+									<Y/>
+								</B>
+							</rules>
+						</grammar>
+
+						<parseSelector>
+              <jclass>org.sd.atn.LongestParseSelector</jclass>
+						</parseSelector>
+					</parser>
+				</compoundParser>
+
+
+				<compoundParser>
+					<id>2</id>
+
+					<inputs>
+						<reprocess>
+              <jclass>org.sd.atn.AsSingleInputReprocessor</jclass>
+						</reprocess>
+					</inputs>
+
+					<parser>
+						<id>2.1</id>
+						<grammar>
+							<classifiers>
+								<prep>
+                  <jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+									<terms caseSensitive='false'>
+										<term>on</term>
+										<term>at</term>
+									</terms>
+								</prep>
+							</classifiers>
+							<rules>
+								<C start='true'>
+									<A/>
+									<prep optional='true'/>
+									<B optional='true' repeats='true'/>
+								</C>
+							</rules>
+						</grammar>
+
+						<parseSelector>
+              <jclass>org.sd.atn.LongestParseSelector</jclass>
+						</parseSelector>
+					</parser>
+				</compoundParser>
+
+			</parseConfig>
+
+			<input2>
+				<html>
+					<head>
+						<title>X X, X X: on M D Y</title>
+					</head>
+					<body>
+						<h1>X X X</h1>
+						<ul>
+							<li>m d y</li>
+							<li>M D Y</li>
+							<li>M D Y</li>
+						</ul>
+						<table>
+							<tr>
+								<td>x x x</td>
+								<td>m d y</td>
+								<td>m d y</td>
+							</tr>
+							<tr>
+								<td>X X X</td>
+								<td>M D Y</td>
+								<td>M D Y</td>
+							</tr>
+							<tr>
+								<td>X X X</td>
+								<td>M D Y</td>
+								<td>M D Y</td>
+							</tr>
+							<tr>
+								<td>X X X</td>
+								<td>at M D Y</td>
+								<td>at M D Y</td>
+							</tr>
+						</table>
+					</body>
+				</html>
+			</input2>
+
+		</inputs>
+
+		<expectations>
+
+			<expectedText-2a>
+				<list>
+					<list>
+						<item>X X, X X</item>
+					</list>
+					<list>
+						<item>M D Y</item>
+					</list>
+					<list>
+						<item>X X X</item>
+					</list>
+					<list>
+						<item>M D Y</item>
+					</list>
+					<list>
+						<item>M D Y</item>
+					</list>
+					<list>
+						<item>X X X</item>
+					</list>
+					<list>
+						<item>M D Y</item>
+					</list>
+					<list>
+						<item>M D Y</item>
+					</list>
+					<list>
+						<item>X X X</item>
+					</list>
+					<list>
+						<item>M D Y</item>
+					</list>
+					<list>
+						<item>M D Y</item>
+					</list>
+					<list>
+						<item>X X X</item>
+					</list>
+					<list>
+						<item>M D Y</item>
+					</list>
+					<list>
+						<item>M D Y</item>
+					</list>
+					<list>
+						<item>X X, X X: on M D Y</item>
+					</list>
+					<list>
+						<item>X X X</item>
+					</list>
+					<list>
+						<item>X X X M D Y M D Y</item>
+					</list>
+					<list>
+						<item>X X X M D Y M D Y</item>
+					</list>
+					<list>
+						<item>X X X at M D Y</item>
+					</list>
+				</list>
+			</expectedText-2a>
+
+
+			<expectedTrees-2a>
+				<list>
+					<list>
+						<item>(A X X X X)</item>
+					</list>
+					<list>
+						<item>(B M D Y)</item>
+					</list>
+					<list>
+						<item>(A X X X)</item>
+					</list>
+					<list>
+						<item>(B M D Y)</item>
+					</list>
+					<list>
+						<item>(B M D Y)</item>
+					</list>
+					<list>
+						<item>(A X X X)</item>
+					</list>
+					<list>
+						<item>(B M D Y)</item>
+					</list>
+					<list>
+						<item>(B M D Y)</item>
+					</list>
+					<list>
+						<item>(A X X X)</item>
+					</list>
+					<list>
+						<item>(B M D Y)</item>
+					</list>
+					<list>
+						<item>(B M D Y)</item>
+					</list>
+					<list>
+						<item>(A X X X)</item>
+					</list>
+					<list>
+						<item>(B M D Y)</item>
+					</list>
+					<list>
+						<item>(B M D Y)</item>
+					</list>
+					<list>
+						<item>(C (A X&space;X,&space;X&space;X) (prep on) (B M&space;D&space;Y))</item>
+					</list>
+					<list>
+						<item>(C (A X&space;X&space;X))</item>
+					</list>
+					<list>
+						<item>(C (A X&space;X&space;X) (B M&space;D&space;Y) (B M&space;D&space;Y))</item>
+					</list>
+					<list>
+						<item>(C (A X&space;X&space;X) (B M&space;D&space;Y) (B M&space;D&space;Y))</item>
+					</list>
+					<list>
+						<item>(C (A X&space;X&space;X) (prep at) (B M&space;D&space;Y))</item>
+					</list>
+				</list>
+			</expectedTrees-2a>
+
+		</expectations>
+
+	</test>
+
+</tests>

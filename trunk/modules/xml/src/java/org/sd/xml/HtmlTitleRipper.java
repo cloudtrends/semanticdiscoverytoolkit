@@ -38,7 +38,7 @@ public class HtmlTitleRipper {
 
   public static final String ripTitle(File file) throws IOException {
     String result = null;
-    final XmlTextRipper ripper = new XmlTextRipper(FileUtil.getInputStream(file), new HtmlTagStack(), XmlFactory.HTML_TAG_PARSER_IGNORE_COMMENTS, HtmlHelper.DEFAULT_IGNORE_TAGS, null, false);
+    final XmlTextRipper ripper = new XmlTextRipper(FileUtil.getInputStream(file), true, new HtmlTagStack(), XmlFactory.HTML_TAG_PARSER_IGNORE_COMMENTS, HtmlHelper.DEFAULT_IGNORE_TAGS, null, false);
 
     while (ripper.hasNext()) {
       final String text = ripper.next();

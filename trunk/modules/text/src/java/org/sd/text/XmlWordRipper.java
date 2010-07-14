@@ -126,7 +126,7 @@ public class XmlWordRipper {
 
     if (isFull()) return result;
 
-    final XmlTextRipper ripper = new XmlTextRipper(FileUtil.getInputStream(xmlFile), tagStack, xmlTagParser, ignoreTags, null, false);
+    final XmlTextRipper ripper = new XmlTextRipper(FileUtil.getInputStream(xmlFile), false, tagStack, xmlTagParser, ignoreTags, null, false);
     try {
       while (ripper.hasNext() && !isFull()) {
         final String text = ripper.next();
