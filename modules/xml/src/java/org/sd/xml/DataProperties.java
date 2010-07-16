@@ -59,6 +59,11 @@ public class DataProperties extends BaseDataProperties {
     init(args);
   }
 
+  public DataProperties(Properties properties) {
+    this.properties = properties;
+    this.domDataProperties = new LinkedList<DomDataProperties>();
+  }
+
   public DataProperties(DomElement domElement) {
     init(new String[]{});
 

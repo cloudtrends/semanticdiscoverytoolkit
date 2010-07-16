@@ -887,6 +887,8 @@ public class DetailedUrl {
 
 
   public static final void main(String[] args) {
+    DetailedUrl prevUrl = null;
+
     for (String arg : args) {
       final DetailedUrl dUrl = new DetailedUrl(arg);
 
@@ -901,6 +903,12 @@ public class DetailedUrl {
       System.out.println("   extension: " + dUrl.getTargetExtension(true));
       System.out.println("       query: " + dUrl.getQuery());
       System.out.println("      anchor: " + dUrl.getAnchor());
+
+      if (prevUrl != null) {
+        System.out.println("    combined: " + prevUrl.fixHref(dUrl) + " (with prev=" + prevUrl.toString() + ")");
+      }
+
+      prevUrl = dUrl;
     }
   }
 }

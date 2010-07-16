@@ -152,7 +152,7 @@ public class AtnParseRunner {
     }
   }
 
-  protected ParseOutputCollector parseLines(File inputLines) throws IOException {
+  public ParseOutputCollector parseLines(File inputLines) throws IOException {
     final FileContext fileContext = new FileContext(inputLines, WhitespacePolicy.HYPERTRIM);
 
     //todo: parameterize whether to broaden the scope of the iterator
@@ -163,7 +163,7 @@ public class AtnParseRunner {
     return parseInput(fileContext.getLineIterator(), broaden);
   }
 
-  protected ParseOutputCollector parseHtml(File inputHtml, File diffHtml) throws IOException {
+  public ParseOutputCollector parseHtml(File inputHtml, File diffHtml) throws IOException {
     //todo: parameterize textBlock flag
     final boolean textBlock = false;
 
