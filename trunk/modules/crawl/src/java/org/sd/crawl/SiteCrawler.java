@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Engine for crawling a site using a page crawler.
@@ -48,6 +49,8 @@ public class SiteCrawler {
 
   private PageCrawler pageCrawler;
   private LinkFollower linkFollower;
+  private AtomicBoolean die;
+  private File killFile;
 
   /**
    * Construct a page crawler and this site crawler using the given properties.
@@ -64,7 +67,9 @@ public class SiteCrawler {
    * <li>linkFollower -- string for constructing the link follower instance to use
    *                     for accepting links to follow. Default is an
    *                     HtmlLinkFollower. Note that the properties are also
-   *                     used in the link follower's construction.
+   *                     used in the link follower's construction. If the linkFollower
+   *                     is an empty string, then no link follower will be used,
+   *                     meaning that only the startUrl will be crawled.
    * </ul>
    */
   public SiteCrawler(PageCrawler pageCrawler, Properties properties) {
@@ -76,10 +81,15 @@ public class SiteCrawler {
     }
 
     final String linkFollowerString = properties.getProperty("linkFollower", "org.sd.crawl.HtmlLinkFollower");
-    this.linkFollower = (LinkFollower)ReflectUtil.buildInstance(linkFollowerString, properties);
+    this.linkFollower = "".equals(linkFollowerString) ? null :
+      (LinkFollower)ReflectUtil.buildInstance(linkFollowerString, properties);
+
+    this.die = new AtomicBoolean(false);
   }
 
   public Tree<SiteData> crawl(String startingUrl) {
+    this.die.set(false);
+
     final UrlData startUrl = new UrlData(startingUrl);
     final SiteData rootData = new SiteData(startUrl);
     final Tree<SiteData> result = new Tree<SiteData>(rootData);
@@ -99,6 +109,32 @@ public class SiteCrawler {
 //todo: either write out a sitegraph file while crawling or have a utility to reconstruct (or both/parameterize)?
 //todo: return combination of siteInfo and result.
     return result;
+  }
+
+  /**
+   * Get this SiteCrawler's PageCrawler instance.
+   */
+  public PageCrawler getPageCrawler() {
+    return pageCrawler;
+  }
+
+  /**
+   * Get the CrawledPage associated with the siteData generated through this
+   * instance.
+   */
+  public CrawledPage getCrawledPage(SiteData siteData) {
+    return pageCrawler.fetch(siteData.getUrlData());
+  }
+
+  public void stopCrawl() {
+    die.set(true);
+  }
+
+  /**
+   * Set a file to monitor such that when it exists, crawling ceases.
+   */
+  public void setKillFile(File killFile) {
+    this.killFile = killFile;
   }
 
   /**
@@ -125,8 +161,13 @@ public class SiteCrawler {
     final LinkedList<Tree<SiteData>> queue = new LinkedList<Tree<SiteData>>();
     queue.add(siteTree);
 
-    while (queue.size() > 0) {
+    while (queue.size() > 0 && !die.get()) {
       final Tree<SiteData> node = queue.removeFirst();
+      if (linkFollower == null) continue;
+
+      // check external kill file
+      if (killFile != null && killFile.exists()) break;
+
       siteData = node.getData();
       final List<Link> links = siteData.getLinks();
 
