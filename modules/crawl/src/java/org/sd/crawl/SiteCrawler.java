@@ -87,7 +87,7 @@ public class SiteCrawler {
     this.die = new AtomicBoolean(false);
   }
 
-  public Tree<SiteData> crawl(String startingUrl) {
+  public Tree<SiteData> crawl(String startingUrl, boolean keepSiteData) {
     this.die.set(false);
 
     final UrlData startUrl = new UrlData(startingUrl);
@@ -101,7 +101,7 @@ public class SiteCrawler {
 
     // always fetch the root page
     final CrawledPage rootPage = pageCrawler.fetch(startUrl, crawlSettings);
-    final SiteInfo siteInfo = followLinks(result, rootPage, siteContext, crawlSettings);
+    final SiteInfo siteInfo = followLinks(result, rootPage, siteContext, crawlSettings, keepSiteData);
 
     // close the CrawlCache associated with the (temporary/overriding) cacheDir
     crawlSettings.closeCrawlCache();
@@ -148,7 +148,7 @@ public class SiteCrawler {
   /**
    * Follow the links off the given page, building the siteTree.
    */
-  private final SiteInfo followLinks(Tree<SiteData> siteTree, CrawledPage curPage, SiteContext siteContext, CrawlSettings crawlSettings) {
+  private final SiteInfo followLinks(Tree<SiteData> siteTree, CrawledPage curPage, SiteContext siteContext, CrawlSettings crawlSettings, boolean keepSiteData) {
     final SiteInfo siteInfo = SiteInfo.buildSiteInfo();
 
     if (curPage == null) return siteInfo;
@@ -178,7 +178,7 @@ public class SiteCrawler {
           final CrawledPage nextPage = fetchLink(link, crawlSettings);
           if (nextPage != null && !nextPage.hasError() && nextPage.hasContent() && nextPage.getResponseCode() < 300) {
             final SiteData nextData = siteData.buildNext(link, nextPage.getMetaData());
-            final Tree<SiteData> child = node.addChild(nextData);
+            final Tree<SiteData> child = keepSiteData ? node.addChild(nextData) : new Tree<SiteData>(nextData);
 
             final UrlData destUrl = link.getDestUrl();
             if (siteContext.addVisited(destUrl.getCleanString())) {
@@ -308,7 +308,7 @@ public class SiteCrawler {
     for (String arg : args) {
       System.out.println();
       System.out.println(new Date() + ": SiteCrawler crawling '" + arg + "'...");
-      final Tree<SiteData> siteData = siteCrawler.crawl(arg);
+      final Tree<SiteData> siteData = siteCrawler.crawl(arg, true);
       uniquify(siteData);
 
       System.out.println(TreeUtil.prettyPrint(siteData, "", false));

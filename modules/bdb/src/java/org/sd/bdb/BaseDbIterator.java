@@ -427,7 +427,7 @@ public abstract class BaseDbIterator<T> implements DbIterator<T> {
 
 
   private final boolean shouldIncrement(){
-    return nextQueue.size() < queueSize;
+    return nextQueue.size() < queueSize && !dbInfo.isClosed();
   }
 
   private final void initFirst() {
@@ -557,6 +557,12 @@ public abstract class BaseDbIterator<T> implements DbIterator<T> {
         else if (hasNext.get() && dbIter.shouldIncrement()) {
           dbIter.increment(false);
         }
+        else {
+          if (dbIter.dbInfo.isClosed()) {
+            dbIter.close();
+            break;
+          }
+        }
       }
 
       stayAlive.set(false);
@@ -593,7 +599,7 @@ public abstract class BaseDbIterator<T> implements DbIterator<T> {
     }
   }
 
-  protected class DbMarker{
+  protected class DbMarker {
     private static final String markerSuffix = "marker";
 
     private int count;

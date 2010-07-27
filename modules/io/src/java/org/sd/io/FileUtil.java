@@ -1476,4 +1476,35 @@ public class FileUtil {
 //
 //    return result;  // df -k is already in kilobytes
   }
+
+  /**
+   * Build a unique filename for output by finding the first number starting
+   * from 1 for which a file doesn't exist of the form
+   * <p>
+   * "filename + '.' + num + postfix"
+   * <p>
+   * The presence of the postfix is optional on the candidateFilename.
+   * If it does not exist, it will be added. Numbers appear immediately
+   * before the postfix (which should include its preceding dot if
+   * necessary).
+   */
+  public static final String buildOutputFilename(String candidateFilename, String defaultPostfix) {
+    int lastDotPos = candidateFilename.lastIndexOf('.');
+    if (lastDotPos < 0) lastDotPos = candidateFilename.length();
+    final String prefix = candidateFilename.substring(0, lastDotPos);
+    final String postfix = (lastDotPos < candidateFilename.length()) ? candidateFilename.substring(lastDotPos) : defaultPostfix;
+
+    String result = null;
+
+    for (int id = 1; result == null; ++id) {
+      String curFilename = prefix + "." + id + postfix;
+      final File file = new File(curFilename);
+      if (!file.exists()) {
+        result = curFilename;
+        break;
+      }
+    }
+
+    return result;
+  }
 }

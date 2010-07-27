@@ -19,17 +19,22 @@
 package org.sd.atn.extract;
 
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.sd.cio.MessageHelper;
+import org.sd.io.Publishable;
 
 /**
  * Container class for extracted text that can be recursively fielded.
  * <p>
  * @author Spence Koehler
  */
-public class Extraction {
+public class Extraction implements Publishable {
   
   private String type;
   /**
@@ -156,5 +161,61 @@ public class Extraction {
     }
 
     return result.toString();
+  }
+
+  /**
+   * Write this message to the dataOutput stream such that this message
+   * can be completely reconstructed through this.read(dataInput).
+   *
+   * @param dataOutput  the data output to write to.
+   */
+  public void write(DataOutput dataOutput) throws IOException {
+    MessageHelper.writeString(dataOutput, type);
+    MessageHelper.writeString(dataOutput, text);
+
+    dataOutput.writeInt(_fields == null ? 0 : _fields.size());
+
+    if (_fields != null) {
+      for (Map.Entry<String, List<Extraction>> entry : _fields.entrySet()) {
+        MessageHelper.writeString(dataOutput, entry.getKey());
+
+        dataOutput.writeInt(entry.getValue().size());
+        for (Extraction e : entry.getValue()) {
+          MessageHelper.writePublishable(dataOutput, e);
+        }
+      }
+    }
+  }
+
+  /**
+   * Read this message's contents from the dataInput stream that was written by
+   * this.write(dataOutput).
+   * <p>
+   * NOTE: this requires all implementing classes to have a default constructor
+   *       with no args.
+   *
+   * @param dataInput  the data output to write to.
+   */
+  public void read(DataInput dataInput) throws IOException {
+    this.type = MessageHelper.readString(dataInput);
+    this.text = MessageHelper.readString(dataInput);
+
+    final int numFields = dataInput.readInt();
+
+    if (numFields > 0) {
+      this._fields = new HashMap<String, List<Extraction>>();
+
+      for (int fieldNum = 0; fieldNum < numFields; ++fieldNum) {
+        final String fieldKey = MessageHelper.readString(dataInput);
+        final int numExtractions = dataInput.readInt();
+
+        final List<Extraction> extractions = new ArrayList<Extraction>();
+        _fields.put(fieldKey, extractions);
+
+        for (int extractionNum = 0; extractionNum < numExtractions; ++extractionNum) {
+          extractions.add((Extraction)MessageHelper.readPublishable(dataInput));
+        }
+      }
+    }
   }
 }

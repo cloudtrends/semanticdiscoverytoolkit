@@ -23,7 +23,6 @@ import org.sd.bdb.BerkeleyDb;
 import org.sd.bdb.DbHandle;
 import org.sd.bdb.DbIterator;
 import org.sd.bdb.DbTraversal;
-import org.sd.bdb.DbValue;
 import org.sd.bdb.StringKeyValuePair;
 import org.sd.util.DateUtil;
 import org.sd.util.LineBuilder;

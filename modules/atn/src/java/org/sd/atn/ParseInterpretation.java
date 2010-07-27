@@ -19,6 +19,7 @@
 package org.sd.atn;
 
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,74 +28,23 @@ import java.util.Map;
  * <p>
  * @author Spence Koehler
  */
-public class ParseInterpretation {
+public class ParseInterpretation implements Serializable {
   
   private String classification;
-  /**
-   * The classification of this interpretation for future parsing.
-   */
-  public String getClassification() {
-    return classification;
-  }
-  public void setClassification(String classification) {
-    this.classification = classification;
-  }
-
   private Object interpretation;
-  /**
-   * An object representing the detailed interpretation when non-null.
-   */
-  public Object getInterpretation() {
-    return interpretation;
-  }
-  public void setInterpretation(Object interpretation) {
-    this.interpretation = interpretation;
-  }
-
   private double confidence;
-  /**
-   * A confidence associated with this interpretation, defaults to 1.0 if not
-   * explicitly set.
-   */
-  public double getConfidence() {
-    return confidence;
-  }
-  public void setConfidence(double confidence) {
-    this.confidence = confidence;
-  }
-
   private String toStringOverride;
-  /**
-   * A string to override this instance's ToString when non-null.
-   */
-  public String getToStringOverride() {
-    return toStringOverride;
-  }
-  public void setToStringOverride(String toStringOverride) {
-    this.toStringOverride = toStringOverride;
-  }
-
   private Map<String, Object> category2Value;
-  /**
-   * Mappings from categories to their interpreted values for components
-   * of the interpretation.
-   */
-  public Map<String, Object> getCategory2Value() {
-    return category2Value;
-  }
 
-  public ParseInterpretation()
-  {
+  public ParseInterpretation() {
     init(null);
   }
 
-  public ParseInterpretation(String classification)
-  {
+  public ParseInterpretation(String classification) {
     init(classification);
   }
 
-  private final void init(String classification)
-  {
+  private final void init(String classification) {
     this.classification = classification;
     this.interpretation = null;
     this.confidence = 1.0;
@@ -103,19 +53,79 @@ public class ParseInterpretation {
   }
 
   /**
-   * Add a mapping to this instance.
+   * The classification of this interpretation for future parsing.
    */
-  public void add(String category, Object value)
-  {
-    if (category2Value == null) category2Value = new HashMap<String, Object>();
-    category2Value.put(category, value);
+  public String getClassification() {
+    return classification;
+  }
+
+  /**
+   * The classification of this interpretation for future parsing.
+   */
+  public void setClassification(String classification) {
+    this.classification = classification;
+  }
+
+  /**
+   * An object representing the detailed interpretation when non-null.
+   * <p>
+   * NOTE: If this interpretation is to be persisted, the Object must be serializable.
+   */
+  public Object getInterpretation() {
+    return interpretation;
+  }
+
+  /**
+   * An object representing the detailed interpretation when non-null.
+   * <p>
+   * NOTE: If this interpretation is to be persisted, the Object must be serializable.
+   */
+  public void setInterpretation(Object interpretation) {
+    this.interpretation = interpretation;
+  }
+
+  /**
+   * A confidence associated with this interpretation, defaults to 1.0 if not
+   * explicitly set.
+   */
+  public double getConfidence() {
+    return confidence;
+  }
+
+  /**
+   * A confidence associated with this interpretation, defaults to 1.0 if not
+   * explicitly set.
+   */
+  public void setConfidence(double confidence) {
+    this.confidence = confidence;
+  }
+
+  /**
+   * A string to override this instance's ToString when non-null.
+   */
+  public String getToStringOverride() {
+    return toStringOverride;
+  }
+
+  /**
+   * A string to override this instance's ToString when non-null.
+   */
+  public void setToStringOverride(String toStringOverride) {
+    this.toStringOverride = toStringOverride;
+  }
+
+  /**
+   * Mappings from categories to their interpreted values for components
+   * of the interpretation.
+   */
+  public Map<String, Object> getCategory2Value() {
+    return category2Value;
   }
 
   /**
    * Get the category mapping or null.
    */
-  public Object get(String category)
-  {
+  public Object get(String category) {
     Object result = null;
 
     if (category2Value != null) {
@@ -125,21 +135,50 @@ public class ParseInterpretation {
     return result;
   }
 
-  public String toString()
-  {
+  /**
+   * Add a mapping to this instance.
+   * <p>
+   * NOTE: If this interpretation is to be persisted, the Object must be serializable.
+   */
+  public void add(String category, Object value) {
+    if (category2Value == null) category2Value = new HashMap<String, Object>();
+    category2Value.put(category, value);
+  }
+
+
+  public String toString() {
     String result = toStringOverride;
 
-    if (result == null)
-    {
-      if (interpretation != null)
-      {
+    if (result == null) {
+      if (interpretation != null) {
         result = interpretation.toString();
       }
-      else
-      {
+      else {
         result = super.toString();
       }
     }
+
+    return result;
+  }
+
+  public boolean equals(Object o) {
+    boolean result = this == o;
+
+    if (!result && o instanceof ParseInterpretation) {
+      final ParseInterpretation other = (ParseInterpretation)o;
+
+      result = this.classification.equals(other.getClassification()) &&
+        this.interpretation.equals(other.getInterpretation());
+    }
+
+    return result;
+  }
+
+  public int hashCode() {
+    int result = 13;
+
+    result = 17 * result + this.classification.hashCode();
+    result = 17 * result + this.interpretation.hashCode();
 
     return result;
   }

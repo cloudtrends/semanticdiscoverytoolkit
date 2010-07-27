@@ -99,7 +99,10 @@ public class DbHandle {
    *       but re-closing will have no determinental side-effects.
    */
   public final synchronized void close() {
-    if (!closed.getAndSet(true)) {
+
+    //new RuntimeException("closing dbHandle closed=" + closed.get()).printStackTrace(System.err);
+
+    if (closed.compareAndSet(false, true)) {
       try {
         dbInfo.close();
         dbInfo.getBerkeleyDb().remove(this);
