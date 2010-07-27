@@ -113,9 +113,28 @@ public class AtnParseRunner {
       }
     }
 
+    final String outputXml = options.getString("outputXml", null);
+    if (outputXml != null) {
+      final String outputXmlName = FileUtil.buildOutputFilename(outputXml, ".xml");
+      final File outputXmlFile = new File(outputXmlName);
+      writeOutputXml(outputXmlFile, output);
+    }
+
     if (output != null) {
       showOutput(output);
     }
+  }
+
+  private final void writeOutputXml(File outputXmlFile, ParseOutputCollector output) throws IOException {
+    final BufferedWriter writer = FileUtil.getWriter(outputXmlFile);
+
+    System.out.println("\nWriting xml output to '" + outputXmlFile.getAbsolutePath() + "'");
+
+    final boolean showOnlySelected = options.getBoolean("showOnlySelected", true);
+    final boolean showOnlyInterpreted = options.getBoolean("showOnlyInterpreted", true);
+    writer.write(output.asXml(true, showOnlySelected, showOnlyInterpreted, 0, 2));
+
+    writer.close();
   }
 
   public void showOutput(ParseOutputCollector output) throws IOException {
@@ -160,7 +179,12 @@ public class AtnParseRunner {
     //      - if paragraphs, then broaden (but at which compound parser boundaries?)
     final boolean broaden = false;
 
-    return parseInput(fileContext.getLineIterator(), broaden);
+    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), broaden);
+
+    final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputLines, false, false);
+    output.setParseSourceInfo(sourceInfo);
+
+    return output;
   }
 
   public ParseOutputCollector parseHtml(File inputHtml, File diffHtml) throws IOException {
@@ -174,6 +198,10 @@ public class AtnParseRunner {
 
     final DomContextIterator inputContextIterator = DomContextIteratorFactory.getDomContextIterator(inputHtml, diffHtml, true, strategy);
     final ParseOutputCollector result = parseInput(inputContextIterator, broaden);
+
+    final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputHtml, true, true);
+    if (diffHtml != null) sourceInfo.setDiffString(diffHtml.getAbsolutePath());
+    result.setParseSourceInfo(sourceInfo);
 
     return result;
   }
@@ -272,23 +300,7 @@ public class AtnParseRunner {
 
     final String inputFilename =  (inputFile != null) ? inputFile.getAbsolutePath() : "output.html";
 
-    int lastDotPos = inputFilename.lastIndexOf('.');
-    if (lastDotPos < 0) lastDotPos = inputFilename.length();
-    final String prefix = inputFilename.substring(0, lastDotPos);
-    final String postfix = (lastDotPos < inputFilename.length()) ? inputFilename.substring(lastDotPos) : ".html";
-
-    String result = null;
-
-    for (int id = 1; result == null; ++id) {
-      String curFilename = prefix + "." + id + postfix;
-      final File file = new File(curFilename);
-      if (!file.exists()) {
-        result = curFilename;
-        break;
-      }
-    }
-
-    return result;
+    return FileUtil.buildOutputFilename(inputFilename, ".html");
   }
 
 
@@ -314,6 +326,8 @@ public class AtnParseRunner {
     // 
     //   override -- (optional)compoundParserId1:atnParserId1[:broaden]+,compoundParserId2:atnParserId2[:broaden]+,...
     //
+    //   showOnlySelected -- (optional, default=true)
+    //   outputXml -- (optional) path to which xml output is to be written
 
     final DataProperties dataProperties = new DataProperties(args);
     final AtnParseRunner runner = new AtnParseRunner(dataProperties);

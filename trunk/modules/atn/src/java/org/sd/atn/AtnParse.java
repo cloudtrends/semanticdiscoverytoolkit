@@ -185,6 +185,24 @@ public class AtnParse {
     return _parsedText;
   }
 
+  /**
+   * The full original text submitted for parsing.
+   */
+  public String getFullText() {
+    String result = null;
+    if (endState != null) {
+      result = endState.getData().getInputToken().getTokenizer().getText();
+    }
+    return result;
+  }
+
+  /**
+   * The length of the full original text submitted for parsing.
+   */
+  public int getFullTextLength() {
+    final String fullText = getFullText();
+    return fullText == null ? 0 : fullText.length();
+  }
 
   /**
    * Get the input context associated with this parse's input or null.

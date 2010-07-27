@@ -209,7 +209,7 @@ public class CacheMap {
    */
   public void close() {
     synchronized (dbHandle) {
-      dbHandle.getBerkeleyDb().close();
+      dbHandle.close();
     }
   }
 

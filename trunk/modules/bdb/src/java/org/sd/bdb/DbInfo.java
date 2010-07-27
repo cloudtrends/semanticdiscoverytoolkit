@@ -72,12 +72,22 @@ public class DbInfo {
    * Close the database, not the environment.
    */
   public final void close() throws DatabaseException {
+
+    //new RuntimeException("closing dbInfo  open=" + open.get()).printStackTrace(System.err);
+
     if (open.compareAndSet(true, false)) {
       if (timestampedDb != null) timestampedDb.close();
       if (database != null) {
         database.close();
       }
     }
+  }
+
+  /**
+   * Determine whether the database has been closed.
+   */
+  public final boolean isClosed() {
+    return !open.get();
   }
 
   /**

@@ -128,14 +128,25 @@ public class DelimTest implements AtnRuleStepTest {
 
     boolean result = allowAll;
 
+    boolean foundMatch = false;
     for (DelimString delimString : delimStrings) {
       if (delimString.matches(delim)) {
         if ((allowAll && !delimString.isAllowed) || (disallowAll && delimString.isAllowed)) {
-          result = !result;
-          break;
+          foundMatch = true;
         }
+
+        //if definitive, break
+        if (delimString.exact) break;
+      }
+      else if (delimString.exact && delimString.isInexactMatch(delim)) {
+        // exact delimString only matched inexactly
+        foundMatch = false;
         break;
       }
+    }
+
+    if (foundMatch) {
+      result = !result;
     }
 
     return result;
@@ -183,7 +194,11 @@ public class DelimTest implements AtnRuleStepTest {
     }
 
     boolean matches(String delim) {
-      return exact ? this.delim.equals(delim) : delim.indexOf(this.delim) != -1;
+      return exact ? this.delim.equals(delim) : isInexactMatch(delim);
+    }
+
+    boolean isInexactMatch(String delim) {
+      return delim.indexOf(this.delim) != -1;
     }
 
     public String toString() {

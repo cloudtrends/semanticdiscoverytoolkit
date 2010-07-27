@@ -62,6 +62,7 @@ public class ParseOutputCollector {
   private String interpretedStyle;
   private boolean hideUninterpreted;
 
+  private ParseSourceInfo parseSourceInfo;
 
   public ParseOutputCollector(DomElement outputsElement) {
     this.domDocuments = null;
@@ -114,6 +115,38 @@ public class ParseOutputCollector {
     }
 
     this.hideUninterpreted = config.getBoolean("markup/hideUninterpreted", false);
+  }
+
+
+  /**
+   * Get source information, empty if unset.
+   */
+  public ParseSourceInfo getParseSourceInfo() {
+    if (parseSourceInfo == null) {
+      parseSourceInfo = new ParseSourceInfo();
+    }
+    return parseSourceInfo;
+  }
+
+  /**
+   * Set source information.
+   */
+  public void setParseSourceInfo(ParseSourceInfo parseSourceInfo) {
+    this.parseSourceInfo = parseSourceInfo;
+  }
+
+
+
+  public String asXml(boolean includeXmlHeader, boolean onlySelected, boolean onlyInterpreted, int indentLevel, int indentSpaces) {
+    final XmlParseOutput xmlOutput = new XmlParseOutput(parseSourceInfo, indentLevel, indentSpaces);
+
+    if (parseResults != null) {
+      for (AtnParseResult parseResult : parseResults) {
+        xmlOutput.addParseResult(parseResult, onlySelected, onlyInterpreted);
+      }
+    }
+
+    return xmlOutput.getOutput(includeXmlHeader);
   }
 
 

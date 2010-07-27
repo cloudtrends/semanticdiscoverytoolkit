@@ -117,7 +117,7 @@ public class DomContextIteratorFactory {
           if (childNodeType == Node.ELEMENT_NODE || childNodeType == Node.TEXT_NODE) {
             final DomNode childDomNode = (DomNode)childNode;
             if (strategy.shouldQueueNode(childDomNode)) {
-              queue.addLast(childDomNode);
+              queue.add(i, childDomNode);
             }
           }
         }
