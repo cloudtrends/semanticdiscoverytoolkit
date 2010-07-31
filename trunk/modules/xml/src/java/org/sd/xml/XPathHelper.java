@@ -231,10 +231,6 @@ public class XPathHelper {
   private final String buildNodePrefix(int globalLeafNum, int numGlobalLeafDigits, int localLeafNum, int numLocalLeafDigits) {
     final StringBuilder result = new StringBuilder();
 
-    if (globalLeafNum == 0) {
-      final boolean stopHere = true;
-    }
-
     result.
       append(MathUtil.integerString(globalLeafNum, numGlobalLeafDigits)).
       append(':').

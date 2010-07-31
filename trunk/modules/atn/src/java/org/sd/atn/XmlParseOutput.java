@@ -24,6 +24,8 @@ import org.sd.util.InputContext;
 import org.sd.util.MathUtil;
 import org.sd.atn.extract.Extraction;
 import org.sd.xml.DomContext;
+import org.sd.xml.DomNode;
+import org.sd.xml.DomUtil;
 
 /**
  * Utility class for building xml parse output.
@@ -49,7 +51,7 @@ public class XmlParseOutput {
   public void addParseResult(AtnParseResult parseResult, boolean onlySelected, boolean onlyInterpreted) {
     final int curOutputLength = output.length();
 
-    openParseResult();
+    openParseResult(-1, initialIndentLevel + 2);  //todo: compute globalStartPos if/when necessary
 
     //NOTE: multiple parses represent structural ambiguity
     boolean addedParse = false;
@@ -63,28 +65,95 @@ public class XmlParseOutput {
       output.setLength(curOutputLength);
     }
     else {
-      closeParseResult();
+      closeParseResult(initialIndentLevel + 2);
     }
   }
 
-  public void addExtractionContainer(ExtractionContainer extractionContainer) {
+  public void addExtractionGroups(ExtractionGroups extractionGroups) {
+
+    final int groupIndentLevel = initialIndentLevel + 2;
+    final int extractionIndentLevel = groupIndentLevel + 1;
+
+    for (ExtractionGroup extractionGroup : extractionGroups.getExtractionGroups()) {
+      openExtractionGroup(extractionGroup, groupIndentLevel);
+
+      for (ExtractionContainer extractionContainer : extractionGroup.getExtractions()) {
+        addExtractionContainer(extractionContainer, extractionIndentLevel);
+      }
+
+      closeExtractionGroup(groupIndentLevel);
+    }
+  }
+
+  private final void openExtractionGroup(ExtractionGroup extractionGroup, int indentLevel) {
+    int indent = indentLevel * indentSpaces;
+    addIndent(output, indent);
+    output.append("<extractionGroup>\n");
+
+    indent += indentSpaces;
+    addIndent(output, indent);
+    output.append("<groupContext>\n");
+
+    indent += indentSpaces;
+
+    boolean gotXml = false;
+
+    final DomNode inputNode = extractionGroup.getInputNode();
+    if (inputNode != null) {
+      final String inputXml = DomUtil.getSubtreeXml(inputNode);
+
+      if (inputXml != null) {
+        gotXml = true;
+
+        addIndent(output, indent);
+        output.
+          append("<xml depth='").
+          append(inputNode.getDepth()).
+          append("'>\n").
+          append(inputXml).
+          append('\n');
+
+        addIndent(output, indent);
+        output.append("</xml>\n");
+      }
+    }
+
+    if (!gotXml) {
+      final String inputText = extractionGroup.getInputText();
+      if (inputText != null) {
+        addIndent(output, indent);
+        output.append("<text>").append(inputText).append("</text>\n");
+      }
+    }
+
+    addIndent(output, indent);
+    output.append("<key>").append(extractionGroup.getKey()).append("</key>\n");
+
+    indent -= indentSpaces;
+    addIndent(output, indent);
+    output.append("</groupContext>\n");
+  }
+
+  private final void closeExtractionGroup(int indentLevel) { 
+    final int indent = indentLevel * indentSpaces;
+    addIndent(output, indent);
+    output.append("</extractionGroup>\n");
+  }
+
+  public void addExtractionContainer(ExtractionContainer extractionContainer, int indentLevel) {
     final int curOutputLength = output.length();
 
-    openParseResult();
+    openParseResult(extractionContainer.getGlobalStartPosition(), indentLevel);
     
     boolean addedOne = false;
 
-    final int indentLevel = initialIndentLevel + 3;
-
-    if (extractionContainer.getTheInterpretation() != null) {
-      addedOne = addExtractionData(extractionContainer.getTheExtraction(), extractionContainer.getTheInterpretation(), indentLevel);
-    }
-    else if (extractionContainer.getTheExtraction() != null) {
-      addedOne = addExtractionData(extractionContainer.getTheExtraction(), null, indentLevel);
+    final ParseInterpretation theInterpretation = extractionContainer.getTheInterpretation();
+    if (theInterpretation != null) {
+      addedOne = addExtractionData(extractionContainer.getTheExtraction(), extractionContainer.getTheInterpretation(), indentLevel + 1);
     }
     else {
       for (ExtractionContainer.ExtractionData extractionData : extractionContainer.getExtractions()) {
-        addedOne |= addExtractionData(extractionData, null, indentLevel);
+        addedOne |= addExtractionData(extractionData, null, indentLevel + 1);
       }
     }
 
@@ -92,7 +161,7 @@ public class XmlParseOutput {
       output.setLength(curOutputLength);
     }
     else {
-      closeParseResult();
+      closeParseResult(indentLevel);
     }
   }
 
@@ -173,15 +242,30 @@ public class XmlParseOutput {
     }
   }
 
-  private final void openParseResult() {
-    final int indentLevel = initialIndentLevel + 2;
-    final int indent = indentLevel * indentSpaces;
+  private final void openParseResult(int globalStartPos, int indentLevel) {
+    int indent = indentLevel * indentSpaces;
     addIndent(output, indent);
     output.append("<parseResult>\n");
+
+    if (globalStartPos >= 0) {
+      indent += indentSpaces;
+      addIndent(output, indent);
+      output.append("<context>\n");
+
+      indent += indentSpaces;
+      addIndent(output, indent);
+      output.
+        append("<globalStartPos>").
+        append(globalStartPos).
+        append("</globalStartPos>\n");
+
+      indent -= indentSpaces;
+      addIndent(output, indent);
+      output.append("</context>\n");
+    }
   }
 
-  private final void closeParseResult() {
-    final int indentLevel = initialIndentLevel + 2;
+  private final void closeParseResult(int indentLevel) {
     final int indent = indentLevel * indentSpaces;
     addIndent(output, indent);
     output.append("</parseResult>\n");

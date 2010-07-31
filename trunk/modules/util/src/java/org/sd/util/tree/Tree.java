@@ -487,11 +487,19 @@ public class Tree<T> {
   }
 
   public String getPathString() {
+    return buildPathString(false, ".");
+  }
+
+  public String buildPathString(boolean indexFlag, String pathDelim) {
     final StringBuilder result = new StringBuilder();
 
     Tree<T> node = this;
     while (node != null) {
-      if (result.length() > 0) result.insert(0, '.');
+      if (result.length() > 0) result.insert(0, pathDelim);
+      if (indexFlag) {
+        final int sibNum = getSiblingPosition();
+        result.insert(0, "[" + sibNum + "]");
+      }
       result.insert(0, node.getData().toString());
       node = node.getParent();
     }

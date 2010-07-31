@@ -146,8 +146,6 @@ public class TestNGramFreqSet extends TestCase {
 
     final List<NGramFreq> collapsed = ngrams.getCollapsedNGrams();
 
-    final boolean stopHere = true;
-
     assertEquals(1, collapsed.size());
 
     final NGramFreq collapsedNGram = collapsed.get(0);

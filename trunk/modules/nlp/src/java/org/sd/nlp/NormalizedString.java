@@ -114,9 +114,6 @@ public final class NormalizedString {
       final int ncp = (i < normalizedCodePoints.length) ? normalizedCodePoints[i] : -1;
       final int n2o = (i < n2oIndexes.length) ? n2oIndexes[i] : -1;
       final int oi = getOriginalIndex(i);
-      if (oi == 161) {
-        final boolean stopHere = true;
-      }
 
       final int ocp = fullOriginal.getCodePoint(oi);
 

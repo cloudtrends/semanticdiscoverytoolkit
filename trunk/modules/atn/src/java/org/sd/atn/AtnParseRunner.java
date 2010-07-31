@@ -23,6 +23,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.io.IOException;
 import org.sd.io.FileUtil;
@@ -142,14 +143,13 @@ public class AtnParseRunner {
 
     final boolean showOnlyInterpreted = options.getBoolean("showOnlyInterpreted", false);
     // force executing show markup
-    output.getTopInterpretedParses(showOnlyInterpreted);
+    final List<AtnParse> parses = output.getTopInterpretedParses(showOnlyInterpreted);
 
     final LinkedHashSet<DomDocument> domDocuments = output.getDomDocuments();
     if (domDocuments != null && domDocuments.size() > 0) {
 
       final boolean writeMarkup = options.getBoolean("writeMarkup", true);
       final boolean showMarkup = options.getBoolean("showMarkup", false);
-      final boolean showInterpretations = options.getBoolean("showInterpretations", true);
 
       for (DomDocument domDocument : domDocuments) {
         if (showMarkup || writeMarkup) {
@@ -160,15 +160,15 @@ public class AtnParseRunner {
           }
         }
       }
+    }
 
-      if (showInterpretations) {
-        System.out.println("\nOutput: ");
-        output.showParseResults(showOnlyInterpreted);
-      }
+    final boolean showInterpretations = options.getBoolean("showInterpretations", true);
+    if (showInterpretations) {
+      System.out.println("\nOutput: ");
+      output.showParseResults(showOnlyInterpreted);
     }
-    else {
-      System.out.println("No output!");
-    }
+
+    //... show parses...
   }
 
   public ParseOutputCollector parseLines(File inputLines) throws IOException {

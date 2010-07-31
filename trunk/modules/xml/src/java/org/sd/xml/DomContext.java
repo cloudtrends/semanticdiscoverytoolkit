@@ -89,6 +89,14 @@ public class DomContext implements InputContext {
   }
 
   /**
+   * Find the DomNode corresponding to the indexedPathString.
+   */
+  public DomNode findDomNode(String indexedPathString) {
+    final DomElement rootElement = domNode.getOwnerDomDocument().getDocumentDomElement();
+    return DomUtil.findDomNode(rootElement, indexedPathString);
+  }
+
+  /**
    *  Get the startPosition of the other context's text within
    *  this context or return false if the other context is not
    *  contained within this context.
