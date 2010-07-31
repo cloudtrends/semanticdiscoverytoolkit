@@ -31,6 +31,7 @@ import org.sd.util.ExecUtil;
 import org.sd.util.FileContext;
 import org.sd.util.InputContext;
 import org.sd.util.InputContextIterator;
+import org.sd.util.MathUtil;
 import org.sd.util.WhitespacePolicy;
 import org.sd.util.tree.Tree;
 import org.sd.util.tree.TraversalIterator;
@@ -40,8 +41,10 @@ import org.sd.xml.DomContextIteratorFactory;
 import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomIterationStrategy;
+import org.sd.xml.DomNode;
 import org.sd.xml.DomTextBlockIterationStrategy;
 import org.sd.xml.DomTextIterationStrategy;
+import org.sd.xml.DomUtil;
 import org.sd.xml.XmlFactory;
 import org.sd.xml.XmlLite;
 
@@ -114,22 +117,37 @@ public class AtnParseRunner {
       }
     }
 
+    final ExtractionGroups extractionGroups = output != null ? new ExtractionGroups(output) : null;
+
     final String outputXml = options.getString("outputXml", null);
     if (outputXml != null) {
+
       final String outputXmlName = FileUtil.buildOutputFilename(outputXml, ".xml");
       final File outputXmlFile = new File(outputXmlName);
-      writeOutputXml(outputXmlFile, output);
+
+      final boolean dumpGroups = options.getBoolean("dumpGroups", true);
+      if (dumpGroups) {
+        // dump extraction groups as xml
+        writeExtractionGroupsXml(outputXmlFile, output, extractionGroups);
+      }
+      else {
+        // dump parse results as xml
+        writeParseResultsXml(outputXmlFile, output);
+      }
     }
 
-    if (output != null) {
-      showOutput(output);
+    final boolean showResults = options.getBoolean("showResults", true);
+    final boolean writeMarkup = options.getBoolean("writeMarkup", true);
+    final boolean showMarkup = options.getBoolean("showMarkup", false);
+    if ((showResults || writeMarkup || showMarkup) && output != null) {
+      showOutput(output, extractionGroups);
     }
   }
 
-  private final void writeOutputXml(File outputXmlFile, ParseOutputCollector output) throws IOException {
+  private final void writeParseResultsXml(File outputXmlFile, ParseOutputCollector output) throws IOException {
     final BufferedWriter writer = FileUtil.getWriter(outputXmlFile);
 
-    System.out.println("\nWriting xml output to '" + outputXmlFile.getAbsolutePath() + "'");
+    System.out.println("\nWriting xml parse results output to '" + outputXmlFile.getAbsolutePath() + "'");
 
     final boolean showOnlySelected = options.getBoolean("showOnlySelected", true);
     final boolean showOnlyInterpreted = options.getBoolean("showOnlyInterpreted", true);
@@ -138,8 +156,25 @@ public class AtnParseRunner {
     writer.close();
   }
 
-  public void showOutput(ParseOutputCollector output) throws IOException {
+  private final void writeExtractionGroupsXml(File outputXmlFile, ParseOutputCollector output, ExtractionGroups extractionGroups) throws IOException {
+    System.out.println("\nWriting xml extraction groups output to '" + outputXmlFile.getAbsolutePath() + "'");
+
+    final XmlParseOutput xmlOutput = new XmlParseOutput(output.getParseSourceInfo(), 0, 2);
+    xmlOutput.addExtractionGroups(extractionGroups);
+    final String xml = xmlOutput.getOutput(true);
+
+    final BufferedWriter writer = FileUtil.getWriter(outputXmlFile);
+    writer.write(xml);
+    writer.close();
+  }
+
+  public void showOutput(ParseOutputCollector output, ExtractionGroups extractionGroups) throws IOException {
     if (output == null) return;
+
+    final String source = getSourceString(output.getParseSourceInfo());
+
+    final boolean showResults = options.getBoolean("showResults", true);
+    final boolean briefResults = options.getBoolean("briefResults", true);
 
     final boolean showOnlyInterpreted = options.getBoolean("showOnlyInterpreted", false);
     // force executing show markup
@@ -162,13 +197,131 @@ public class AtnParseRunner {
       }
     }
 
-    final boolean showInterpretations = options.getBoolean("showInterpretations", true);
-    if (showInterpretations) {
-      System.out.println("\nOutput: ");
-      output.showParseResults(showOnlyInterpreted);
+    if (showResults) {
+      if (!briefResults) {
+        final boolean showInterpretations = options.getBoolean("showInterpretations", true);
+        if (showInterpretations) {
+          System.out.println("\nOutput: ");
+          output.showParseResults(showOnlyInterpreted);
+        }
+      }
+      else {
+        // show brief results
+        final boolean numberKeys = options.getBoolean("numberKeys", true);
+        showExtractionGroups(extractionGroups, briefResults, source, numberKeys);
+      }
+    }
+  }
+
+  public final void showExtractionGroups(ExtractionGroups extractionGroups, boolean briefResults, String source) {
+    showExtractionGroups(extractionGroups, briefResults, source, false);
+  }
+
+  public final void showExtractionGroups(ExtractionGroups extractionGroups, boolean briefResults, String source, boolean numberKeys) {
+    int groupNum = 1;
+    String theLastGroupKey = null;
+    String theLastExtractionKey = null;
+
+    int groupKeyNum = -1;
+    String curGroupKey = null;
+    int extractionKeyNum = -1;
+    String curExtractionKey = null;
+
+    for (ExtractionGroup group : extractionGroups.getExtractionGroups()) {
+
+      final String groupKey = group.getKey();
+
+      curGroupKey = groupKey;
+      if (numberKeys) {
+        if (!curGroupKey.equals(theLastGroupKey)) {
+          ++groupKeyNum;
+        }
+        curGroupKey = MathUtil.integerString(groupKeyNum, 3, '0');
+        theLastGroupKey = groupKey;
+      }
+
+      if (!briefResults) {
+        System.out.println("   Group #" + (groupNum++) + ": " + groupKey + " w/" +
+                           group.getExtractions().size() + " extractions");
+
+        String contextString = null;
+        String contextType = "text";
+        final DomNode inputNode = group.getInputNode();
+        if (inputNode != null) {
+          final String inputXml = DomUtil.getSubtreeXml(inputNode);
+          if (inputXml != null) {
+            contextType = "xml";
+          }
+        }
+        if (contextString == null) {
+          contextString = group.getInputText();
+        }
+        System.out.println("    Context: (" + contextType + "):\n" + contextString);
+      }
+
+      for (ExtractionContainer extraction : group.getExtractions()) {
+
+        final String extractionKey = extraction.getKey();
+
+        curExtractionKey = extractionKey;
+        if (numberKeys) {
+          if (!curExtractionKey.equals(theLastExtractionKey)) {
+            ++extractionKeyNum;
+          }
+          curExtractionKey = MathUtil.integerString(extractionKeyNum, 3, '0');
+          theLastExtractionKey = extractionKey;
+        }
+
+        final ParseInterpretation theInterpretation = extraction.getTheInterpretation();
+        final ExtractionContainer.ExtractionData theExtraction = extraction.getTheExtraction();
+
+        if (theInterpretation != null) {
+          showBriefExtraction(source, curGroupKey, theExtraction, theInterpretation, curExtractionKey);
+        }
+        else {
+          for (ExtractionContainer.ExtractionData anExtraction : extraction.getExtractions()) {
+            showBriefExtraction(source, curGroupKey, anExtraction, null, curExtractionKey);
+          }
+        }
+      }
+    }
+  }
+
+  // source.url group.key context.string interpNum interpretation.classification interpretation.confidence context.key(xpath)
+  public final void showBriefExtraction(String source, String groupKey,
+                                        ExtractionContainer.ExtractionData theExtraction,
+                                        ParseInterpretation theInterpretation, String extractionKey) {
+
+    final String parsedText = theExtraction == null ? "???" : theExtraction.getParsedText();
+    if (theInterpretation != null) {
+      System.out.println(source + "\t" + groupKey + "\t" +
+                         parsedText + "\t0\t" + theInterpretation.getClassification() + "\t" +
+                         MathUtil.doubleString(theInterpretation.getConfidence(), 6) + "\t" +
+                         extractionKey);
+    }
+    else if (theExtraction != null && theExtraction.getInterpretations() != null) {
+      int interpNum = 0;
+      for (ParseInterpretation interpretation : theExtraction.getInterpretations()) {
+        System.out.println(source + "\t" + groupKey+ "\t" +
+                           parsedText + "\t" + interpNum + "\t" + interpretation.getClassification() + "\t" +
+                           MathUtil.doubleString(interpretation.getConfidence(), 6) + "\t" +
+                           extractionKey);
+      }
+    }
+  }
+
+  private final String getSourceString(ParseSourceInfo sourceInfo) {
+    String result = sourceInfo.getUrl();
+
+    if (result == null || "".equals(result)) {
+      result = sourceInfo.getInputString();
     }
 
-    //... show parses...
+    if (result == null || "".equals(result)) {
+      result = "[unknown-source]";
+    }
+
+    return result;
   }
 
   public ParseOutputCollector parseLines(File inputLines) throws IOException {
@@ -328,6 +481,12 @@ public class AtnParseRunner {
     //
     //   showOnlySelected -- (optional, default=true)
     //   outputXml -- (optional) path to which xml output is to be written
+    //   dumpGroups -- (optional, default=true) true to dump extraction groups instead of (raw/ungrouped) parse results
+    //
+    //   showResults -- (optional, default=true) true to show results on console
+    //   briefResults -- (optional, default=true) true to show brief (instead of full) result output on console
+    //   numberKeys -- (optional, default=true) true to show numbered group and extraction keys instead of xpaths
+    //
 
     final DataProperties dataProperties = new DataProperties(args);
     final AtnParseRunner runner = new AtnParseRunner(dataProperties);
