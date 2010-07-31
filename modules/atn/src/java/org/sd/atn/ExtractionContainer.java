@@ -32,6 +32,11 @@ import org.sd.cio.MessageHelper;
 import org.sd.io.PersistablePublishable;
 import org.sd.util.AlignmentVector;
 import org.sd.util.InputContext;
+import org.sd.util.tree.Tree;
+import org.sd.xml.DomContext;
+import org.sd.xml.DomNode;
+import org.sd.xml.DomUtil;
+import org.sd.xml.XmlLite;
 
 /**
  * A container for an extraction with its structural and semantic ambiguities.
@@ -45,7 +50,7 @@ import org.sd.util.InputContext;
  *
  * @author Spence Koehler
  */
-public class ExtractionContainer extends PersistablePublishable {
+public class ExtractionContainer extends PersistablePublishable implements Comparable<ExtractionContainer> {
 
   /**
    * Factory method to create and return a non-empty extraction container.
@@ -72,10 +77,17 @@ public class ExtractionContainer extends PersistablePublishable {
   private ExtractionData _theExtraction;
   private boolean setTheExtraction;
 
+  private int localStartPosition;
+  private int globalStartPosition;
+  private String localText;  // text of longest parsed text
+
   private Set<ParseInterpretation> _allInterpretations;
   private Set<String> _parsedTexts;
   private Set<String> _extractionTypes;
   private Set<String> _interpretationClassifications;
+
+  // terminal (path reconstruction tree) node for this extraction container
+  private transient Tree<XmlLite.Data> terminalNode;
 
   /**
    * Empty constructor for publishable reconstruction.
@@ -94,6 +106,15 @@ public class ExtractionContainer extends PersistablePublishable {
     this._theExtraction = null;
     this.setTheExtraction = false;
 
+    this.localStartPosition = parseResult.getFirstToken().getStartIndex();
+
+    final int[] startPosition = new int[]{0};
+    final InputContext ic = inputContext.getInputContext();
+    final InputContext rootContext = ic.getContextRoot();
+    if (rootContext != null) rootContext.getPosition(ic, startPosition);
+    this.globalStartPosition = startPosition[0] + localStartPosition;
+
+
     final int numParses = parseResult.getNumParses();
     for (int i = 0; i < numParses; ++i) {
       final AtnParse parse = parseResult.getParse(i);
@@ -105,6 +126,11 @@ public class ExtractionContainer extends PersistablePublishable {
 
       // only add selected extractions with interpretations
       extractions.add(new ExtractionData(inputContext, parse, interpretations));
+
+      final String curParsedText = parse.getParsedText();
+      if (localText == null || localText.length() < curParsedText.length()) {
+        localText = curParsedText;
+      }
     }
   }
 
@@ -115,12 +141,82 @@ public class ExtractionContainer extends PersistablePublishable {
     return extractions.size() == 0;
   }
 
-  public List<ExtractionData> getExtractions() {
+  /**
+   * Get this extraction's key.
+   */
+  public String getKey() {
+    return inputContext.getKey();
+  }
+
+  /**
+   * Get this extraction's text's local start position.
+   */
+  public int getLocalStartPosition() {
+    return localStartPosition;
+  }
+
+  /**
+   * Get this extraction's text's global start position.
+   */
+  public int getGlobalStartPosition() {
+    return globalStartPosition;
+  }
+
+  /**
+   * Get this extraction's (longest) local (parsed) text.
+   */
+  public String getLocalText() {
+    return localText;
+  }
+  
+
+  /**
+   * Get all of this extraction's parses.
+   */
+  public List<ExtractionData> getAllExtractions() {
     return extractions;
   }
 
+  /**
+   * Get "approved" extractions.
+   * <p>
+   * If 'theExtraction' is set, then it will be returned as a single element
+   * in the result; otherwise, all extractions will be returned.
+   */
+  public List<ExtractionData> getExtractions() {
+    List<ExtractionData> result = null;
+
+    if (_theExtraction != null) {
+      result = new ArrayList<ExtractionData>();
+      result.add(_theExtraction);
+    }
+    else {
+      result = extractions;
+    }
+
+    return result;
+  }
+
+  /**
+   * Get this extracton's input context container.
+   */
   public InputContextContainer getInputContextContainer() {
     return inputContext;
+  }
+
+  /**
+   * Set the terminal (path reconstruction tree) node for this extraction
+   * container.
+   */
+  public void setTerminalNode(Tree<XmlLite.Data> terminalNode) {
+    this.terminalNode = terminalNode;
+  }
+
+  /**
+   * Get this instance's terminal (path reconstruction tree) node or null.
+   */
+  public Tree<XmlLite.Data> getTerminalNode() {
+    return terminalNode;
   }
 
   /**
@@ -163,6 +259,9 @@ public class ExtractionContainer extends PersistablePublishable {
   }
 
 
+  /**
+   * Get the 'definitive' extraction or null.
+   */
   public ExtractionData getTheExtraction() {
     return _theExtraction;
   }
@@ -273,6 +372,15 @@ public class ExtractionContainer extends PersistablePublishable {
     return getParseInterpretations().size();
   }
 
+  /**
+   * Compare this extraction container to another under the same root context.
+   * <p>
+   * Note that comparisons across contexts will all appear equal.
+   */
+  public int compareTo(ExtractionContainer other) {
+    return this.globalStartPosition - other.globalStartPosition;
+  }
+
   private final Set<ParseInterpretation> getAllInterpretations() {
     if (_allInterpretations == null) {
       _allInterpretations = new HashSet<ParseInterpretation>();
@@ -314,6 +422,8 @@ public class ExtractionContainer extends PersistablePublishable {
     MessageHelper.writePublishable(dataOutput, inputContext);
     MessageHelper.writeSerializable(dataOutput, _theInterpretation);
     MessageHelper.writePublishable(dataOutput, _theExtraction);
+    dataOutput.writeInt(globalStartPosition);
+    dataOutput.writeInt(localStartPosition);
   }
 
   /**
@@ -335,16 +445,24 @@ public class ExtractionContainer extends PersistablePublishable {
   }
 
   private final void readVersion1(DataInput dataInput) throws IOException {
+    this.localText = null;
     final int numExtractionDatas = dataInput.readInt();
     this.extractions = new ArrayList<ExtractionData>();
     for (int i = 0; i < numExtractionDatas; ++i) {
-      extractions.add((ExtractionData)MessageHelper.readPublishable(dataInput));
+      final ExtractionData ed = (ExtractionData)MessageHelper.readPublishable(dataInput);
+      extractions.add(ed);
+
+      if (localText == null || localText.length() < ed.getParsedText().length()) {
+        localText = ed.getParsedText();
+      }
     }
     this.inputContext = (InputContextContainer)MessageHelper.readPublishable(dataInput);
     this._theInterpretation = (ParseInterpretation)MessageHelper.readSerializable(dataInput);
     this.setTheInterpretation = _theInterpretation != null;
     this._theExtraction = (ExtractionData)MessageHelper.readPublishable(dataInput);
     this.setTheExtraction = _theExtraction != null;
+    this.globalStartPosition = dataInput.readInt();
+    this.localStartPosition = dataInput.readInt();
   }
 
   //

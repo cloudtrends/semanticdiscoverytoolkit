@@ -19,9 +19,14 @@
 package org.sd.xml;
 
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import org.sd.io.DataHelper;
+import org.sd.util.tree.Tree;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -84,7 +89,7 @@ public class DomUtil {
 
 
   /**
-   *  Utility to get the trimmed node text under an dom node.
+   *  Utility to get the trimmed node text under a dom node.
    * 
    *  This trims extra whitespace around node text and inserts a single
    *  space character between node texts.
@@ -299,6 +304,71 @@ public class DomUtil {
     return result.toString();
   }
 
+  public static DomNode findDomNode(DomElement rootElement, String indexedPathString) {
+    DomNode result = rootElement;
+
+    final String[] pathPieces = indexedPathString.split("/");
+    final int[] pathIndex = new int[]{0};
+    final String rootTag = parseIndexedPathPiece(pathPieces[0], pathIndex);
+
+    if (!rootElement.getNodeName().equals(rootTag) || DomUtil.getRelativeSiblingNumber(rootElement) != pathIndex[0]) {
+      // rootElement doesn't align with first indexedPathString
+      return null;
+    }
+
+    for (int pathPieceIndex = 1; pathPieceIndex < pathPieces.length; ++pathPieceIndex) {
+      final String pathPiece = pathPieces[pathPieceIndex];
+      final String pieceTag = parseIndexedPathPiece(pathPiece, pathIndex);
+
+      result = findChild(result, pieceTag, pathIndex[0]);
+
+      if (result == null) break;
+    }
+
+    return result;
+  }
+
+  public static String parseIndexedPathPiece(String pathPiece, int[] index) {
+    String result = pathPiece;
+    index[0] = 0;
+
+    final int lbPos = pathPiece.indexOf('[');
+    if (lbPos >= 0) {
+      result = pathPiece.substring(0, lbPos);
+
+      final int rbPos = pathPiece.lastIndexOf(']');
+      if (rbPos >= 0) {
+        final String indexString = pathPiece.substring(lbPos + 1, rbPos).trim();
+        if (!"".equals(indexString)) {
+          index[0] = Integer.parseInt(indexString);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  public static DomNode findChild(DomNode parent, String nodeName, int relativeSibNum) {
+    DomNode result = null;
+
+    if (parent.hasChildNodes()) {
+      int sibNum = -1;
+      final NodeList childNodes = parent.getChildNodes();
+      for (int childNum = 0; childNum < childNodes.getLength(); ++childNum) {
+        final Node childNode = childNodes.item(childNum);
+        if (childNode == null || childNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
+        if (nodeName.equals(childNode.getNodeName())) {
+          ++sibNum;
+          if (sibNum == relativeSibNum) {
+            result = (DomNode)childNode;
+            break;
+          }
+        }
+      }
+    }
+
+    return result;
+  }
 
   /**
    *  Get the deepest common ancestor of the two nodes (inclusive of either
@@ -410,5 +480,90 @@ public class DomUtil {
     }
 
     return result;
+  }
+
+  /**
+   * Get the subtree's xml that includes the path from the root to the node
+   * and the node's entire subTree.
+   *
+   * @return null if domNode is null; otherwise, the subTree string.
+   */
+  public static String getSubtreeXml(DomNode domNode) {
+    if (domNode == null) return null;
+
+    Tree<XmlLite.Data> nodeTree = domNode.asTree();
+    String nodeXml = null;
+
+    try {
+      nodeXml = XmlLite.asXml(nodeTree, false);
+    }
+    catch (IOException e) {
+      System.err.println("Warning: couldn't convert tree to xml text!");
+      e.printStackTrace(System.err);
+      nodeXml = null;
+    }
+
+    if (nodeXml == null) return null;
+
+    final StringBuilder result = new StringBuilder();
+
+    result.append(nodeXml);
+    for (nodeTree = nodeTree.getParent(); nodeTree != null; nodeTree = nodeTree.getParent()) {
+      // for each parent
+      final XmlLite.Data data = nodeTree.getData();
+      // insert open tag in front
+      result.insert(0, data.toString());
+      // append close tag at end
+      final XmlLite.Tag tag = data.asTag();
+      result.append("</").append(tag.name).append('>');
+    }
+
+    return result.toString();
+  }
+
+  /**
+   * Write the (possibly null) domNode to the output.
+   * <p>
+   * Write the node and its full subtree as well as its path back to its
+   * root.
+   */
+  public static void writeDomNode(DataOutput dataOutput, DomNode domNode) throws IOException {
+    if (domNode == null) {
+      dataOutput.writeBoolean(false);
+      return;
+    }
+
+    final Tree<XmlLite.Data> nodeTree = domNode.asTree();
+    dataOutput.writeInt(nodeTree.depth());
+
+    final String xmlString = getSubtreeXml(domNode);
+    DataHelper.writeString(dataOutput, xmlString);
+  }
+
+  /**
+   * Read the (possibly null) domNode from the input.
+   * <p>
+   * The node will be returned with its subtree along with its path back to the
+   * root preserved.
+   */
+  public static DomNode readDomNode(DataInput dataInput) throws IOException {
+
+    final boolean hasData = dataInput.readBoolean();
+    if (!hasData) return null;
+
+    final int nodeDepth = dataInput.readInt();
+
+    final String xmlString = DataHelper.readString(dataInput);
+    Tree<XmlLite.Data> xmlTree = XmlFactory.buildXmlTree(xmlString, true, false);
+
+    for (int depth = 0; depth < nodeDepth; ++depth) {
+      if (xmlTree.numChildren() != 1) {
+        xmlTree = null;
+        break;
+      }
+      xmlTree = xmlTree.getChildren().get(0);
+    }
+
+    return xmlTree == null ? null : xmlTree.getData().asDomNode();
   }
 }

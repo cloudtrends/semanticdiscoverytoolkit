@@ -96,10 +96,6 @@ public class FsmBuilder2 <T> extends BaseFsmBuilder <T> {
 
     for (int i = 1; i < numTokens; ++i) {
 
-      if (i >= 11) {
-        final boolean stopHere = true;
-      }
-
       // make sequence boundary at b when freq(a -> b) < freq(b -> c)
       // or at c when freq(a -> b) > freq(b -> c)
       // if only 2 tokens, don't make sequence boundary

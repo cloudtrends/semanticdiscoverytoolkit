@@ -178,7 +178,9 @@ public class ParseInterpretation implements Serializable {
     int result = 13;
 
     result = 17 * result + this.classification.hashCode();
-    result = 17 * result + this.interpretation.hashCode();
+    if (this.interpretation != null) {
+      result = 17 * result + this.interpretation.hashCode();
+    }
 
     return result;
   }

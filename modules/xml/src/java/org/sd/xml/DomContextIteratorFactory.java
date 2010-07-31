@@ -110,6 +110,7 @@ public class DomContextIteratorFactory {
       }
       else if (curNode.hasChildNodes()) {
         final NodeList childNodes = curNode.getChildNodes();
+        int childNum = 0;
         for (int i = 0; i < childNodes.getLength(); ++i) {
           final Node childNode = childNodes.item(i);
           if (childNode == null) continue;
@@ -117,7 +118,7 @@ public class DomContextIteratorFactory {
           if (childNodeType == Node.ELEMENT_NODE || childNodeType == Node.TEXT_NODE) {
             final DomNode childDomNode = (DomNode)childNode;
             if (strategy.shouldQueueNode(childDomNode)) {
-              queue.add(i, childDomNode);
+              queue.add(childNum++, childDomNode);
             }
           }
         }

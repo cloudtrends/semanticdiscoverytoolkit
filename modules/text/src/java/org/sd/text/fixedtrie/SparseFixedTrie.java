@@ -90,10 +90,6 @@ public class SparseFixedTrie implements Publishable {
       final int bitOffset = startBitInd + bitOffsetOnRow + curValue;
       final int numSetBits = bits.countSetBits(startBitInd, bitOffset - 1);  // inclusive
 
-      if (row == 2 && valueSequence[0] == 1) {
-        final boolean stopHere = true;
-      }
-
       // note: newly setting a bit on this row will insert numValues bits to the next
       setBit(bitOffset, curValue, bitOffsetOnRow, startBitInd, row, numSetBits);
 

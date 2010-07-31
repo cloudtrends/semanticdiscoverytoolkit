@@ -84,9 +84,6 @@ public class RepeatingPatternDivideStrategy extends TopDownDivideStrategy {
     boolean result = pc.patternRepeats();
 
     final String nodeName = getName(xmlNode);
-    if ("jump".equals(nodeName) || "articles".equals(nodeName) || "article".equals(nodeName) || "storylinks".equals(nodeName)) {
-      final boolean stopHere = true;
-    }
 
     if (!result) {
       // check for parent pattern as long as we cover more than one path

@@ -88,21 +88,6 @@ public class CompoundParser {
     //
     //     <id>compound-parser-id</id>
     //
-    //     <inputs>
-    //       <input>text or dom to parse</input>
-    //       <input type='file' blocktext='true'>path-to-html-file</input>
-    //       <input type='diff' blocktext='false'>
-    //         <file1>path-to-file-1.html</file1>
-    //         <file2>path-to-file-2.html</file2>
-    //       </input>
-    //       <reprocess>
-    //         <jclass>java-InputReprocessor-class</jclass>
-    //         <class>InputReprocessor-class</class>
-    //         <dll>path-to-InputReprocessor-dll</dll>
-    //       </reprocess>
-    //       ...
-    //     </inputs>
-    //
     //     <outputs>
     //       <markup>
     //         <style>border: 3px solid; border-color: green; background-color: yellow;</style>
@@ -192,10 +177,6 @@ public class CompoundParser {
 
   private void collectOutput(InputContext input, String[] flow, ParseOutputCollector output, Set<Integer> stopList) {
     if (verbose) System.out.print("\nParsing '" + input.getText() + "'...");
-
-    // if (input.getText().toString().equals("Iron County, Utah")) {
-    //   final boolean stopHere = true;
-    // }
 
     if (flow == null) {
       flow = parserWrappers.keySet().toArray(new String[parserWrappers.size()]);

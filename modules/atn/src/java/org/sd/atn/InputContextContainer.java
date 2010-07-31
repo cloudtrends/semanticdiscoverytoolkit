@@ -115,7 +115,7 @@ public class InputContextContainer extends PersistablePublishable {
         if (rootContext == null || rootContext == prevContext) break;
         prevContext = curInputContext;
 
-        if (result.length() > 0) result.insert(0, ':');
+        if (result.length() > 0) result.insert(0, '/');
         result.insert(0, curInputContext.getId());
       }
     }

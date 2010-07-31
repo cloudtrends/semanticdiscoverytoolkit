@@ -224,8 +224,10 @@ public class ParseOutputCollector {
       if (onlyInterpreted && !parseInfo.wasInterpreted()) continue;
 
       if (parseInfo.addMarkup(textNode2Markup)) {
-        interpretedParses.add(parseInfo.getParse());
+        parseInfo.setHasMarkup(true);
       }
+
+      interpretedParses.add(parseInfo.getParse());
     }
 
     for (MarkupContainer markup : textNode2Markup.values()) {
@@ -335,6 +337,14 @@ public class ParseOutputCollector {
 
 
   private class ParseInfo {
+    private boolean hasMarkup;
+    boolean hasMarkup() {
+      return hasMarkup;
+    }
+    void setHasMarkup(boolean hasMarkup) {
+      this.hasMarkup = hasMarkup;
+    }
+
     private AtnParse parse;
     AtnParse getParse() {
       return parse;
