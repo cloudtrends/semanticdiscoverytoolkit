@@ -82,7 +82,7 @@ public class XmlTagParser {
   }
 
   /**
-   * @param inputStream  The stream in the state of just having read a '<' char.
+   * @param inputStream  The stream in the state of just having read an open angle bracket char.
    * @param data         The string builder instance to use for tag text buffering;
    *                     if null, read data will be discarded.
    * @param forceIgnoreComments  Force this read to ignore comments regardless of
@@ -136,7 +136,9 @@ public class XmlTagParser {
     // deal with script or start tag
     else {
       if (data != null) data.appendCodePoint(codePoint);  // don't forget the first char!
-      inputStream.readToChar('>', data, -1);
+
+      readToTagEnd(inputStream, data);
+
       final String text = getBuiltText(data, false);
       if (text.length() > 0) {
         final String ltext = text.toLowerCase();
@@ -242,6 +244,57 @@ public class XmlTagParser {
     }
 
     return retval;
+  }
+
+  /**
+   * Having read an open angle bracket (and the first character after it), read
+   * to the corresponding close angle bracket.
+   * <p>
+   * The trick here is to skip over angle brackets within xml attribute values
+   * within the tag being read.
+   */
+  private final void readToTagEnd(XmlInputStream inputStream, StringBuilder data) throws IOException {
+
+    // read up to '>' or '=', whichever comes first
+    for (int stoppedAt = inputStream.readToChar('>', data, '=');
+         !(stoppedAt == -1 || stoppedAt == '>');
+         stoppedAt = inputStream.readToChar('>', data, '=')) {
+
+      //NOTE: we're only here if (stoppedAt == '=')
+      if (data != null) data.appendCodePoint(stoppedAt);
+
+      // if the next char is \' or \", then read to corresponding end quote
+      // and then loop to next of '>' or '='
+      final int quoteChar = inputStream.read();
+
+      if (quoteChar == -1 || quoteChar == '>') {
+        break;
+      }
+      else {
+        // squirrel away the read character
+        if (data != null) data.appendCodePoint(quoteChar);
+
+        if (quoteChar == '\'' || quoteChar == '"') {
+          int nextStop = -1;
+
+          // read up to end quote, skipping backslash-quoted characters
+          for (nextStop = inputStream.readToChar((char)quoteChar, data, '\\');
+               nextStop == '\\';
+               nextStop = inputStream.readToChar((char)quoteChar, data, '\\')) {
+
+            // found backslash. store it and the next char and keep going
+            if (data != null) data.appendCodePoint(nextStop);
+            final int quotedChar = inputStream.read();
+            if (quotedChar == -1) break;
+            if (data != null) data.appendCodePoint(quotedChar);
+          }
+
+          if (nextStop == quoteChar && data != null) data.appendCodePoint(nextStop);
+        }
+
+        // loop to next of '>' or '='
+      }
+    }
   }
 
   // protected and static access for junit testing

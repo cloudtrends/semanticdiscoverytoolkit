@@ -42,6 +42,7 @@ public class TestXmlTagRipper extends TestCase {
   private static final String TEST1_XML = "resources/xml-text-ripper-test-data-1.xml";
   private static final String TEST2_XML = "resources/xml-tag-ripper-test-data-1.xml";
   private static final String TEST3_XML = "resources/xml-tag-ripper-test-data-2.xml";
+  private static final String TEST4_XML = "resources/xml-tag-ripper-test-data-3.xml";
 
   public void testNormalIteration() throws IOException {
     final String filename = FileUtil.getFilename(this.getClass(), TEST1_XML);
@@ -126,6 +127,33 @@ public class TestXmlTagRipper extends TestCase {
         final Tree<XmlLite.Data> ulNode = ripper.ripNode(XmlFactory.XML_LITE_IGNORE_COMMENTS);
         assertEquals(0, ulNode.numChildren());
         break;
+      }
+    }
+  }
+
+  public void testRipEmbeddedXmlInAttribute() throws IOException {
+    final String filename = FileUtil.getFilename(this.getClass(), TEST4_XML);
+    final XmlTagRipper ripper = new XmlTagRipper(filename, true, null);
+
+    final String[] onmouseovers = new String[] {
+      // first 'a' tag's onmouseover attribute
+      "addInfo(event, '<u>(Hannah) Channa Breslavsky</u><br>Original member of the Schloime Family Society<br><b>Residence on 1/10/1920:</b> Ohio with Rifka and Joseph Dolinsky<br><b>Residence on 1/30/1920:</b> Eldridge St NY, NY with Esther and Louis Gratz<br><b>Residence in 1930:</b> Bay 32nd St Brooklyn, NY with grandchildren')",
+
+      // second 'a' tag's onmouseover attribute
+      "addInfo(event, '<u>(Hannah) Channa Breslavsky</u><br><b>\\\"Burial\\\":</b> Mount Lebanon Cemetery Glendale, Queens, NY')",
+    };
+
+    // iterate up to the "a" nodes.
+    int aNum = 0;
+    while (ripper.hasNext()) {
+      final XmlLite.Tag tag = ripper.next();
+      if ("a".equals(tag.name)) {
+        final Tree<XmlLite.Data> aNode = ripper.ripNode(XmlFactory.XML_LITE_IGNORE_COMMENTS);
+
+        assertEquals("#", tag.getAttribute("href"));
+        assertEquals(onmouseovers[aNum], tag.getAttribute("onmouseover"));
+
+        ++aNum;
       }
     }
   }
