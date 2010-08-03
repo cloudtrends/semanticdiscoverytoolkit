@@ -53,6 +53,13 @@ public abstract class BaseDataProperties {
     return result;
   }
 
+  /**
+   * Determine whether the key has a non-null associated value.
+   */
+  public boolean hasProperty(String key) {
+    return getValueString(key) != null;
+  }
+
   public boolean getBoolean(String key) {
     boolean result = false;
 

@@ -193,11 +193,16 @@ public class OrderedMergeSet<T> {
   private final boolean walkLinks(Map<T, Set<T>> links, T startElement, T endElement, Set<T> pathResult, Set<T> linkResult) {
     boolean result = false;
 
+    final Set<T> seen = new HashSet<T>();
     final LinkedList<T> queue = new LinkedList<T>();
     queue.add(startElement);
 
     while (queue.size() > 0) {
       final T curElement = queue.removeFirst();
+
+      // avoid circular paths
+      if (seen.contains(curElement)) continue;
+      seen.add(curElement);
       
       if (pathResult != null) pathResult.add(curElement);
       if (linkResult != null && !startElement.equals(curElement)) linkResult.add(curElement);

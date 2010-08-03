@@ -156,6 +156,28 @@ public class DataProperties extends BaseDataProperties {
 
 
   /**
+   * Set the property to have the value iff its value is currently null.
+   */
+  public void setIfNull(String key, String value) {
+    if (!hasProperty(key)) properties.setProperty(key, value);
+  }
+
+  /**
+   * Set the property to have the value iff its value is currently null.
+   */
+  public void setIfNull(String key, boolean value) {
+    if (!hasProperty(key)) properties.setProperty(key, Boolean.toString(value));
+  }
+
+  /**
+   * Set the property to have the value iff its value is currently null.
+   */
+  public void setIfNull(String key, int value) {
+    if (!hasProperty(key)) properties.setProperty(key, Integer.toString(value));
+  }
+
+
+  /**
    * Replace segments of the form "${x}" with getString(x) iff getString(x) != null.
    */
   public String replaceVariables(String text) {
