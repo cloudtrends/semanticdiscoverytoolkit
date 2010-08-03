@@ -147,8 +147,8 @@ public class StandardTokenizer implements Tokenizer {
           curBreak = Break.NO_BREAK;
         }
       }
-      else
-      {
+      else {
+
         // char is punctuation or a symbol
         if (curChar == '-') {
           if (charPos + 1 < text.length() && text.codePointAt(charPos + 1) == '-') {
@@ -208,7 +208,13 @@ public class StandardTokenizer implements Tokenizer {
 
           if (charPos > 0 && Character.isLetterOrDigit(text.codePointAt(charPos - 1)) && curChar != '/' && curChar != '\\') {
             // symbol is embedded between non-white, non-symbol chars e.g. "don't" or "3.14"
-            curBreak = Break.NO_BREAK;
+            if (isSymbol(curChar)) {
+              curBreak = options.getSymbolBreak();
+            }
+            else {
+              //e.g. punctuation
+              curBreak = Break.NO_BREAK;
+            }
           }
           else if (curChar == '"' || curChar == '(' || curChar == '[' || curChar == '{' || curChar == '<' || curChar == '\'' || curChar == '/' || curChar == '\\') {
             // symbol is open quote, paren, or slash
@@ -216,7 +222,7 @@ public class StandardTokenizer implements Tokenizer {
           }
           else {
             // e.g. "$24.99"
-            curBreak = Break.NO_BREAK;
+            curBreak = options.getSymbolBreak();
           }
         }
         else if (curChar == '%' && charPos > 0 && Character.isDigit(text.codePointAt(charPos - 1))) {
@@ -229,7 +235,7 @@ public class StandardTokenizer implements Tokenizer {
         }
         else if (isSymbol(curChar)) {
           // keep other symbols like copyright, registered trademark, mathematical symbols, etc.
-          curBreak = Break.NO_BREAK;
+          curBreak = options.getSymbolBreak();
         }
       }
 
@@ -336,6 +342,7 @@ public class StandardTokenizer implements Tokenizer {
 
 
   public Token getToken(int startPosition) {
+    startPosition = skipImmediateBreaks(startPosition);
     return doGetToken(options.getRevisionStrategy(), startPosition, 0);
   }
 
@@ -571,6 +578,25 @@ public class StandardTokenizer implements Tokenizer {
       }
     }
 
+    return result;
+  }
+
+  /**
+   * Find the first non-break position from startPosition (inclusive).
+   */
+  private int skipImmediateBreaks(int startPosition) {
+    int result = startPosition;
+    final Map<Integer, Break> pos2break = getPos2Break();
+
+    while (result < text.length()) {
+      final Break posBreak = pos2break.get(result);
+
+      if (posBreak != null && posBreak.breaks() && posBreak.getBWidth() > 0) {
+        result += posBreak.getBWidth();
+      }
+      else break;
+    }
+    
     return result;
   }
 

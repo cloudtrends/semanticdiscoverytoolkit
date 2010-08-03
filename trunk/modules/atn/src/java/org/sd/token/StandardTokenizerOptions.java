@@ -264,6 +264,14 @@ public class StandardTokenizerOptions {
     this.quoteAndParenBreak = quoteAndParenBreak;
   }
 
+  private Break symbolBreak;
+  public Break getSymbolBreak() {
+    return symbolBreak;
+  }
+  public void setSymbolBreak(Break symbolBreak) {
+    this.symbolBreak = symbolBreak;
+  }
+
 
   /**
    * Construct with default options.
@@ -286,6 +294,7 @@ public class StandardTokenizerOptions {
     this.freeStandingDashBreak = Break.SINGLE_WIDTH_HARD_BREAK;
     this.whitespaceBreak = Break.SINGLE_WIDTH_SOFT_BREAK;
     this.quoteAndParenBreak = Break.SINGLE_WIDTH_HARD_BREAK;
+    this.symbolBreak = Break.NO_BREAK;
   }
 
   /**
@@ -323,6 +332,14 @@ public class StandardTokenizerOptions {
     String freeStandingDashBreak = options.getString("freeStandingDashBreak", "SINGLE_WIDTH_HARD_BREAK");
     String whitespaceBreak = options.getString("whitespaceBreak", "SINGLE_WIDTH_SOFT_BREAK");
     String quoteAndParenBreak = options.getString("quoteAndParenBreak", "SINGLE_WIDTH_HARD_BREAK");
+    String symbolBreak = options.getString("symbolBreak", "NO_BREAK");
+
+    // NOTES:
+    //   a leftBorderedDashBreak of NO_BREAK allows handling e.g. negative numbers as a single token
+    //   a leftBorderedDashBreak of SINGLE_WIDTH_HARD_BREAK would require checking the preDelims for negating numbers
+    //    but would also free up tokens that might be "bulleted".
+    //   a symbolBreak of NO_BREAK allows (math, currency, modifier, other) symbols to be a part of their immediately adjacent tokens
+    //    while setting to SINGLE_WIDTH_HARD_BREAK separates the symbols as delimiters around the tokens.
 
     // set RevisionStrategy
     this.revisionStrategy = translateRevisionStrategy(revisionStrategy);
@@ -343,6 +360,7 @@ public class StandardTokenizerOptions {
     this.freeStandingDashBreak = translateBreak(freeStandingDashBreak);
     this.whitespaceBreak = translateBreak(whitespaceBreak);
     this.quoteAndParenBreak = translateBreak(quoteAndParenBreak);
+    this.symbolBreak = translateBreak(symbolBreak);
   }
 
   /**
@@ -427,7 +445,8 @@ public class StandardTokenizerOptions {
         this.rightBorderedDashBreak == other.rightBorderedDashBreak &&
         this.freeStandingDashBreak == other.freeStandingDashBreak &&
         this.whitespaceBreak == other.whitespaceBreak &&
-        this.quoteAndParenBreak == other.quoteAndParenBreak;
+        this.quoteAndParenBreak == other.quoteAndParenBreak &&
+        this.symbolBreak == other.symbolBreak;
     }
 
     return result;
@@ -452,6 +471,7 @@ public class StandardTokenizerOptions {
     result = result * 17 + this.freeStandingDashBreak.hashCode();
     result = result * 17 + this.whitespaceBreak.hashCode();
     result = result * 17 + this.quoteAndParenBreak.hashCode();
+    result = result * 17 + this.symbolBreak.hashCode();
 
     return result;
   }
