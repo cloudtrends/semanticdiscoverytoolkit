@@ -826,7 +826,14 @@ public class XmlLite {
     }
 
     private final int delimOrEnd(String string, int delim, int fromPos) {
-      final int result = string.indexOf(delim, fromPos);
+      int result = -1;
+
+      // find delim from fromPos that isn't immediately preceded by a backslash
+      for (result = string.indexOf(delim, fromPos); result > 0 && string.charAt(result - 1) == '\\';
+           result = string.indexOf(delim, fromPos)) {
+        fromPos = result + 1;
+      }
+      
       return (result < 0) ? string.length() : result; 
     }
 

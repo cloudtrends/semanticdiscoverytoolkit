@@ -138,8 +138,8 @@ public class TestXmlLite extends TestCase {
   public void testBadAttribute() throws IOException {
     final XmlLite xmlLite = XmlFactory.HTML_LITE_KEEP_COMMENTS;
 
-    validate(xmlLite, "<a href=\" />", "<a href=\"\"/>");
-    validate(xmlLite, "<a href=\" >", "<a href=\"\"></a>");
+    validate(xmlLite, "<a href=\" />", "<a href=\"&#47;&gt;\"></a>");  // expected was "<a href=\"\"/>"
+    validate(xmlLite, "<a href=\" >", "<a href=\"&gt;\"></a>");  // expected was "<a href=\"\"></a>"
   }
 
   private final void doReadToEndOfScriptTest(String script, String expected) throws IOException {
