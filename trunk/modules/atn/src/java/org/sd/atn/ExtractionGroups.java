@@ -49,14 +49,18 @@ public class ExtractionGroups extends PersistablePublishable {
   private static final int CURRENT_VERSION = 1;
 
 
+  // all extractions in document order.
+  private List<ExtractionContainer> extractions;
+
   // all extractions mapped (in document order) by key
-  private Map<String, List<ExtractionContainer>> key2extractions;
+  private Map<String, List<ExtractionContainer>> _key2extractions;
 
   // reconstructor for the tree of all extraction keys
-  private XmlReconstructor xmlReconstructor;
+  private XmlReconstructor _xmlReconstructor;
 
   // all partitioned groups of extractions
   private List<ExtractionGroup> _groups;
+
 
   /**
    * Empty constructor for publishable reconstruction.
@@ -68,43 +72,17 @@ public class ExtractionGroups extends PersistablePublishable {
    * Construct with the parses in the given parse output collector.
    */
   public ExtractionGroups(ParseOutputCollector output) {
-    this.xmlReconstructor = new XmlReconstructor();
-    this.key2extractions = createKey2Extractions(output);
+    this.extractions = loadExtractions(output);
+    this._key2extractions = null;
+    this._xmlReconstructor = null;
     this._groups = null;
   }
 
   /**
-   * Get all extractions mapped (in document order) by key.
+   * Return all extractions in order.
    */
-  public Map<String, List<ExtractionContainer>> getKey2Extractions() {
-    return key2extractions;
-  }
-
-  /**
-   * Remove the extraction from this instance.
-   */
-  public boolean removeExtractionContainer(ExtractionContainer extraction) {
-    boolean result = false;
-
-    final String key = extraction.getKey();
-    final List<ExtractionContainer> extractions = key2extractions.get(key);
-    if (extractions != null) {
-      extractions.remove(extraction);
-      result = true;
-    }
-
-    if (extractions == null || extractions.size() == 0) {
-      key2extractions.remove(key);
-    }
-
-    final Tree<XmlLite.Data> terminalNode = extraction.getTerminalNode();
-    if (terminalNode != null) {
-      xmlReconstructor.removeTagPath(terminalNode);
-    }
-
-    if (result) this._groups = null;  // reset for recompute
-
-    return result;
+  public List<ExtractionContainer> getExtractions() {
+    return extractions;
   }
 
   /**
@@ -112,14 +90,70 @@ public class ExtractionGroups extends PersistablePublishable {
    */
   public List<ExtractionGroup> getExtractionGroups() {
     if (_groups == null) {
-      _groups = partitionExtractions(key2extractions);
+      _groups = partitionExtractions();
     }
     return _groups;
   }
 
+  /**
+   * Get the the number of extraction groups.
+   */
   public int getNumGroups() {
     final List<ExtractionGroup> groups = getExtractionGroups();
     return groups.size();
+  }
+
+  /**
+   * Get all extractions mapped (in document order) by key.
+   */
+  public Map<String, List<ExtractionContainer>> getKey2Extractions() {
+    if (_key2extractions == null) {
+      createKey2Extractions();
+    }
+    return _key2extractions;
+  }
+
+  /**
+   * Get the xmlReconstructor for all extractions' paths.
+   */
+  public XmlReconstructor getXmlReconstructor() {
+    if (_xmlReconstructor == null) {
+      createKey2Extractions();
+    }
+    return _xmlReconstructor;
+  }
+
+  /**
+   * Remove the extraction from this instance.
+   */
+  public boolean removeExtractionContainer(ExtractionContainer extraction) {
+
+    final boolean result = this.extractions.remove(extraction);
+
+    if (result) {
+      if (_key2extractions != null) {
+        final String key = extraction.getKey();
+        final List<ExtractionContainer> extractions = _key2extractions.get(key);
+        if (extractions != null) {
+          extractions.remove(extraction);
+        }
+
+        if (extractions == null || extractions.size() == 0) {
+          _key2extractions.remove(key);
+        }
+      }
+
+      if (_xmlReconstructor != null) {
+        final Tree<XmlLite.Data> terminalNode = extraction.getTerminalNode();
+        if (terminalNode != null) {
+          _xmlReconstructor.removeTagPath(terminalNode);
+        }
+      }
+
+      this._groups = null;  // reset for recompute
+    }
+
+    return result;
   }
 
 
@@ -144,23 +178,9 @@ public class ExtractionGroups extends PersistablePublishable {
    * @param dataOutput  the data output to write to.
    */
   protected void writeCurrentVersion(DataOutput dataOutput) throws IOException {
-
-    dataOutput.writeInt(key2extractions.size());
-    for (Map.Entry<String, List<ExtractionContainer>> entry : key2extractions.entrySet()) {
-      final String key = entry.getKey();
-      final List<ExtractionContainer> extractions = entry.getValue();
-
-      MessageHelper.writeString(dataOutput, key);
-      dataOutput.writeInt(extractions.size());
-      for (ExtractionContainer extraction : extractions) {
-        MessageHelper.writePublishable(dataOutput, extraction);
-      }
-    }
-
-    final List<ExtractionGroup> groups = getExtractionGroups();
-    dataOutput.writeInt(groups.size());
-    for (ExtractionGroup group : groups) {
-      MessageHelper.writePublishable(dataOutput, group);
+    dataOutput.writeInt(extractions.size());
+    for (ExtractionContainer extraction : extractions) {
+      MessageHelper.writePublishable(dataOutput, extraction);
     }
   }
 
@@ -183,31 +203,12 @@ public class ExtractionGroups extends PersistablePublishable {
   }
 
   private final void readVersion1(DataInput dataInput) throws IOException {
+    this.extractions = new ArrayList<ExtractionContainer>();
 
-    this.xmlReconstructor = new XmlReconstructor();
-
-    final int numKeys = dataInput.readInt();
-    this.key2extractions = new LinkedHashMap<String, List<ExtractionContainer>>();
-    for (int keyNum = 0; keyNum < numKeys; ++keyNum) {
-      final String key = MessageHelper.readString(dataInput);
-      final int numExtractions = dataInput.readInt();
-
-      final List<ExtractionContainer> extractions = new ArrayList<ExtractionContainer>();
-      key2extractions.put(key, extractions);
-
-      for (int extNum = 0; extNum < numExtractions; ++extNum) {
-        final ExtractionContainer extraction = (ExtractionContainer)MessageHelper.readPublishable(dataInput);
-        extractions.add(extraction);
-
-        final Tree<XmlLite.Data> terminalNode = xmlReconstructor.addTagPath(key, extraction.getLocalText());
-        extraction.setTerminalNode(terminalNode);
-      }
-    }
-
-    this._groups = new ArrayList<ExtractionGroup>();
-    final int numGroups = dataInput.readInt();
-    for (int groupNum = 0; groupNum < numGroups; ++groupNum) {
-      _groups.add((ExtractionGroup)MessageHelper.readPublishable(dataInput));
+    final int numExtractions = dataInput.readInt();
+    for (int extNum = 0; extNum < numExtractions; ++extNum) {
+      final ExtractionContainer extraction = (ExtractionContainer)MessageHelper.readPublishable(dataInput);
+      extractions.add(extraction);
     }
   }
 
@@ -220,21 +221,14 @@ public class ExtractionGroups extends PersistablePublishable {
   /**
    * Partition the extractions into groups (overridable).
    */
-  protected List<ExtractionGroup> partitionExtractions(Map<String, List<ExtractionContainer>> key2extractions) {
+  protected List<ExtractionGroup> partitionExtractions() {
     List<ExtractionGroup> result = new ArrayList<ExtractionGroup>();
 
-    int numExts = key2extractions.size();
-    if (numExts == 0) return result;
+    if (extractions == null || extractions.size() == 0) return result;
 
-    final List<ExtractionContainer> all = new ArrayList<ExtractionContainer>();
-    for (List<ExtractionContainer> extractions : key2extractions.values()) {
-      for (ExtractionContainer ec : extractions) {
-        if (ec != null) all.add(ec);
-        else { System.err.println("found null extractionContainer!"); }
-      }
-    }
-    numExts = all.size();
-    final ExtractionContainer[] extractionContainers = all.toArray(new ExtractionContainer[numExts]);
+    // Get xmlReconstructor so we can use xml structure here.
+    // NOTE: side-effect places reconstructed nodes into extraction container instances.
+    final XmlReconstructor xmlReconstructor = getXmlReconstructor();
 
     final Tree<XmlLite.Data> keyTree = xmlReconstructor.getXmlTree();
 
@@ -245,69 +239,116 @@ public class ExtractionGroups extends PersistablePublishable {
     //     - if f == null, then add to current group
     //       - note that this means that exactly 2 extractions will always be grouped together
     //       - ?maybe include a "maximum distance" constraint measured either in characters and/or in tree traversal distance?
-    //     - if np.dca (deepest common ancestor) != nf.dca
+    //     - if np.dca (deepest common ancestor) == nf.dca, then add next extraction to the current group
+    //     - else, np.dca != nf.dca
     //       - if np.dca is ancestor of nf.dca, then next extraction starts a new group
     //       - if np.dca is descendant of nf.dca, then next extraction goes into current group as its last member
     //   - increment: prior = next, next = following
 
-    ExtractionContainer prior = extractionContainers[0];
+    ExtractionContainer prior = null;
+    ExtractionGroup curGroup = null;
+    ExtractionContainer next = null;
 
-    ExtractionContainer priorE = extractionContainers[0];
-    ExtractionGroup curGroup = new ExtractionGroup();
-    result.add(curGroup);
-    curGroup.add(priorE);
+    for (ExtractionContainer following : extractions) {
+      if (next == null) {
+        // still walking up to where we've got prior, next, and following
+        if (prior == null) {
+          // this is the first extraction
+          prior = following;
 
-    for (int ecIdx = 1; ecIdx < numExts; ++ecIdx) {
-      final ExtractionContainer nextE = extractionContainers[ecIdx];
-      final ExtractionContainer followingE = (ecIdx + 1 < numExts) ? extractionContainers[ecIdx + 1] : null;
-
-      if (followingE == null) {
-        // add to current group
-        if (curGroup == null) {
           curGroup = new ExtractionGroup();
           result.add(curGroup);
-        }
-        curGroup.add(nextE);
-      }
-      else {
-        if (nextE.getTerminalNode() == null) {
-          System.out.println("no terminalNode! ecIdx=" + ecIdx);
-        }
+          curGroup.add(prior);
 
-        // next/prior deepest common ancestor node
-        final Tree<XmlLite.Data> npNode = nextE.getTerminalNode().getDeepestCommonAncestor(priorE.getTerminalNode());
-
-        // next/following deepest common ancestor node
-        final Tree<XmlLite.Data> nfNode = nextE.getTerminalNode().getDeepestCommonAncestor(followingE.getTerminalNode());
-
-        if (npNode == nfNode) {
-          // keep in the same group
-          if (curGroup == null) {
-            curGroup = new ExtractionGroup();
-            result.add(curGroup);
-          }
-          curGroup.add(nextE);
+          // don't want next = following = prior.
+          following = null;
         }
         else {
-          if (npNode.isAncestor(nfNode, true)) {
-            // start a new group
-            curGroup = new ExtractionGroup();
-            result.add(curGroup);
-            curGroup.add(nextE);
-          }
-          else {  // nfNode.isAncestor(npNode)
-            // add as last member of current group
-            if (curGroup == null) {
-              curGroup = new ExtractionGroup();
-              result.add(curGroup);
-            }
-            curGroup.add(nextE);
-            curGroup = null;
+          // else this is the second extraction and'll become the first 'next' (unless there's ambiguity)
+
+          final boolean ambiguity = prior.getGlobalStartPosition() == following.getGlobalStartPosition();
+          if (ambiguity) {
+            curGroup.add(following);
+            following = null;
           }
         }
       }
+      else {
+        // have prior, next, and following
+        if (curGroup == null) {
+          // prior group has been closed, so 'next' goes into a new group
+          curGroup = new ExtractionGroup();
+          result.add(curGroup);
+          curGroup.add(next);
+        }
+        else {
+          if ("Esther Kaplan".equals(next.getLocalText())) {
+            final boolean stopHere = true;
+          }
 
-      priorE = nextE;
+          final boolean ambiguity = next.getGlobalStartPosition() == following.getGlobalStartPosition();
+          if (ambiguity) {
+            curGroup.add(next);
+            next = prior;  // don't change 'prior' on increment
+          }
+          else {
+            final Tree<XmlLite.Data> nextNode = next.getTerminalNode();
+
+            // next/prior deepest common ancestor node
+            final Tree<XmlLite.Data> npNode = nextNode.getDeepestCommonAncestor(prior.getTerminalNode());
+
+            // next/following deepest common ancestor node
+            final Tree<XmlLite.Data> nfNode = nextNode.getDeepestCommonAncestor(following.getTerminalNode());
+
+            if (npNode == nfNode) {
+              // keep in the same group
+              curGroup.add(next);
+            }
+            else {
+              if (npNode.isAncestor(nfNode, true)) {
+                // start a new group
+                curGroup = new ExtractionGroup();
+                result.add(curGroup);
+                curGroup.add(next);
+              }
+              else {  // nfNode.isAncestor(npNode)
+                // add as last member of current group
+                curGroup.add(next);
+                if (!ambiguity) curGroup = null;  // close group
+              }
+            }
+          }
+        }
+        
+        // increment prior
+        prior = next;
+      }
+
+      // set 'next' before incrementing 'following'
+      next = following;
+    }
+
+    // Handle last 'next' (has no 'following')
+    if (next != null) {
+      if (curGroup == null) {
+        curGroup = new ExtractionGroup();
+        result.add(curGroup);
+      }
+      curGroup.add(next);
+    }
+
+    return result;
+  }
+
+  private final List<ExtractionContainer> loadExtractions(ParseOutputCollector output) {
+    final List<ExtractionContainer> result = new ArrayList<ExtractionContainer>();
+
+    final List<AtnParseResult> parseResults = output.getParseResults();
+    for (AtnParseResult parseResult : parseResults) {
+      final ExtractionContainer extraction = ExtractionContainer.createExtractionContainer(parseResult);
+      if (extraction != null) {
+        result.add(extraction);
+      }
     }
 
     return result;
@@ -316,27 +357,22 @@ public class ExtractionGroups extends PersistablePublishable {
   /**
    * Extract parses from the output as ExtractionContainers.
    */
-  private final Map<String, List<ExtractionContainer>> createKey2Extractions(ParseOutputCollector output) {
-    final Map<String, List<ExtractionContainer>> result = new LinkedHashMap<String, List<ExtractionContainer>>();
+  private final void createKey2Extractions() {
+    this._key2extractions = new LinkedHashMap<String, List<ExtractionContainer>>();
+    this._xmlReconstructor = new XmlReconstructor();
 
-    final List<AtnParseResult> parseResults = output.getParseResults();
-    for (AtnParseResult parseResult : parseResults) {
-      final ExtractionContainer extraction = ExtractionContainer.createExtractionContainer(parseResult);
-      if (extraction != null) {
-        final String key = extraction.getKey();
-        List<ExtractionContainer> extractions = result.get(key);
-        if (extractions == null) {
-          extractions = new ArrayList<ExtractionContainer>();
-          result.put(key, extractions);
-        }
-        extractions.add(extraction);
-        Collections.sort(extractions);
-
-        final Tree<XmlLite.Data> terminalNode = xmlReconstructor.addTagPath(key, extraction.getLocalText());
-        extraction.setTerminalNode(terminalNode);
+    for (ExtractionContainer extraction : this.extractions) {
+      final String key = extraction.getKey();
+      List<ExtractionContainer> extractions = _key2extractions.get(key);
+      if (extractions == null) {
+        extractions = new ArrayList<ExtractionContainer>();
+        _key2extractions.put(key, extractions);
       }
-    }
+      extractions.add(extraction);
+      Collections.sort(extractions);
 
-    return result;
+      final Tree<XmlLite.Data> terminalNode = _xmlReconstructor.addTagPath(key, extraction.getLocalText());
+      extraction.setTerminalNode(terminalNode);
+    }
   }
 }
