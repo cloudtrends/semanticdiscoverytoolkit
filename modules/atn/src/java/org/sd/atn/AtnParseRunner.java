@@ -303,7 +303,7 @@ public class AtnParseRunner {
       int interpNum = 0;
       for (ParseInterpretation interpretation : theExtraction.getInterpretations()) {
         System.out.println(source + "\t" + groupKey+ "\t" +
-                           parsedText + "\t" + interpNum + "\t" + interpretation.getClassification() + "\t" +
+                           parsedText + "\t" + (interpNum++) + "\t" + interpretation.getClassification() + "\t" +
                            MathUtil.doubleString(interpretation.getConfidence(), 6) + "\t" +
                            extractionKey);
       }

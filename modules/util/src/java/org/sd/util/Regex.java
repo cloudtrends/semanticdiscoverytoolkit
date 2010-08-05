@@ -35,22 +35,20 @@ public class Regex {
    *      java -ea Regex "(.+)\s+(.+)" "this is a test"
    */
   public static void main(String[] args) {
-    if (args.length != 2) {
-      System.out.println("Usage: " + Regex.class.getName() + " patternString inputString");
-      System.exit(-1);
-    }
+    final Pattern p = Pattern.compile(args[0]);
 
-    Pattern p = Pattern.compile(args[0]);
-    Matcher m = p.matcher(args[1]);
+    for (int argNum = 1; argNum < args.length; ++argNum) {
+      final Matcher m = p.matcher(args[argNum]);
 
-    if (m.matches()) {
-      System.out.println("string \"" + args[1] + "\" matches pattern: \"" + args[0] + "\":");
-      for (int i = 0; i <= m.groupCount(); i++) {
-        System.out.println("group[" + i + "]='" + m.group(i) + "'");
+      if (m.matches()) {
+        System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + args[0] + "\":");
+        for (int i = 0; i <= m.groupCount(); i++) {
+          System.out.println("group[" + i + "]='" + m.group(i) + "'");
+        }
       }
-    }
-    else {
-      System.out.println("string \"" + args[1] + "\" does not match pattern: \"" + args[0] + '"');
+      else {
+        System.out.println("string \"" + args[argNum] + "\" does not match pattern: \"" + args[0] + '"');
+      }
     }
   }
 }
