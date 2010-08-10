@@ -20,6 +20,7 @@ package org.sd.token.plugin;
 
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -85,10 +86,16 @@ public class RoteListClassifier extends AbstractTokenClassifier {
     if (textfileNode != null) {
       this.caseSensitive = textfileNode.getAttributeBoolean("caseSensitive", false);
 
-      String textfile = textfileNode.getTextContent();
+      final String textfilename = textfileNode.getTextContent();
+      File textfile = null;
+
       if (textfileNode.getDataProperties() != null) {
-        textfile = textfileNode.getDataProperties().replaceVariables(textfile);
+        textfile = textfileNode.getDataProperties().getWorkingFile(textfilename, "workingDir");
       }
+      else {
+        textfile = new File(textfilename);
+      }
+
       try {
         final BufferedReader reader = FileUtil.getReader(textfile);
 
