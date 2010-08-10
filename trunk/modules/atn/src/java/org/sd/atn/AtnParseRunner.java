@@ -74,8 +74,13 @@ public class AtnParseRunner {
   }
 
   private final ParseConfig loadParseConfig(DataProperties options) throws IOException {
-    final String parseConfigFilename = options.getString("parseConfig");
-    final DomDocument domDocument = XmlFactory.loadDocument(new File(parseConfigFilename), false, options);
+    final File parseConfigFile = options.getFile("parseConfig", "workingDir");
+
+    if (parseConfigFile == null) {
+      throw new IllegalStateException("Must define 'parseConfig'!");
+    }
+
+    final DomDocument domDocument = XmlFactory.loadDocument(parseConfigFile, false, options);
     final DomElement parseElement = (DomElement)domDocument.getDocumentElement();
     return new ParseConfig(parseElement);
   }
@@ -103,6 +108,12 @@ public class AtnParseRunner {
   }
 
   public void run() throws IOException {
+    final ParseOutputCollector output = buildOutput();
+    final ExtractionGroups extractionGroups = output != null ? new ExtractionGroups(output) : null;
+    handleOutput(output, extractionGroups);
+  }
+
+  public ParseOutputCollector buildOutput() throws IOException {
     ParseOutputCollector output = null;
 
     final String inputLines = options.getString("inputLines", null);
@@ -117,7 +128,10 @@ public class AtnParseRunner {
       }
     }
 
-    final ExtractionGroups extractionGroups = output != null ? new ExtractionGroups(output) : null;
+    return output;
+  }
+
+  public void handleOutput(ParseOutputCollector output, ExtractionGroups extractionGroups) throws IOException {
 
     final String outputXml = options.getString("outputXml", null);
     if (outputXml != null) {

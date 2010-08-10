@@ -91,12 +91,11 @@ public class AtnParserWrapper {
 
     if (DomUtil.getFirstChild(grammarFileElement) == null) {
       final DataProperties dataProperties = grammarElement.getDataProperties();
-      String grammarFile = grammarFileElement.getTextContent();
-      if (dataProperties != null) {
-        grammarFile = dataProperties.replaceVariables(grammarFile);
-      }
+      final String grammarFilename = grammarFileElement.getTextContent();
+      File grammarFile = dataProperties == null ? new File(grammarFilename) : dataProperties.getWorkingFile(grammarFilename, "workingDir");
+
       try {
-        final DomDocument domDocument = XmlFactory.loadDocument(new File(grammarFile), false, dataProperties);
+        final DomDocument domDocument = XmlFactory.loadDocument(grammarFile, false, dataProperties);
         grammarElement = (DomElement)domDocument.getDocumentElement();
       }
       catch (IOException e) {

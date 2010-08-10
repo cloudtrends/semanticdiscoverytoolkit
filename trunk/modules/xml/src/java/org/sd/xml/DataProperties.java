@@ -137,7 +137,12 @@ public class DataProperties extends BaseDataProperties {
    * Add a new property or override an existing.
    */
   public void set(String key, String value) {
-    properties.setProperty(key, value);
+    if (value == null) {
+      properties.remove(key);
+    }
+    else {
+      properties.setProperty(key, value);
+    }
   }
 
   /**
@@ -181,6 +186,8 @@ public class DataProperties extends BaseDataProperties {
    * Replace segments of the form "${x}" with getString(x) iff getString(x) != null.
    */
   public String replaceVariables(String text) {
+    if (text == null) return null;
+
     final StringBuilder result = new StringBuilder();
 
     while (doReplaceVariables(text, result)) {
@@ -189,6 +196,39 @@ public class DataProperties extends BaseDataProperties {
     }
 
     return text;
+  }
+
+  /**
+   * Get the file referenced by the 'key', replacing variables and taking
+   * the value of the 'workingDirKey' into account if present.
+   * <p>
+   * @return the file or null.
+   */
+  public File getFile(String key, String workingDirKey) {
+    return getWorkingFile(getString(key, null), workingDirKey);
+  }
+
+  /**
+   * Translate the filename into a File under the workingDir indicated
+   * by the key if present -- note that the key itself may be null or
+   * the value associated with the key may be null, in which case the
+   * filename itself is used as the full file path.
+   */
+  public File getWorkingFile(String filename, String workingDirKey) {
+    File result = null;
+
+    if (filename != null) {
+      filename = replaceVariables(filename);
+      final String workingDir = replaceVariables(getString(workingDirKey, null));
+      if (workingDir != null) {
+        result = new File(new File(workingDir), filename);
+      }
+      else {
+        result = new File(filename);
+      }
+    }
+
+    return result;
   }
 
   private final boolean doReplaceVariables(String text, StringBuilder result) {
