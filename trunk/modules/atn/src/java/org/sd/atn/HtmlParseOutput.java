@@ -38,18 +38,29 @@ public class HtmlParseOutput {
     this.output = new StringBuilder();
   }
 
-  public void addExtractionGroups(ExtractionGroups extractionGroups) {
+  public void addExtractionGroups(ExtractionGroups extractionGroups, boolean briefResults) {
     if (extractionGroups == null) return;
 
-    for (ExtractionGroup extractionGroup : extractionGroups.getExtractionGroups()) {
-      openExtractionGroup(extractionGroup);
 
-      for (ExtractionContainer extractionContainer : extractionGroup.getExtractions()) {
-        addExtractionContainer(extractionContainer);
+    if (briefResults) {
+      final List<String> briefExtractions = extractionGroups.collectBriefExtractions(null, true);
+      output.append("<table border=\"1\" cellpadding=\"1\" cellspacing=\"1\" style=\"font-size: 80%;\">\n");
+      output.append("  <tr><th>group</th><th>text</th><th>interp</th><th>label</th><th>conf</th><th>path</th></tr>\n");
+      for (String briefExtraction : briefExtractions) {
+        addBriefExtraction(briefExtraction);
       }
-
-      closeExtractionGroup();
+      output.append("</table>\n");
     }
+    else {
+      for (ExtractionGroup extractionGroup : extractionGroups.getExtractionGroups()) {
+        openExtractionGroup(extractionGroup);
+        for (ExtractionContainer extractionContainer : extractionGroup.getExtractions()) {
+          addExtractionContainer(extractionContainer);
+        }
+        closeExtractionGroup();
+      }
+    }
+
   }
 
   public String getOutput() {
@@ -76,6 +87,18 @@ public class HtmlParseOutput {
     output.
       append("  </table>\n").
       append("</div>\n");
+  }
+
+  private final void addBriefExtraction(String briefExtraction) {
+    final String[] fields = briefExtraction.split("\t");
+
+    output.append("<tr>\n");
+
+    for (String field : fields) {
+      output.append("<td>").append(field).append("</td>\n");
+    }
+
+    output.append("</tr>\n");
   }
 
   private final void addExtractionContainer(ExtractionContainer extractionContainer) {

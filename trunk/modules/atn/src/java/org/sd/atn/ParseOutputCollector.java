@@ -30,12 +30,15 @@ import org.sd.atn.extract.Extraction;
 import org.sd.atn.extract.ExtractionFactory;
 import org.sd.util.InputContext;
 import org.sd.util.InputContextComparison;
+import org.sd.util.tree.Tree;
+import org.sd.util.tree.TraversalIterator;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomContext;
 import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.sd.xml.DomUtil;
+import org.sd.xml.XmlLite;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -154,16 +157,42 @@ public class ParseOutputCollector {
    * Get the first dom document (result) if it exists or null.
    */
   public DomDocument getFirstDomDocument() {
+    return getFirstDomDocument(false);
+  }
 
+  public DomDocument getFirstDomDocument(boolean prune) {
     DomDocument result = null;
 
     if (domDocuments != null && domDocuments.size() > 0) {
       result = domDocuments.iterator().next();
+
+      if (prune) {
+        pruneNodes(result);
+      }
     }
 
     return result;
   }
 
+  public static final void pruneNodes(DomDocument domDocument) {
+    final Tree<XmlLite.Data> tree = domDocument.getDocumentDomElement().asTree();
+    for (TraversalIterator<XmlLite.Data> it = tree.iterator(Tree.Traversal.DEPTH_FIRST); it.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = it.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        boolean removeTag = ("iframe".equals(tag.name) || "script".equals(tag.name));
+
+        if (!removeTag && !curNode.hasChildren() && "style".equals(tag.name) && tag.attributes.size() == 0) {
+          removeTag = true;
+        }
+
+        if (removeTag) {
+          it.remove();
+          it.skip();
+        }
+      }
+    }
+  }
 
   public void showParseResults(boolean onlyInterpreted) {
     final List<AtnParse> interpretedParses = getTopInterpretedParses(onlyInterpreted);

@@ -29,7 +29,10 @@ import java.util.List;
 import java.util.Map;
 import org.sd.cio.MessageHelper;
 import org.sd.io.PersistablePublishable;
+import org.sd.util.MathUtil;
 import org.sd.util.tree.Tree;
+import org.sd.xml.DomNode;
+import org.sd.xml.DomUtil;
 import org.sd.xml.XmlLite;
 import org.sd.xml.XmlReconstructor;
 
@@ -155,6 +158,160 @@ public class ExtractionGroups extends PersistablePublishable {
 
     return result;
   }
+
+  /**
+   * Collect tab-delimited fielded strings with the fields:
+   * <ul>
+   * <li>source (if non-null)</li>
+   * <li>groupKey (numeric if numberKeys, otherwise, xpath)</li>
+   * <li>parsedText</li>
+   * <li>interpNum</li>
+   * <li>interpClassification</li>
+   * <li>interpConfidence</li>
+   * <li>extractionKey (numeric if numberKeys, otherwise, xpath)</li>
+   * </ul>
+   */
+  public final List<String> collectBriefExtractions(String source, boolean numberKeys) {
+    final List<String> result = new ArrayList<String>();
+
+    visitEachExtraction(true, source, numberKeys, result);
+
+    return result;
+  }
+
+  public final void showExtractionGroups(boolean briefResults, String source) {
+    showExtractionGroups(briefResults, source, false);
+  }
+
+  public final void showExtractionGroups(boolean briefResults, String source, boolean numberKeys) {
+    visitEachExtraction(briefResults, source, numberKeys, null);
+  }
+
+  private final void visitEachExtraction(boolean briefResults,
+                                         String source, boolean numberKeys,
+                                         List<String> briefResultCollector) {
+    int groupNum = 1;
+    String theLastGroupKey = null;
+    String theLastExtractionKey = null;
+
+    int groupKeyNum = -1;
+    String curGroupKey = null;
+    int extractionKeyNum = -1;
+    String curExtractionKey = null;
+
+    for (ExtractionGroup group : getExtractionGroups()) {
+
+      final String groupKey = group.getKey();
+
+      curGroupKey = groupKey;
+      if (numberKeys) {
+        if (!curGroupKey.equals(theLastGroupKey)) {
+          ++groupKeyNum;
+        }
+        curGroupKey = MathUtil.integerString(groupKeyNum, 3, '0');
+        theLastGroupKey = groupKey;
+      }
+
+      if (!briefResults) {
+        if (briefResultCollector == null) {
+          System.out.println("   Group #" + (groupNum++) + ": " + groupKey + " w/" +
+                             group.getExtractions().size() + " extractions");
+        }
+
+        String contextString = null;
+        String contextType = "text";
+        final DomNode inputNode = group.getInputNode();
+        if (inputNode != null) {
+          final String inputXml = DomUtil.getSubtreeXml(inputNode);
+          if (inputXml != null) {
+            contextType = "xml";
+          }
+        }
+        if (contextString == null) {
+          contextString = group.getInputText();
+        }
+        if (briefResultCollector == null) {
+          System.out.println("    Context: (" + contextType + "):\n" + contextString);
+        }
+      }
+
+      for (ExtractionContainer extraction : group.getExtractions()) {
+
+        final String extractionKey = extraction.getKey();
+
+        curExtractionKey = extractionKey;
+        if (numberKeys) {
+          if (!curExtractionKey.equals(theLastExtractionKey)) {
+            ++extractionKeyNum;
+          }
+          curExtractionKey = MathUtil.integerString(extractionKeyNum, 3, '0');
+          theLastExtractionKey = extractionKey;
+        }
+
+        final ParseInterpretation theInterpretation = extraction.getTheInterpretation();
+        final ExtractionContainer.ExtractionData theExtraction = extraction.getTheExtraction();
+
+        if (theInterpretation != null) {
+          showBriefExtraction(source, curGroupKey, theExtraction, theInterpretation, curExtractionKey, briefResultCollector);
+        }
+        else {
+          for (ExtractionContainer.ExtractionData anExtraction : extraction.getExtractions()) {
+            showBriefExtraction(source, curGroupKey, anExtraction, null, curExtractionKey, briefResultCollector);
+          }
+        }
+      }
+    }
+  }
+
+  // source.url group.key context.string interpNum interpretation.classification interpretation.confidence context.key(xpath)
+  private final void showBriefExtraction(String source, String groupKey,
+                                         ExtractionContainer.ExtractionData theExtraction,
+                                         ParseInterpretation theInterpretation, String extractionKey,
+                                         List<String> briefResultCollector) {
+
+    final StringBuilder briefExtraction = new StringBuilder();
+
+    final String parsedText = theExtraction == null ? "???" : theExtraction.getParsedText();
+    if (theInterpretation != null) {
+      if (source != null) briefExtraction.append(source).append('\t');
+      briefExtraction.
+        append(groupKey).append('\t').
+        append(parsedText).append("\t0\t").
+        append(theInterpretation.getClassification()).append('\t').
+        append(MathUtil.doubleString(theInterpretation.getConfidence(), 6)).append('\t').
+        append(extractionKey);
+      
+      if (briefResultCollector != null) {
+        briefResultCollector.add(briefExtraction.toString());
+      }
+      else {
+        System.out.println(briefExtraction.toString());
+      }
+    }
+    else if (theExtraction != null && theExtraction.getInterpretations() != null) {
+      int interpNum = 0;
+      for (ParseInterpretation interpretation : theExtraction.getInterpretations()) {
+        if (source != null) briefExtraction.append(source).append('\t');
+        briefExtraction.
+          append(groupKey).append('\t').
+          append(parsedText).append('\t').
+          append(interpNum++).append('\t').
+          append(interpretation.getClassification()).append('\t').
+          append(MathUtil.doubleString(interpretation.getConfidence(), 6)).append('\t').
+          append(extractionKey);
+
+        if (briefResultCollector != null) {
+          briefResultCollector.add(briefExtraction.toString());
+        }
+        else {
+          System.out.println(briefExtraction.toString());
+        }
+        briefExtraction.setLength(0);
+      }
+    }
+  }
+
+
 
 
   ////////

@@ -22,6 +22,7 @@ package org.sd.crawl;
 import org.sd.cio.MessageHelper;
 import org.sd.io.FileUtil;
 import org.sd.io.Publishable;
+import org.sd.text.DetailedUrl;
 import org.sd.util.LineBuilder;
 import org.sd.util.tree.TraversalIterator;
 import org.sd.util.tree.Tree;
@@ -75,7 +76,7 @@ public class CrawledPage implements Publishable {
 
   private PageMetaData _metaData;
   private List<Link> _links;
-
+  private DetailedUrl _dUrl;
 
   private static final XPathApplicator XPA = new XPathApplicator();
 
@@ -252,6 +253,13 @@ public class CrawledPage implements Publishable {
     return url;
   }
 
+  public DetailedUrl getDetailedUrl() {
+    if (_dUrl == null) {
+      _dUrl = new DetailedUrl(url);
+    }
+    return _dUrl;
+  }
+
   /**
    * Get this instance's response code.
    */
@@ -415,6 +423,82 @@ public class CrawledPage implements Publishable {
     }
 
     return result;
+  }
+
+  /**
+   * Normalize the hrefs in this page's content such that relative links are
+   * made to be absolute.
+   */
+  public void normalizeHrefs() {
+    final Tree<XmlLite.Data> xmlTree = getXmlTree();
+
+    if (xmlTree != null) {
+      final StringBuilder absoluteUrl = new StringBuilder();
+
+      for (TraversalIterator<XmlLite.Data> iter = xmlTree.iterator(Tree.Traversal.DEPTH_FIRST); iter.hasNext(); ) {
+        final Tree<XmlLite.Data> curNode = iter.next();
+        final List<Tree<XmlLite.Data>> children = curNode.getChildren();
+        if (children != null) {
+          for (Tree<XmlLite.Data> child : children) {
+            final XmlLite.Tag tag = child.getData().asTag();
+            if (tag != null) {
+              String tagAttribute = null;
+
+              if ("a".equals(tag.name)) {
+                // a href (linkText=text)
+                tagAttribute = "href";
+              }
+              else if ("frame".equals(tag.name) || "iframe".equals(tag.name)) {
+                // frame src (linkText=title att), iframe src (linkText=title att)
+                tagAttribute = "src";
+              }
+              else if ("img".equals(tag.name)) {
+                // img src (linkText=alt att)
+                tagAttribute = "src";
+              }
+              else if ("link".equals(tag.name)) {
+                // link href (linkText=rel att (i.e. "stylesheet")
+                tagAttribute = "href";
+              }
+              else if ("script".equals(tag.name)) {
+                // script src (linkText=language att (i.e. "javascript")
+                tagAttribute = "src";
+              }
+              else if ("meta".equals(tag.name)) {
+                final String httpEquiv = tag.getAttribute("http-equiv");
+                if (httpEquiv != null && "refresh".equals(httpEquiv.toLowerCase())) {
+                  final String content = tag.getAttribute("content");
+                  final int urlPos = content.indexOf("url=");
+                  if (urlPos >= 0) {
+                    final String linkUrl = content.substring(urlPos + 4);
+                    if (linkUrl != null && !"".equals(linkUrl)) {
+                      if (absoluteUrl.length() > 0) absoluteUrl.setLength(0);
+                      absoluteUrl.append(content.substring(0, urlPos + 4));
+                      if (relativeToAbsolute(linkUrl, absoluteUrl)) {
+                        tag.setAttribute("content", absoluteUrl.toString());
+                      }
+                    }
+                  }
+                }
+              }
+              else if ("embed".equals(tag.name)) {
+                tagAttribute = "src";
+              }
+
+              if (tagAttribute != null) {
+                final String linkUrl = tag.getAttribute(tagAttribute);
+                if (linkUrl != null && !"".equals(linkUrl)) {
+                  if (absoluteUrl.length() > 0) absoluteUrl.setLength(0);
+                  if (relativeToAbsolute(linkUrl, absoluteUrl)) {
+                    tag.setAttribute(tagAttribute, absoluteUrl.toString());
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -635,5 +719,24 @@ public class CrawledPage implements Publishable {
       }
     }
     return _links;
+  }
+
+  /**
+   * If necessary, convert the href from relative to absolute according to
+   * this page's url.
+   * <p>
+   * If the href is already absolute, then false will be returned and result
+   * will be unchanged.
+   *
+   * @return true if converted and the absolute url is in result.
+   */
+  private final boolean relativeToAbsolute(String href, StringBuilder result) {
+    final boolean isRelative = (href.indexOf(':') < 0);
+
+    if (isRelative) {
+      result.append(Link.buildUrl(url, href));
+    }
+
+    return isRelative;
   }
 }

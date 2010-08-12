@@ -31,20 +31,16 @@ import org.sd.util.ExecUtil;
 import org.sd.util.FileContext;
 import org.sd.util.InputContext;
 import org.sd.util.InputContextIterator;
-import org.sd.util.MathUtil;
 import org.sd.util.WhitespacePolicy;
 import org.sd.util.tree.Tree;
-import org.sd.util.tree.TraversalIterator;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomContextIterator;
 import org.sd.xml.DomContextIteratorFactory;
 import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomIterationStrategy;
-import org.sd.xml.DomNode;
 import org.sd.xml.DomTextBlockIterationStrategy;
 import org.sd.xml.DomTextIterationStrategy;
-import org.sd.xml.DomUtil;
 import org.sd.xml.XmlFactory;
 import org.sd.xml.XmlLite;
 
@@ -222,104 +218,7 @@ public class AtnParseRunner {
       else {
         // show brief results
         final boolean numberKeys = options.getBoolean("numberKeys", true);
-        showExtractionGroups(extractionGroups, briefResults, source, numberKeys);
-      }
-    }
-  }
-
-  public final void showExtractionGroups(ExtractionGroups extractionGroups, boolean briefResults, String source) {
-    showExtractionGroups(extractionGroups, briefResults, source, false);
-  }
-
-  public final void showExtractionGroups(ExtractionGroups extractionGroups, boolean briefResults, String source, boolean numberKeys) {
-    int groupNum = 1;
-    String theLastGroupKey = null;
-    String theLastExtractionKey = null;
-
-    int groupKeyNum = -1;
-    String curGroupKey = null;
-    int extractionKeyNum = -1;
-    String curExtractionKey = null;
-
-    for (ExtractionGroup group : extractionGroups.getExtractionGroups()) {
-
-      final String groupKey = group.getKey();
-
-      curGroupKey = groupKey;
-      if (numberKeys) {
-        if (!curGroupKey.equals(theLastGroupKey)) {
-          ++groupKeyNum;
-        }
-        curGroupKey = MathUtil.integerString(groupKeyNum, 3, '0');
-        theLastGroupKey = groupKey;
-      }
-
-      if (!briefResults) {
-        System.out.println("   Group #" + (groupNum++) + ": " + groupKey + " w/" +
-                           group.getExtractions().size() + " extractions");
-
-        String contextString = null;
-        String contextType = "text";
-        final DomNode inputNode = group.getInputNode();
-        if (inputNode != null) {
-          final String inputXml = DomUtil.getSubtreeXml(inputNode);
-          if (inputXml != null) {
-            contextType = "xml";
-          }
-        }
-        if (contextString == null) {
-          contextString = group.getInputText();
-        }
-        System.out.println("    Context: (" + contextType + "):\n" + contextString);
-      }
-
-      for (ExtractionContainer extraction : group.getExtractions()) {
-
-        final String extractionKey = extraction.getKey();
-
-        curExtractionKey = extractionKey;
-        if (numberKeys) {
-          if (!curExtractionKey.equals(theLastExtractionKey)) {
-            ++extractionKeyNum;
-          }
-          curExtractionKey = MathUtil.integerString(extractionKeyNum, 3, '0');
-          theLastExtractionKey = extractionKey;
-        }
-
-        final ParseInterpretation theInterpretation = extraction.getTheInterpretation();
-        final ExtractionContainer.ExtractionData theExtraction = extraction.getTheExtraction();
-
-        if (theInterpretation != null) {
-          showBriefExtraction(source, curGroupKey, theExtraction, theInterpretation, curExtractionKey);
-        }
-        else {
-          for (ExtractionContainer.ExtractionData anExtraction : extraction.getExtractions()) {
-            showBriefExtraction(source, curGroupKey, anExtraction, null, curExtractionKey);
-          }
-        }
-      }
-    }
-  }
-
-  // source.url group.key context.string interpNum interpretation.classification interpretation.confidence context.key(xpath)
-  public final void showBriefExtraction(String source, String groupKey,
-                                        ExtractionContainer.ExtractionData theExtraction,
-                                        ParseInterpretation theInterpretation, String extractionKey) {
-
-    final String parsedText = theExtraction == null ? "???" : theExtraction.getParsedText();
-    if (theInterpretation != null) {
-      System.out.println(source + "\t" + groupKey + "\t" +
-                         parsedText + "\t0\t" + theInterpretation.getClassification() + "\t" +
-                         MathUtil.doubleString(theInterpretation.getConfidence(), 6) + "\t" +
-                         extractionKey);
-    }
-    else if (theExtraction != null && theExtraction.getInterpretations() != null) {
-      int interpNum = 0;
-      for (ParseInterpretation interpretation : theExtraction.getInterpretations()) {
-        System.out.println(source + "\t" + groupKey+ "\t" +
-                           parsedText + "\t" + (interpNum++) + "\t" + interpretation.getClassification() + "\t" +
-                           MathUtil.doubleString(interpretation.getConfidence(), 6) + "\t" +
-                           extractionKey);
+        extractionGroups.showExtractionGroups(briefResults, source, numberKeys);
       }
     }
   }
@@ -439,25 +338,13 @@ public class AtnParseRunner {
 
     System.out.println("\nWriting output to '" + outputFilename + "'...");
 
-    pruneNodes(domDocument);
+    ParseOutputCollector.pruneNodes(domDocument);
 
     final BufferedWriter writer = FileUtil.getWriter(outputFilename);
     XmlLite.writeXml(domDocument.getDocumentDomElement().asTree(), writer);
     writer.close();
 
     return outputFilename;
-  }
-
-  private final void pruneNodes(DomDocument domDocument) {
-    final Tree<XmlLite.Data> tree = domDocument.getDocumentDomElement().asTree();
-    for (TraversalIterator<XmlLite.Data> it = tree.iterator(Tree.Traversal.DEPTH_FIRST); it.hasNext(); ) {
-      final Tree<XmlLite.Data> curNode = it.next();
-      final XmlLite.Tag tag = curNode.getData().asTag();
-      if (tag != null && ("iframe".equals(tag.name) || "script".equals(tag.name))) {
-        it.remove();
-        it.skip();
-      }
-    }
   }
 
   private String buildOutputFilename(DomDocument domDocument) {
