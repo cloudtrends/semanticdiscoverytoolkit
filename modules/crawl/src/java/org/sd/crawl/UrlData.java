@@ -122,14 +122,13 @@ public class UrlData {
    * Get the url.
    */
   public URL getUrl() {
-    if (_url == null && urlString != null) {
-      final String url = (urlString.indexOf("://") < 0) ? "http://" + urlString : urlString;
-
-      try {
-        this._url = new URL(url);
-      }
-      catch (MalformedURLException e) {
-        this._error = e;
+    if (_url == null && _error == null) {
+      final DetailedUrl dUrl = getDetailedUrl();
+      if (dUrl != null) {
+        _url = dUrl.asUrl();
+        if (_url == null) {
+          _error = dUrl.getUrlError();
+        }
       }
     }
     return _url;
@@ -147,7 +146,7 @@ public class UrlData {
    * Get the detailed url instance for this instance.
    */
   public DetailedUrl getDetailedUrl() {
-    if (_dUrl == null) {
+    if (_dUrl == null && urlString != null) {
       this._dUrl = new DetailedUrl(urlString);
     }
     return _dUrl;
