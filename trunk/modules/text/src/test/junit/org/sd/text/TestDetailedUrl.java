@@ -190,12 +190,12 @@ public class TestDetailedUrl extends TestCase {
   public void test9() {
     doTest(
       "http://foo.bar.com/foo-bar",
-      "http://foo.bar.com/foo-bar/",
+      "http://foo.bar.com/foo-bar",
       "http://",
       "",
       "foo.bar.com",
       "",
-      "/foo-bar/",
+      "/foo-bar",
       "",
       "",
       "",

@@ -23,6 +23,8 @@ import org.sd.nlp.NormalizedString;
 import org.sd.util.PathWrapper;
 import org.sd.util.StringUtil;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -185,6 +187,8 @@ public class DetailedUrl {
   private String _anUrlString;
   private String _nqUrlString;
   private String _nnaUrlString;
+  private URL _url;
+  private MalformedURLException _urlError;
 
   // intermediate data
   private int[] _indexes;
@@ -194,6 +198,7 @@ public class DetailedUrl {
   private Set<String> _urlPathWords;
   private String _actualPath;
   private PathWrapper _pathWrapper;
+  private String _urlPath;
 
   /**
    * Construct with a url string.
@@ -325,32 +330,47 @@ public class DetailedUrl {
    */
   private final String getActualPath() {
     if (_actualPath == null) {
-      final int[] markers = getMarkers();
-
-      boolean needsTrailingSlash = false;
-      int endIndex = markers[PATH_END_MARKER] + 1;
-      if (markers[TARGET_EXT_MARKER] < 0 && markers[QUERY_MARKER] < 0 && markers[ANCHOR_MARKER] < 0) {
-        final int[] indexes = getIndexes();
-        endIndex = indexes[EOS_INDEX];
-        needsTrailingSlash = true;
-      }
-
-      _actualPath = getSubString(markers[PATH_START_MARKER], endIndex);
-
-      if (_actualPath.length() > 0) {
-        if (needsTrailingSlash && _actualPath.charAt(_actualPath.length() - 1) != '/') {
-          _actualPath = _actualPath + "/";
-        }
-      }
-      else {
-        // if no path and have protocol, then set path to "/" for normalization
-        if (getProtocol(false).length() > 0) {
-          _actualPath = "/";
-        }
-      }
-//todo: convert backslashes to forward slashes?
+      _actualPath = computePath(false);
     }
     return _actualPath;
+  }
+
+  private final String getUrlPath() {
+    if (_urlPath == null) {
+      _urlPath = computePath(true);
+    }
+    return _urlPath;
+  }
+
+  private final String computePath(boolean relaxTrailingSlash) {
+    String result = null;
+
+    final int[] markers = getMarkers();
+
+    boolean needsTrailingSlash = false;
+    int endIndex = markers[PATH_END_MARKER] + 1;
+    if (markers[TARGET_EXT_MARKER] < 0 && markers[QUERY_MARKER] < 0 && markers[ANCHOR_MARKER] < 0) {
+      final int[] indexes = getIndexes();
+      endIndex = indexes[EOS_INDEX];
+      needsTrailingSlash = !relaxTrailingSlash;
+    }
+
+    result = getSubString(markers[PATH_START_MARKER], endIndex);
+
+    if (result.length() > 0) {
+      if (needsTrailingSlash && result.charAt(result.length() - 1) != '/') {
+        result = result + "/";
+      }
+    }
+    else {
+      // if no path and have protocol, then set path to "/" for normalization
+      if (getProtocol(false).length() > 0) {
+        result = "/";
+      }
+    }
+//todo: convert backslashes to forward slashes?
+
+    return result;
   }
 
   private PathWrapper getPathWrapper() {
@@ -370,7 +390,7 @@ public class DetailedUrl {
    */
   public String getPath(boolean withoutTargetOrExtension) {
     if (_path == null) {
-      _path = getActualPath();
+      _path = getUrlPath();
 //      _path = getPathWrapper().getPath();
     }
 
@@ -533,6 +553,50 @@ public class DetailedUrl {
       _nqUrlString = builder.toString();
     }
     return _nqUrlString;
+  }
+
+  /**
+   * Get this url as a URL instance, assuming 'http' protocol if absent.
+   */
+  public URL asUrl() {
+    // NOTE: the trailing '/' added for normalization purposes in some cases
+    // "breaks" crawling so, for the purposes of an actual URL, this trailing
+    // slash is not included.
+
+    if (_url == null) {
+      final StringBuilder builder = new StringBuilder();
+      String protocol = getProtocol(true);
+      if (protocol == null || "".equals(protocol)) {
+        protocol = "http://";
+      }
+
+      builder.
+        append(protocol).
+        append(getHost(true, true, true)).
+        append(getUrlPath()).
+        append(getTarget(true)).
+        append(getQuery()).
+        append(getAnchor());
+
+      try {
+        _url = new URL(builder.toString());
+      }
+      catch (MalformedURLException e) {
+        _urlError = e;
+        _url = null;
+      }
+    }
+    return _url;
+  }
+
+  /**
+   * Get the Url Error, or null.
+   */
+  public MalformedURLException getUrlError() {
+    if (_urlError == null && _url == null) {
+      asUrl();  // force compute
+    }
+    return _urlError;
   }
 
   /**
@@ -903,6 +967,14 @@ public class DetailedUrl {
       System.out.println("   extension: " + dUrl.getTargetExtension(true));
       System.out.println("       query: " + dUrl.getQuery());
       System.out.println("      anchor: " + dUrl.getAnchor());
+
+      final URL url = dUrl.asUrl();
+      if (url != null) {
+        System.out.println("       asURL: " + dUrl.asUrl());
+      }
+      else {
+        System.out.println("    urlError: " + dUrl.getUrlError());
+      }
 
       if (prevUrl != null) {
         System.out.println("    combined: " + prevUrl.fixHref(dUrl) + " (with prev=" + prevUrl.toString() + ")");
