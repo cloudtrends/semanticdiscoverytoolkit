@@ -206,32 +206,34 @@ public class ExtractionGroups extends PersistablePublishable {
     return result;
   }
 
-  public final void showExtractionGroups(String source) {
-    showExtractionGroups(source, false);
+  public final void showExtractionGroups(boolean briefResults, String source) {
+    showExtractionGroups(briefResults, source, false);
   }
 
-  public final void showExtractionGroups(final String source, final boolean numberKeys) {
+  public final void showExtractionGroups(final boolean briefResults, final String source, final boolean numberKeys) {
     visitExtractions(
       source, numberKeys,
       new ExtractionVisitor() {
         public boolean visitExtractionGroup(String source, int groupNum, String groupKey, ExtractionGroup group) {
-          System.out.println("   Group #" + (groupNum++) + ": " + groupKey + " w/" +
-                             group.getExtractions().size() + " extractions");
+          if (!briefResults) {
+            System.out.println("   Group #" + (groupNum++) + ": " + groupKey + " w/" +
+                               group.getExtractions().size() + " extractions");
 
-          String contextString = null;
-          String contextType = "text";
-          final DomNode inputNode = group.getInputNode();
-          if (inputNode != null) {
-            final String inputXml = DomUtil.getSubtreeXml(inputNode);
-            if (inputXml != null) {
-              contextType = "xml";
+            String contextString = null;
+            String contextType = "text";
+            final DomNode inputNode = group.getInputNode();
+            if (inputNode != null) {
+              final String inputXml = DomUtil.getSubtreeXml(inputNode);
+              if (inputXml != null) {
+                contextType = "xml";
+              }
             }
-          }
-          if (contextString == null) {
-            contextString = group.getInputText();
-          }
+            if (contextString == null) {
+              contextString = group.getInputText();
+            }
 
-          System.out.println("    Context: (" + contextType + "):\n" + contextString);
+            System.out.println("    Context: (" + contextType + "):\n" + contextString);
+          }
 
           return true;
         }
