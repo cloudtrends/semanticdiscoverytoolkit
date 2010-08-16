@@ -253,7 +253,7 @@ public class AtnParseRunner {
       else {
         // show brief results
         final boolean numberKeys = options.getBoolean("numberKeys", true);
-        extractionGroups.showExtractionGroups(source, numberKeys);
+        extractionGroups.showExtractionGroups(briefResults, source, numberKeys);
       }
     }
   }
