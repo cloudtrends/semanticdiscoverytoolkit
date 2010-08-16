@@ -33,6 +33,15 @@ import org.w3c.dom.NodeList;
  */
 public class DomContextIteratorFactory {
   
+  /**
+   * Build a DomContextIterator over the single DomNode.
+   */
+  public static final DomContextIterator getDomContextIterator(DomNode domNode) {
+    final DomContextIterator result = new DomContextIterator();
+    result.add(domNode);
+    return result;
+  }
+
   public static final DomContextIterator getDomContextIterator(File xmlFile, boolean isHtml, boolean textBlocks) throws IOException {
     DomContextIterator result = null;
 

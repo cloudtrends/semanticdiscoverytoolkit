@@ -26,7 +26,6 @@ import junit.framework.TestSuite;
 import org.sd.token.StandardTokenizerFactory;
 import org.sd.token.StandardTokenizerOptions;
 import org.sd.token.Token;
-import org.sd.token.TokenFilterResult;
 import org.sd.token.TokenRevisionStrategy;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
@@ -75,12 +74,12 @@ public class TestContiguousTokenFilter extends TestCase {
 
     Token firstToken = StandardTokenizerFactory.getFirstToken("Testing - ABC", tokenizerOptions);
     Token secondToken = firstToken.getNextToken();
-    TokenFilterResult filterResult = filter.checkToken(secondToken, false, firstToken);
+    TokenFilterResult filterResult = filter.checkToken(secondToken, false, firstToken, null);
     assertEquals(TokenFilterResult.HALT, filterResult);
 
     firstToken = StandardTokenizerFactory.getFirstToken("Testing-ABC", tokenizerOptions);
     secondToken = firstToken.getNextToken();
-    filterResult = filter.checkToken(secondToken, false, firstToken);
+    filterResult = filter.checkToken(secondToken, false, firstToken, null);
     assertEquals(TokenFilterResult.ACCEPT, filterResult);
   }
 

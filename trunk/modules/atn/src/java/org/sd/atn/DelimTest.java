@@ -117,7 +117,7 @@ public class DelimTest implements AtnRuleStepTest {
     }
   }
 			
-  public boolean accept(Token token) {
+  public boolean accept(Token token, AtnState curState) {
     final String delim = getDelim(token);
 
     if (!meetsRequiredConstraints(delim)) return false;

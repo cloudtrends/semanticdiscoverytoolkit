@@ -16,7 +16,9 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.sd.token;
+package org.sd.atn;
+
+import org.sd.token.Token;
 
 
 /**
@@ -33,6 +35,6 @@ public interface TokenFilter {
    * If IGNORE, then skip the token as if it were not in the input stream;
    * If HALT, then the token will be considered to be beyond the input boundaries.
    */
-  public TokenFilterResult checkToken(Token token, boolean isRevision, Token prevToken);
+  public TokenFilterResult checkToken(Token token, boolean isRevision, Token prevToken, AtnState curState);
 
 }

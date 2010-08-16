@@ -22,8 +22,6 @@ package org.sd.atn;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.sd.token.Token;
-import org.sd.token.TokenFilter;
-import org.sd.token.TokenFilterResult;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 
@@ -51,7 +49,7 @@ public class ContiguousTokenFilter implements TokenFilter {
     }
   }
 
-  public TokenFilterResult checkToken(Token token, boolean isRevision, Token prevToken) {
+  public TokenFilterResult checkToken(Token token, boolean isRevision, Token prevToken, AtnState curState) {
     TokenFilterResult result = TokenFilterResult.ACCEPT;
 
     if (tokenpattern != null) {
@@ -62,7 +60,7 @@ public class ContiguousTokenFilter implements TokenFilter {
     }
 
     if (delimTest != null && result == TokenFilterResult.ACCEPT && prevToken != null) {
-      if (!delimTest.accept(token)) {
+      if (!delimTest.accept(token, curState)) {
         result = TokenFilterResult.HALT;
       }
     }

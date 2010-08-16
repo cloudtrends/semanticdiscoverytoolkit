@@ -490,6 +490,7 @@ public class ExtractionContainer extends PersistablePublishable implements Compa
     private int endPos;
     private int length;
     private Extraction extraction;
+    private Tree<String> parseTree;
     private List<ParseInterpretation> interpretations;
     private int parseNum;
 
@@ -508,6 +509,7 @@ public class ExtractionContainer extends PersistablePublishable implements Compa
       this.endPos = parse.getEndIndex();
       this.length = parse.getFullTextLength();
       this.extraction = parse.getExtraction();
+      this.parseTree = parse.getParseTree();
       this.interpretations = interpretations;
       this.parseNum = parse.getParseNum();
     }
@@ -534,6 +536,10 @@ public class ExtractionContainer extends PersistablePublishable implements Compa
 
     public Extraction getExtraction() {
       return extraction;
+    }
+
+    public Tree<String> getParseTree() {
+      return parseTree;
     }
 
     public List<ParseInterpretation> getInterpretations() {
@@ -615,6 +621,7 @@ public class ExtractionContainer extends PersistablePublishable implements Compa
       dataOutput.writeInt(endPos);
       dataOutput.writeInt(length);
       MessageHelper.writePublishable(dataOutput, extraction);
+      MessageHelper.writeStringTree(dataOutput, parseTree);
       dataOutput.writeInt(interpretations.size());
       for (ParseInterpretation interpretation : interpretations) {
         MessageHelper.writeSerializable(dataOutput, interpretation);
@@ -647,6 +654,7 @@ public class ExtractionContainer extends PersistablePublishable implements Compa
       this.endPos = dataInput.readInt();
       this.length = dataInput.readInt();
       this.extraction = (Extraction)MessageHelper.readPublishable(dataInput);
+      this.parseTree = MessageHelper.readStringTree(dataInput);
       final int numInterpretations = dataInput.readInt();
       this.interpretations = new ArrayList<ParseInterpretation>();
       for (int i = 0; i < numInterpretations; ++i) {

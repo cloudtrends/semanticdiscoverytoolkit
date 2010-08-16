@@ -52,6 +52,23 @@ public class ExtractionGroups extends PersistablePublishable {
   private static final int CURRENT_VERSION = 1;
 
 
+  /**
+   * Interface for visiting each extraction in the group.
+   */
+  public interface ExtractionVisitor {
+    /**
+     * Visit a group on the way to visiting its interpretations
+     * 
+     * @return true to continue on to the interpretations; otherwise, false.
+     */
+    public boolean visitExtractionGroup(String source, int groupNum, String groupKey, ExtractionGroup group);
+
+    /** Visit a specific interpretation within an extraction */
+    public void visitInterpretation(String source, int groupNum, String groupKey, ExtractionContainer.ExtractionData theExtraction,
+                                    int interpNum, ParseInterpretation theInterpretation, String extractionKey);
+  }
+
+
   // all extractions in document order.
   private List<ExtractionContainer> extractions;
 
@@ -174,23 +191,59 @@ public class ExtractionGroups extends PersistablePublishable {
   public final List<String> collectBriefExtractions(String source, boolean numberKeys) {
     final List<String> result = new ArrayList<String>();
 
-    visitEachExtraction(true, source, numberKeys, result);
+    visitExtractions(
+      source, numberKeys,
+      new ExtractionVisitor() {
+        public boolean visitExtractionGroup(String source, int groupNum, String groupKey, ExtractionGroup group) {
+          return true;
+        }
+        public void visitInterpretation(String source, int groupNum, String groupKey, ExtractionContainer.ExtractionData theExtraction,
+                                        int interpNum, ParseInterpretation theInterpretation, String extractionKey) {
+          showBriefExtraction(source, groupKey, theExtraction, interpNum, theInterpretation, extractionKey, result);
+        }
+      });
 
     return result;
   }
 
-  public final void showExtractionGroups(boolean briefResults, String source) {
-    showExtractionGroups(briefResults, source, false);
+  public final void showExtractionGroups(String source) {
+    showExtractionGroups(source, false);
   }
 
-  public final void showExtractionGroups(boolean briefResults, String source, boolean numberKeys) {
-    visitEachExtraction(briefResults, source, numberKeys, null);
+  public final void showExtractionGroups(final String source, final boolean numberKeys) {
+    visitExtractions(
+      source, numberKeys,
+      new ExtractionVisitor() {
+        public boolean visitExtractionGroup(String source, int groupNum, String groupKey, ExtractionGroup group) {
+          System.out.println("   Group #" + (groupNum++) + ": " + groupKey + " w/" +
+                             group.getExtractions().size() + " extractions");
+
+          String contextString = null;
+          String contextType = "text";
+          final DomNode inputNode = group.getInputNode();
+          if (inputNode != null) {
+            final String inputXml = DomUtil.getSubtreeXml(inputNode);
+            if (inputXml != null) {
+              contextType = "xml";
+            }
+          }
+          if (contextString == null) {
+            contextString = group.getInputText();
+          }
+
+          System.out.println("    Context: (" + contextType + "):\n" + contextString);
+
+          return true;
+        }
+        public void visitInterpretation(String source, int groupNum, String groupKey, ExtractionContainer.ExtractionData theExtraction,
+                                        int interpNum, ParseInterpretation theInterpretation, String extractionKey) {
+          showBriefExtraction(source, groupKey, theExtraction, interpNum, theInterpretation, extractionKey, null);
+        }
+      });
   }
 
-  private final void visitEachExtraction(boolean briefResults,
-                                         String source, boolean numberKeys,
-                                         List<String> briefResultCollector) {
-    int groupNum = 1;
+  public final void visitExtractions(String source, boolean numberKeys, ExtractionVisitor visitor) {
+
     String theLastGroupKey = null;
     String theLastExtractionKey = null;
 
@@ -199,6 +252,7 @@ public class ExtractionGroups extends PersistablePublishable {
     int extractionKeyNum = -1;
     String curExtractionKey = null;
 
+    int groupNum = 0;
     for (ExtractionGroup group : getExtractionGroups()) {
 
       final String groupKey = group.getKey();
@@ -212,62 +266,48 @@ public class ExtractionGroups extends PersistablePublishable {
         theLastGroupKey = groupKey;
       }
 
-      if (!briefResults) {
-        if (briefResultCollector == null) {
-          System.out.println("   Group #" + (groupNum++) + ": " + groupKey + " w/" +
-                             group.getExtractions().size() + " extractions");
-        }
+      if (visitor.visitExtractionGroup(source, groupNum, groupKey, group)) {
 
-        String contextString = null;
-        String contextType = "text";
-        final DomNode inputNode = group.getInputNode();
-        if (inputNode != null) {
-          final String inputXml = DomUtil.getSubtreeXml(inputNode);
-          if (inputXml != null) {
-            contextType = "xml";
+        for (ExtractionContainer extraction : group.getExtractions()) {
+
+          final String extractionKey = extraction.getKey();
+
+          curExtractionKey = extractionKey;
+          if (numberKeys) {
+            if (!curExtractionKey.equals(theLastExtractionKey)) {
+              ++extractionKeyNum;
+            }
+            curExtractionKey = MathUtil.integerString(extractionKeyNum, 3, '0');
+            theLastExtractionKey = extractionKey;
           }
-        }
-        if (contextString == null) {
-          contextString = group.getInputText();
-        }
-        if (briefResultCollector == null) {
-          System.out.println("    Context: (" + contextType + "):\n" + contextString);
-        }
-      }
 
-      for (ExtractionContainer extraction : group.getExtractions()) {
+          final ParseInterpretation theInterpretation = extraction.getTheInterpretation();
+          final ExtractionContainer.ExtractionData theExtraction = extraction.getTheExtraction();
 
-        final String extractionKey = extraction.getKey();
-
-        curExtractionKey = extractionKey;
-        if (numberKeys) {
-          if (!curExtractionKey.equals(theLastExtractionKey)) {
-            ++extractionKeyNum;
+          if (theInterpretation != null) {
+            visitor.visitInterpretation(source, groupNum, curGroupKey, theExtraction, 0, theInterpretation, curExtractionKey);
           }
-          curExtractionKey = MathUtil.integerString(extractionKeyNum, 3, '0');
-          theLastExtractionKey = extractionKey;
-        }
-
-        final ParseInterpretation theInterpretation = extraction.getTheInterpretation();
-        final ExtractionContainer.ExtractionData theExtraction = extraction.getTheExtraction();
-
-        if (theInterpretation != null) {
-          showBriefExtraction(source, curGroupKey, theExtraction, theInterpretation, curExtractionKey, briefResultCollector);
-        }
-        else {
-          for (ExtractionContainer.ExtractionData anExtraction : extraction.getExtractions()) {
-            showBriefExtraction(source, curGroupKey, anExtraction, null, curExtractionKey, briefResultCollector);
+          else {
+            for (ExtractionContainer.ExtractionData anExtraction : extraction.getExtractions()) {
+              if (anExtraction != null && anExtraction.getInterpretations() != null) {
+                int interpNum = 0;
+                for (ParseInterpretation interpretation : anExtraction.getInterpretations()) {
+                  visitor.visitInterpretation(source, groupNum, curGroupKey, anExtraction, interpNum++, interpretation, curExtractionKey);
+                }
+              }
+            }
           }
         }
       }
+      ++groupNum;
     }
   }
 
   // source.url group.key context.string interpNum interpretation.classification interpretation.confidence context.key(xpath)
   private final void showBriefExtraction(String source, String groupKey,
                                          ExtractionContainer.ExtractionData theExtraction,
-                                         ParseInterpretation theInterpretation, String extractionKey,
-                                         List<String> briefResultCollector) {
+                                         int interpNum, ParseInterpretation theInterpretation,
+                                         String extractionKey, List<String> briefResultCollector) {
 
     final StringBuilder briefExtraction = new StringBuilder();
 
@@ -276,7 +316,8 @@ public class ExtractionGroups extends PersistablePublishable {
       if (source != null) briefExtraction.append(source).append('\t');
       briefExtraction.
         append(groupKey).append('\t').
-        append(parsedText).append("\t0\t").
+        append(parsedText).append('\t').
+        append(interpNum).append('\t').
         append(theInterpretation.getClassification()).append('\t').
         append(MathUtil.doubleString(theInterpretation.getConfidence(), 6)).append('\t').
         append(extractionKey);
@@ -286,27 +327,6 @@ public class ExtractionGroups extends PersistablePublishable {
       }
       else {
         System.out.println(briefExtraction.toString());
-      }
-    }
-    else if (theExtraction != null && theExtraction.getInterpretations() != null) {
-      int interpNum = 0;
-      for (ParseInterpretation interpretation : theExtraction.getInterpretations()) {
-        if (source != null) briefExtraction.append(source).append('\t');
-        briefExtraction.
-          append(groupKey).append('\t').
-          append(parsedText).append('\t').
-          append(interpNum++).append('\t').
-          append(interpretation.getClassification()).append('\t').
-          append(MathUtil.doubleString(interpretation.getConfidence(), 6)).append('\t').
-          append(extractionKey);
-
-        if (briefResultCollector != null) {
-          briefResultCollector.add(briefExtraction.toString());
-        }
-        else {
-          System.out.println(briefExtraction.toString());
-        }
-        briefExtraction.setLength(0);
       }
     }
   }
@@ -501,10 +521,12 @@ public class ExtractionGroups extends PersistablePublishable {
     final List<ExtractionContainer> result = new ArrayList<ExtractionContainer>();
 
     final List<AtnParseResult> parseResults = output.getParseResults();
-    for (AtnParseResult parseResult : parseResults) {
-      final ExtractionContainer extraction = ExtractionContainer.createExtractionContainer(parseResult);
-      if (extraction != null) {
-        result.add(extraction);
+    if (parseResults != null) {
+      for (AtnParseResult parseResult : parseResults) {
+        final ExtractionContainer extraction = ExtractionContainer.createExtractionContainer(parseResult);
+        if (extraction != null) {
+          result.add(extraction);
+        }
       }
     }
 
