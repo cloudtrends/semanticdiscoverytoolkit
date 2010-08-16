@@ -28,8 +28,6 @@ import org.sd.token.StandardNormalizer;
 import org.sd.token.StandardNormalizerOptions;
 import org.sd.token.Token;
 import org.sd.token.TokenClassifier;
-import org.sd.token.TokenFilter;
-import org.sd.token.TokenFilterResult;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.Node;
@@ -180,7 +178,7 @@ public class AtnGrammar {
     return result;
   }
 
-  Token getAcceptedToken(String tokenFilterId, Token token, boolean isRevised, Token prevToken, boolean doRevise, boolean doGetNext) {
+  Token getAcceptedToken(String tokenFilterId, Token token, boolean isRevised, Token prevToken, boolean doRevise, boolean doGetNext, AtnState curState) {
     Token result = token;
 
     if (tokenFilterId != null) {
@@ -192,7 +190,7 @@ public class AtnGrammar {
 
       boolean tokenAccepted = false;
       while (result != null && !tokenAccepted) {
-        final TokenFilterResult tokenFilterResult = tokenFilter.checkToken(result, isRevised, prevToken);
+        final TokenFilterResult tokenFilterResult = tokenFilter.checkToken(result, isRevised, prevToken, curState);
         switch (tokenFilterResult) {
           case HALT:
             result = null;

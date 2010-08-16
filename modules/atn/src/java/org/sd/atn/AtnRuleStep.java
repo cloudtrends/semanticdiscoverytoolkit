@@ -97,19 +97,19 @@ class AtnRuleStep {
    * Assuming this step's category applies to the token, verify
    * the postDelim and test constraints.
    */
-  boolean verify(Token token) {
+  boolean verify(Token token, AtnState curState) {
     boolean result = true;
 
     if (result && postDelim != null) {
-      result = postDelim.accept(token);
+      result = postDelim.accept(token, curState);
     }
 
     if (result && preDelim != null) {
-      result = preDelim.accept(token);
+      result = preDelim.accept(token, curState);
     }
 
     if (result && test != null) {
-      result = test.accept(token);
+      result = test.accept(token, curState);
     }
 
     return result;

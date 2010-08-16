@@ -34,7 +34,7 @@ import org.sd.util.tree.Tree;
  * <p>
  * @author Spence Koehler
  */
-class AtnState {
+public class AtnState {
   
   static String TOKEN_KEY = "cToken";
 
@@ -54,7 +54,7 @@ class AtnState {
   }
 
   private int repeatNum;
-  int getRepeatNum() {
+  public int getRepeatNum() {
     return repeatNum;
   }
 
@@ -305,14 +305,14 @@ class AtnState {
     // get the next token without crossing a hard break boundary
     final Token nextToken = inputToken.getNextToken();
     if (nextToken != null) {
-      result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), nextToken, false, inputToken, false, true);
+      result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), nextToken, false, inputToken, false, true, this);
     }
 
     return result;
   }
 
   private Token computeRevisedToken(Token inputToken) {
-    Token result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), inputToken.getRevisedToken(), true, inputToken, true, false);
+    Token result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), inputToken.getRevisedToken(), true, inputToken, true, false, this);
     return result;
   }
 
@@ -325,26 +325,32 @@ class AtnState {
 
     final AtnRuleStep ruleStep = getRuleStep();
     if (ruleStep.getIgnoreToken()) {
-      result = ruleStep.verify(inputToken);
+      result = ruleStep.verify(inputToken, this);
     }
     else {
       String category = ruleStep.getCategory();
 
       if (grammar.getCat2Classifiers().containsKey(category)) {
         for (TokenClassifier classifier : grammar.getCat2Classifiers().get(category)) {
-          if (classifier.classify(inputToken) && ruleStep.verify(inputToken)) {
+          if (classifier.classify(inputToken) && ruleStep.verify(inputToken, this)) {
             result = true;
             break;
           }
         }
       }
-      else if (!grammar.getCat2Rules().containsKey(category)) {
-        // use an "identity" classifier for literal grammar tokens.
-        result = category.equals(inputToken.getText());
+      else {
+        if (!grammar.getCat2Rules().containsKey(category)) {
+          // use an "identity" classifier for literal grammar tokens.
+          result = category.equals(inputToken.getText());
+        }
 
         // check for a feature that matches the category
         if (!result) {
           result = inputToken.getFeature(category, null) != null;
+        }
+
+        if (result) {
+          result = ruleStep.verify(inputToken, this);
         }
       }
     }

@@ -176,6 +176,58 @@ public class MessageHelper extends DataHelper {
   }
 
   /**
+   * Write a string tree to the data output.
+   */
+  public static final void writeStringTree(DataOutput dataOutput, Tree<String> tree) throws IOException {
+    if (tree == null) {
+      dataOutput.writeBoolean(false);  // hasData=false
+    }
+    else {
+      dataOutput.writeBoolean(true);  // hasData=true
+      writeStringTreeNode(dataOutput, tree);
+    }
+  }
+
+  private static final void writeStringTreeNode(DataOutput dataOutput, Tree<String> node) throws IOException {
+    writeString(dataOutput, node.getData());
+    dataOutput.writeInt(node.numChildren());
+
+    if (node.hasChildren()) {
+      for (Tree<String> child : node.getChildren()) {
+        writeStringTreeNode(dataOutput, child);
+      }
+    }
+  }
+
+  /**
+   * Read a string tree from the data input.
+   */
+  public static final Tree<String> readStringTree(DataInput dataInput) throws IOException {
+    Tree<String> result = null;
+    final boolean hasData = dataInput.readBoolean();
+
+    if (hasData) {
+      result = readStringTreeNode(dataInput);
+    }
+
+    return result;
+  }
+
+  private static final Tree<String> readStringTreeNode(DataInput dataInput) throws IOException {
+    final String data = readString(dataInput);
+    final int numChildren = dataInput.readInt();
+
+    final Tree<String> result = new Tree<String>(data);
+
+    for (int childNum = 0; childNum < numChildren; ++childNum) {
+      final Tree<String> child = readStringTreeNode(dataInput);
+      result.addChild(child);
+    }
+
+    return result;
+  }
+
+  /**
    * Serialize a publishable into bytes.
    */
   public static final byte[] serializeXmlTree(Tree<XmlLite.Data> xmlTree, boolean htmlFlag) throws IOException {

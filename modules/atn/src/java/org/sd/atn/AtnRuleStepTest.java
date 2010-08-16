@@ -24,13 +24,22 @@ import org.sd.token.Token;
 /**
  * Interface for testing a token's applicability at a step.
  * <p>
+ * Note that implementations referenced from an xml config require a
+ * constructor accepting the DomNode in the config that defines the
+ * test. For example, if a "test" node has a "jclass" child that gives
+ * the java class for an AtnRuleStepTest implementation, the "test"
+ * node will be passed into the constructor.
+ *
  * @author Spence Koehler
  */
 public interface AtnRuleStepTest {
 
   /**
    * Determine whether to accept the (matched) state.
+   * <p>
+   * This is called as a last check on whether a token matches for the current
+   * state after its category has been matched to its containing rule step.
    */
-  public boolean accept(Token token);
+  public boolean accept(Token token, AtnState curState);
   
 }

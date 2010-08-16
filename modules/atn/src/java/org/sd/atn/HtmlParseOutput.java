@@ -19,10 +19,19 @@
 package org.sd.atn;
 
 
+import java.io.Writer;
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
 import java.util.List;
+import org.sd.io.FileUtil;
+import org.sd.util.ExecUtil;
 import org.sd.util.InputContext;
 import org.sd.util.MathUtil;
 import org.sd.atn.extract.Extraction;
+import org.sd.util.MathUtil;
+import org.sd.util.tree.Tree;
+import org.sd.util.tree.Tree2Dot;
 import org.sd.xml.DomContext;
 
 /**
@@ -32,9 +41,19 @@ import org.sd.xml.DomContext;
  */
 public class HtmlParseOutput {
   
+  private File tempDir;
+  private String tempHrefPrefix;
+  private boolean makeGraphs;
   private StringBuilder output;
 
   public HtmlParseOutput() {
+    this(null, null, false);
+  }
+
+  public HtmlParseOutput(File tempDir, String tempHrefPrefix, boolean makeGraphs) {
+    this.tempDir = tempDir;
+    this.tempHrefPrefix = tempHrefPrefix;
+    this.makeGraphs = makeGraphs;
     this.output = new StringBuilder();
   }
 
@@ -43,12 +62,19 @@ public class HtmlParseOutput {
 
 
     if (briefResults) {
-      final List<String> briefExtractions = extractionGroups.collectBriefExtractions(null, true);
       output.append("<table border=\"1\" cellpadding=\"1\" cellspacing=\"1\" style=\"font-size: 80%;\">\n");
       output.append("  <tr><th>group</th><th>text</th><th>interp</th><th>label</th><th>conf</th><th>path</th></tr>\n");
-      for (String briefExtraction : briefExtractions) {
-        addBriefExtraction(briefExtraction);
-      }
+      extractionGroups.visitExtractions(
+        null, true,
+        new ExtractionGroups.ExtractionVisitor() {
+          public boolean visitExtractionGroup(String source, int groupNum, String groupKey, ExtractionGroup group) {
+            return true;
+          }
+          public void visitInterpretation(String source, int groupNum, String groupKey, ExtractionContainer.ExtractionData theExtraction,
+                                          int interpNum, ParseInterpretation theInterpretation, String extractionKey) {
+            addBriefExtraction(groupNum, groupKey, theExtraction, interpNum, theInterpretation, extractionKey);
+          }
+        });
       output.append("</table>\n");
     }
     else {
@@ -89,16 +115,90 @@ public class HtmlParseOutput {
       append("</div>\n");
   }
 
-  private final void addBriefExtraction(String briefExtraction) {
-    final String[] fields = briefExtraction.split("\t");
+  private final void addBriefExtraction(int groupNum, String groupKey, ExtractionContainer.ExtractionData theExtraction,
+                                        int interpNum, ParseInterpretation theInterpretation, String extractionKey) {
 
-    output.append("<tr>\n");
+    final String parsedText = theExtraction == null ? "???" : theExtraction.getParsedText();
 
-    for (String field : fields) {
-      output.append("<td>").append(field).append("</td>\n");
+    output.
+      append("<tr>\n").
+      append("<td>").append(groupKey).append("</td>\n").
+      append("<td>").append(getParsedTextHtml(theExtraction)).append("</td>\n").
+      append("<td>").append(interpNum).append("</td>\n").
+      append("<td>").append(theInterpretation.getClassification()).append("</td>\n").
+      append("<td>").append(MathUtil.doubleString(theInterpretation.getConfidence(), 6)).append("</td>\n").
+      append("<td>").append(extractionKey).append("</td>\n").
+      append("</tr>\n");
+  }
+
+  private String getParsedTextHtml(ExtractionContainer.ExtractionData theExtraction) {
+    if (theExtraction == null) return "???";
+
+    final String parsedText = theExtraction.getParsedText();
+
+    if (!makeGraphs) return parsedText;
+
+    final StringBuilder result = new StringBuilder();
+
+    if (tempDir != null) {
+      if (tempHrefPrefix == null) tempHrefPrefix = "";
+
+      final Tree2Dot<String> tree2dot = new Tree2Dot<String>(theExtraction.getParseTree());
+      tree2dot.addNodeAttribute("fontsize=8");
+
+      File dotFile = null;
+      File dotPng = null;
+
+      try {
+        dotFile = File.createTempFile("parse.", ".dot", tempDir);
+        final Writer writer = FileUtil.getWriter(dotFile);
+        tree2dot.writeDot(writer);
+        writer.close();
+
+        // convert dot to png  'dot -Tpng -o dotPng dotFile'
+        dotPng = new File(tempDir, dotFile.getName().replaceFirst("\\.dot$", ".png"));
+
+        final ExecUtil.ExecResult execResult = ExecUtil.executeProcess(new String[] {
+            "/usr/bin/dot",
+            "-Tpng",
+            "-o",
+            dotPng.getAbsolutePath(),
+            dotFile.getAbsolutePath(),
+          });
+
+        if (execResult == null || execResult.failed()) {
+          System.out.println(new Date() + ": WARNING executing dot failed! '" + dotFile.getAbsolutePath() + "' execResult=" + execResult);
+          dotPng = null;
+        }
+        else {
+          //dotFile.delete();
+          dotFile.deleteOnExit();
+        }
+      }
+      catch (IOException e) {
+        System.err.println(new Date() + ": WARNING: Unable to convert parseTree to dotFile '" + dotFile + "'!");
+        e.printStackTrace(System.err);
+      }
+      
+      if (dotPng != null) {
+        // <a href='#' onclick='return false' rel='["path_to_image", "optional desc", "optional_css_object"]'>text</a>
+        // <a id='hoverover' style='cursor:default;' rel='path_to_image' onMouseOver='ShowPopup(this);' onMouseOut='HidePopup();'>text</a>
+        result.
+          append("<a id='hoverover' style='cursor:default;' rel='").
+          append(tempHrefPrefix).append(dotPng.getName()).
+          append("' onMouseOver='ShowPopup(this);' onMouseOut='HidePopup();'>").
+          append(parsedText).
+          append("</a>");
+
+        dotPng.deleteOnExit();
+      }
     }
 
-    output.append("</tr>\n");
+    if (result.length() == 0) {
+      result.append(parsedText);
+    }
+
+    return result.toString();
   }
 
   private final void addExtractionContainer(ExtractionContainer extractionContainer) {

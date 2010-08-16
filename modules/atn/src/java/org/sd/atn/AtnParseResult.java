@@ -196,7 +196,7 @@ public class AtnParseResult {
   }
 
   private Token getFirstToken(AtnRule startRule, Token firstToken) {
-    final Token result = grammar.getAcceptedToken(startRule.getTokenFilterId(), firstToken, false, null, true, true);
+    final Token result = grammar.getAcceptedToken(startRule.getTokenFilterId(), firstToken, false, null, true, true, null);
     return result;
   }
 }

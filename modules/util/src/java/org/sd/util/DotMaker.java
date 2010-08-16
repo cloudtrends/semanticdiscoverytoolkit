@@ -45,12 +45,22 @@ public abstract class DotMaker {
   private Map<String, Integer> label2id;
   private Map<Pair, String> edge2label;
 
+  private List<String> nodeAttributes;
+
   public DotMaker() {
     this.nextId = 0;
     this.id2label = id2label = new LinkedHashMap<Integer, String>();
     this.id2ids = new LinkedHashMap<Integer, List<Integer>>();
     this.label2id = new HashMap<String, Integer>();
     this.edge2label = new HashMap<Pair, String>();
+  }
+
+  /**
+   * Add a nodeAttribute of the form 'attr=value'.
+   */
+  public void addNodeAttribute(String nodeAttribute) {
+    if (nodeAttributes == null) nodeAttributes = new ArrayList<String>();
+    nodeAttributes.add(nodeAttribute);
   }
 
   private final int getNextId() {
@@ -97,7 +107,15 @@ public abstract class DotMaker {
   protected void makeHeader(Writer writer) throws IOException {
     writer.write("digraph G {\n");
     writer.write("  rankdir=TB;\n");
-    writer.write("  node [shape=plaintext];\n\n");
+    writer.write("  node [shape=plaintext");
+
+    if (nodeAttributes != null) {
+      for (String nodeAttribute : nodeAttributes) {
+        writer.write(", " + nodeAttribute);
+      }
+    }
+
+    writer.write("];\n\n");
     //todo: setup for proper formatting
   }
 

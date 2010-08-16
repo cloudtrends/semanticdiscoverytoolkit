@@ -39,6 +39,7 @@ import org.sd.xml.DomContextIteratorFactory;
 import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomIterationStrategy;
+import org.sd.xml.DomNode;
 import org.sd.xml.DomTextBlockIterationStrategy;
 import org.sd.xml.DomTextIterationStrategy;
 import org.sd.xml.XmlFactory;
@@ -60,8 +61,17 @@ public class AtnParseRunner {
 
   public AtnParseRunner(DataProperties dataProperties) throws IOException {
     this.options = dataProperties;
-    this.verbose = options.getBoolean("verbose", false);
     this.parseConfig = loadParseConfig(options);
+
+    updateOptions();
+  }
+
+  /**
+   * Update internal variables according to the current state of the
+   * options.
+   */
+  public final void updateOptions() {
+    this.verbose = options.getBoolean("verbose", false);
     this.compoundParserId = options.getString("compoundParserId", null);
     this.flow = loadFlow(options);
     this.override = loadOverride(options);
@@ -109,6 +119,10 @@ public class AtnParseRunner {
     handleOutput(output, extractionGroups);
   }
 
+  public DataProperties getOptions() {
+    return options;
+  }
+
   public ParseOutputCollector buildOutput() throws IOException {
     ParseOutputCollector output = null;
 
@@ -121,6 +135,26 @@ public class AtnParseRunner {
       if (inputHtml != null) {
         final String diffHtml = options.getString("diffHtml", null);
         output = parseHtml(new File(inputHtml), diffHtml == null ? null : new File(diffHtml));
+      }
+    }
+
+    if (output != null) {
+      final String stage2cpid = options.getString("stage2cpid", null);
+      if (stage2cpid != null) {
+        // recycle extraction groups as input through the indicated compound parser
+        options.set("compoundParserId", stage2cpid);
+        options.set("flow", null);
+        options.set("override", null);
+        updateOptions();
+      
+        final ExtractionGroups extractionGroups = new ExtractionGroups(output); 
+        for (ExtractionGroup extractionGroup : extractionGroups.getExtractionGroups()) {
+          final DomNode groupNode = extractionGroup.getInputNode();
+          if (groupNode != null) {
+            final boolean isHtml = options.getString("inputHtml", null) != null;
+            output = parseDomNode(groupNode, isHtml, output);
+          }
+        }
       }
     }
 
@@ -149,7 +183,8 @@ public class AtnParseRunner {
     final boolean showResults = options.getBoolean("showResults", true);
     final boolean writeMarkup = options.getBoolean("writeMarkup", true);
     final boolean showMarkup = options.getBoolean("showMarkup", false);
-    if ((showResults || writeMarkup || showMarkup) && output != null) {
+    final boolean briefResults = options.getBoolean("briefResults", true);
+    if ((showResults || briefResults || writeMarkup || showMarkup) && output != null) {
       showOutput(output, extractionGroups);
     }
   }
@@ -207,7 +242,7 @@ public class AtnParseRunner {
       }
     }
 
-    if (showResults) {
+    if (showResults || briefResults) {
       if (!briefResults) {
         final boolean showInterpretations = options.getBoolean("showInterpretations", true);
         if (showInterpretations) {
@@ -218,7 +253,7 @@ public class AtnParseRunner {
       else {
         // show brief results
         final boolean numberKeys = options.getBoolean("numberKeys", true);
-        extractionGroups.showExtractionGroups(briefResults, source, numberKeys);
+        extractionGroups.showExtractionGroups(source, numberKeys);
       }
     }
   }
@@ -245,7 +280,7 @@ public class AtnParseRunner {
     //      - if paragraphs, then broaden (but at which compound parser boundaries?)
     final boolean broaden = false;
 
-    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), broaden);
+    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), broaden, null);
 
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputLines, false, false);
     output.setParseSourceInfo(sourceInfo);
@@ -263,7 +298,7 @@ public class AtnParseRunner {
     final boolean broaden = false;
 
     final DomContextIterator inputContextIterator = DomContextIteratorFactory.getDomContextIterator(inputHtml, diffHtml, true, strategy);
-    final ParseOutputCollector result = parseInput(inputContextIterator, broaden);
+    final ParseOutputCollector result = parseInput(inputContextIterator, broaden, null);
 
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputHtml, true, true);
     if (diffHtml != null) sourceInfo.setDiffString(diffHtml.getAbsolutePath());
@@ -272,8 +307,17 @@ public class AtnParseRunner {
     return result;
   }
 
-  protected ParseOutputCollector parseInput(InputContextIterator inputContextIterator, boolean broaden) {
-    ParseOutputCollector result = null;
+  public ParseOutputCollector parseDomNode(DomNode domNode, boolean isHtml, ParseOutputCollector priorOutput) {
+    final DomContextIterator inputContextIterator = DomContextIteratorFactory.getDomContextIterator(domNode);
+    final ParseOutputCollector result = parseInput(inputContextIterator, false, priorOutput);
+    if (priorOutput == null) {
+      final ParseSourceInfo sourceInfo = new ParseSourceInfo(domNode.getTextContent(), true, isHtml, false, null, null, null);
+      result.setParseSourceInfo(sourceInfo);
+    }
+    return result;
+  }
+
+  protected ParseOutputCollector parseInput(InputContextIterator inputContextIterator, boolean broaden, ParseOutputCollector result) {
 
     if (override != null) {
       for (String cpId : override) {
@@ -307,7 +351,7 @@ public class AtnParseRunner {
     }
     else {
       if (this.compoundParserId != null) {
-        result = parseConfig.parse(inputContextIterator, this.compoundParserId, this.flow);
+        result = parseConfig.parse(inputContextIterator, this.compoundParserId, this.flow, result);
       }
       else {
         final String[] compoundParserIds = parseConfig.getCompoundParserIds();
@@ -387,6 +431,8 @@ public class AtnParseRunner {
     //   showResults -- (optional, default=true) true to show results on console
     //   briefResults -- (optional, default=true) true to show brief (instead of full) result output on console
     //   numberKeys -- (optional, default=true) true to show numbered group and extraction keys instead of xpaths
+    //
+    //   stage2cpid -- (optional) stage 2 compound parser id: causes extraction groups to be recycled as input through the compound parser's parsers.
     //
 
     final DataProperties dataProperties = new DataProperties(args);
