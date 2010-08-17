@@ -23,9 +23,10 @@ import java.io.Writer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.sd.io.FileUtil;
-import org.sd.util.ExecUtil;
 import org.sd.util.InputContext;
 import org.sd.util.MathUtil;
 import org.sd.atn.extract.Extraction;
@@ -42,18 +43,27 @@ import org.sd.xml.DomContext;
 public class HtmlParseOutput {
   
   private File tempDir;
-  private String tempHrefPrefix;
-  private boolean makeGraphs;
+  private Set<String> extractionTypes;
+  private boolean filterInterps;
   private StringBuilder output;
 
   public HtmlParseOutput() {
     this(null, null, false);
   }
 
-  public HtmlParseOutput(File tempDir, String tempHrefPrefix, boolean makeGraphs) {
+  public HtmlParseOutput(File tempDir, String extractionTypes, boolean filterInterps) {
     this.tempDir = tempDir;
-    this.tempHrefPrefix = tempHrefPrefix;
-    this.makeGraphs = makeGraphs;
+
+    this.extractionTypes = null;
+
+    if (extractionTypes != null && !"".equals(extractionTypes.trim())) {
+      this.extractionTypes = new HashSet<String>();
+
+      final String[] types = extractionTypes.split(",");
+      for (String type : types) this.extractionTypes.add(type);
+    }
+
+    this.filterInterps = filterInterps;
     this.output = new StringBuilder();
   }
 
@@ -67,12 +77,15 @@ public class HtmlParseOutput {
       extractionGroups.visitExtractions(
         null, true,
         new ExtractionGroups.ExtractionVisitor() {
+          ExtractionContainer.ExtractionData priorExtraction = null;
           public boolean visitExtractionGroup(String source, int groupNum, String groupKey, ExtractionGroup group) {
             return true;
           }
           public void visitInterpretation(String source, int groupNum, String groupKey, ExtractionContainer.ExtractionData theExtraction,
                                           int interpNum, ParseInterpretation theInterpretation, String extractionKey) {
-            addBriefExtraction(groupNum, groupKey, theExtraction, interpNum, theInterpretation, extractionKey);
+            if (addBriefExtraction(groupNum, groupKey, theExtraction, interpNum, theInterpretation, extractionKey, priorExtraction)) {
+              priorExtraction = theExtraction;
+            }
           }
         });
       output.append("</table>\n");
@@ -115,10 +128,25 @@ public class HtmlParseOutput {
       append("</div>\n");
   }
 
-  private final void addBriefExtraction(int groupNum, String groupKey, ExtractionContainer.ExtractionData theExtraction,
-                                        int interpNum, ParseInterpretation theInterpretation, String extractionKey) {
+  private final boolean addBriefExtraction(int groupNum, String groupKey, ExtractionContainer.ExtractionData theExtraction,
+                                           int interpNum, ParseInterpretation theInterpretation, String extractionKey,
+                                           ExtractionContainer.ExtractionData priorExtraction) {
 
-    final String parsedText = theExtraction == null ? "???" : theExtraction.getParsedText();
+    if (filterInterps && interpNum > 0) return false;
+    if (extractionTypes != null) {
+      final String extractionType = theExtraction.getExtraction().getType();
+      if (!extractionTypes.contains(extractionType)) return false;
+    }
+
+    // ignore consecutive duplicates
+    if (priorExtraction != null) {
+      final Tree<String> priorParseTree = priorExtraction.getParseTree();
+      final Tree<String> curParseTree = theExtraction.getParseTree();
+      if (curParseTree.equals(priorParseTree)) return false;
+    }
+
+
+    final String parsedText = theExtraction.getParsedText();
 
     output.
       append("<tr>\n").
@@ -129,6 +157,8 @@ public class HtmlParseOutput {
       append("<td>").append(MathUtil.doubleString(theInterpretation.getConfidence(), 6)).append("</td>\n").
       append("<td>").append(extractionKey).append("</td>\n").
       append("</tr>\n");
+
+    return true;
   }
 
   private String getParsedTextHtml(ExtractionContainer.ExtractionData theExtraction) {
@@ -136,12 +166,9 @@ public class HtmlParseOutput {
 
     final String parsedText = theExtraction.getParsedText();
 
-    if (!makeGraphs) return parsedText;
-
     final StringBuilder result = new StringBuilder();
 
     if (tempDir != null) {
-      if (tempHrefPrefix == null) tempHrefPrefix = "";
 
       final Tree2Dot<String> tree2dot = new Tree2Dot<String>(theExtraction.getParseTree());
       tree2dot.addNodeAttribute("fontsize=8");
@@ -154,43 +181,24 @@ public class HtmlParseOutput {
         final Writer writer = FileUtil.getWriter(dotFile);
         tree2dot.writeDot(writer);
         writer.close();
-
-        // convert dot to png  'dot -Tpng -o dotPng dotFile'
-        dotPng = new File(tempDir, dotFile.getName().replaceFirst("\\.dot$", ".png"));
-
-        final ExecUtil.ExecResult execResult = ExecUtil.executeProcess(new String[] {
-            "/usr/bin/dot",
-            "-Tpng",
-            "-o",
-            dotPng.getAbsolutePath(),
-            dotFile.getAbsolutePath(),
-          });
-
-        if (execResult == null || execResult.failed()) {
-          System.out.println(new Date() + ": WARNING executing dot failed! '" + dotFile.getAbsolutePath() + "' execResult=" + execResult);
-          dotPng = null;
-        }
-        else {
-          //dotFile.delete();
-          dotFile.deleteOnExit();
-        }
       }
       catch (IOException e) {
         System.err.println(new Date() + ": WARNING: Unable to convert parseTree to dotFile '" + dotFile + "'!");
         e.printStackTrace(System.err);
+
+        dotFile = null;
       }
       
-      if (dotPng != null) {
-        // <a href='#' onclick='return false' rel='["path_to_image", "optional desc", "optional_css_object"]'>text</a>
-        // <a id='hoverover' style='cursor:default;' rel='path_to_image' onMouseOver='ShowPopup(this);' onMouseOut='HidePopup();'>text</a>
+      if (dotFile != null) {
+        // <a href='webex/genParseGraph.jsp?dotFile=tmp/....dot' target='parseTree'>parsedText</a>
         result.
-          append("<a id='hoverover' style='cursor:default;' rel='").
-          append(tempHrefPrefix).append(dotPng.getName()).
-          append("' onMouseOver='ShowPopup(this);' onMouseOut='HidePopup();'>").
+          append("<a href='genParseGraph.jsp?dotFile=").
+          append(dotFile.getName()).
+          append("' target='parseTree'>").
           append(parsedText).
           append("</a>");
 
-        dotPng.deleteOnExit();
+        dotFile.deleteOnExit();
       }
     }
 
