@@ -275,22 +275,30 @@ public class ParseOutputCollector {
   }
 
   private void addParseInfo(ParseInfo parseInfo) {
+    boolean isDuplicate = false;
+
     // remove parseInfos that are encompassed by this parseInfo
     for (Iterator<ParseInfo> iter = topParseInfos.iterator(); iter.hasNext(); ) {
       final ParseInfo curParseInfo = iter.next();
 
-      if (parseInfo.encompasses(curParseInfo)) {
-        // new parse encompasses an existing, so get rid of existing in favor of new
-        iter.remove();
+      if (parseInfo.isDuplicate(curParseInfo)) {
+        isDuplicate = true;
+        break;
       }
-      else if (curParseInfo.encompasses(parseInfo)) {
-        // old parse encompasses the new, so mark the new as a subset of the old
-        parseInfo.getParse().addEncompassingParse(curParseInfo.getParse());
+      else {
+        if (parseInfo.encompasses(curParseInfo)) {
+          // new parse encompasses an existing, so get rid of existing in favor of new
+          iter.remove();
+        }
+        else if (curParseInfo.encompasses(parseInfo)) {
+          // old parse encompasses the new, so mark the new as a subset of the old
+          parseInfo.getParse().addEncompassingParse(curParseInfo.getParse());
+        }
       }
     }
 
     // add the parseInfo
-    topParseInfos.addLast(parseInfo);
+    if (!isDuplicate) topParseInfos.addLast(parseInfo);
   }
 
   /**
@@ -444,6 +452,12 @@ public class ParseOutputCollector {
       }
     }
 
+
+    boolean isDuplicate(ParseInfo other) {
+      final Tree<String> myParseTree = parse.getParseTree();
+      final Tree<String> otherParseTree = other.getParse().getParseTree();
+      return myParseTree.equals(otherParseTree);
+    }
 
     boolean encompasses(ParseInfo other) {
       boolean result = false;
