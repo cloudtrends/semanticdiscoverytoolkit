@@ -24,9 +24,11 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.sd.cio.MessageHelper;
 import org.sd.io.PersistablePublishable;
 import org.sd.util.MathUtil;
@@ -254,6 +256,8 @@ public class ExtractionGroups extends PersistablePublishable {
     int extractionKeyNum = -1;
     String curExtractionKey = null;
 
+    final Set<Tree<String>> seenParseTrees = new HashSet<Tree<String>>();
+
     int groupNum = 0;
     for (ExtractionGroup group : getExtractionGroups()) {
 
@@ -287,11 +291,19 @@ public class ExtractionGroups extends PersistablePublishable {
           final ExtractionContainer.ExtractionData theExtraction = extraction.getTheExtraction();
 
           if (theInterpretation != null) {
+            final Tree<String> extractionTree = theExtraction.getParseTree();
+            if (seenParseTrees.contains(extractionTree)) continue;
+            seenParseTrees.add(extractionTree);
+
             visitor.visitInterpretation(source, groupNum, curGroupKey, theExtraction, 0, theInterpretation, curExtractionKey);
           }
           else {
             for (ExtractionContainer.ExtractionData anExtraction : extraction.getExtractions()) {
               if (anExtraction != null && anExtraction.getInterpretations() != null) {
+                final Tree<String> extractionTree = anExtraction.getParseTree();
+                if (seenParseTrees.contains(extractionTree)) continue;
+                seenParseTrees.add(extractionTree);
+
                 int interpNum = 0;
                 for (ParseInterpretation interpretation : anExtraction.getInterpretations()) {
                   visitor.visitInterpretation(source, groupNum, curGroupKey, anExtraction, interpNum++, interpretation, curExtractionKey);
