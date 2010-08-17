@@ -108,18 +108,32 @@ public class Tree<T> {
     }
     catch (ClassCastException e) {
       // if we get here, the objects are not equal!
+      return false;
     }
 
     if (otherTree != null) {
-        if (data == null && otherTree.data != null){
+      if (data == null && otherTree.data != null) {
         return false;
-        }
-      else if ((data == null && otherTree.data == null) || (data.equals(otherTree.data))) {
+      }
+      else if ((data == null && otherTree.data == null) || (data != null && data.equals(otherTree.data))) {
         if (children == null) {
           result = (otherTree.children == null);
         }
         else if (otherTree.children != null) {
-          result = children.equals(otherTree.children);
+          if (children.size() != otherTree.children.size()) {
+            return false;
+          }
+
+          result = true;
+          final int numChildren = children.size();
+          for (int childNum = 0; childNum < numChildren; ++childNum) {
+            final Tree<T> myChild = children.get(childNum);
+            final Object otherChild = otherTree.children.get(childNum);
+            if (!myChild.equals(otherChild)) {
+              result = false;
+              break;
+            }
+          }
         }
       }
     }
@@ -132,7 +146,9 @@ public class Tree<T> {
 
     result = result * 31 + (data == null ? 0 : data.hashCode());
     if (children != null) {
-      result = result * 31 + children.hashCode();
+      for (Tree<T> child : children) {
+        result = result * 31 + child.hashCode();
+      }
     }
 
     return result;

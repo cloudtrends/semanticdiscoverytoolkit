@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.sd.io.FileUtil;
 import org.sd.token.AbstractTokenClassifier;
 import org.sd.token.Normalizer;
@@ -33,8 +34,17 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * 
+ * Classifier that takes a list of terms in the defining xml or reads a flat
+ * file with terms.
  * <p>
+ * Flat file names are specified under 'textfile caseSensitive="true|false"'
+ * nodes and have contents of the form:
+ * <p>
+ * term \t key=val \t key=val \t ...
+ * <p>
+ * Xml terms are specified under 'terms caseSensitive="true|false" nodes and
+ * have child nodes of the form 'term att=val ...' with each term's text.
+ * 
  * @author Spence Koehler
  */
 public class RoteListClassifier extends AbstractTokenClassifier {
@@ -60,57 +70,13 @@ public class RoteListClassifier extends AbstractTokenClassifier {
     final DomElement termsNode = (DomElement)classifierIdElement.selectSingleNode("terms");
 
     if (termsNode != null) {
-      this.caseSensitive = termsNode.getAttributeBoolean("caseSensitive", false);
-
-      Map<String, String> termAttributes = null;
-      final NodeList termNodes = termsNode.selectNodes("term");
-      for (int i = 0; i < termNodes.getLength(); ++i) {
-        final Node curNode = termNodes.item(i);
-        if (curNode.getNodeType() != Node.ELEMENT_NODE) continue;
-        final DomElement termElement = (DomElement)curNode;
-
-        String termText = termElement.getTextContent();
-        if (!caseSensitive) termText = termText.toLowerCase();
-
-        if (termElement.hasAttributes()) {
-          termAttributes = termElement.getDomAttributes().getAttributes();
-        }
-        else termAttributes = null;
-
-        term2attributes.put(termText, termAttributes);
-      }
+      loadTerms(termsNode, null, term2attributes);
     }
 
     final DomElement textfileNode = (DomElement)classifierIdElement.selectSingleNode("textfile");
 
     if (textfileNode != null) {
-      this.caseSensitive = textfileNode.getAttributeBoolean("caseSensitive", false);
-
-      final String textfilename = textfileNode.getTextContent();
-      File textfile = null;
-
-      if (textfileNode.getDataProperties() != null) {
-        textfile = textfileNode.getDataProperties().getWorkingFile(textfilename, "workingDir");
-      }
-      else {
-        textfile = new File(textfilename);
-      }
-
-      try {
-        final BufferedReader reader = FileUtil.getReader(textfile);
-
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-          line = line.trim();
-          if (!caseSensitive) line = line.toLowerCase();
-          term2attributes.put(line, null);
-        }
-
-        reader.close();
-      }
-      catch (IOException e) {
-        throw new IllegalStateException(e);
-      }
+      loadTextFile(textfileNode, null, term2attributes);
     }
   }
 
@@ -133,5 +99,88 @@ public class RoteListClassifier extends AbstractTokenClassifier {
     }
 
     return result;
+  }
+
+  protected boolean caseSensitive() {
+    return this.caseSensitive;
+  }
+
+  protected final void loadTerms(DomElement termsNode, Set<String> terms, Map<String, Map<String, String>> term2attributes) {
+    if (termsNode == null) return;
+
+    this.caseSensitive = termsNode.getAttributeBoolean("caseSensitive", false);
+
+    Map<String, String> termAttributes = null;
+    final NodeList termNodes = termsNode.selectNodes("term");
+    for (int i = 0; i < termNodes.getLength(); ++i) {
+      final Node curNode = termNodes.item(i);
+      if (curNode.getNodeType() != Node.ELEMENT_NODE) continue;
+      final DomElement termElement = (DomElement)curNode;
+
+      String termText = termElement.getTextContent();
+      if (!caseSensitive) termText = termText.toLowerCase();
+
+      if (terms != null) {
+        terms.add(termText);
+      }
+
+      if (term2attributes != null) {
+        if (termElement.hasAttributes()) {
+          termAttributes = termElement.getDomAttributes().getAttributes();
+        }
+        else termAttributes = null;
+
+        term2attributes.put(termText, termAttributes);
+      }
+    }
+  }
+
+  protected final void loadTextFile(DomElement textfileElement, Set<String> terms, Map<String, Map<String, String>> term2attributes) {
+    if (textfileElement == null) return;
+
+    File textfile = null;
+    final String textfilename = textfileElement.getTextContent();
+    this.caseSensitive = textfileElement.getAttributeBoolean("caseSensitive", false);
+    final int minChars = textfileElement.getAttributeInt("minChars", 1);
+
+    if (textfileElement.getDataProperties() != null) {
+      textfile = textfileElement.getDataProperties().getWorkingFile(textfilename, "workingDir");
+    }
+    else {
+      textfile = new File(textfilename);
+    }
+
+    try {
+      final BufferedReader reader = FileUtil.getReader(textfile);
+
+      String line = null;
+      while ((line = reader.readLine()) != null) {
+        if (!"".equals(line) && line.charAt(0) == '#') continue;
+
+        final String[] lineFields = line.trim().split("\t");
+        final String term = (!caseSensitive) ? lineFields[0].toLowerCase() : lineFields[0];
+        if (term.length() >= minChars) {
+          if (terms != null) terms.add(term);
+          if (term2attributes != null) {
+            Map<String, String> termAttributes = null;
+            if (lineFields.length > 1) {
+              termAttributes = new HashMap<String, String>();
+              for (int fieldNum = 1; fieldNum < lineFields.length; ++fieldNum) {
+                final String[] attVal = lineFields[fieldNum].split("=");
+                if (attVal.length == 2) {
+                  termAttributes.put(attVal[0], attVal[1]);
+                }
+              }
+            }
+            term2attributes.put(term, termAttributes);
+          }
+        }
+      }
+
+      reader.close();
+    }
+    catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
   }
 }

@@ -21,11 +21,13 @@ package org.sd.token.plugin;
 
 import java.util.HashSet;
 import java.util.Map;
-import org.sd.token.AbstractTokenClassifier;
+import java.util.Set;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
 import org.sd.util.StringUtil;
+import org.sd.xml.DomNode;
 import org.sd.xml.DomElement;
+import org.w3c.dom.NodeList;
 
 /**
  * Simple classifier that recognizes capitalized words.
@@ -35,6 +37,7 @@ import org.sd.xml.DomElement;
 public class CapitalizedWordClassifier extends RoteListClassifier {
   
   private boolean excludeAllCaps;
+  private Set<String> stopWords;
 
   public CapitalizedWordClassifier(DomElement classifierIdElement, Map<String, Normalizer> id2Normalizer) {
     super(classifierIdElement, id2Normalizer);
@@ -47,10 +50,38 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     this.excludeAllCaps = eacNode != null ? "true".equalsIgnoreCase(eacNode.getTextContent()) : false;
 
     // NOTE: super loads acceptable non-capitalized words  <terms><term>...</term><term>...</term></terms>
+
+    // load stopwords if specified
+    final DomElement stopwords = (DomElement)classifierIdElement.selectSingleNode("stopwords");
+    if (stopwords != null) {
+      this.stopWords = new HashSet<String>();
+      final NodeList stopwordNodes = stopwords.getChildNodes();
+      if (stopwordNodes != null) {
+        for (int nodeNum = 0; nodeNum < stopwordNodes.getLength(); ++nodeNum) {
+          final DomNode curNode = (DomNode)stopwordNodes.item(nodeNum);
+          if (curNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
+
+          final String curNodeName = curNode.getNodeName();
+          final DomElement curElement = (DomElement)curNode;
+          if ("textfile".equals(curNodeName)) {
+            loadTextFile(curElement, stopWords, null);
+          }
+          else if ("terms".equals(curNodeName)) {  // fix this to be "terms", use super
+            loadTerms(curElement, stopWords, null);
+          }
+        }
+      }
+    }
   }
 
   public boolean doClassify(Token token) {
     final String tokenText = token.getText();
+
+    if (stopWords != null &&
+        stopWords.contains(caseSensitive() ? tokenText : tokenText.toLowerCase())) {
+      return false;
+    }
+
     boolean result = Character.isUpperCase(tokenText.codePointAt(0));
 
     if (result && excludeAllCaps && StringUtil.allCaps(tokenText)) {
