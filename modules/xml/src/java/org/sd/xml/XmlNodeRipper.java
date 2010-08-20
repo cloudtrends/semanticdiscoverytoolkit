@@ -252,7 +252,7 @@ public class XmlNodeRipper implements XmlRipper {
             }
           }
 
-          if (tagResult.hasEndTag()) {
+          if (tagResult.hasEndTag() && !tagResult.hasTag()) {
             // close off current child; don't stop 'til we end the root
             final String endTag = tagResult.getEndTag();
             if (result == null) {
