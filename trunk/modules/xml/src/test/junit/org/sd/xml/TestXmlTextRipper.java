@@ -43,6 +43,7 @@ public class TestXmlTextRipper extends TestCase {
   
   private static final String TEST1_XML = "resources/xml-text-ripper-test-data-1.xml";
   private static final String TEST2_XML = "resources/xml-text-ripper-test-data-2.html";
+  private static final String TEST2B_XML = "resources/xml-text-ripper-test-data-2b.html";
 
   private final void doRipperTest(XmlTextRipper ripper, String[] expectedText, String[][] expectedTags, String[] expectedSavedTags) {
     int index = 0;
@@ -147,11 +148,13 @@ public class TestXmlTextRipper extends TestCase {
     final XmlTextRipper ripper = XmlTextRipper.buildHtmlRipper(file, true);
 
     final String[] expectedText = new String[] {
-      "testing xml text ripper", "", "heading 1", "testing 1, 2, 3...", "",
+      "", "testing xml text ripper", "", "", "heading 1", "testing 1, 2, 3...", "",
     };
     final String[][] expectedTags = new String[][] {
+      {"html", "head"}, // from unterminated meta
       {"html", "head", "title"},
-      {"html", "head"},
+      {"html", "head"},  // from unterminated meta
+      {"html", "head"},  // from unterminated meta
       {"html", "body", "h1"},
       {"html", "body"},
       {"html", "body", "address"},
@@ -159,6 +162,28 @@ public class TestXmlTextRipper extends TestCase {
     final String[] expectedSavedTags = new String[] {
       "meta", "meta", "meta",
     };
+
+    doRipperTest(ripper, expectedText, expectedTags, expectedSavedTags);
+    ripper.close();
+  }
+
+  public void testHtmlRippingWithEmpties2() throws IOException {
+    final File file = FileUtil.getFile(this.getClass(), TEST2B_XML);
+    final XmlTextRipper ripper = XmlTextRipper.buildXmlRipper(file, true);
+
+    final String[] expectedText = new String[] {
+      "", "testing xml text ripper", "", "", "heading 1", "testing 1, 2, 3...", "",
+    };
+    final String[][] expectedTags = new String[][] {
+      {"html", "head", "meta"},
+      {"html", "head", "title"},
+      {"html", "head", "META"},
+      {"html", "head", "Meta"},
+      {"html", "body", "h1"},
+      {"html", "body"},
+      {"html", "body", "address"},
+    };
+    final String[] expectedSavedTags = null;
 
     doRipperTest(ripper, expectedText, expectedTags, expectedSavedTags);
     ripper.close();

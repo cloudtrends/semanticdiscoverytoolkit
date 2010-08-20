@@ -36,6 +36,17 @@ public class AmbiguousInteger {
     this.values.add(value);
   }
 
+  /**
+   * Construct with semicolon-separated values.
+   */
+  public AmbiguousInteger(String values) {
+    this.values = new TreeSet<Integer>();
+    final String[] pieces = values.split("\\s*;\\s*");
+    for (String piece : pieces) {
+      this.values.add(new Integer(piece));
+    }
+  }
+
   public void setValue(Integer value) {
     this.values.add(value);
     this._values = null;
@@ -165,5 +176,16 @@ public class AmbiguousInteger {
       }
     }
     return result;
+  }
+
+  public String toString() {
+    final StringBuilder result = new StringBuilder();
+
+    for (Integer value : values) {
+      if (result.length() > 0) result.append(';');
+      result.append(value);
+    }
+
+    return result.toString();
   }
 }

@@ -438,7 +438,7 @@ public class XmlLite {
       }
 
       // deal with end tag
-      else if (tagResult.hasEndTag()) {
+      else if (tagResult.hasEndTag() && !tagResult.hasTag()) {
         final String endTag = tagResult.getEndTag();
         Tree<Data> tagNode = findTag(curNode, endTag);
 

@@ -63,6 +63,11 @@ public class XmlTextRipper implements Iterator<String> {
                              new String[] {"meta"}, keepEmpties, requireXmlTag);
   }
 
+  public static final XmlTextRipper buildXmlRipper(File xmlFile, boolean keepEmpties) throws IOException {
+    return new XmlTextRipper(FileUtil.getInputStream(xmlFile), false, new XmlTagStack(),
+                             XmlFactory.XML_TAG_PARSER_IGNORE_COMMENTS, null, null,
+                             keepEmpties);
+  }
 
   private boolean hitEnd;
   private XmlInputStream xmlInputStream;
@@ -369,7 +374,8 @@ public class XmlTextRipper implements Iterator<String> {
                 nextTag = theTag;
               }
             }
-            else if (tagResult.hasEndTag()) {
+
+            if (tagResult.hasEndTag()) {
               final String endTag = tagResult.getEndTag();
               if (result == null) {
                 if (keepEmpties && sawBeginTag) {

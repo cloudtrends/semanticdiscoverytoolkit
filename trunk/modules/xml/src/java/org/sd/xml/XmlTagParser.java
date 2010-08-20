@@ -377,6 +377,10 @@ public class XmlTagParser {
     public TagResult(XmlLite.Tag tag) {
       this();
       this.tag = tag;
+
+      if (tag.isSelfTerminating()) {
+        this.endTag = tag.name;
+      }
     }
 
     public TagResult(String endTag) {
