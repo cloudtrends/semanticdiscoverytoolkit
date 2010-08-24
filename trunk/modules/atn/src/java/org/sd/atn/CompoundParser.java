@@ -71,16 +71,16 @@ public class CompoundParser {
 
   private DomElement outputNode;
 
-  public CompoundParser(DomElement configElement) {
+  public CompoundParser(DomElement configElement, ResourceManager resourceManager) {
     final DataProperties config = new DataProperties(configElement);
-    init(config);
+    init(config, resourceManager);
   }
 
-  public CompoundParser(DataProperties config) {
-    init(config);
+  public CompoundParser(DataProperties config, ResourceManager resourceManager) {
+    init(config, resourceManager);
   }
 
-  private void init(DataProperties config) {
+  private void init(DataProperties config, ResourceManager resourceManager) {
     //
     // expected format:
     //
@@ -152,7 +152,7 @@ public class CompoundParser {
     final NodeList parserNodes = config.getDomElement().selectNodes("parser");
     for (int parserNodeIndex = 0; parserNodeIndex < parserNodes.getLength(); ++parserNodeIndex) {
       final DomElement parserElement = (DomElement)parserNodes.item(parserNodeIndex);
-      final AtnParserWrapper parserWrapper = new AtnParserWrapper(parserElement);
+      final AtnParserWrapper parserWrapper = new AtnParserWrapper(parserElement, resourceManager);
       parserWrappers.put(parserWrapper.getId(), parserWrapper);
       if (parserWrapper.getMinNumTokens() > this.minNumTokens) this.minNumTokens = parserWrapper.getMinNumTokens();
     }

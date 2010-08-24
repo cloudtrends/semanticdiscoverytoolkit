@@ -22,6 +22,7 @@ package org.sd.token.plugin;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.sd.atn.ResourceManager;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
 import org.sd.util.StringUtil;
@@ -39,8 +40,8 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
   private boolean excludeAllCaps;
   private Set<String> stopWords;
 
-  public CapitalizedWordClassifier(DomElement classifierIdElement, Map<String, Normalizer> id2Normalizer) {
-    super(classifierIdElement, id2Normalizer);
+  public CapitalizedWordClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
+    super(classifierIdElement, resourceManager, id2Normalizer);
 
     // ignore any maxWordCount specified by the element and set to 1
     super.setMaxWordCount(1);

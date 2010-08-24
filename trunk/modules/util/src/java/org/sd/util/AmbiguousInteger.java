@@ -19,6 +19,7 @@
 package org.sd.util;
 
 
+import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -65,6 +66,10 @@ public class AmbiguousInteger {
       }
     }
     return _values;
+  }
+
+  public Set<Integer> getValueSet() {
+    return values;
   }
 
   public int getLowValue() {

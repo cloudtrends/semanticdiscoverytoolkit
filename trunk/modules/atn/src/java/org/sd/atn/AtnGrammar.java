@@ -68,9 +68,14 @@ public class AtnGrammar {
     return cat2Rules;
   }
 
+  private ResourceManager resourceManager;
+  ResourceManager getResourceManager() {
+    return resourceManager;
+  }
+
   private List<AtnRule> startRules;
 
-  AtnGrammar(DomElement grammarNode) {
+  AtnGrammar(DomElement grammarNode, ResourceManager resourceManager) {
 
     //
     // expected format:
@@ -107,6 +112,8 @@ public class AtnGrammar {
     //     </rules>
     //   </grammar>
     //
+
+    this.resourceManager = resourceManager;
 
     // default to no normalization
     this.defaultNormalizer = null;
@@ -159,7 +166,7 @@ public class AtnGrammar {
    * maximum of the minimum number of tokens required by each start rule.
    */
   public int computeMinNumTokens() {
-    return computeMinNumTokens(new AtnParseOptions());
+    return computeMinNumTokens(new AtnParseOptions(resourceManager));
   }
 
   /**
@@ -272,7 +279,7 @@ public class AtnGrammar {
     final NodeList tokenFilterNodes = grammarNode.selectNodes("tokenFilter");
     for (int i = 0; i < tokenFilterNodes.getLength(); ++i) {
       final DomElement tokenFilterElement = (DomElement)tokenFilterNodes.item(i);
-      final TokenFilter tokenFilter = (TokenFilter)tokenFilterElement.buildInstance("jclass");
+      final TokenFilter tokenFilter = (TokenFilter)resourceManager.getResource(tokenFilterElement);
       final String tokenFilterId = tokenFilterElement.getAttribute("id");
       result.put(tokenFilterId, tokenFilter);
     }
@@ -313,9 +320,7 @@ public class AtnGrammar {
       for (int i = 0; i < classifierNodes.getLength(); ++i) {
         final DomElement classifierElement = (DomElement)classifierNodes.item(i);
         final TokenClassifier classifier =
-          (TokenClassifier)classifierElement.buildInstance(
-            "jclass",
-            new Object[] { id2Normalizer });
+          (TokenClassifier)resourceManager.getResource(classifierElement, new Object[] { id2Normalizer });
         final String classifierId = classifierElement.getLocalName();
 
         List<TokenClassifier> classifiers = result.get(classifierId);
@@ -345,7 +350,7 @@ public class AtnGrammar {
       if (curNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
 
       final DomElement ruleElement = (DomElement)curNode;
-      final AtnRule rule = new AtnRule(this, ruleElement);
+      final AtnRule rule = new AtnRule(this, ruleElement, resourceManager);
       final String ruleCategory = ruleElement.getLocalName();
 
       List<AtnRule> rules = result.get(ruleCategory);

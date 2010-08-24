@@ -41,7 +41,7 @@ public class LongestParseSelector implements AtnParseSelector {
    * Attribute 'simplest' (default 'true') accepts only longest parses with
    * the fewest number of nodes in their parse tree.
    */
-  public LongestParseSelector(DomNode domNode) {
+  public LongestParseSelector(DomNode domNode, ResourceManager resourceManager) {
     this.simplest = ((DomElement)domNode).getAttributeBoolean("simplest", true);
   }
 

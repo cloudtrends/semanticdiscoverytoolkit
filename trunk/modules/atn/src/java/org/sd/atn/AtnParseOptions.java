@@ -114,6 +114,11 @@ public class AtnParseOptions {
     return startRules != null && startRules.size() > 0;
   }
 
+  private ResourceManager resourceManager;
+  public ResourceManager getResourceManager() {
+    return resourceManager;
+  }
+
   /**
    * Default constructor.
    * 
@@ -125,7 +130,8 @@ public class AtnParseOptions {
    * StartRules = null;              (use grammar's start rules)
    * 
    */
-  public AtnParseOptions() {
+  public AtnParseOptions(ResourceManager resourceManager) {
+    this.resourceManager = resourceManager;
     this.consumeAllText = true;
     this.skipTokenLimit = 0;
     this.firstParseOnly = false;
@@ -148,7 +154,8 @@ public class AtnParseOptions {
    *   ...
    * </parseOptions>
    */
-  public AtnParseOptions(DomElement optionsElement) {
+  public AtnParseOptions(DomElement optionsElement, ResourceManager resourceManager) {
+    this.resourceManager = resourceManager;
     DataProperties options = new DataProperties(optionsElement);
     init(options);
   }
@@ -164,7 +171,8 @@ public class AtnParseOptions {
    * 
    * multiple "start" options sought from options' xml.
    */
-  public AtnParseOptions(DataProperties options) {
+  public AtnParseOptions(DataProperties options, ResourceManager resourceManager) {
+    this.resourceManager = resourceManager;
     init(options);
   }
 
@@ -172,6 +180,7 @@ public class AtnParseOptions {
    * Copy constructor.
    */
   public AtnParseOptions(AtnParseOptions options) {
+    this.resourceManager = options.resourceManager;
     this.consumeAllText = options.consumeAllText;
     this.skipTokenLimit = options.skipTokenLimit;
     this.firstParseOnly = options.firstParseOnly;
@@ -180,8 +189,7 @@ public class AtnParseOptions {
     this.startRules = options.startRules;
   }
 
-  private void init(DataProperties options)
-  {
+  private final void init(DataProperties options) {
     //
     // <parseOptions>
     //   <consumeAllText>true</consumeAllText>
@@ -207,7 +215,7 @@ public class AtnParseOptions {
     this.adjustInputForTokens = options.getBoolean("adjustInputForTokens", false);
 
     final DomElement parseInterpreterNode = (DomElement)options.getDomElement().selectSingleNode("parseInterpreter");
-    this.parseInterpreter = (parseInterpreterNode != null) ? (AtnParseInterpreter)options.buildInstance(parseInterpreterNode, "jclass") : null;
+    this.parseInterpreter = (parseInterpreterNode != null) ? (AtnParseInterpreter)resourceManager.getResource(parseInterpreterNode) : null;
 
     final NodeList startNodes = options.getDomElement().selectNodes("start");
     if (startNodes != null) {

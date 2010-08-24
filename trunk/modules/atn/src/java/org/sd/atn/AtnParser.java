@@ -45,8 +45,8 @@ public class AtnParser {
   /**
    * Construct a parser for the given grammar.
    */
-  public AtnParser(DomElement grammar) {
-    this.grammar = new AtnGrammar(grammar);
+  public AtnParser(DomElement grammar, ResourceManager resourceManager) {
+    this.grammar = new AtnGrammar(grammar, resourceManager);
   }
 
   /**
