@@ -372,7 +372,7 @@ public class TestAtnParser extends TestCase {
 
   final private AtnParser buildParser(String grammarXml, boolean htmlFlag) throws IOException {
     final DomElement domElement = stringToXml(grammarXml, htmlFlag);
-    final AtnGrammar grammar = new AtnGrammar(domElement);
+    final AtnGrammar grammar = new AtnGrammar(domElement, new ResourceManager());
     return new AtnParser(grammar);
   }
 
@@ -390,10 +390,12 @@ public class TestAtnParser extends TestCase {
 
   private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek) throws IOException {
 
+    final ResourceManager resourceManager = new ResourceManager();
+
     final AtnParseOptions parseOptions =
       parseOptionsXml == null ?
-      new AtnParseOptions() :
-      new AtnParseOptions(stringToXml(parseOptionsXml, false));
+      new AtnParseOptions(resourceManager) :
+      new AtnParseOptions(stringToXml(parseOptionsXml, false), resourceManager);
 
     List<Tree<String>> expectedOutput = null;
 

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.sd.io.FileUtil;
+import org.sd.atn.ResourceManager;
 import org.sd.token.AbstractTokenClassifier;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
@@ -56,13 +57,15 @@ public class RoteListClassifier extends AbstractTokenClassifier {
 
   private Map<String, Map<String, String>> term2attributes;
   private boolean caseSensitive;
+  private ResourceManager resourceManager;
 
-  public RoteListClassifier(DomElement classifierIdElement, Map<String, Normalizer> id2Normalizer) {
+  public RoteListClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
     super(classifierIdElement, id2Normalizer);
-    init(classifierIdElement);
+    init(classifierIdElement, resourceManager);
   }
 
-  private final void init(DomElement classifierIdElement) {
+  private final void init(DomElement classifierIdElement, ResourceManager resourceManager) {
+    this.resourceManager = resourceManager;
     this.roteListType = classifierIdElement.getLocalName();
     this.term2attributes = new HashMap<String, Map<String, String>>();
     this.caseSensitive = false;
@@ -138,17 +141,10 @@ public class RoteListClassifier extends AbstractTokenClassifier {
   protected final void loadTextFile(DomElement textfileElement, Set<String> terms, Map<String, Map<String, String>> term2attributes) {
     if (textfileElement == null) return;
 
-    File textfile = null;
-    final String textfilename = textfileElement.getTextContent();
     this.caseSensitive = textfileElement.getAttributeBoolean("caseSensitive", false);
     final int minChars = textfileElement.getAttributeInt("minChars", 1);
 
-    if (textfileElement.getDataProperties() != null) {
-      textfile = textfileElement.getDataProperties().getWorkingFile(textfilename, "workingDir");
-    }
-    else {
-      textfile = new File(textfilename);
-    }
+    final File textfile = resourceManager.getWorkingFile(textfileElement);
 
     try {
       final BufferedReader reader = FileUtil.getReader(textfile);

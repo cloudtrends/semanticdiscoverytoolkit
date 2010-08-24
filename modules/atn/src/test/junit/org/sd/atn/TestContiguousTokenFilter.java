@@ -67,7 +67,7 @@ public class TestContiguousTokenFilter extends TestCase {
       "	</tokenFilter>\n";
 
     final DomElement configNode = (DomElement)XmlFactory.buildDomNode(configXml, false);
-    final ContiguousTokenFilter filter = new ContiguousTokenFilter(configNode);
+    final ContiguousTokenFilter filter = new ContiguousTokenFilter(configNode, new ResourceManager());
 
     final StandardTokenizerOptions tokenizerOptions = new StandardTokenizerOptions();
     tokenizerOptions.setRevisionStrategy(TokenRevisionStrategy.SO);

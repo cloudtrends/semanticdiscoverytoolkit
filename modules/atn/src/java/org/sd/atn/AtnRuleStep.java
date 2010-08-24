@@ -75,7 +75,7 @@ class AtnRuleStep {
   }
 
 
-  AtnRuleStep(DomElement stepElement) {
+  AtnRuleStep(DomElement stepElement, ResourceManager resourceManager) {
     this.category = stepElement.getLocalName();
     this.isOptional = stepElement.getAttributeBoolean("optional", false);
     this.repeats = stepElement.getAttributeBoolean("repeats", false);
@@ -90,7 +90,7 @@ class AtnRuleStep {
     this.preDelim = (preDelimElement != null) ? new DelimTest(true, preDelimElement) : null;
 
     final DomElement testElement = (DomElement)stepElement.selectSingleNode("test");
-    this.test = (testElement != null) ? (AtnRuleStepTest)testElement.buildInstance("jclass") : null;
+    this.test = (testElement != null) ? (AtnRuleStepTest)resourceManager.getResource(testElement) : null;
   }
 
   /**

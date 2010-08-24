@@ -72,6 +72,11 @@ public class ParseConfig {
     this.verbose = verbose;
   }
 
+  private ResourceManager resourceManager;
+  public ResourceManager getResourceManager() {
+    return resourceManager;
+  }
+
 
   public ParseConfig(String filename) throws IOException {
     init(new DataProperties(new File(filename)));
@@ -93,6 +98,9 @@ public class ParseConfig {
   private void init(DataProperties properties) {
     this.parseConfigProperties = properties;
 
+    final DomElement resourcesElement = (DomElement)properties.getDomElement().selectSingleNode("resources");
+    this.resourceManager = (resourcesElement == null) ? new ResourceManager(properties) : new ResourceManager(resourcesElement);
+
     this.id2CompoundParser = new LinkedHashMap<String, CompoundParser>();
     final NodeList cparserNodes = properties.getDomElement().selectNodes("compoundParser");
     if (cparserNodes != null) {
@@ -100,7 +108,7 @@ public class ParseConfig {
         final Node curNode = cparserNodes.item(i);
         if (curNode.getNodeType() != DomElement.ELEMENT_NODE) continue;
         final DomElement cparserNode = (DomElement)curNode;
-        final CompoundParser cparser = new CompoundParser(cparserNode);
+        final CompoundParser cparser = new CompoundParser(cparserNode, resourceManager);
         this.id2CompoundParser.put(cparser.getId(), cparser);
       }
     }

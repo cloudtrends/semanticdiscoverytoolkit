@@ -73,7 +73,7 @@ public class AtnParserWrapper {
   }
 
 
-  AtnParserWrapper(DomElement parserElement) {
+  AtnParserWrapper(DomElement parserElement, ResourceManager resourceManager) {
     final DomElement idElement = (DomElement)parserElement.selectSingleNode("id");
     if (idElement != null) {
       this.id = idElement.getTextContent();
@@ -103,10 +103,10 @@ public class AtnParserWrapper {
       }
     }
 
-    this.parser = new AtnParser(grammarElement);
+    this.parser = new AtnParser(grammarElement, resourceManager);
 
     final DomElement parseSelectorElement = (DomElement)parserElement.selectSingleNode("parseSelector");
-    this.parseSelector = (parseSelectorElement != null) ? (AtnParseSelector)parseSelectorElement.buildInstance("jclass") : null;
+    this.parseSelector = (parseSelectorElement != null) ? (AtnParseSelector)resourceManager.getResource(parseSelectorElement) : null;
 
     this.tokenizerOverride = (DomElement)parserElement.selectSingleNode("tokenizer");
 
@@ -114,7 +114,7 @@ public class AtnParserWrapper {
     this.tokenizerOptions = tokenizerOptionsElement == null ? new StandardTokenizerOptions() : new StandardTokenizerOptions(tokenizerOptionsElement);
 
     final DomElement parseOptionsElement = (DomElement)parserElement.selectSingleNode("parseOptions");
-    this.parseOptions = parseOptionsElement == null ? new AtnParseOptions() : new AtnParseOptions(parseOptionsElement);
+    this.parseOptions = parseOptionsElement == null ? new AtnParseOptions(resourceManager) : new AtnParseOptions(parseOptionsElement, resourceManager);
 
     this.minNumTokens = this.parseOptions.getAdjustInputForTokens() ? this.parser.getGrammar().computeMinNumTokens(this.parseOptions) : 1;
   }
