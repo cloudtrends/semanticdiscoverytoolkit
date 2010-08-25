@@ -364,6 +364,37 @@ public class TestAtnParser extends TestCase {
                   });
   }
 
+  public void testNoClustering() throws IOException {
+    // A <- B+
+    // B <- C+
+    final AtnParser test11_Parser = buildParser("<grammar><rules><A start='true'><B repeats='true'/></A><B><C repeats='true'/></B></rules></grammar>", false);
+    final StandardTokenizer tokenizer11 = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C C C");
+    runParseTest("ParserTest.11",
+                 test11_Parser,
+                 tokenizer11,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B C) (B C) (B C))",
+                   "(A (B C) (B C C))",
+                   "(A (B C C) (B C))",
+                   "(A (B C C C))",
+                 });
+  }
+
+  public void testClustering() throws IOException {
+    // A <- B+
+    // B <- C+
+    final AtnParser test11_Parser = buildParser("<grammar><rules><A start='true'><B repeats='true'/></A><B><C repeats='true' cluster='true'/></B></rules></grammar>", false);
+    final StandardTokenizer tokenizer11 = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C C C");
+    runParseTest("ParserTest.11",
+                 test11_Parser,
+                 tokenizer11,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                  new String[] {
+                   "(A (B C C C))",
+                   });
+  }
+
 
   private final DomElement stringToXml(String xmlString, boolean htmlFlag) throws IOException {
     final DomDocument domDocument = XmlFactory.loadDocument(xmlString, htmlFlag);
@@ -454,6 +485,15 @@ public class TestAtnParser extends TestCase {
       if (expectedOutput == null) {
         final AtnParse parse = parseResult.getParse(0);
         final Tree<String> parseTree = parse == null ? null : parse.getParseTree();
+
+        if (parse != null) {
+          System.out.println("\nParses:");
+          for (int i = 0; i < parseResult.getNumParses(); ++i) {
+            final AtnParse curParse = parseResult.getParse(i);
+            final Tree<String> curParseTree = curParse == null ? null : curParse.getParseTree();
+            System.out.println("\tparse #" + i + ": " + curParseTree.toString());
+          }
+        }
 
         assertNull(name + ": Got parse '" + (parse == null ? "<NULL>" : parseTree.toString()) + "(and " + (parseResult.getNumParses() - 1) + " others) where none was expected.",
                    parse);
