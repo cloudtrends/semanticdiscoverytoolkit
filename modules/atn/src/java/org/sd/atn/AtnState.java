@@ -59,7 +59,11 @@ public class AtnState {
   }
 
 
-  Tree<AtnState> parentStateNode;
+  private Tree<AtnState> parentStateNode;
+  public Tree<AtnState> getParentStateNode() {
+    return parentStateNode;
+  }
+
   AtnParseOptions parseOptions;
   int skipNum;
 

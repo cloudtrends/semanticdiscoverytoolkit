@@ -29,6 +29,9 @@ import org.sd.xml.DomElement;
  */
 class AtnRuleStep {
   
+  private static final ClusteringTest CLUSTER_TEST = new ClusteringTest();
+
+
   private String category;
   String getCategory() {
     return category;
@@ -59,6 +62,11 @@ class AtnRuleStep {
     return preDelim;
   }
 
+  private ClusteringTest clusterTest;
+  ClusteringTest getClusterTest() {
+    return clusterTest;
+  }
+
   private AtnRuleStepTest test;
   AtnRuleStepTest getTest() {
     return test;
@@ -82,12 +90,15 @@ class AtnRuleStep {
     this.isTerminal = stepElement.getAttributeBoolean("terminal", false);
     this.consumeToken = stepElement.getAttributeBoolean("consumeToken", true);
     this.ignoreToken = stepElement.getAttributeBoolean("ignoreToken", false);
+    final boolean clusterFlag = stepElement.getAttributeBoolean("cluster", false);
 
     final DomElement postDelimElement = (DomElement)stepElement.selectSingleNode("postdelim");
     this.postDelim = (postDelimElement != null) ? new DelimTest(false, postDelimElement) : null;
 
     final DomElement preDelimElement = (DomElement)stepElement.selectSingleNode("predelim");
     this.preDelim = (preDelimElement != null) ? new DelimTest(true, preDelimElement) : null;
+
+    this.clusterTest = clusterFlag ? CLUSTER_TEST : null;
 
     final DomElement testElement = (DomElement)stepElement.selectSingleNode("test");
     this.test = (testElement != null) ? (AtnRuleStepTest)resourceManager.getResource(testElement) : null;
@@ -106,6 +117,10 @@ class AtnRuleStep {
 
     if (result && preDelim != null) {
       result = preDelim.accept(token, curState);
+    }
+
+    if (result && clusterTest != null) {
+      result = clusterTest.accept(token, curState);
     }
 
     if (result && test != null) {
