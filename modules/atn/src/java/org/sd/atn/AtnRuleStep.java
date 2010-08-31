@@ -27,28 +27,28 @@ import org.sd.xml.DomElement;
  * <p>
  * @author Spence Koehler
  */
-class AtnRuleStep {
+public class AtnRuleStep {
   
   private static final ClusteringTest CLUSTER_TEST = new ClusteringTest();
 
 
   private String category;
-  String getCategory() {
+  public String getCategory() {
     return category;
   }
 
   private boolean isOptional;
-  boolean isOptional() {
+  public boolean isOptional() {
     return isOptional;
   }
 
   private boolean repeats;
-  boolean repeats() {
+  public boolean repeats() {
     return repeats;
   }
 
   private boolean isTerminal;
-  boolean isTerminal() {
+  public boolean isTerminal() {
     return isTerminal;
   }
 
@@ -73,12 +73,12 @@ class AtnRuleStep {
   }
 
   private boolean consumeToken;
-  boolean consumeToken() {
+  public boolean consumeToken() {
     return consumeToken;
   }
 
   private boolean ignoreToken;
-  boolean getIgnoreToken() {
+  public boolean getIgnoreToken() {
     return ignoreToken;
   }
 

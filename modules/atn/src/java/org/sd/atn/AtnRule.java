@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.LinkedList;
+import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -29,7 +30,7 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
-class AtnRule {
+public class AtnRule {
   
   private AtnGrammar grammar;
   AtnGrammar getGrammar() {
@@ -37,8 +38,13 @@ class AtnRule {
   }
 
   private String ruleName;
-  String getRuleName() {
+  public String getRuleName() {
     return ruleName;
+  }
+
+  private String ruleId;
+  public String getRuleId() {
+    return ruleId;
   }
 
   private LinkedList<AtnRuleStep> steps;
@@ -60,6 +66,7 @@ class AtnRule {
   AtnRule(AtnGrammar grammar, DomElement ruleElement, ResourceManager resourceManager) {
     this.grammar = grammar;
     this.ruleName = ruleElement.getLocalName();
+    this.ruleId = ruleElement.getAttributeValue("id", null);
     this.steps = new LinkedList<AtnRuleStep>();
     this.isStart = ruleElement.getAttributeBoolean("start", false);
     this.tokenFilterId = ruleElement.getAttributeValue("tokenFilter", null);
@@ -67,13 +74,12 @@ class AtnRule {
     //
     // RuleElement is of the form:
     //
-    // <ruleName start='' tokenFilter='tokenFilterId'>
+    // <ruleName start='' tokenFilter='tokenFilterId' id='ruleId'>
     //   <ruleStep optional='' repeats='' terminal=''>
     //     <postdelim><disallowall|allowall|disallow|allow /></postdelim>
     //     <predelim><disallowall|allowall|disallow|allow /></predelim>
     //     <test>
-    //       <class>RuleStepTest-class</class>
-    //       <dll>optional-path-to-dll</dll>
+    //       <jclass>RuleStepTest-class</jclass>
     //     </test>
     //   </ruleStep>
     //   ...next rule step...

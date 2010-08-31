@@ -36,15 +36,13 @@ import org.sd.util.tree.Tree;
  */
 public class AtnState {
   
-  static String TOKEN_KEY = "cToken";
-
   private Token inputToken;
-  Token getInputToken() {
+  public Token getInputToken() {
     return inputToken;
   }
 
   private AtnRule rule;
-  AtnRule getRule() {
+  public AtnRule getRule() {
     return rule;
   }
 
@@ -69,7 +67,7 @@ public class AtnState {
 
 
   private boolean matched;
-  boolean getMatched() {
+  public boolean getMatched() {
     return matched;
   }
   void setMatched(boolean matched) {
@@ -77,7 +75,7 @@ public class AtnState {
   }
 
   private AtnState pushState;
-  AtnState getPushState() {
+  public AtnState getPushState() {
     return pushState;
   }
 
@@ -91,12 +89,12 @@ public class AtnState {
     return popCount;
   }
 
-  boolean isRepeat() {
+  public boolean isRepeat() {
     return repeatNum > 0;
   }
 
   private boolean _isSkipped;
-  boolean isSkipped() {
+  public boolean isSkipped() {
     return _isSkipped;
   }
 
@@ -105,7 +103,7 @@ public class AtnState {
   }
 
   private AtnRuleStep _ruleStep;
-  AtnRuleStep getRuleStep() {
+  public AtnRuleStep getRuleStep() {
     if (_ruleStep == null) {
       _ruleStep = rule.getSteps().get(stepNum);
     }
@@ -152,8 +150,7 @@ public class AtnState {
   /**
    * Determine whether all push states would pop to rule ends.
    */
-  private boolean isPushEnd()
-  {
+  private boolean isPushEnd() {
     boolean result = true;
 
     for (AtnState curPushState = pushState; curPushState != null; curPushState = curPushState.pushState) {
@@ -167,8 +164,8 @@ public class AtnState {
   }
 
   /**
-   * Get a "pop" state based on this instance's push state and the given
-   * end state, where a "pop" state is a temporary state used to generate
+   * Get a "pop" state based on this instance's push state and this state as
+   * the end state, where a "pop" state is a temporary state used to generate
    * the next states in a parent rule after completing a 'pushed' rule.
    * 
    * The pop state also acts as a marker when constructing a parse tree
@@ -176,11 +173,15 @@ public class AtnState {
    * in the parse tree for adding subsequent children from later matched
    * states.
    */
-  AtnState popState(AtnState endState, Tree<AtnState> parentStateNode) {
+  AtnState popState(Tree<AtnState> parentStateNode) {
     AtnState result = null;
 
     if (pushState != null) {
-      result = new AtnState(endState.inputToken, pushState.rule, pushState.stepNum, parentStateNode, pushState.parseOptions, pushState.repeatNum, pushState.skipNum, pushState.pushState);
+      // verify rule (constituent) with the (pushState.)rule test
+      result = new AtnState(inputToken, pushState.rule, pushState.stepNum,
+                            parentStateNode, pushState.parseOptions,
+                            pushState.repeatNum, pushState.skipNum,
+                            pushState.pushState);
       result.isPoppedState = true;
       result.popCount = 1;
     }
@@ -398,62 +399,6 @@ public class AtnState {
     return result;
   }
 
-  /**
-   * Convert this state to a parse tree.
-   */
-  static Tree<String> convertToTree(Tree<AtnState> stateNode) {
-    final LinkedList<Tree<AtnState>> stateNodes = stateNode.getRootPath();
-
-    AtnState lastPushState = null;
-    Tree<String> result = null;
-    Tree<String> curResultNode = null;
-
-    for (int pathIndex = 1; pathIndex < stateNodes.size(); ++pathIndex) {
-      final Tree<AtnState> pathStateNode = stateNodes.get(pathIndex);
-      final AtnState pathState = pathStateNode.getData();
-      final String category = pathState.getRuleStep().getCategory();
-      final AtnState pushState = pathState.getPushState();
-
-      if (!pathState.getRuleStep().consumeToken()) continue;
-
-      if (result == null) {
-        final String ruleName = pathState.getRule().getRuleName();
-        result = new Tree<String>(ruleName);
-        curResultNode = result;
-      }
-
-      if (pathState.isPoppedState()) {
-        for (int popCounter = 0; popCounter < pathState.getPopCount(); ++popCounter) {
-          curResultNode = curResultNode.getParent();
-        }
-      }
-      else {
-        if (!pathState.getMatched()) {
-          if (pathState.isSkipped()) {
-            final Tree<String> unknownNode = curResultNode.addChild("?");
-            unknownNode.addChild(pathState.getInputToken().getText());
-            unknownNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(pathState.getInputToken(), "?"));
-          }
-          else {
-            curResultNode = curResultNode.addChild(category);
-          }
-        }
-        else {
-          final Tree<String> categoryNode = curResultNode.addChild(category);
-
-          if (!category.equals(pathState.getInputToken().getText())) {
-            final Tree<String> terminalNode = categoryNode.addChild(pathState.getInputToken().getText());
-            terminalNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(pathState.getInputToken(), category));
-          }
-        }
-
-        lastPushState = pushState;
-      }
-    }
-
-    return result;
-  }
-
   static boolean matchTokenToRule(AtnGrammar grammar, LinkedList<AtnState> states, Set<Integer> stopList) {
     boolean result = false;
 
@@ -474,9 +419,11 @@ public class AtnState {
         }
 
         if (curstate.isRuleEnd()) {
-          final AtnState popState = curstate.popState(curstate, nextStateNode);
-          final Tree<AtnState> popStateNode = nextStateNode.addChild(popState);
-          addNextStates(grammar, states, popState, popStateNode, true, true, stopList);
+          final AtnState popState = curstate.popState(nextStateNode);
+          if (popState != null) {
+            final Tree<AtnState> popStateNode = nextStateNode.addChild(popState);
+            addNextStates(grammar, states, popState, popStateNode, true, true, stopList);
+          }
         }
       }
 
@@ -500,9 +447,11 @@ public class AtnState {
 
         if (nextstate.getRuleStep().isOptional() && nextstate.isRuleEnd()) {
           // is optional end, so pop rule
-          final AtnState popState = nextstate.popState(nextstate, nextStateNode);
-          final Tree<AtnState> popStateNode = nextStateNode.addChild(popState);
-          addNextStates(grammar, states, popState, popStateNode, true, false, stopList);
+          final AtnState popState = nextstate.popState(nextStateNode);
+          if (popState != null) {
+            final Tree<AtnState> popStateNode = nextStateNode.addChild(popState);
+            addNextStates(grammar, states, popState, popStateNode, true, false, stopList);
+          }
         }
       }
 

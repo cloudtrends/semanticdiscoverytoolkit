@@ -25,7 +25,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -123,6 +125,39 @@ public class ExtractionGroups extends PersistablePublishable {
   public int getNumGroups() {
     final List<ExtractionGroup> groups = getExtractionGroups();
     return groups.size();
+  }
+
+  /**
+   * Collect the unique, non-overlapping input nodes across all groups.
+   */
+  public List<DomNode> getInputNodes() {
+    final LinkedList<DomNode> result = new LinkedList<DomNode>();
+
+    for (ExtractionGroup extractionGroup : getExtractionGroups()) {
+      final DomNode groupInputNode = extractionGroup.getInputNode();
+      if (groupInputNode != null) {
+        boolean keeper = true;
+        for (Iterator<DomNode> iter = result.iterator(); iter.hasNext(); ) {
+          final DomNode collectedNode = iter.next();
+          if (groupInputNode == collectedNode) {
+            keeper = false;
+            break;
+          }
+          else if (groupInputNode.isAncestor(collectedNode, false)) {
+            keeper = true;
+            iter.remove();
+          }
+          else if (collectedNode.isAncestor(groupInputNode, false)) {
+            keeper = false;
+            break;
+          }
+        }
+
+        if (keeper) result.add(groupInputNode);
+      }
+    }
+
+    return result;
   }
 
   /**

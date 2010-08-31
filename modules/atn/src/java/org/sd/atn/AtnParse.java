@@ -172,6 +172,32 @@ public class AtnParse {
     this.selected = selected;
   }
 
+  private List<String> notes;
+  public boolean hasNotes() {
+    return notes != null && notes.size() > 0;
+  }
+  public List<String> getNotes() {
+    return notes;
+  }
+  public void addNote(String note) {
+    if (note != null && !"".equals(note)) {
+      if (notes == null) notes = new ArrayList<String>();
+      notes.add(note);
+    }
+  }
+  public String getNotesString(String delim) {
+    if (notes == null) return "";
+
+    final StringBuilder result = new StringBuilder();
+
+    for (String note : notes) {
+      if (result.length() > 0) result.append(delim);
+      result.append(note);
+    }
+
+    return result.toString();
+  }
+
 
   private String _parsedText;
   /**
@@ -251,6 +277,7 @@ public class AtnParse {
   Tree<AtnState> endState;
   private Tree<String> _parseTree;
   private Extraction _extraction;
+  private Double _maxConfidence;
 
 
   AtnParse(int parseNum, Tree<AtnState> endState, AtnParseResult parseResult) {
@@ -261,11 +288,12 @@ public class AtnParse {
     this._extraction = null;
     this.selected = true;
     this._parseInterpretations = null;
+    this._maxConfidence = null;
   }
 
   public Tree<String> getParseTree() {
     if (_parseTree == null && endState != null) {
-      _parseTree = AtnState.convertToTree(endState);
+      _parseTree = AtnStateUtil.convertToTree(endState);
     }
     return _parseTree;
   }
@@ -297,7 +325,7 @@ public class AtnParse {
 
     final List<Tree<String>> leaves = parseTreeNode.gatherLeaves();
     for (Tree<String> leaf : leaves) {
-      final CategorizedToken cToken = (CategorizedToken)leaf.getAttributes().get(AtnState.TOKEN_KEY);
+      final CategorizedToken cToken = AtnStateUtil.getCategorizedToken(leaf);
       if (cToken != null) {
         result.add(cToken);
       }
@@ -311,6 +339,22 @@ public class AtnParse {
    */
   public List<Tree<String>> getConstituents(String category) {
     return getParseTree().findNodes(category, Tree.Traversal.DEPTH_FIRST);
+  }
+
+  public Double getMaxConfidence() {
+    if (_maxConfidence == null) {
+      Double result = null;
+      final List<ParseInterpretation> interps = getParseInterpretations();
+      for (ParseInterpretation interp : interps) {
+        final double curConf = interp.getConfidence();
+        if (result == null || curConf > result) {
+          result = curConf;
+        }
+      }
+      _maxConfidence = result;
+    }
+
+    return _maxConfidence;
   }
 
   public String toString() {
@@ -389,15 +433,15 @@ public class AtnParse {
   private Extraction buildLeafExtraction(Tree<String> leafNode) {
     final InputContext inputContext = getInputContext();
 
-    if (!leafNode.hasAttributes() || !leafNode.getAttributes().containsKey(AtnState.TOKEN_KEY) ||
-        inputContext == null || leafNode.getParent() == null) {
+    final CategorizedToken leafCategorizedToken = AtnStateUtil.getCategorizedToken(leafNode);
+
+    if (leafCategorizedToken == null || inputContext == null || leafNode.getParent() == null) {
       return null;
     }
 
     final ExtractionFactory extractionFactory = getExtractionFactory();
     if (extractionFactory == null) return null;
 
-    final CategorizedToken leafCategorizedToken = (CategorizedToken)leafNode.getAttributes().get(AtnState.TOKEN_KEY);
     final Token leafToken = leafCategorizedToken.token;
     final String leafCategory = leafCategorizedToken.category;
 

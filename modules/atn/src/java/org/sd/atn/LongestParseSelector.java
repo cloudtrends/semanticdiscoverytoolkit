@@ -50,10 +50,14 @@ public class LongestParseSelector implements AtnParseSelector {
 
     final Map<Integer, Integer> parseNum2Len = new HashMap<Integer, Integer>();
 
+    String note = "Not longest";
+
     // find the maxLen of all parses
     int maxLen = 0;
     for (int parseIndex = 0; parseIndex < parseResult.getNumParses(); ++parseIndex) {
       final AtnParse parse = parseResult.getParse(parseIndex);
+      if (!parse.getSelected()) continue;
+
       final int curLen = parse.getEndIndex() - parse.getStartIndex();
       if (curLen > maxLen) maxLen = curLen;
 
@@ -92,10 +96,14 @@ public class LongestParseSelector implements AtnParseSelector {
         }
       }
 
-      if (select && isDuplicate(parse, result)) select = false;
+      if (select && isDuplicate(parse, result)) {
+        note = "Is duplicate";
+        select = false;
+      }
 
       parse.setSelected(select);
-      if (parse.getSelected()) result.add(parse);
+      if (select) result.add(parse);
+      else parse.addNote(note);
     }
 
     return result;
