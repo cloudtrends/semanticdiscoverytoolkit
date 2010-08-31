@@ -147,13 +147,11 @@ public class AtnParseRunner {
         options.set("override", null);
         updateOptions();
       
+        final boolean isHtml = options.getString("inputHtml", null) != null;
+
         final ExtractionGroups extractionGroups = new ExtractionGroups(output); 
-        for (ExtractionGroup extractionGroup : extractionGroups.getExtractionGroups()) {
-          final DomNode groupNode = extractionGroup.getInputNode();
-          if (groupNode != null) {
-            final boolean isHtml = options.getString("inputHtml", null) != null;
-            output = parseDomNode(groupNode, isHtml, output);
-          }
+        for (DomNode groupNode : extractionGroups.getInputNodes()) {
+          output = parseDomNode(groupNode, isHtml, output);
         }
       }
     }
