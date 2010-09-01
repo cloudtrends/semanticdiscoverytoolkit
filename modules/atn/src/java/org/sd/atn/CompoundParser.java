@@ -19,6 +19,7 @@
 package org.sd.atn;
 
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -162,20 +163,35 @@ public class CompoundParser {
 
 
   public ParseOutputCollector parse(InputContext input, String[] flow) {
-    return parse(input, flow, null, null);
+    return parse(input, flow, null, null, null);
   }
 
-  public ParseOutputCollector parse(InputContext input, String[] flow, ParseOutputCollector output, Set<Integer> stopList) {
+  public ParseOutputCollector parse(InputContext input, String[] flow, ParseOutputCollector output, Set<Integer> stopList, List<AtnParseResult> collector) {
     final ParseOutputCollector theOutput = output == null ? new ParseOutputCollector(outputNode) : output;
 
     //NOTE: stopList holds indexes for starts of tokens that have been consumed by other parses
 
-    collectOutput(input, flow, theOutput, stopList);
+    collectOutput(input, flow, theOutput, stopList, collector);
 
     return theOutput;
   }
 
-  private void collectOutput(InputContext input, String[] flow, ParseOutputCollector output, Set<Integer> stopList) {
+  public List<AtnParserWrapper> getParserWrappers(String[] flow) {
+    final List<AtnParserWrapper> result = new ArrayList<AtnParserWrapper>();
+
+    if (flow == null) {
+      result.addAll(parserWrappers.values());
+    }
+    else {
+      for (String id : flow) {
+        result.add(parserWrappers.get(id));
+      }
+    }
+
+    return result;
+  }
+
+  private void collectOutput(InputContext input, String[] flow, ParseOutputCollector output, Set<Integer> stopList, List<AtnParseResult> collector) {
     if (verbose) System.out.print("\nParsing '" + input.getText() + "'...");
 
     if (flow == null) {
@@ -194,6 +210,7 @@ public class CompoundParser {
 
       currentTokenizer = getCurrentTokenizer(currentTokenizer, output, input, parserWrapper);
 
+      // generate initial parse results
       final List<AtnParseResult> parseResults = parserWrapper.seekAll(currentTokenizer, stopList);
 
       if (parseResults.size() > 0) {
@@ -206,6 +223,7 @@ public class CompoundParser {
         if (verbose) System.out.println(" " + parserWrapper.getId() + " Parser got " + parseResults.size() + " parse results.");
       }
 
+      // generate deep parse results and add parse results to output
       int parseResultNum = 1;
       AtnParse representativeParse = null;
 
@@ -230,6 +248,7 @@ public class CompoundParser {
         
         if (representativeParse != null) {
           output.add(parseResult);
+          if (collector != null) collector.add(parseResult);
 
           if (stopList != null) {
             final int pos = representativeParse.getStartIndex();

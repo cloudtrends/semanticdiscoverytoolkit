@@ -36,6 +36,8 @@ public class ParseInterpretation implements Serializable {
   private String toStringOverride;
   private Map<String, Object> category2Value;
 
+  private transient AtnParse sourceParse;
+
   public ParseInterpretation() {
     init(null);
   }
@@ -50,6 +52,20 @@ public class ParseInterpretation implements Serializable {
     this.confidence = 1.0;
     this.toStringOverride = null;
     this.category2Value = null;
+  }
+
+  /**
+   * Set the source parse for this interpretation.
+   */
+  public void setSourceParse(AtnParse sourceParse) {
+    this.sourceParse = sourceParse;
+  }
+
+  /**
+   * Get the source parse for this interpretation, if available.
+   */
+  public AtnParse getSourceParse() {
+    return sourceParse;
   }
 
   /**
