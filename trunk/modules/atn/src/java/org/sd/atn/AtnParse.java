@@ -268,6 +268,11 @@ public class AtnParse {
         }
         
         if (_parseInterpretations == null) _parseInterpretations = new ArrayList<ParseInterpretation>();
+        else {
+          for (ParseInterpretation interp : _parseInterpretations) {
+            interp.setSourceParse(this);
+          }
+        }
       }
       return _parseInterpretations;
     }

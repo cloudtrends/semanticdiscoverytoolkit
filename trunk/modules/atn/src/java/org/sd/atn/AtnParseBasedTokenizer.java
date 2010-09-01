@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.sd.token.Break;
+import org.sd.token.FeatureConstraint;
 import org.sd.token.Token;
 import org.sd.token.StandardTokenizer;
 import org.sd.token.StandardTokenizerOptions;
@@ -226,6 +227,34 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     return result;
   }
 
+
+  /**
+   * A feature constraint for locating parse category features on tokens
+   * <p>
+   * Note that values of features found through this constraint will be AtnParse
+   * instances.
+   */
+  public static final FeatureConstraint createParseFeatureConstraint(String category) {
+    final FeatureConstraint result = new FeatureConstraint();
+    result.setType(category);
+    result.setClassType(AtnParseBasedTokenizer.class);
+    result.setFeatureValueType(AtnParse.class);
+    return result;
+  }
+
+  /**
+   * A feature constraint for locating parse interpretation features on tokens
+   * <p>
+   * Note that values of features found through this constraint will be
+   * ParseInterpretation instances.
+   */
+  public static final FeatureConstraint createParseInterpretationFeatureConstraint(String category) {
+    final FeatureConstraint result = new FeatureConstraint();
+    result.setType(category);
+    result.setClassType(AtnParseBasedTokenizer.class);
+    result.setFeatureValueType(ParseInterpretation.class);
+    return result;
+  }
 
   private void addParseCategoryFeature(Token token) {
     if (token != null) {

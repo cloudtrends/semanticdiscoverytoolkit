@@ -21,6 +21,7 @@ package org.sd.atn;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -207,13 +208,20 @@ public class ParseConfig {
     // note also that when an InputContext is broadened, this stopList should
     // be correspondingly updated if its function is still valid.
     final Set<Integer> stopList = new HashSet<Integer>();
+    final List<AtnParseResult> newResults = new ArrayList<AtnParseResult>();
 
     while (inputContextIterator.hasNext()) {
       final InputContext inputContext = inputContextIterator.next();
 
       if (stopList != null) stopList.clear(); // reset for new input
 
-      output = parse(inputContext, compoundParserId, flow, output, stopList);
+      output = parse(inputContext, compoundParserId, flow, output, stopList, newResults);
+    }
+
+    // resolve ambiguities, if possible
+    final CompoundParser compoundParser = id2CompoundParser.get(compoundParserId);
+    for (AtnParserWrapper wrapper : compoundParser.getParserWrappers(flow)) {
+      wrapper.resolveAmbiguities(newResults);
     }
 
     return output;
@@ -224,14 +232,14 @@ public class ParseConfig {
    * by flow (ids) if non-null) over the given input (if non-null) or the
    * already configured input.
    */
-  public ParseOutputCollector parse(InputContext inputContext, String compoundParserId, String[] flow, ParseOutputCollector output, Set<Integer> stopList) {
+  public ParseOutputCollector parse(InputContext inputContext, String compoundParserId, String[] flow, ParseOutputCollector output, Set<Integer> stopList, List<AtnParseResult> collector) {
     ParseOutputCollector result = output;
 
     final CompoundParser compoundParser = id2CompoundParser.get(compoundParserId);
 
     if (compoundParser != null) {
       compoundParser.setVerbose(this.getVerbose());
-      result = compoundParser.parse(inputContext, flow, result, stopList);
+      result = compoundParser.parse(inputContext, flow, result, stopList, collector);
     }
     else {
       if (verbose) {

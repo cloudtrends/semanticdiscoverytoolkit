@@ -67,6 +67,11 @@ public class AtnParserWrapper {
     return parseSelector;
   }
 
+  private AmbiguityResolver ambiguityResolver;
+  public AmbiguityResolver getAmbiguityResolver() {
+    return ambiguityResolver;
+  }
+
   private int minNumTokens;
   public int getMinNumTokens() {
     return minNumTokens;
@@ -108,6 +113,9 @@ public class AtnParserWrapper {
     final DomElement parseSelectorElement = (DomElement)parserElement.selectSingleNode("parseSelector");
     this.parseSelector = (parseSelectorElement != null) ? (AtnParseSelector)resourceManager.getResource(parseSelectorElement) : null;
 
+    final DomElement ambiguityResolverElement = (DomElement)parserElement.selectSingleNode("ambiguityResolver");
+    this.ambiguityResolver = (ambiguityResolverElement != null) ? (AmbiguityResolver)resourceManager.getResource(ambiguityResolverElement) : null;
+
     this.tokenizerOverride = (DomElement)parserElement.selectSingleNode("tokenizer");
 
     final DomElement tokenizerOptionsElement = (DomElement)parserElement.selectSingleNode("tokenizerOptions");
@@ -134,5 +142,14 @@ public class AtnParserWrapper {
     tokenizer.add(parseResults);
 
     return parseResults;
+  }
+
+  /**
+   * Resolve ambiguities (if possible) within the parse results generated
+   * through this wrapper.
+   */
+  public void resolveAmbiguities(List<AtnParseResult> parseResults) {
+    if (this.ambiguityResolver == null) return;
+    ambiguityResolver.resolve(parseResults);
   }
 }

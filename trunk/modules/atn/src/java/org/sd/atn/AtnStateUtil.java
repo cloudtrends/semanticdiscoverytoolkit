@@ -1,8 +1,30 @@
+/*
+    Copyright 2010 Semantic Discovery, Inc. (www.semanticdiscovery.com)
+
+    This file is part of the Semantic Discovery Toolkit.
+
+    The Semantic Discovery Toolkit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    The Semantic Discovery Toolkit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
+*/
 package org.sd.atn;
 
 
 import java.util.LinkedList;
+import java.util.List;
 import org.sd.token.CategorizedToken;
+import org.sd.token.FeatureConstraint;
+import org.sd.token.Feature;
+import org.sd.token.Features;
 import org.sd.token.Token;
 import org.sd.util.tree.Tree;
 
@@ -25,6 +47,22 @@ public class AtnStateUtil {
    * CategorizedToken for the text.
    */
   public static Tree<String> convertToTree(Tree<AtnState> stateNode) {
+    return convertToTree(stateNode, true);
+  }
+
+  /**
+   * Convert the state (automaton) path to a parse tree.
+   * <p>
+   * Note that terminal nodes in the tree will hold token text while their
+   * parent nodes will hold the parsed categories. The immediate parents of
+   * terminal nodes will have an attribute mapping TOKEN_KEY to a
+   * CategorizedToken for the text.
+   *
+   * @param stateNode the end state node from which to build the tree
+   * @param goDeep true to decompose tokens into parse trees where possible;
+   *               false for a "shallow" or "high level" parse tree.
+   */
+  public static Tree<String> convertToTree(Tree<AtnState> stateNode, boolean goDeep) {
     final LinkedList<Tree<AtnState>> stateNodes = stateNode.getRootPath();
 
     AtnState lastPushState = null;
@@ -52,6 +90,7 @@ public class AtnStateUtil {
       }
       else {
         if (!pathState.getMatched()) {
+          // add skipped token
           if (pathState.isSkipped()) {
             final Tree<String> unknownNode = curResultNode.addChild("?");
             unknownNode.addChild(pathState.getInputToken().getText());
@@ -62,15 +101,64 @@ public class AtnStateUtil {
           }
         }
         else {
+          // add matched token
           final Tree<String> categoryNode = curResultNode.addChild(category);
 
           if (!category.equals(pathState.getInputToken().getText())) {
-            categoryNode.addChild(pathState.getInputToken().getText());
+            // add non-literal matched token
+            final Tree<String> tokenParse = goDeep ? getTokenParse(pathState.getInputToken(), category) : null;
+            if (tokenParse == null) {
+              // add token text
+              categoryNode.addChild(pathState.getInputToken().getText());
+            }
+            else {
+              categoryNode.addChild(tokenParse);
+            }
+
+            // store CategorizedToken as an attribute on the parse tree node
             categoryNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(pathState.getInputToken(), category));
           }
         }
 
         lastPushState = pushState;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Pull the (unambiguous) parse tree off of the token if it exists
+   * for the category.
+   * <p>
+   * A token holds a parse tree if it has a feature (as placed by an
+   * AtnParseBasedTokenizer) with an AtnParse. If there is unresolved
+   * ambiguity, then null will be returned.
+   */
+  public static final Tree<String> getTokenParse(Token token, String category) {
+    Tree<String> result = null;
+
+    final Features tokenFeatures = token.getFeatures();
+    if (tokenFeatures != null) {
+      final FeatureConstraint parseConstraint = AtnParseBasedTokenizer.createParseInterpretationFeatureConstraint(category);
+      final List<Feature> parseFeatures = tokenFeatures.getFeatures(parseConstraint);
+
+      if (parseFeatures != null) {
+        for (Feature parseFeature : parseFeatures) {
+          final ParseInterpretation interp = (ParseInterpretation)parseFeature.getValue();
+          final AtnParse atnParse = interp.getSourceParse();
+          if (atnParse != null && atnParse.getSelected()) {
+            if (result != null) {
+              // found ambiguity -- fail
+              result = null;
+              break;
+            }
+            else {
+              // found first parse
+              result = atnParse.getParseTree();
+            }
+          }
+        }
       }
     }
 
