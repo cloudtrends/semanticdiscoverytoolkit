@@ -110,13 +110,26 @@ public class TestStandardTokenizer extends TestCase {
       new TokenizeTest("LS.JJJS.CamelCase.2", "JohnJacobJingleheimerSchmidt -- His name is my name, too!", lsOptions,
                        new String[] { "JohnJacobJingleheimerSchmidt", "His name is my name", "too" },
                        new String[][] { new String[] { "JohnJacobJingleheimer", "JohnJacob", "John" },
-                                        new String[] { "His name is my name", "His name is my", "His name is", "His name", "His" },
+                                        new String[] { "His name is my", "His name is", "His name", "His" },
                                         new String[] { } });
 
     tokenizeTest.runTest();
   }
 
-//I'm here...
+  public void test_LS_Strategy_CamelCase3() {
+    final StandardTokenizerOptions lsOptions = new StandardTokenizerOptions();
+    lsOptions.setRevisionStrategy(TokenRevisionStrategy.LS);
+
+    final TokenizeTest tokenizeTest =
+      new TokenizeTest("LS.JJJS.CamelCase.3", "John Jacob Jingleheimer Schmidt, born 10Oct1857, died 28Feb1899", lsOptions,
+                       new String[] { "John Jacob Jingleheimer Schmidt", "born 10Oct1857", "died 28Feb1899" },
+                       new String[][] { new String[] { "John Jacob Jingleheimer", "John Jacob", "John" },
+                                        new String[] { "born 10Oct", "born" },
+                                        new String[] { "died 28Feb", "died" } });
+
+    tokenizeTest.runTest();
+  }
+
   public void test_SL_Strategy_Normal() {
     final StandardTokenizerOptions slOptions = new StandardTokenizerOptions();
     slOptions.setRevisionStrategy(TokenRevisionStrategy.SL);

@@ -568,11 +568,11 @@ public class StandardTokenizer implements Tokenizer {
     int result = -1;
 
     final Map<Integer, Break> pos2break = getPos2Break();
-    for (int pos = endPosition; pos >= 0; --pos) {
+    for (int pos = endPosition - 1; pos >= 0; --pos) {
       final Break posBreak = pos2break.get(pos);
       if (posBreak != null) {
         if (posBreak.breaks()) {
-          result = findEndBreakReverse(pos + posBreak.getBWidth());
+          result = findEndBreakReverse(pos);
           break;
         }
       }
