@@ -44,28 +44,28 @@ public class Break {
   /**
    * Represents no break at the current character.
    */
-  public static final Break NO_BREAK = new Break(BreakType.NONE, 1, "NONE");
+  public static final Break NO_BREAK = new Break(BreakType.NONE, 1, "NONE", "NO_BREAK");
 
   /**
    * Represents a hard break at the current character.
    * 
    * Examples would include a punctuation character at the end of a sentence.
    */
-  public static final Break SINGLE_WIDTH_HARD_BREAK = new Break(BreakType.HARD, 1, "SW_HARD");
+  public static final Break SINGLE_WIDTH_HARD_BREAK = new Break(BreakType.HARD, 1, "SW_HARD", "SINGLE_WIDTH_HARD_BREAK");
 
   /**
    * Represents a soft break at the current character.
    * 
    * Examples would include a hyphen between hyphenated words.
    */
-  public static final Break SINGLE_WIDTH_SOFT_BREAK = new Break(BreakType.SOFT, 1, "SW_SOFT");
+  public static final Break SINGLE_WIDTH_SOFT_BREAK = new Break(BreakType.SOFT, 1, "SW_SOFT", "SINGLE_WIDTH_SOFT_BREAK");
 
   /**
    * Represents a soft break between the prior and current characters.
    * 
    * Examples would include uppercased characters in camelcased words.
    */
-  public static final Break ZERO_WIDTH_SOFT_BREAK = new Break(BreakType.SOFT, 0, "ZW_SOFT");
+  public static final Break ZERO_WIDTH_SOFT_BREAK = new Break(BreakType.SOFT, 0, "ZW_SOFT", "ZERO_WIDTH_SOFT_BREAK");
 
   /**
    * Represents a hard break between the prior and current characters.
@@ -74,7 +74,7 @@ public class Break {
    * cased words are not to be considered as a full token but only always
    * as multiple tokens.
    */
-  public static final Break ZERO_WIDTH_HARD_BREAK = new Break(BreakType.HARD, 0, "ZW_HARD");
+  public static final Break ZERO_WIDTH_HARD_BREAK = new Break(BreakType.HARD, 0, "ZW_HARD", "ZERO_WIDTH_HARD_BREAK");
 
 
   /**
@@ -101,6 +101,13 @@ public class Break {
     return bName;
   }
 
+  /**
+   * The long name of this break
+   */
+  private String bLongName;
+  public String getBLongName() {
+    return bLongName;
+  }
 
   /**
    * Determine whether this instance represents any kind of break.
@@ -127,10 +134,11 @@ public class Break {
   /**
    * Private constructor access to enforce flyweight pattern.
    */
-  private Break(BreakType breakType, int breakWidth, String breakName) {
+  private Break(BreakType breakType, int breakWidth, String breakName, String breakLongName) {
     this.bType = breakType;
     this.bWidth = breakWidth;
     this.bName = breakName;
+    this.bLongName = breakLongName;
   }
 
   /**
