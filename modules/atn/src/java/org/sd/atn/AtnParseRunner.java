@@ -126,15 +126,21 @@ public class AtnParseRunner {
   public ParseOutputCollector buildOutput() throws IOException {
     ParseOutputCollector output = null;
 
-    final String inputLines = options.getString("inputLines", null);
-    if (inputLines != null) {
-      output = parseLines(new File(inputLines));
+    final String inputString = options.getString("inputString", null);
+    if (inputString != null) {
+      output = parseInputString(inputString);
     }
     else {
-      final String inputHtml = options.getString("inputHtml", null);
-      if (inputHtml != null) {
-        final String diffHtml = options.getString("diffHtml", null);
-        output = parseHtml(new File(inputHtml), diffHtml == null ? null : new File(diffHtml));
+      final String inputLines = options.getString("inputLines", null);
+      if (inputLines != null) {
+        output = parseLines(new File(inputLines));
+      }
+      else {
+        final String inputHtml = options.getString("inputHtml", null);
+        if (inputHtml != null) {
+          final String diffHtml = options.getString("diffHtml", null);
+          output = parseHtml(new File(inputHtml), diffHtml == null ? null : new File(diffHtml));
+        }
       }
     }
 
@@ -268,6 +274,15 @@ public class AtnParseRunner {
     }
 
     return result;
+  }
+
+  public ParseOutputCollector parseInputString(String inputString) throws IOException {
+    final FileContext fileContext = new FileContext(new String[]{inputString}, WhitespacePolicy.HYPERTRIM);
+    final boolean broaden = false;
+    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), broaden, null);
+    final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputString, false, false, false, null, null, null);
+    output.setParseSourceInfo(sourceInfo);
+    return output;
   }
 
   public ParseOutputCollector parseLines(File inputLines) throws IOException {
