@@ -350,13 +350,16 @@ public class AtnParse {
     if (_maxConfidence == null) {
       Double result = null;
       final List<ParseInterpretation> interps = getParseInterpretations();
-      for (ParseInterpretation interp : interps) {
-        final double curConf = interp.getConfidence();
-        if (result == null || curConf > result) {
-          result = curConf;
+      if (interps != null) {
+        for (ParseInterpretation interp : interps) {
+          final double curConf = interp.getConfidence();
+          if (result == null || curConf > result) {
+            result = curConf;
+          }
         }
       }
-      _maxConfidence = result;
+
+      _maxConfidence = result == null ? 0.0 : result;
     }
 
     return _maxConfidence;

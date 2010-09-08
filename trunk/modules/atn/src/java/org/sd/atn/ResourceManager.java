@@ -105,7 +105,7 @@ public class ResourceManager {
     return getResource(resourceElement, null);
   }
 
-  public final Object getResource(DomElement resourceElement, Object[] extraArgs) {
+  public synchronized final Object getResource(DomElement resourceElement, Object[] extraArgs) {
     Object result = null;
 
     // attribute 'resource' gives resource name for lookups
