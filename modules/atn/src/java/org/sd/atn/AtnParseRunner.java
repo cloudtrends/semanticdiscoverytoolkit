@@ -147,6 +147,10 @@ public class AtnParseRunner {
     if (output != null) {
       final String stage2cpid = options.getString("stage2cpid", null);
       if (stage2cpid != null) {
+        final String origCompoundParserId = options.getString("compoundParserId", null);
+        final String origFlow = options.getString("flow", null);
+        final String origOverride = options.getString("override", null);
+
         // recycle extraction groups as input through the indicated compound parser
         options.set("compoundParserId", stage2cpid);
         options.set("flow", null);
@@ -159,6 +163,12 @@ public class AtnParseRunner {
         for (DomNode groupNode : extractionGroups.getInputNodes()) {
           output = parseDomNode(groupNode, isHtml, output);
         }
+
+        // restore original options
+        options.set("compoundParserId", origCompoundParserId);
+        options.set("flow", origFlow);
+        options.set("override", origOverride);
+        updateOptions();
       }
     }
 
