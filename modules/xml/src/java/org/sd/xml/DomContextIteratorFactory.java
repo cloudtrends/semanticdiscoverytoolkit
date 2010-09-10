@@ -42,6 +42,24 @@ public class DomContextIteratorFactory {
     return result;
   }
 
+  /**
+   * Build a DomContextIterator over the specific DomNode instances.
+   */
+  public static final DomContextIterator getDomContextIterator(List<DomNode> domNodes) {
+    final DomContextIterator result = new DomContextIterator();
+
+    if (domNodes != null) {
+      for (DomNode domNode : domNodes) {
+        result.add(domNode);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Build a DomContextIterator over text or block nodes in the xmlFile.
+   */
   public static final DomContextIterator getDomContextIterator(File xmlFile, boolean isHtml, boolean textBlocks) throws IOException {
     DomContextIterator result = null;
 
@@ -57,6 +75,9 @@ public class DomContextIteratorFactory {
     return result;
   }
 
+  /**
+   * Build a DomContextIterator over the strategy-selected nodes in the xmlFile.
+   */
   public static final DomContextIterator getDomContextIterator(File xmlFile, boolean isHtml, DomIterationStrategy strategy) throws IOException {
     final DomContextIterator result = new DomContextIterator();
     
@@ -66,6 +87,9 @@ public class DomContextIteratorFactory {
     return result;
   }
 
+  /**
+   * Build a DomContextIterator over the strategy-selected, diff-negated nodes in the xmlFile.
+   */
   public static final DomContextIterator getDomContextIterator(File xmlFile, File diffFile, boolean isHtml, DomIterationStrategy strategy) throws IOException {
     DomContextIterator result = null;
 
@@ -80,6 +104,9 @@ public class DomContextIteratorFactory {
     return result;
   }
 
+  /**
+   * Build a DomContextIterator over the strategy-selected, diff-negated nodes under the rootNode.
+   */
   public static final DomContextIterator getDomContextIterator(DomNode rootNode, DomNode diffNode, DomIterationStrategy strategy) {
     DomContextIterator result = null;
 
@@ -95,6 +122,9 @@ public class DomContextIteratorFactory {
     return result;
   }
 
+  /**
+   * Build a DomContextIterator over the strategy-selected nodes under each domNode.
+   */
   public static final DomContextIterator getDomContextIterator(List<DomNode> domNodes, DomIterationStrategy strategy) {
     final DomContextIterator result = new DomContextIterator();
     
@@ -105,6 +135,9 @@ public class DomContextIteratorFactory {
     return result;
   }
 
+  /**
+   * Add strategy-selected nodes under the rootNode to the DomContextIterator result.
+   */
   public static final void loadDomNodes(DomNode rootNode, DomIterationStrategy strategy, DomContextIterator result) {
     if (rootNode == null) return;
 

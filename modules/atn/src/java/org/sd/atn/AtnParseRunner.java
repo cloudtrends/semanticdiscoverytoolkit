@@ -21,9 +21,12 @@ package org.sd.atn;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.io.IOException;
 import org.sd.io.FileUtil;
@@ -52,16 +55,24 @@ import org.sd.xml.XmlLite;
  */
 public class AtnParseRunner {
   
+  private enum InputUpdateStrategy { RESET, BROADEN, XML };
+
+
   protected DataProperties options;
   protected ParseConfig parseConfig;
   protected boolean verbose;
-  protected String compoundParserId;
-  protected String[] flow;
-  protected String[] override;
+
+  private Map<String, ParserFlow> id2parserFlow;
+  private String activeFlowSpec;
+  private List<ParserFlow> activeFlow;
 
   public AtnParseRunner(DataProperties dataProperties) throws IOException {
     this.options = dataProperties;
     this.parseConfig = loadParseConfig(options);
+    this.verbose = false;
+    this.id2parserFlow = createParserFlow();
+    this.activeFlowSpec = null;
+    this.activeFlow = new ArrayList<ParserFlow>();
 
     updateOptions();
   }
@@ -71,12 +82,33 @@ public class AtnParseRunner {
    * options.
    */
   public final void updateOptions() {
-    this.verbose = options.getBoolean("verbose", false);
-    this.compoundParserId = options.getString("compoundParserId", null);
-    this.flow = loadFlow(options);
-    this.override = loadOverride(options);
+    setVerbose(options.getBoolean("verbose", false));
+    activateParseFlow(options.getString("parseFlow", null));
+  }
 
+  public DataProperties getOptions() {
+    return options;
+  }
+
+  public ParseConfig getParseConfig() {
+    return parseConfig;
+  }
+
+  public boolean getVerbose() {
+    return verbose;
+  }
+
+  public final void setVerbose(boolean verbose) {
+    this.verbose = verbose;
     this.parseConfig.setVerbose(verbose);
+  }
+
+  public String getActiveFlowSpec() {
+    return activeFlowSpec;
+  }
+
+  public List<ParserFlow> getActiveFlow() {
+    return activeFlow;
   }
 
   private final ParseConfig loadParseConfig(DataProperties options) throws IOException {
@@ -91,36 +123,90 @@ public class AtnParseRunner {
     return new ParseConfig(parseElement);
   }
 
-  private final String[] loadFlow(DataProperties options) {
-    String[] result = null;
+  /**
+   * Activate parse flow given a flow specification of the form:
+   * <p>
+   * compoundParserId1:parserId1,parserId2,...;compoundParserId2:...
+   * <p>
+   * Or, more formally:
+   * <p>
+   * compoundParserFlowSpec1;compoundParserFlowSpec2;...
+   * <p>
+   * Where compoundParserFlowSpec is of the form:
+   * <p>
+   * compoundParserId:parserFlowSpec
+   * <p>
+   * Where parserFlowSpec is of the form:
+   * <p>
+   * parserId1,parserId2,...
+   * <p>
+   * If flowSpec is null, then ALL parsers will be activated.
+   *
+   * @return the prior active parse flow specification.
+   */
+  public String activateParseFlow(String flowSpec) {
+    final String result = activeFlowSpec;
 
-    final String flowString = options.getString("flow", null);
-    if (flowString != null) {
-      result = flowString.split("\\s*,\\s*");
+    this.activeFlow.clear();
+
+    if (flowSpec == null) {
+      final String[] compoundParserIds = parseConfig.getCompoundParserIds();
+      for (String compoundParserId : compoundParserIds) {
+        final ParserFlow parserFlow = id2parserFlow.get(compoundParserId);
+        parserFlow.setActive(true);            // activate flow
+        parserFlow.setActive((String[])null);  // activate all flow ids
+        activeFlow.add(parserFlow);
+      }
+    }
+    else {
+      for (ParserFlow parserFlow : id2parserFlow.values()) {
+        parserFlow.setActive(false);  // deactivate all flows
+      }
+
+      final String[] compoundParserFlowSpecs = flowSpec.split("\\s*;\\s*");
+      for (String compoundParserFlowSpec : compoundParserFlowSpecs) {
+        final String[] idSpec = compoundParserFlowSpec.split("\\s*:\\s*");
+        final String id = idSpec[0];
+        final String[] parserIds = (idSpec.length == 1 || "".equals(idSpec[1])) ? null : idSpec[1].split("\\s*,\\s*");
+
+        final ParserFlow parserFlow = id2parserFlow.get(id);
+        parserFlow.setActive(true);      // activate flow
+        parserFlow.setActive(parserIds); // activate only specified flow ids
+        activeFlow.add(parserFlow);
+      }
     }
 
     return result;
   }
 
-  private final String[] loadOverride(DataProperties options) {
-    String[] result = null;
+  public boolean isActive(String compoundParserId) {
+    return id2parserFlow.get(compoundParserId).isActive();
+  }
 
-    final String overrideString = options.getString("override", null);
-    if (overrideString != null) {
-      result = overrideString.split("\\s*,\\s*");
+  public boolean isActive(String compoundParserId, String parserId) {
+    final ParserFlow parserFlow = id2parserFlow.get(compoundParserId);
+    return parserFlow.isActive(parserId);
+  }
+
+  private final Map<String, ParserFlow> createParserFlow() {
+    final Map<String, ParserFlow> result = new HashMap<String, ParserFlow>();
+
+    final String[] compoundParserIds = parseConfig.getCompoundParserIds();
+    for (String compoundParserId : compoundParserIds) {
+      final CompoundParser compoundParser = parseConfig.getCompoundParser(compoundParserId);
+      final String[] parserIds = compoundParser.getParserIds();
+      final ParserFlow parserFlow = new ParserFlow(compoundParserId, parserIds);
+      result.put(compoundParserId, parserFlow);
     }
 
     return result;
   }
+
 
   public void run() throws IOException {
     final ParseOutputCollector output = buildOutput();
     final ExtractionGroups extractionGroups = output != null ? new ExtractionGroups(output) : null;
     handleOutput(output, extractionGroups);
-  }
-
-  public DataProperties getOptions() {
-    return options;
   }
 
   public ParseOutputCollector buildOutput() throws IOException {
@@ -141,34 +227,6 @@ public class AtnParseRunner {
           final String diffHtml = options.getString("diffHtml", null);
           output = parseHtml(new File(inputHtml), diffHtml == null ? null : new File(diffHtml));
         }
-      }
-    }
-
-    if (output != null) {
-      final String stage2cpid = options.getString("stage2cpid", null);
-      if (stage2cpid != null) {
-        final String origCompoundParserId = options.getString("compoundParserId", null);
-        final String origFlow = options.getString("flow", null);
-        final String origOverride = options.getString("override", null);
-
-        // recycle extraction groups as input through the indicated compound parser
-        options.set("compoundParserId", stage2cpid);
-        options.set("flow", null);
-        options.set("override", null);
-        updateOptions();
-      
-        final boolean isHtml = options.getString("inputHtml", null) != null;
-
-        final ExtractionGroups extractionGroups = new ExtractionGroups(output); 
-        for (DomNode groupNode : extractionGroups.getInputNodes()) {
-          output = parseDomNode(groupNode, isHtml, output);
-        }
-
-        // restore original options
-        options.set("compoundParserId", origCompoundParserId);
-        options.set("flow", origFlow);
-        options.set("override", origOverride);
-        updateOptions();
       }
     }
 
@@ -288,8 +346,7 @@ public class AtnParseRunner {
 
   public ParseOutputCollector parseInputString(String inputString) throws IOException {
     final FileContext fileContext = new FileContext(new String[]{inputString}, WhitespacePolicy.HYPERTRIM);
-    final boolean broaden = false;
-    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), broaden, null);
+    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), InputUpdateStrategy.RESET, null);
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputString, false, false, false, null, null, null);
     output.setParseSourceInfo(sourceInfo);
     return output;
@@ -299,11 +356,11 @@ public class AtnParseRunner {
     final FileContext fileContext = new FileContext(inputLines, WhitespacePolicy.HYPERTRIM);
 
     //todo: parameterize whether to broaden the scope of the iterator
-    //      - if line records, then don't broaden.
-    //      - if paragraphs, then broaden (but at which compound parser boundaries?)
-    final boolean broaden = false;
+    //      - if line records, then RESET.
+    //      - if paragraphs, then BROADEN
+    final InputUpdateStrategy inputUpdateStrategy = InputUpdateStrategy.RESET;
 
-    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), broaden, null);
+    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), inputUpdateStrategy, null);
 
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputLines, false, false);
     output.setParseSourceInfo(sourceInfo);
@@ -318,10 +375,10 @@ public class AtnParseRunner {
     final DomIterationStrategy strategy = textBlock ? DomTextBlockIterationStrategy.INSTANCE : DomTextIterationStrategy.INSTANCE;
 
     //todo: parameterize (and implement) whether to broaden the scope of the iterator
-    final boolean broaden = false;
+    final InputUpdateStrategy inputUpdateStrategy = InputUpdateStrategy.XML;
 
     final DomContextIterator inputContextIterator = DomContextIteratorFactory.getDomContextIterator(inputHtml, diffHtml, true, strategy);
-    final ParseOutputCollector result = parseInput(inputContextIterator, broaden, null);
+    final ParseOutputCollector result = parseInput(inputContextIterator, inputUpdateStrategy, null);
 
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputHtml, true, true);
     if (diffHtml != null) sourceInfo.setDiffString(diffHtml.getAbsolutePath());
@@ -332,7 +389,7 @@ public class AtnParseRunner {
 
   public ParseOutputCollector parseDomNode(DomNode domNode, boolean isHtml, ParseOutputCollector priorOutput) {
     final DomContextIterator inputContextIterator = DomContextIteratorFactory.getDomContextIterator(domNode);
-    final ParseOutputCollector result = parseInput(inputContextIterator, false, priorOutput);
+    final ParseOutputCollector result = parseInput(inputContextIterator, InputUpdateStrategy.XML, priorOutput);
     if (priorOutput == null) {
       final ParseSourceInfo sourceInfo = new ParseSourceInfo(domNode.getTextContent(), true, isHtml, false, null, null, null);
       result.setParseSourceInfo(sourceInfo);
@@ -340,61 +397,39 @@ public class AtnParseRunner {
     return result;
   }
 
-  protected ParseOutputCollector parseInput(InputContextIterator inputContextIterator, boolean broaden, ParseOutputCollector result) {
+  protected ParseOutputCollector parseInput(InputContextIterator inputContextIterator, InputUpdateStrategy inputUpdateStrategy, ParseOutputCollector result) {
 
-    if (override != null) {
-      for (String cpId : override) {
-        final String[] ids = cpId.split(":");
-        // compoundParserId:atnParserId[:broaden]+
-        this.flow = new String[]{ids[1]};
+    boolean didOne = false;
 
-        if (verbose) System.out.println("override " + cpId);
+    for (ParserFlow parserFlow : activeFlow) {
 
-        result = parseConfig.parse(inputContextIterator, ids[0], this.flow, result);
-
-        boolean needsReset = true;
-        for (int i = 2; i < ids.length; ++i) {
-          if ("broaden".equalsIgnoreCase(ids[i])) {
-            inputContextIterator = inputContextIterator.broaden();
-            needsReset = false;
-            if (inputContextIterator == null) {
-              // all done (versus [todo: parameterize] continue with unbroadened context?)
-              break;
-            }
-          }
-        }
-
-        if (inputContextIterator == null) {
-          break;
-        }
-        else if (needsReset) {
-          inputContextIterator.reset();
-        }
+      if (didOne) {
+        // reset the inputContextIterator appropriately
+        inputContextIterator = updateInput(inputContextIterator, inputUpdateStrategy, result);
       }
+
+      result = parseConfig.parse(inputContextIterator, parserFlow.getFlowId(), parserFlow.getParserIds(true), result);
+      didOne = true;
     }
-    else {
-      if (this.compoundParserId != null) {
-        result = parseConfig.parse(inputContextIterator, this.compoundParserId, this.flow, result);
-      }
-      else {
-        final String[] compoundParserIds = parseConfig.getCompoundParserIds();
-        for (String compoundParserId : compoundParserIds) {
-          result = parseConfig.parse(inputContextIterator, compoundParserId, this.flow, result);
 
-          boolean needsReset = true;
-          if (broaden) {
-            final InputContextIterator broadenedContextIterator = inputContextIterator.broaden();
-            if (broadenedContextIterator != null) {
-              inputContextIterator = broadenedContextIterator;
-              needsReset = false;
-            }
-            // else, continue with the original inputContextIterator (versus [todo: parameterize] break out of loop?)
-          }
-          if (needsReset) {
-            inputContextIterator.reset();
-          }
-        }
-      }
+    return result;
+  }
+
+  private InputContextIterator updateInput(InputContextIterator inputContextIterator, InputUpdateStrategy inputUpdateStrategy, ParseOutputCollector output) {
+    InputContextIterator result = inputContextIterator;
+
+    switch (inputUpdateStrategy) {
+      case XML :
+        result = DomContextIteratorFactory.getDomContextIterator(new ExtractionGroups(output).getInputNodes());
+        break;
+
+      case BROADEN :
+        result = result.broaden();
+        break;
+
+      case RESET :
+        result.reset();
+        break;
     }
 
     return result;
@@ -438,14 +473,17 @@ public class AtnParseRunner {
     //   diffHtml -- path to html file to use as mask for inputHtml
     //   
     //   verbose -- (optional, default=true)
-    //   compoundParserId -- (optional) id of single compound parser from parse config to execute
-    //   flow -- (optional) "id1,id2,..."
+    //
+    //   parseFlow -- (optional, default uses all) cpId1:pId1,...,pIdN;cpId2:...
+    //                semi-colon delimited list of compound parser flows of the form:
+    //                compoundParserId : parserId1, parserId2, ...
+    //                If absent, then all parsers within all compound parsers will be executed.
+    //
     //   showMarkup -- (optional, default=false)
     //   writeMarkup -- (optional, default=true)
     //   showInterpretations -- (optional, default=true)
     //   showOnlyInterpreted -- (optional, default=false)
     // 
-    //   override -- (optional)compoundParserId1:atnParserId1[:broaden]+,compoundParserId2:atnParserId2[:broaden]+,...
     //
     //   showOnlySelected -- (optional, default=true)
     //   outputXml -- (optional) path to which xml output is to be written
@@ -454,8 +492,6 @@ public class AtnParseRunner {
     //   showResults -- (optional, default=true) true to show results on console
     //   briefResults -- (optional, default=true) true to show brief (instead of full) result output on console
     //   numberKeys -- (optional, default=true) true to show numbered group and extraction keys instead of xpaths
-    //
-    //   stage2cpid -- (optional) stage 2 compound parser id: causes extraction groups to be recycled as input through the compound parser's parsers.
     //
 
     final DataProperties dataProperties = new DataProperties(args);
