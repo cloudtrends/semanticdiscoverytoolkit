@@ -61,6 +61,24 @@ public class CompoundParser {
     return parserWrappers;
   }
 
+  private String[] parserWrapperIds;
+  public String[] getParserIds() {
+    if (parserWrapperIds == null && parserWrappers != null) {
+      parserWrapperIds = parserWrappers.keySet().toArray(new String[parserWrappers.size()]);
+    }
+    return parserWrapperIds;
+  }
+  public AtnParserWrapper getParserWrapper(String parserId) {
+    AtnParserWrapper result = null;
+
+    if (parserWrappers != null) {
+      
+      result = parserWrappers.get(parserId);
+    }
+
+    return result;
+  }
+
   private boolean verbose;
   public boolean getVerbose() {
     return verbose;

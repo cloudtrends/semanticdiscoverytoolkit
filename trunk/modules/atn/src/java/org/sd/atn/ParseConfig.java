@@ -123,6 +123,16 @@ public class ParseConfig {
     return compoundParserIds;
   }
 
+  public CompoundParser getCompoundParser(String compoundParserId) {
+    CompoundParser result = null;
+
+    if (id2CompoundParser != null) {
+      result = id2CompoundParser.get(compoundParserId);
+    }
+
+    return result;
+  }
+
 
   /**
    * Build settings that encompasses all of the atn parsers for the identified
