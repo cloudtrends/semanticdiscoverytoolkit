@@ -21,7 +21,9 @@ package org.sd.atn;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.sd.token.CategorizedToken;
+import org.sd.token.Feature;
 import org.sd.util.tree.Tree;
 
 /**
@@ -38,13 +40,19 @@ public class ParseInterpretationUtil {
   public static ParseInterpretation getFirstInterpretation(AtnParse context, Tree<String> parseTreeNode, String featureKey) {
     ParseInterpretation result = null;
 
-    final List<CategorizedToken> cTokens = context.getCategorizedTokens(parseTreeNode);
-    for (CategorizedToken cToken : cTokens) {
-      final Object featureValue = cToken.token.getFeatureValue(featureKey, null, ParseInterpretation.class);
-      if (featureValue != null) {
-        result = (ParseInterpretation)featureValue;
-        break;
+    if (parseTreeNode.hasAttributes()) {
+      final Map<String, Object> parseAttributes = parseTreeNode.getAttributes();
+      final CategorizedToken cToken = (CategorizedToken)parseAttributes.get(AtnStateUtil.TOKEN_KEY);
+      if (cToken.token.hasFeatures()) {
+        final Object featureValue = cToken.token.getFeatureValue(featureKey, null, ParseInterpretation.class);
+        if (featureValue != null) {
+          result = (ParseInterpretation)featureValue;
+        }
       }
+    }
+
+    if (result == null && parseTreeNode.numChildren() == 1) {
+      result = getFirstInterpretation(context, parseTreeNode.getChildren().get(0), featureKey);
     }
 
     return result;
@@ -57,13 +65,25 @@ public class ParseInterpretationUtil {
   public static List<ParseInterpretation> getInterpretations(AtnParse context, Tree<String> parseTreeNode, String featureKey) {
     List<ParseInterpretation> result = null;
 
-    final List<CategorizedToken> cTokens = context.getCategorizedTokens(parseTreeNode);
-    for (CategorizedToken cToken : cTokens) {
-      final Object featureValue = cToken.token.getFeatureValue(featureKey, null, ParseInterpretation.class);
-      if (featureValue != null) {
-        if (result == null) result = new ArrayList<ParseInterpretation>();
-        result.add((ParseInterpretation)featureValue);
+    if (parseTreeNode.hasAttributes()) {
+      final Map<String, Object> parseAttributes = parseTreeNode.getAttributes();
+      final CategorizedToken cToken = (CategorizedToken)parseAttributes.get(AtnStateUtil.TOKEN_KEY);
+      if (cToken.token.hasFeatures()) {
+        final List<Feature> features = cToken.token.getFeatures(featureKey, null, ParseInterpretation.class);
+        if (features != null) {
+          result = new ArrayList<ParseInterpretation>();
+          for (Feature feature : features) {
+            final Object value = feature.getValue();
+            if (value != null) {
+              result.add((ParseInterpretation)value);
+            }
+          }
+        }
       }
+    }
+          
+    if (result == null && parseTreeNode.numChildren() == 1) {
+      result = getInterpretations(context, parseTreeNode.getChildren().get(0), featureKey);
     }
 
     return result;

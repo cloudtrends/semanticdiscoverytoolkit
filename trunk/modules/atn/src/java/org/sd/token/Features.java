@@ -43,24 +43,53 @@ public class Features {
   }
 
   /**
+   * Get the number of features.
+   */
+  public int size() {
+    return theFeatures.size();
+  }
+
+  /**
    * Add the feature.
-   * 
+   * <p>
    * Note that this method adds a feature with a lesser priority than all
    * prior features, which is consistent with typical functionality where
    * higher priority features are set before lower priority features. To
    * prioritize a feature differently, use the AddFirst method instead.
+   * <p>
+   * Don't add the feature if it is a duplicate.
+   *
+   * @return true if the feature was added; otherwise, false.
    */
-  public void add(Feature feature) {
-    theFeatures.addLast(feature);
+  public boolean add(Feature feature) {
+    boolean result = false;
+
+    if (!hasFeature(feature)) {
+      theFeatures.addLast(feature);
+      result = true;
+    }
+
+    return result;
   }
 
   /**
    * Add the feature with a greater priority than all other features. Note that
    * GetFirst would return this feature over others matching a constraint, unless
    * another is injected later.
+   * <p>
+   * Don't add the feature if it is a duplicate.
+   *
+   * @return true if the feature was added; otherwise, false.
    */
-  public void addFirst(Feature feature) {
-    theFeatures.addFirst(feature);
+  public boolean addFirst(Feature feature) {
+    boolean result = false;
+
+    if (!hasFeature(feature)) {
+      theFeatures.addFirst(feature);
+      result = true;
+    }
+
+    return result;
   }
 
   /**
@@ -108,6 +137,37 @@ public class Features {
         if (result == null) result = new ArrayList<Feature>();
         result.add(feature);
       }
+    }
+
+    return result;
+  }
+
+  public List<Feature> getFeatures() {
+    return theFeatures;
+  }
+
+  public boolean hasFeature(Feature feature) {
+    boolean result = false;
+
+    if (theFeatures != null) {
+      for (Feature aFeature : theFeatures) {
+        if (includes(aFeature.getType(), feature.getType()) &&
+            includes(aFeature.getValue(), feature.getValue()) &&
+            aFeature.getP() == feature.getP()) {
+          result = true;
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private final boolean includes(Object target, Object candidate) {
+    boolean result = target == candidate;
+
+    if (!result && target != null) {
+      result = target.equals(candidate);
     }
 
     return result;
