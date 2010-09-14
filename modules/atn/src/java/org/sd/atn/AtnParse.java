@@ -22,9 +22,12 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.sd.atn.extract.Extraction;
 import org.sd.atn.extract.ExtractionFactory;
 import org.sd.token.CategorizedToken;
+import org.sd.token.Feature;
+import org.sd.token.Features;
 import org.sd.token.Token;
 import org.sd.util.InputContext;
 import org.sd.util.tree.Tree;
@@ -380,6 +383,27 @@ public class AtnParse {
   }
 
   private Extraction generateExtraction(Tree<String> parseTree) {
+
+    Extraction result = doGenerateExtraction(parseTree);
+
+    // add parse interpretations to the extraction
+    if (result != null) {
+      final List<ParseInterpretation> interps = getParseInterpretations();
+      if (interps != null) {
+        for (ParseInterpretation interp : interps) {
+          final Extraction interpExtraction = buildInterpExtraction(interp);
+          if (interpExtraction != null) {
+            result.addField(interpExtraction);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+    
+
+  private Extraction doGenerateExtraction(Tree<String> parseTree) {
     Extraction result = null;
 
     if (parseTree.hasChildren() && getInputContext() != null) {
@@ -396,7 +420,7 @@ public class AtnParse {
         }
         else {
           // recurse
-          childExtraction = generateExtraction(childTree);
+          childExtraction = doGenerateExtraction(childTree);
         }
 
         if (childExtraction != null) childExtractions.add(childExtraction);
@@ -419,6 +443,29 @@ public class AtnParse {
         }
       }
     }
+
+    // don't really want all token attributes in the following section --
+    // these represent all possible categorizations for the tokens and we've
+    // constrained the possibilities to that which makes sense in the context
+    // of the parse.
+/*
+    // add token attributes if present as extraction fields
+    if (result != null && parseTree.hasAttributes()) {
+      final Map<String, Object> parseAttributes = parseTree.getAttributes();
+      final CategorizedToken cToken = (CategorizedToken) parseAttributes.get(AtnStateUtil.TOKEN_KEY);
+      if (cToken.token.hasFeatures()) {
+        final Features features = cToken.token.getFeatures();
+        final List<Feature> allFeatures = features.getFeatures();
+        for (Feature feature : allFeatures) {
+          final Object featureValue = feature.getValue();
+          if (featureValue != null) {
+            final Extraction featureExtraction = new Extraction(feature.getType(), featureValue.toString());
+            result.addField(featureExtraction);
+          }
+        }
+      }
+    }
+*/
 
     return result;
   }
@@ -466,5 +513,30 @@ public class AtnParse {
     }
 
     return leafExtraction;
+  }
+
+  private Extraction buildInterpExtraction(ParseInterpretation interp) {
+    if (interp == null || interp.getInterpretation() == null) return null;
+
+    final Extraction result = new Extraction("_interp_", interp.toString());
+
+    final Extraction interpClass = new Extraction("class", interp.getInterpretation().getClass().getName());
+    result.addField(interpClass);
+
+    final Map<String, Object> attrs = interp.getCategory2Value();
+    if (attrs != null && attrs.size() > 0) {
+      final Extraction attrsExtraction = new Extraction("_attrs_", "");
+      for (Map.Entry<String, Object> attr : attrs.entrySet()) {
+        final String key = attr.getKey();
+        final Object value = attr.getValue();
+        if (value != null) {
+          final Extraction attrExtr = new Extraction(key, value.toString());
+          attrsExtraction.addField(attrExtr);
+        }
+      }
+      result.addField(attrsExtraction);
+    }
+
+    return result;
   }
 }

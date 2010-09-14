@@ -45,7 +45,9 @@ public abstract class DotMaker {
   private Map<String, Integer> label2id;
   private Map<Pair, String> edge2label;
 
-  private List<String> nodeAttributes;
+  private Map<String, String> nodeAttributes;
+  private Map<String, String> edgeAttributes;
+  private Map<String, String> graphAttributes;
 
   public DotMaker() {
     this.nextId = 0;
@@ -53,17 +55,107 @@ public abstract class DotMaker {
     this.id2ids = new LinkedHashMap<Integer, List<Integer>>();
     this.label2id = new HashMap<String, Integer>();
     this.edge2label = new HashMap<Pair, String>();
+
+    this.nodeAttributes = null;
+    this.edgeAttributes = null;
+    this.graphAttributes = null;
   }
 
   /**
-   * Add a nodeAttribute of the form 'attr=value'.
+   * Set a nodeAttribute.
    */
-  public void addNodeAttribute(String nodeAttribute) {
-    if (nodeAttributes == null) nodeAttributes = new ArrayList<String>();
-    nodeAttributes.add(nodeAttribute);
+  public final void setNodeAttribute(String nodeAttributeKey, String nodeAttributeValue) {
+    if (nodeAttributes == null) nodeAttributes = new LinkedHashMap<String, String>();
+    nodeAttributes.put(nodeAttributeKey, nodeAttributeValue);
   }
 
-  private final int getNextId() {
+  public final String getNodeAttribute(String nodeAttributeKey) {
+    String result = null;
+    if (nodeAttributes != null) {
+      result = nodeAttributes.get(nodeAttributeKey);
+    }
+    return result;
+  }
+
+  public final boolean hasNodeAttribute(String nodeAttributeKey) {
+    return nodeAttributes == null ? false : nodeAttributes.containsKey(nodeAttributeKey);
+  }
+
+  /**
+   * Set a edgeAttribute.
+   */
+  public final void setEdgeAttribute(String edgeAttributeKey, String edgeAttributeValue) {
+    if (edgeAttributes == null) edgeAttributes = new LinkedHashMap<String, String>();
+    edgeAttributes.put(edgeAttributeKey, edgeAttributeValue);
+  }
+
+  public final String getEdgeAttribute(String edgeAttributeKey) {
+    String result = null;
+    if (edgeAttributes != null) {
+      result = edgeAttributes.get(edgeAttributeKey);
+    }
+    return result;
+  }
+
+  public final boolean hasEdgeAttribute(String edgeAttributeKey) {
+    return edgeAttributes == null ? false : edgeAttributes.containsKey(edgeAttributeKey);
+  }
+
+  /**
+   * Set a graphAttribute.
+   */
+  public final void setGraphAttribute(String graphAttributeKey, String graphAttributeValue) {
+    if (graphAttributes == null) graphAttributes = new LinkedHashMap<String, String>();
+    graphAttributes.put(graphAttributeKey, graphAttributeValue);
+  }
+
+  public final String getGraphAttribute(String graphAttributeKey) {
+    String result = null;
+    if (graphAttributes != null) {
+      result = graphAttributes.get(graphAttributeKey);
+    }
+    return result;
+  }
+
+  public final boolean hasGraphAttribute(String graphAttributeKey) {
+    return graphAttributes == null ? false : graphAttributes.containsKey(graphAttributeKey);
+  }
+
+
+  /**
+   * Fix a string for use within a 'record' node.
+   * <p>
+   * This currently replaces special symbols with underscores and new lines
+   * with spaces.
+   */
+  public static String fixRecordString(String string) {
+    if (string == null) return "";
+
+    final StringBuilder result = new StringBuilder();
+
+    // manage symbols "|<>{}" in result
+    final int len = string.length();
+    for (int i = 0; i < len; ++i) {
+      final char c = string.charAt(i);
+      if (c == '|' || c == '<' || c == '>' || c == '{' || c == '}' || c == '"' || c == '\'') {
+        result.append('_');
+      }
+      else if (c == 10) {
+        result.append(' ');
+      }
+      else if (c == 13) {
+        // ignore
+      }
+      else {
+        result.append(c);
+      }
+    }
+    
+    return result.toString();
+  }
+
+
+  protected final int getNextId() {
     return nextId++;
   }
 
@@ -105,18 +197,37 @@ public abstract class DotMaker {
   }
 
   protected void makeHeader(Writer writer) throws IOException {
+    if (!hasGraphAttribute("rankdir")) setGraphAttribute("rankdir", "TB");
+    if (!hasNodeAttribute("shape")) setNodeAttribute("shape", "plaintext");
+
     writer.write("digraph G {\n");
-    writer.write("  rankdir=TB;\n");
-    writer.write("  node [shape=plaintext");
-
-    if (nodeAttributes != null) {
-      for (String nodeAttribute : nodeAttributes) {
-        writer.write(", " + nodeAttribute);
-      }
-    }
-
+    writeAttributeEntries(writer, graphAttributes);
+    writer.write("  node [");
+    writeAttributesList(writer, nodeAttributes, false);
     writer.write("];\n\n");
     //todo: setup for proper formatting
+  }
+
+  protected void writeAttributeEntries(Writer writer, Map<String, String> attributes) throws IOException {
+    for (Map.Entry<String, String> entry : attributes.entrySet()) {
+      writer.write("  ");
+      writeAttributeEntry(entry, writer);
+      writer.write(";\n");
+    }
+  }
+
+  protected void writeAttributesList(Writer writer, Map<String, String> attributes, boolean didOne) throws IOException {
+    for (Map.Entry<String, String> entry : attributes.entrySet()) {
+      if (didOne) writer.write(", ");
+      writeAttributeEntry(entry, writer);
+      didOne = true;
+    }
+  }
+
+  private final void writeAttributeEntry(Map.Entry<String, String> entry, Writer writer) throws IOException {
+    writer.write(entry.getKey());
+    writer.write('=');
+    writer.write(entry.getValue());
   }
 
   protected void makeEdges(Writer writer) throws IOException {
@@ -142,8 +253,15 @@ public abstract class DotMaker {
 
         final StringBuilder edgeString = new StringBuilder();
         edgeString.append(fromNode).append(" -> ").append(toNode);
-        if (edgeLabel != null) {
-          edgeString.append(" [label=\"").append(edgeLabel).append("\"]");
+        if (edgeLabel != null || edgeAttributes != null) {
+          edgeString.append(" [");
+          if (edgeLabel != null) {
+            edgeString.append("label=\"").append(edgeLabel);
+          }
+          if (edgeAttributes != null) {
+            writeAttributesList(writer, edgeAttributes, edgeLabel != null);
+          }
+          edgeString.append("\"]");
         }
         edgeString.append(";\n");
 

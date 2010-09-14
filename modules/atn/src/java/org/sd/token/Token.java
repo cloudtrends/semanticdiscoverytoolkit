@@ -19,6 +19,8 @@
 package org.sd.token;
 
 
+import java.util.List;
+
 /**
  * Container for a token.
  * <p>
@@ -40,6 +42,9 @@ public class Token {
    */
   public Features getFeatures() {
     return features;
+  }
+  public boolean hasFeatures() {
+    return features != null && features.size() > 0;
   }
 
   private String text;
@@ -156,15 +161,33 @@ public class Token {
     Feature result = null;
 
     if (this.features != null) {
-      FeatureConstraint constraint = new FeatureConstraint();
-      constraint.setType(type);
-      constraint.setClassType(source != null ? source.getClass() : null);
-      constraint.setFeatureValueType(featureValueType != null ? featureValueType : null);
-      Feature feature = features.getFirst(constraint);
-      result = feature;
+      final FeatureConstraint constraint = makeConstraint(type, source, featureValueType);
+      result = features.getFirst(constraint);
     }
 
     return result;
+  }
+
+  /**
+   * Convenience method for getting the features.
+   */
+  public List<Feature> getFeatures(String type, Object source, Class featureValueType) {
+    List<Feature> result = null;
+
+    if (this.features != null) {
+      final FeatureConstraint constraint = makeConstraint(type, source, featureValueType);
+      result = features.getFeatures(constraint);
+    }
+
+    return result;
+  }
+
+  private final FeatureConstraint makeConstraint(String type, Object source, Class featureValueType) {
+    FeatureConstraint constraint = new FeatureConstraint();
+    constraint.setType(type);
+    constraint.setClassType(source != null ? source.getClass() : null);
+    constraint.setFeatureValueType(featureValueType != null ? featureValueType : null);
+    return constraint;
   }
 
   /**

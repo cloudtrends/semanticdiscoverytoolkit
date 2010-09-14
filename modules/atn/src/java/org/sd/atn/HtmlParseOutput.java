@@ -171,7 +171,7 @@ public class HtmlParseOutput {
     if (tempDir != null) {
 
       final Tree2Dot<String> tree2dot = new Tree2Dot<String>(theExtraction.getParseTree());
-      tree2dot.addNodeAttribute("fontsize=8");
+      tree2dot.setNodeAttribute("fontsize", "8");
 
       File dotFile = null;
       File dotPng = null;

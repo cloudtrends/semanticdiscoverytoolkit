@@ -23,7 +23,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.sd.cio.MessageHelper;
@@ -58,6 +58,9 @@ public class Extraction implements Publishable {
   protected final void setText(String text) {
     this.text = text;
   }
+  public boolean hasText() {
+    return text != null && !"".equals(text);
+  }
 
 
   private Map<String, List<Extraction>> _fields;
@@ -66,7 +69,7 @@ public class Extraction implements Publishable {
    */
   public Map<String, List<Extraction>> getFields() {
     if (_fields == null) {
-      _fields = new HashMap<String, List<Extraction>>();
+      _fields = new LinkedHashMap<String, List<Extraction>>();
     }
     return _fields;
   }
@@ -203,7 +206,7 @@ public class Extraction implements Publishable {
     final int numFields = dataInput.readInt();
 
     if (numFields > 0) {
-      this._fields = new HashMap<String, List<Extraction>>();
+      this._fields = new LinkedHashMap<String, List<Extraction>>();
 
       for (int fieldNum = 0; fieldNum < numFields; ++fieldNum) {
         final String fieldKey = MessageHelper.readString(dataInput);
