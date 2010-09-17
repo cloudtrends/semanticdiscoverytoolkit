@@ -116,4 +116,16 @@ public interface Tokenizer {
    */
   public InputContext getInputContext();
 
+  /**
+   * Build a token for the identified substring from startPosition (inclusive)
+   * to endPosition (exclusive). Intended for expert use only.
+   * <p>
+   * NOTE: This is an atypical way to create a token as it bypasses the normal
+   *       sequencing but is provided for those rare cases where a specific
+   *       portion of the text is required as a token. The built token's sequence
+   *       number will be -1.
+   * <p>
+   * @return the token or null if the positions are out of range.
+   */
+  public Token buildToken(int startPosition, int endPosition);
 }
