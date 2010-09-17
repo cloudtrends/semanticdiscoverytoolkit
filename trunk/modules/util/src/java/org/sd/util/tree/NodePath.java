@@ -265,6 +265,20 @@ public class NodePath<T> {
     return result.size() > 0 ? result : null;
   }
 
+  /**
+   * Convenience method to get just the first matching node, or null.
+   */
+  public Tree<T> getFirst(Tree<T> node) {
+    Tree<T> result = null;
+
+    final List<Tree<T>> matches = apply(node);
+    if (matches != null && matches.size() > 0) {
+      result = matches.get(0);
+    }
+
+    return result;
+  }
+
   public DataMatcher<T> getDataMatcher(int pathElementNum) {
     final PathElement<T> pathElement = path.get(pathElementNum);
     return pathElement.getDataMatcher();

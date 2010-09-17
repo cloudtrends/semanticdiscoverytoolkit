@@ -175,7 +175,7 @@ public class AtnStateUtil {
 
     if (!parseTreeNode.hasChildren()) parseTreeNode = parseTreeNode.getParent();
     if (parseTreeNode.hasAttributes()) {
-      result = (CategorizedToken)(parseTreeNode.getAttributes().get(TOKEN_KEY));
+      result = (CategorizedToken)(parseTreeNode.getAttributes().get(AtnStateUtil.TOKEN_KEY));
     }
 
     return result;

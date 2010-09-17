@@ -642,6 +642,26 @@ public class Tree<T> {
     }
   }
 
+  public Tree<T> getFirstLeaf() {
+    Tree<T> result = this;
+
+    if (hasChildren()) {
+      result = children.get(0).getFirstLeaf();
+    }
+
+    return result;
+  }
+
+  public Tree<T> getLastLeaf() {
+    Tree<T> result = this;
+
+    if (hasChildren()) {
+      result = children.get(children.size() - 1).getLastLeaf();
+    }
+
+    return result;
+  }
+
 // O(n) impl -- top down
   public Tree<T> getDeepestCommonAncestor(Tree<T> other) {
     if (other == null) return null;

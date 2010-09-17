@@ -477,6 +477,17 @@ public class StandardTokenizer implements Tokenizer {
     return (endPos > 0) ? text.substring(0, endPos) : "";
   }
 
+  public Token buildToken(int startPosition, int endPosition) {
+    Token result = null;
+
+    if (startPosition >= 0 && endPosition <= text.length()) {
+      result = buildToken(startPosition, endPosition, options.getRevisionStrategy(),
+                          0, -1, computeWordCount(startPosition, endPosition));
+    }
+
+    return result;
+  }
+
 
   private int computeWordCount(int startIndex, int endIndex) {
     int result = 0;

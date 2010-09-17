@@ -22,6 +22,8 @@ package org.sd.atn;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import org.sd.util.tree.Tree;
+import org.sd.xml.XmlLite;
 
 /**
  * Container for an interpretation of a parse.
@@ -36,6 +38,9 @@ public class ParseInterpretation implements Serializable {
   private String toStringOverride;
   private Map<String, Object> category2Value;
 
+  //todo: phase out above fields add confidence as attr on tree nodes; add xml accessors
+  private Tree<XmlLite.Data> interpTree;
+
   private transient AtnParse sourceParse;
 
   public ParseInterpretation() {
@@ -46,7 +51,15 @@ public class ParseInterpretation implements Serializable {
     init(classification);
   }
 
+  public ParseInterpretation(Tree<XmlLite.Data> interpTree) {
+    this.interpTree = interpTree;
+
+    init(interpTree.getData().asTag().name);
+  }
+
   private final void init(String classification) {
+    if (this.interpTree == null) this.interpTree = new Tree<XmlLite.Data>(new XmlLite.Tag(classification, false));
+
     this.classification = classification;
     this.interpretation = null;
     this.confidence = 1.0;
@@ -66,6 +79,10 @@ public class ParseInterpretation implements Serializable {
    */
   public AtnParse getSourceParse() {
     return sourceParse;
+  }
+
+  public Tree<XmlLite.Data> getInterpTree() {
+    return this.interpTree;
   }
 
   /**
@@ -88,7 +105,7 @@ public class ParseInterpretation implements Serializable {
    * NOTE: If this interpretation is to be persisted, the Object must be serializable.
    */
   public Object getInterpretation() {
-    return interpretation;
+    return interpretation == null ? (interpTree == null ? classification : interpTree) : interpretation;
   }
 
   /**
