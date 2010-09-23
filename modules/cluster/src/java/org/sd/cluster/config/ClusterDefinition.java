@@ -1206,7 +1206,11 @@ public class ClusterDefinition {
     }
 
     NameNum(String nodeName) {
-      final String[] pieces = nodeName.split("-");
+      final int dashPos = nodeName.lastIndexOf('-');
+      final String[] pieces = (dashPos >= 0) ? new String[] {
+        nodeName.substring(0, dashPos),
+        nodeName.substring(dashPos + 1),
+      } : new String[] { nodeName };
 
       String name = pieces[0];
       int num = 0;
@@ -1219,9 +1223,6 @@ public class ClusterDefinition {
           // assume it was a hyphenated name instead of a node-number.
           name = nodeName;
         }
-      }
-      if (pieces.length > 2) {
-        throw new IllegalStateException("Bad node name '" + nodeName + "'! expected for name-num.");
       }
 
       this.name = name;

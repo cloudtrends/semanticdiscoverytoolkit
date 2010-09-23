@@ -384,7 +384,7 @@ public class AtnParse {
 
   private Extraction generateExtraction(Tree<String> parseTree) {
 
-    Extraction result = doGenerateExtraction(parseTree);
+    Extraction result = doGenerateExtraction(parseTree, -1);
 
     // add parse interpretations to the extraction
     if (result != null) {
@@ -403,7 +403,7 @@ public class AtnParse {
   }
     
 
-  private Extraction doGenerateExtraction(Tree<String> parseTree) {
+  private Extraction doGenerateExtraction(Tree<String> parseTree, int icOffset) {
     Extraction result = null;
 
     if (parseTree.hasChildren() && getInputContext() != null) {
@@ -413,14 +413,28 @@ public class AtnParse {
       for (Tree<String> childTree : parseTree.getChildren()) {
         Extraction childExtraction = null;
 
+        int childOffset = icOffset;
+
+        // get inner token context offset
+        if (childTree.hasAttributes()) {
+          final CategorizedToken innerToken = (CategorizedToken)childTree.getAttributes().get(AtnStateUtil.TOKEN_KEY);
+          if (innerToken != null) {
+            final InputContext inputContext = getInputContext();
+            if (inputContext != null && !inputContext.getText().startsWith(innerToken.token.getTokenizer().getText())) {
+              if (childOffset < 0) childOffset = 0;
+              childOffset += innerToken.token.getStartIndex();
+            }
+          }
+        }
+
         if (!childTree.hasChildren()) {
           // parseTree's child is terminal, so parseTree is the category of the text in childTree
-          childExtraction = buildLeafExtraction(childTree);
+          childExtraction = buildLeafExtraction(childTree, childOffset);
           hasLeafChild = true;
         }
         else {
           // recurse
-          childExtraction = doGenerateExtraction(childTree);
+          childExtraction = doGenerateExtraction(childTree, childOffset);
         }
 
         if (childExtraction != null) childExtractions.add(childExtraction);
@@ -485,7 +499,7 @@ public class AtnParse {
     return result;
   }
 
-  private Extraction buildLeafExtraction(Tree<String> leafNode) {
+  private Extraction buildLeafExtraction(Tree<String> leafNode, int icOffset) {
     final InputContext inputContext = getInputContext();
 
     final CategorizedToken leafCategorizedToken = AtnStateUtil.getCategorizedToken(leafNode);
@@ -499,9 +513,12 @@ public class AtnParse {
 
     final Token leafToken = leafCategorizedToken.token;
     final String leafCategory = leafCategorizedToken.category;
+    final int tokenLen = leafToken.getEndIndex() - leafToken.getStartIndex();
+
+    if (icOffset < 0) icOffset = leafToken.getStartIndex();
 
     final Extraction leafExtraction =
-      extractionFactory.buildLeafExtraction(leafCategory, inputContext, leafToken.getStartIndex(), leafToken.getEndIndex());
+      extractionFactory.buildLeafExtraction(leafCategory, inputContext, icOffset, icOffset + tokenLen);
 
     if (leafExtraction != null && leafCategory != null) {
       final AtnParse innerParse = (AtnParse)leafToken.getFeatureValue(null, null, AtnParse.class);

@@ -205,7 +205,7 @@ public class AtnParseRunner {
 
   public void run() throws IOException {
     final ParseOutputCollector output = buildOutput();
-    final ExtractionGroups extractionGroups = output != null ? new ExtractionGroups(output) : null;
+    final ExtractionGroups extractionGroups = null; //output != null ? new ExtractionGroups(output) : null;
     handleOutput(output, extractionGroups);
   }
 
@@ -242,7 +242,7 @@ public class AtnParseRunner {
       final File outputXmlFile = new File(outputXmlName);
 
       final boolean dumpGroups = options.getBoolean("dumpGroups", true);
-      if (dumpGroups) {
+      if (dumpGroups && extractionGroups != null) {
         // dump extraction groups as xml
         writeExtractionGroupsXml(outputXmlFile, output, extractionGroups);
       }
@@ -300,11 +300,12 @@ public class AtnParseRunner {
     final LinkedHashSet<DomDocument> domDocuments = output.getDomDocuments();
     if (domDocuments != null && domDocuments.size() > 0) {
 
-      final boolean writeMarkup = options.getBoolean("writeMarkup", true);
       final boolean showMarkup = options.getBoolean("showMarkup", false);
+      final boolean writeMarkup = options.getBoolean("writeMarkup", showMarkup);
 
       for (DomDocument domDocument : domDocuments) {
         if (showMarkup || writeMarkup) {
+
           final String outputFile = writeModifiedDocument(domDocument);
 
           if (showMarkup) {
@@ -325,7 +326,9 @@ public class AtnParseRunner {
       else {
         // show brief results
         final boolean numberKeys = options.getBoolean("numberKeys", true);
-        extractionGroups.showExtractionGroups(briefResults, source, numberKeys);
+        if (extractionGroups != null) {
+          extractionGroups.showExtractionGroups(briefResults, source, numberKeys);
+        }
       }
     }
   }
