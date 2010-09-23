@@ -32,9 +32,14 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -285,6 +290,52 @@ public class MessageHelper extends DataHelper {
     // deserialize
     Publishable result = readPublishable(dataIn);
 
+    dataIn.close();
+    return result;
+  }
+
+
+  ////////
+  //
+  // Utility methods for working with intermediate message bytes.
+  //
+  // See also serialize and deserialize methods above.
+  //
+
+  /**
+   * Dump the publishable's bytes to the given file.
+   */
+  public static final void dumpPublishable(File file, Publishable publishable) throws IOException {
+    final FileOutputStream fileStream = new FileOutputStream(file);
+    dumpPublishable(fileStream, publishable);
+    fileStream.close();
+  }
+
+  /**
+   * Dump the publishable's bytes to the given stream.
+   */
+  public static final void dumpPublishable(OutputStream outStream, Publishable publishable) throws IOException {
+    final DataOutputStream dataOut = new DataOutputStream(outStream);
+    MessageHelper.writePublishable(dataOut, publishable);
+    dataOut.close();
+  }
+
+  /**
+   * Load the publishable's bytes from the given file.
+   */
+  public static final Publishable loadPublishable(File file) throws IOException {
+    final FileInputStream fileStream = new FileInputStream(file);
+    final Publishable result = loadPublishable(fileStream);
+    fileStream.close();
+    return result;
+  }
+
+  /**
+   * Load the publishable's bytes from the given stream.
+   */
+  public static final Publishable loadPublishable(InputStream inStream) throws IOException {
+    final DataInputStream dataIn = new DataInputStream(inStream);
+    final Publishable result = MessageHelper.readPublishable(dataIn);
     dataIn.close();
     return result;
   }

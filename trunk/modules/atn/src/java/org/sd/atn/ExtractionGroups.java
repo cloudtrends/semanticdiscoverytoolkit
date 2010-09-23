@@ -572,6 +572,9 @@ public class ExtractionGroups extends PersistablePublishable {
     final List<AtnParseResult> parseResults = output.getParseResults();
     if (parseResults != null) {
       for (AtnParseResult parseResult : parseResults) {
+if (parseResult == parseResults.get(parseResults.size() - 1)) {
+  final boolean stopHere = true;
+}
         final ExtractionContainer extraction = ExtractionContainer.createExtractionContainer(parseResult);
         if (extraction != null) {
           result.add(extraction);

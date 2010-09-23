@@ -176,7 +176,11 @@ public class ClusterRunner {
       String gateway = Admin.getActiveGateway();
       if (gateway == null) gateway = "localhost";  // default
 
-      result = new ClusterDefinition(ExecUtil.getUser(), defName, clusterTree, gateway, machines);
+      String user = null;
+      if (_properties != null) user = _properties.getProperty(ClusterDefinition.CLUSTER_USER_PROPERTY);
+      if (user == null) user = ExecUtil.getUser();
+
+      result = new ClusterDefinition(user, defName, clusterTree, gateway, machines);
     }
 
     return result;

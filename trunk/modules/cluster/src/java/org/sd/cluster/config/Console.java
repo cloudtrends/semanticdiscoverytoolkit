@@ -97,8 +97,25 @@ public class Console {
     this.clusterDef = clusterDef;
     this.consoleClient = makeConsoleClient(identifier);
 
-    final Config config = new Config(99, clusterDef.getUser());
+    final String userName = clusterDef.getUser();
+    final int highestJvmNum = getHighestJvmNum(userName);
+    final Config config = new Config(highestJvmNum, userName);
     this.clusterContext = new ConsoleClusterContext(config, clusterDef);
+  }
+
+  private final int getHighestJvmNum(String userName) {
+    int result = 0;
+
+    final int[] portOverride = ConfigUtil.getPortOverride();
+    if (portOverride != null && portOverride.length > 1) {
+      result = portOverride[1] - portOverride[0];
+    }
+    else {
+      final UsersCsv usersCsv = UsersCsv.getInstance();
+      result = usersCsv.getHighPort(userName) - usersCsv.getLowPort(userName);
+    }
+
+    return result;
   }
 
   public ClusterContext getClusterContext() {

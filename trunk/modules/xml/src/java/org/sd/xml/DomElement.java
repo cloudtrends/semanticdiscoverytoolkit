@@ -20,6 +20,7 @@ package org.sd.xml;
 
 
 import java.util.List;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
@@ -75,6 +76,61 @@ public class DomElement extends DomNode implements Element {
       }
     }
     return _textContent;
+  }
+
+  public StringBuilder asFlatString(StringBuilder result) {
+    if (result == null) result = new StringBuilder();
+    final Tree<XmlLite.Data> xmlTree = asTree();
+    asString(xmlTree, result, -1, -1);
+    return result;
+  }
+
+  public StringBuilder asPrettyString(StringBuilder result, int indentLevel, int indentSpaces) {
+    if (result == null) result = new StringBuilder();
+    final Tree<XmlLite.Data> xmlTree = asTree();
+    asString(xmlTree, result, indentLevel, indentSpaces);
+    return result;
+  }
+
+  private final void asString(Tree<XmlLite.Data> xmlTree, StringBuilder result, int indentLevel, int indentSpaces) {
+    if (xmlTree == null) return;
+
+    final XmlLite.Tag tag = xmlTree.getData().asTag();
+    if (tag != null) {
+      final int indent = (indentLevel >= 0) ? indentLevel * indentSpaces : 0;
+      if (indent >= 0) {
+        if (result.length() > 0 && result.charAt(result.length() - 1) != '\n') result.append('\n');
+        addIndent(result, indent);
+      }
+      result.append(tag.toString());
+
+      if (indent >= 0 && tag.isSelfTerminating()) result.append('\n');
+
+      // recurse on children
+      if (xmlTree.hasChildren()) {
+        final int childIndentLevel = (indentLevel < 0) ? indentLevel : indentLevel + 1;
+        for (Tree<XmlLite.Data> child : xmlTree.getChildren()) {
+          asString(child, result, childIndentLevel, indentSpaces);
+        }
+      }
+
+      // close tag (if necessary)
+      if (!tag.isSelfTerminating()) {
+        if (indent >= 0 && result.charAt(result.length() - 1) == '\n') addIndent(result, indent);
+        result.append("</").append(tag.name).append('>');
+        if (indent >= 0) result.append('\n');
+      }
+    }
+    else {
+      final XmlLite.Text text = xmlTree.getData().asText();
+      if (text != null) {
+        result.append(StringEscapeUtils.escapeHtml(text.text));
+      }
+    }
+  }
+
+  private final void addIndent(StringBuilder result, int indent) {
+    for (int i = 0; i < indent; ++i) result.append(' ');
   }
 
   public NamedNodeMap getAttributes() {

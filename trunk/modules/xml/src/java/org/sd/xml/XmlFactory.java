@@ -82,10 +82,10 @@ public class XmlFactory {
   }
 
   /**
-   * Load the file as a DOM document.
+   * Load the xmlString as a DOM document.
    */
-  public static final DomDocument loadDocument(String xml, boolean htmlFlag) throws IOException {
-    final Tree<XmlLite.Data> domTree = buildXmlTree(xml, true, htmlFlag);
+  public static final DomDocument loadDocument(String xmlString, boolean htmlFlag) throws IOException {
+    final Tree<XmlLite.Data> domTree = buildXmlTree(xmlString, true, htmlFlag);
 
     final DomNode domNode = domTree.getData().asDomNode();
     final DomDocument domDocument = domNode.getOwnerDomDocument();
@@ -95,8 +95,8 @@ public class XmlFactory {
   /**
    * Parse the xml string as a DomNode.
    */
-  public static final DomNode buildDomNode(String xml, boolean htmlFlag) throws IOException {
-    return buildXmlTree(xml, true, htmlFlag).getData().asDomNode();
+  public static final DomNode buildDomNode(String xmlString, boolean htmlFlag) throws IOException {
+    return buildXmlTree(xmlString, true, htmlFlag).getData().asDomNode();
   }
 
 

@@ -112,7 +112,14 @@ public class ConfigUtil {
    * Get the cluster directory path for the current user.
    */
   public static String getClusterPath(String pathFromClusterRoot) {
-    return getClusterRootDir() + pathFromClusterRoot;
+    String rootDir = getClusterRootDir();
+
+    File dir = new File(rootDir);
+    if (!dir.exists()) {
+      rootDir = getClusterDevDir();
+    }
+
+    return rootDir + pathFromClusterRoot;
   }
 
   /**
@@ -135,9 +142,9 @@ public class ConfigUtil {
 
     if (result == null) {
       // return current working dir (or parent if in 'bin')
-      result = new File("").getAbsolutePath() + "/";
+      result = new File("").getAbsolutePath();
       if (result.endsWith("/bin/")) {
-        result = new File("..").getAbsolutePath() + "/";
+        result = new File("..").getAbsolutePath();
       }
 
 //       // try to get relative to this class (NOTE: won't work when we're using the jar!)
@@ -145,6 +152,8 @@ public class ConfigUtil {
 //       final int pos = (result != null) ? result.indexOf("/cluster/") : -1;
 //       result = (pos >= 0) ? result.substring(0, pos + 9) : null;
     }
+
+    if (result.charAt(result.length() - 1) != '/') result += "/";
 
     return result;
   }

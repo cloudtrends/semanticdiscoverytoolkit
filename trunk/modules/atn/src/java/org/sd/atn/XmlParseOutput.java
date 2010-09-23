@@ -23,9 +23,11 @@ import java.util.List;
 import org.sd.util.InputContext;
 import org.sd.util.MathUtil;
 import org.sd.atn.extract.Extraction;
+import org.sd.util.tree.Tree;
 import org.sd.xml.DomContext;
 import org.sd.xml.DomNode;
 import org.sd.xml.DomUtil;
+import org.sd.xml.XmlLite;
 
 /**
  * Utility class for building xml parse output.
@@ -296,7 +298,7 @@ public class XmlParseOutput {
     addParseContext(indentLevel, parse.getParsedText(),
                     parse.getStartIndex(), parse.getEndIndex(),
                     parse.getFullTextLength(), parse.getInputContext());
-    addParseExtraction(parse.getExtraction(), indentLevel);
+    //addParseExtraction(parse.getExtraction(), indentLevel);
 
     //NOTE: multiple interpretations represent semantic ambiguity
     if (interpretations != null) {
@@ -409,6 +411,15 @@ public class XmlParseOutput {
   }
 
   private final void addParseInterpretation(ParseInterpretation interpretation, int indentLevel) {
+    if (interpretation.getInterpTree() == null) {
+      addParseInterpretationNoTree(interpretation, indentLevel);
+    }
+    else {
+      addParseInterpretationTree(interpretation, indentLevel);
+    }
+  }
+
+  private final void addParseInterpretationNoTree(ParseInterpretation interpretation, int indentLevel) {
     int indent = indentLevel * indentSpaces;
     addIndent(output, indent);
     output.append("<interpretation>\n");
@@ -428,6 +439,52 @@ public class XmlParseOutput {
     indent -= indentSpaces;
     addIndent(output, indent);
     output.append("</interpretation>\n");
+  }
+
+  private final void addParseInterpretationTree(ParseInterpretation interpretation, int indentLevel) {
+    int indent = indentLevel * indentSpaces;
+    addIndent(output, indent);
+    output.append("<interpretation>\n");
+
+    final Tree<XmlLite.Data> interpTree = interpretation.getInterpTree();
+    addXmlTree(interpTree, indentLevel + 1);
+
+    addIndent(output, indent);
+    output.append("</interpretation>\n");
+  }
+
+  private final void addXmlTree(Tree<XmlLite.Data> xmlTree, int indentLevel) {
+
+    final XmlLite.Tag tag = xmlTree.getData().asTag();
+    if (tag != null) {
+      final int indent = indentLevel * indentSpaces;
+      if (output.charAt(output.length() - 1) != '\n') output.append('\n');
+      addIndent(output, indent);
+      output.append(tag.toString());
+
+      if (tag.isSelfTerminating()) output.append("\n");
+
+      // recurse on children
+      if (xmlTree.hasChildren()) {
+        for (Tree<XmlLite.Data> child : xmlTree.getChildren()) {
+          addXmlTree(child, indentLevel + 1);
+        }
+      }
+
+
+      // close tag
+      if (!tag.isSelfTerminating()) {
+        if (output.charAt(output.length() - 1) == '\n') addIndent(output, indent);
+        output.append("</").append(tag.name).append(">\n");
+      }
+    }
+    else {
+      final XmlLite.Text text = xmlTree.getData().asText();
+      if (text != null) {
+        output.append(text.text);
+      }
+    }
+
   }
 
   private final void addIndent(StringBuilder result, int indent) {
