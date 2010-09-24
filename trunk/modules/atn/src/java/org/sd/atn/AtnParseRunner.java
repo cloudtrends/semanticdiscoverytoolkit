@@ -203,6 +203,10 @@ public class AtnParseRunner {
   }
 
 
+  public void close() {
+    parseConfig.close();
+  }
+
   public void run() throws IOException {
     final ParseOutputCollector output = buildOutput();
     final ExtractionGroups extractionGroups = null; //output != null ? new ExtractionGroups(output) : null;
@@ -500,5 +504,6 @@ public class AtnParseRunner {
     final DataProperties dataProperties = new DataProperties(args);
     final AtnParseRunner runner = new AtnParseRunner(dataProperties);
     runner.run();
+    runner.close();
   }
 }

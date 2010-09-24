@@ -164,7 +164,7 @@ public class XmlStringBuilder {
       xmlString.append("/>");
     }
     else {
-      xmlString.append('>').append(StringEscapeUtils.escapeHtml(text));
+      xmlString.append('>').append(StringEscapeUtils.escapeXml(text));
 
       if (close) {
         xmlString.append("</").append(getTagName(tag)).append('>');

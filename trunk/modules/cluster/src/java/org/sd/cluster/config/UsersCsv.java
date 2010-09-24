@@ -61,7 +61,9 @@ public class UsersCsv {
   }
   
   public int getLowPort(String userName) {
-    final User user = users.get(userName);
+    User user = users.get(userName);
+
+    if (user == null) user = addUser(userName);
 
     if (user == null) {
       throw new IllegalStateException("User '" + userName + "' is undefined in '" + USERS_CSV_RESOURCE + "'!");
@@ -71,13 +73,26 @@ public class UsersCsv {
   }
 
   public int getHighPort(String userName) {
-    final User user = users.get(userName);
+    User user = users.get(userName);
+
+    if (user == null) user = addUser(userName);
 
     if (user == null) {
       throw new IllegalStateException("User '" + userName + "' is undefined in '" + USERS_CSV_RESOURCE + "'!");
     }
 
     return user.highPort;
+  }
+
+  private final User addUser(String userSpec) {
+    User result = null;
+
+    if (userSpec.indexOf(',') >= 0) {
+      result = new User(userSpec);
+      users.put(result.name, result);
+    }
+
+    return result;
   }
 
   /**

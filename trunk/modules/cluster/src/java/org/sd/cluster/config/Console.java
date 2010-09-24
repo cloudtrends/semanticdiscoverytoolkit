@@ -129,7 +129,8 @@ public class Console {
   private final NodeClient makeConsoleClient(String identifier) {
     NodeClient result = null;
     try {
-      result = new NodeClient("console-client(" + clusterDef.getUser() + "@" + clusterDef.getDefinitionName() + ", " + identifier + ")",
+      result = new NodeClient("console-client(" + clusterDef.getUser() + "@" +
+                              clusterDef.getDefinitionName() + ", " + identifier + ")",
                               InetAddress.getLocalHost(), clusterDef.getNumNodes());
       result.start();
     }

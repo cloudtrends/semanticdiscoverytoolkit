@@ -90,6 +90,12 @@ public class ResourceManager {
     }
   }
 
+  public void close() {
+    for (Object resource : name2resource.values()) {
+      ReflectUtil.invokeMethod(resource, "close", null, null);
+    }
+  }
+
   /**
    * Retrieve or load a resource.
    * <p>

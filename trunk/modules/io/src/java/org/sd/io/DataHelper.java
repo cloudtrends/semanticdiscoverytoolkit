@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -41,12 +42,14 @@ import java.util.Set;
  */
 public class DataHelper {
   
+  public static final Charset UTF_8 = Charset.forName("UTF-8");
+
   public static void writeString(DataOutput dataOutput, String string) throws IOException {
     if (string == null) {
       writeBytes(dataOutput, null);
     }
     else {
-      final byte[] bytes = string.getBytes();
+      final byte[] bytes = string.getBytes(UTF_8);
       writeBytes(dataOutput, bytes);
     }
   }
@@ -61,7 +64,7 @@ public class DataHelper {
     int result = 4;  // size of int
 
     if (string != null) {
-      result += string.getBytes().length;
+      result += string.getBytes(UTF_8).length;
     }
 
     return result;
@@ -72,7 +75,7 @@ public class DataHelper {
 
     final byte[] bytes = readBytes(dataInput);
     if (bytes != null) {
-      result = new String(bytes);
+      result = new String(bytes, UTF_8);
     }
     return result;
   }
