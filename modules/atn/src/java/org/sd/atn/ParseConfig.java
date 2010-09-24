@@ -116,6 +116,11 @@ public class ParseConfig {
   }
 
 
+  public void close() {
+    resourceManager.close();
+  }
+
+
   public String[] getCompoundParserIds() {
     if (compoundParserIds == null) {
       compoundParserIds = id2CompoundParser.keySet().toArray(new String[id2CompoundParser.size()]);

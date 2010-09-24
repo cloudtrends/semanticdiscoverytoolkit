@@ -124,7 +124,7 @@ public class DomElement extends DomNode implements Element {
     else {
       final XmlLite.Text text = xmlTree.getData().asText();
       if (text != null) {
-        result.append(StringEscapeUtils.escapeHtml(text.text));
+        result.append(StringEscapeUtils.escapeXml(text.text));
       }
     }
   }

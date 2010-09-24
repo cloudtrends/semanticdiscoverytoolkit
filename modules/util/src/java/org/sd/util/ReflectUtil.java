@@ -471,4 +471,61 @@ public class ReflectUtil {
 
     return result;
   }
+
+  /**
+   * Find and invoke the method on the object if it exists.
+   * <p>
+   * If result is an array of size 1, then return the return value from
+   * invoking the method in result[0]. Note that if the method returns
+   * "void", the result object (result[0]) will be null.
+   *
+   * @return true if method was found and invoked; otherwise, false.
+   */
+  public static boolean invokeMethod(Object object, String methodName, Object[] params, Object[] result) {
+    if (object == null) return false;
+
+    boolean retval = false;
+
+    Method method = null;
+    Class<?>[] paramTypes = params == null ? null : new Class<?>[params.length];
+
+    if (params != null) {
+      for (int i = 0; i < params.length; ++i) {
+        paramTypes[i] = params[i] == null ? null : params[i].getClass();
+      }
+    }
+
+    final Class<?> theClass = object.getClass();
+
+    try {
+      method = theClass.getMethod(methodName, paramTypes);
+    }
+    catch (NoSuchMethodException nsme) {
+      // just return false
+    }
+    catch (SecurityException se) {
+      // rethrow
+      throw new IllegalArgumentException(theClass.getName() + "." + methodName, se);
+    }
+
+    // invoke
+    if (method != null) {
+      try {
+        final Object invocationResult = method.invoke(object, params);
+        if (result != null && result.length > 0) result[0] = invocationResult;
+        retval = true;
+      }
+      catch (IllegalAccessException iae) {
+        throw new IllegalArgumentException(theClass.getName() + "." + methodName, iae);
+      }
+      catch (InvocationTargetException ite) {
+        throw new IllegalArgumentException(theClass.getName() + "." + methodName, ite);
+      }
+      catch (ExceptionInInitializerError eiie) {
+        throw new IllegalArgumentException(theClass.getName() + "." + methodName, eiie);
+      }
+    }
+
+    return retval;
+  }
 }
