@@ -508,10 +508,6 @@ public class ExtractionGroups extends PersistablePublishable {
           curGroup.add(next);
         }
         else {
-          if ("Esther Kaplan".equals(next.getLocalText())) {
-            final boolean stopHere = true;
-          }
-
           final boolean ambiguity = next.getGlobalStartPosition() == following.getGlobalStartPosition();
           if (ambiguity) {
             curGroup.add(next);
@@ -572,9 +568,6 @@ public class ExtractionGroups extends PersistablePublishable {
     final List<AtnParseResult> parseResults = output.getParseResults();
     if (parseResults != null) {
       for (AtnParseResult parseResult : parseResults) {
-if (parseResult == parseResults.get(parseResults.size() - 1)) {
-  final boolean stopHere = true;
-}
         final ExtractionContainer extraction = ExtractionContainer.createExtractionContainer(parseResult);
         if (extraction != null) {
           result.add(extraction);
