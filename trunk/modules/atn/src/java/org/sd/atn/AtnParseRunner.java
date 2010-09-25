@@ -209,8 +209,10 @@ public class AtnParseRunner {
 
   public void run() throws IOException {
     final ParseOutputCollector output = buildOutput();
-    final ExtractionGroups extractionGroups = null; //output != null ? new ExtractionGroups(output) : null;
-    handleOutput(output, extractionGroups);
+    if (output != null) {
+      final ExtractionGroups extractionGroups = new ExtractionGroups(output);
+      handleOutput(output, extractionGroups);
+    }
   }
 
   public ParseOutputCollector buildOutput() throws IOException {
@@ -232,6 +234,10 @@ public class AtnParseRunner {
           output = parseHtml(new File(inputHtml), diffHtml == null ? null : new File(diffHtml));
         }
       }
+    }
+
+    if (output == null) {
+      System.out.println("WARNING: AtnParseRunner.buildOutput failed to locate parsing option!");
     }
 
     return output;
@@ -503,7 +509,11 @@ public class AtnParseRunner {
 
     final DataProperties dataProperties = new DataProperties(args);
     final AtnParseRunner runner = new AtnParseRunner(dataProperties);
-    runner.run();
-    runner.close();
+    try {
+      runner.run();
+    }
+    finally {
+      runner.close();
+    }
   }
 }

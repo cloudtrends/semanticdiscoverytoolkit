@@ -298,7 +298,7 @@ public class XmlParseOutput {
     addParseContext(indentLevel, parse.getParsedText(),
                     parse.getStartIndex(), parse.getEndIndex(),
                     parse.getFullTextLength(), parse.getInputContext());
-    //addParseExtraction(parse.getExtraction(), indentLevel);
+    addParseExtraction(parse.getExtraction(), indentLevel);
 
     //NOTE: multiple interpretations represent semantic ambiguity
     if (interpretations != null) {

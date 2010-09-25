@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -384,7 +385,8 @@ public class AtnParse {
 
   private Extraction generateExtraction(Tree<String> parseTree) {
 
-    Extraction result = doGenerateExtraction(parseTree, -1);
+    final Map<Token, TokenOffset> offsets = new HashMap<Token, TokenOffset>();
+    Extraction result = doGenerateExtraction(parseTree, offsets);
 
     // add parse interpretations to the extraction
     if (result != null) {
@@ -403,7 +405,7 @@ public class AtnParse {
   }
     
 
-  private Extraction doGenerateExtraction(Tree<String> parseTree, int icOffset) {
+  private Extraction doGenerateExtraction(Tree<String> parseTree, Map<Token, TokenOffset> offsets) {
     Extraction result = null;
 
     if (parseTree.hasChildren() && getInputContext() != null) {
@@ -413,28 +415,14 @@ public class AtnParse {
       for (Tree<String> childTree : parseTree.getChildren()) {
         Extraction childExtraction = null;
 
-        int childOffset = icOffset;
-
-        // get inner token context offset
-        if (childTree.hasAttributes()) {
-          final CategorizedToken innerToken = (CategorizedToken)childTree.getAttributes().get(AtnStateUtil.TOKEN_KEY);
-          if (innerToken != null) {
-            final InputContext inputContext = getInputContext();
-            if (inputContext != null && !inputContext.getText().startsWith(innerToken.token.getTokenizer().getText())) {
-              if (childOffset < 0) childOffset = 0;
-              childOffset += innerToken.token.getStartIndex();
-            }
-          }
-        }
-
         if (!childTree.hasChildren()) {
           // parseTree's child is terminal, so parseTree is the category of the text in childTree
-          childExtraction = buildLeafExtraction(childTree, childOffset);
+          childExtraction = buildLeafExtraction(childTree, offsets);
           hasLeafChild = true;
         }
         else {
           // recurse
-          childExtraction = doGenerateExtraction(childTree, childOffset);
+          childExtraction = doGenerateExtraction(childTree, offsets);
         }
 
         if (childExtraction != null) childExtractions.add(childExtraction);
@@ -484,6 +472,137 @@ public class AtnParse {
     return result;
   }
 
+  //
+  // Recomputing token offsets in relation to the entire (parse) tree requires
+  // updating tokens from prior parsing passes potentially with a subset of
+  // the current input because tokens stored on the parse tree nodes are those
+  // from their original context and the context changes as parses are used
+  // for later passes.
+  //
+  // Recomputing all offsets in relation to the current tree allows for the
+  // parsed tokens to be correlated with the current parse's full input
+  // (through extraction instances.)
+  // 
+
+  private int getStartOffset(Tree<String> parseNode, Map<Token, TokenOffset> offsets, TokenOffset childOffset) {
+    TokenOffset myOffset = null;
+
+    // NOTE: token keyed maps depend on token instance equality, not content equality
+    //       if Token defines "equals" and "hashCode" based on content, then this will
+    //       break!
+
+    if (parseNode != null) {
+
+      final boolean isTerminal = !parseNode.hasChildren();
+
+      if (isTerminal) parseNode = parseNode.getParent(); //token stored in penultimate (from leaf)
+      final CategorizedToken cToken = AtnStateUtil.getCategorizedToken(parseNode);
+      if (cToken != null && cToken.token.getSequenceNumber() >= 0) {  // ignore hardwired cached tokens
+
+        // retrieve or create my (current parseNode's token's) tokenOffset
+        myOffset = offsets.get(cToken.token);
+        if (myOffset == null) {
+          myOffset = new TokenOffset(cToken.token);
+          offsets.put(cToken.token, myOffset);
+        }
+        
+        // update my last child offset
+        myOffset.updateLastChild(childOffset);
+      }
+
+      // walk up the tree
+      if (parseNode.getParent() != null) {
+        getStartOffset(parseNode.getParent(), offsets, myOffset != null ? myOffset : childOffset);
+      }
+    }
+
+    return myOffset == null ? 0 : myOffset.getStart();
+  }
+
+  private static final class TokenOffset {
+    public final Token token;
+    private TokenOffset priorToken;
+    private TokenOffset lastChild;
+    private int newChildStart;
+
+    TokenOffset(Token token) {
+      this.token = token;
+      this.priorToken = null;
+      this.lastChild = null;
+      this.newChildStart = token.getStartIndex();
+    }
+
+    public int getStart() {
+      return token.getStartIndex() + getFirstChildStart();
+    }
+
+    public int getFirstChildStart() {
+      return priorToken == null ? (newChildStart - token.getStartIndex()) : priorToken.getFirstChildStart();
+    }
+
+    public void updateLastChild(TokenOffset curLastChild) {
+      if (curLastChild != null) {
+        if (this.lastChild == null) {
+          // curLastChild will be this instance's first child
+          this.lastChild = curLastChild;
+
+          // update initial "starts" for all descendants
+          // note that we're assuming a depth-first tree traversal
+          setInitialStart(curLastChild, token.getStartIndex());
+        }
+        else {
+          curLastChild.updatePriorPositionWith(this.lastChild);
+          this.lastChild = curLastChild;
+        }
+      }
+    }
+
+    /** In this instance's linear sequence, get the first. */
+    private final TokenOffset getFirstToken() {
+      TokenOffset result = this;
+      while (result.priorToken != null) result = result.priorToken;
+      return result;
+    }
+
+    /** Get this instance's first child token. */
+    private final TokenOffset getFirstChild() {
+      TokenOffset result = null;
+
+      if (lastChild != null) {
+        result = lastChild.getFirstToken();
+      }
+
+      return result;
+    }
+
+    private final void updatePriorPositionWith(TokenOffset newPrior) {
+      // this instance's prior token will be the new prior
+
+      // descend so that child priors are appropriately linked
+      if (newPrior != null && this.lastChild != null && newPrior.lastChild != null) {
+        // my first child's prior will be the new prior's last child
+        final TokenOffset myFirstChild = getFirstChild();
+        myFirstChild.updatePriorPositionWith(newPrior.lastChild);
+      }        
+
+      // set
+      this.priorToken = newPrior;
+    }
+
+    private final void setInitialStart(TokenOffset childOffset, int newStart) {
+      if (childOffset != null) {
+        // back up to the first token in the child's sequence
+        childOffset = childOffset.getFirstToken();
+
+        // set the new start
+        childOffset.newChildStart = newStart;
+
+        // descend
+        setInitialStart(childOffset.lastChild, newStart);
+      }
+    }
+  }
+
   private Extraction buildIntermediateExtraction(Tree<String> parseTree, Extraction firstChildExtraction, Extraction lastChildExtraction) {
     final InputContext inputContext = getInputContext();
 
@@ -499,7 +618,7 @@ public class AtnParse {
     return result;
   }
 
-  private Extraction buildLeafExtraction(Tree<String> leafNode, int icOffset) {
+  private Extraction buildLeafExtraction(Tree<String> leafNode, Map<Token, TokenOffset> offsets) {
     final InputContext inputContext = getInputContext();
 
     final CategorizedToken leafCategorizedToken = AtnStateUtil.getCategorizedToken(leafNode);
@@ -515,10 +634,10 @@ public class AtnParse {
     final String leafCategory = leafCategorizedToken.category;
     final int tokenLen = leafToken.getEndIndex() - leafToken.getStartIndex();
 
-    if (icOffset < 0) icOffset = leafToken.getStartIndex();
+    final int startOffset = getStartOffset(leafNode, offsets, null);
 
     final Extraction leafExtraction =
-      extractionFactory.buildLeafExtraction(leafCategory, inputContext, icOffset, icOffset + tokenLen);
+      extractionFactory.buildLeafExtraction(leafCategory, inputContext, startOffset, startOffset + tokenLen);
 
     if (leafExtraction != null && leafCategory != null) {
       final AtnParse innerParse = (AtnParse)leafToken.getFeatureValue(null, null, AtnParse.class);

@@ -73,12 +73,6 @@ public class XmlTextExtraction extends XmlExtraction {
     // set instance data
     final String fullNodeText = DomUtil.getTrimmedNodeText(adjustedXmlNode);
 
-    final int len = fullNodeText.length();
-    if (adjustedStartIndex[0] < 0 || adjustedStartIndex[0] >= len ||
-        adjustedEndIndex[0] <= adjustedStartIndex[0] || adjustedEndIndex[0] > len) {
-      final boolean stopHere = true;
-    }
-
     setText(fullNodeText.substring(adjustedStartIndex[0], adjustedEndIndex[0]));
 
     setNode(adjustedXmlNode);
