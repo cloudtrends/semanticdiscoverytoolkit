@@ -143,7 +143,7 @@ public class ConfigUtil {
     if (result == null) {
       // return current working dir (or parent if in 'bin')
       result = new File("").getAbsolutePath();
-      if (result.endsWith("/bin/")) {
+      if (result.endsWith("/bin/") || result.endsWith("/bin")) {
         result = new File("..").getAbsolutePath();
       }
 
