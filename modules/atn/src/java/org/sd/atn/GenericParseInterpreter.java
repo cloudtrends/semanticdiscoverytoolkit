@@ -397,7 +397,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
     }
 
     protected Tree<XmlLite.Data> doGetInterpretationValue(Tree<String> parseTreeNode) {
-      return new Tree<XmlLite.Data>(new XmlLite.Text(parseTreeNode.getLeafText()));
+      return XmlLite.createTextNode(parseTreeNode.getLeafText());
     }
   }
 
@@ -429,7 +429,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
 
       final Object value = feature.getValue();
       if (value != null) {
-        result = new Tree<XmlLite.Data>(new XmlLite.Text(value.toString()));
+        result = XmlLite.createTextNode(value.toString());
       }
 
       return result;
@@ -446,7 +446,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
       Tree<XmlLite.Data> result = null;
 
       //NOTE: only getting the *first* matching feature!
-      result = new Tree<XmlLite.Data>(new XmlLite.Text(cToken.token.getText()));
+      result = XmlLite.createTextNode(cToken.token.getText());
 
       return result;
     }
@@ -468,7 +468,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
         final Map<String, Object> parseAttributes = parseTreeNode.getAttributes();
         final Object value = parseAttributes.get(attr);
         if (value != null) {
-          result = new Tree<XmlLite.Data>(new XmlLite.Text(value.toString()));
+          result = XmlLite.createTextNode(value.toString());
         }
       }
 
@@ -585,7 +585,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
         // apply to final interpretation tree; fail/reject interpretation if any are not optional
         final List<IsOptionalFunction> optionalFunctions = new ArrayList<IsOptionalFunction>();
 
-        final Tree<XmlLite.Data> interp = new Tree<XmlLite.Data>(new XmlLite.Tag(name, false));
+        final Tree<XmlLite.Data> interp = XmlLite.createTagNode(name);
 
         for (Field field : fields) {
           field.buildInterpretationTree(parseTreeNode, interp, optionalFunctions);
@@ -667,7 +667,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
             }
           }
 
-          final Tree<XmlLite.Data> interpNodeChild = select == null ? interpNode : interpNode.addChild(new XmlLite.Tag(name, false));
+          final Tree<XmlLite.Data> interpNodeChild = select == null ? interpNode : interpNode.addChild(XmlLite.createTagNode(name));
 
           if (valueFunction != null) {
             // add interp value

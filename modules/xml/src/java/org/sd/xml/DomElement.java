@@ -97,7 +97,7 @@ public class DomElement extends DomNode implements Element {
 
     final XmlLite.Tag tag = xmlTree.getData().asTag();
     if (tag != null) {
-      final int indent = (indentLevel >= 0) ? indentLevel * indentSpaces : 0;
+      final int indent = (indentLevel >= 0) ? indentLevel * indentSpaces : -1;
       if (indent >= 0) {
         if (result.length() > 0 && result.charAt(result.length() - 1) != '\n') result.append('\n');
         addIndent(result, indent);

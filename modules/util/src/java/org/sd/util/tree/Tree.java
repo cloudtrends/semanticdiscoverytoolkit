@@ -473,12 +473,13 @@ public class Tree<T> {
     return result;
   }
 
-  public void addChild(Tree<T> child) {
+  public Tree<T> addChild(Tree<T> child) {
     if (children == null) {
       children = new ArrayList<Tree<T>>();
     }
     children.add(child);
     child.parent = this;
+    return child;
   }
 
   /**
