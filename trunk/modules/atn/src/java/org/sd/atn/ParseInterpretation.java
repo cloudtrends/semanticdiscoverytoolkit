@@ -58,7 +58,7 @@ public class ParseInterpretation implements Serializable {
   }
 
   private final void init(String classification) {
-    if (this.interpTree == null) this.interpTree = new Tree<XmlLite.Data>(new XmlLite.Tag(classification, false));
+    if (this.interpTree == null) this.interpTree = XmlLite.createTagNode(classification);
 
     this.classification = classification;
     this.interpretation = null;

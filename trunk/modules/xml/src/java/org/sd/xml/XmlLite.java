@@ -226,6 +226,18 @@ public class XmlLite {
     return bytes.toString("UTF-8");
   }
 
+  public static Tree<XmlLite.Data> createTagNode(String tag) {
+    final Tree<XmlLite.Data> result = new Tree<XmlLite.Data>(new XmlLite.Tag(tag, false));
+    result.getData().setContainer(result);
+    return result;
+  }
+
+  public static Tree<XmlLite.Data> createTextNode(String text) {
+    final Tree<XmlLite.Data> result = new Tree<XmlLite.Data>(new XmlLite.Text(text));
+    result.getData().setContainer(result);
+    return result;
+  }
+
   public static Set<String> buildTagSet(String[] tags) {
     final Set<String> result = new HashSet<String>();
     for (String tag : tags) result.add(tag);
