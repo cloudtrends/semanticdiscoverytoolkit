@@ -55,6 +55,23 @@ public class DataHelper {
   }
 
   /**
+   * Get a string's publishable bytes.
+   */
+  public static final byte[] getStringBytes(String string) throws IOException {
+    final ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+    final DataOutputStream dataOut = new DataOutputStream(bytesOut);
+
+    // serialize
+    writeString(dataOut, string);
+
+    dataOut.close();
+    final byte[] result = bytesOut.toByteArray();
+    bytesOut.close();
+
+    return result;
+  }
+
+  /**
    * Get the number of bytes needed to serialize this string.
    * <p>
    * The amount of overhead is the size of an int plus the number of bytes
