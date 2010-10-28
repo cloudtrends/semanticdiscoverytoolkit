@@ -587,11 +587,12 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
 
         final Tree<XmlLite.Data> interp = XmlLite.createTagNode(name);
 
+        final boolean[] gotOne = new boolean[]{false};
         for (Field field : fields) {
-          field.buildInterpretationTree(parseTreeNode, interp, optionalFunctions);
+          final Tree<XmlLite.Data> fieldTree = field.buildInterpretationTree(parseTreeNode, interp, optionalFunctions, gotOne);
         }
 
-        if (interp != null) {
+        if (gotOne[0] && interp != null) {
           result = interp;
 
           for (IsOptionalFunction isOptionalFunction : optionalFunctions) {
@@ -653,7 +654,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
      * Recursive auxiliary for building an interpretation tree.
      */
     private final Tree<XmlLite.Data> buildInterpretationTree(Tree<String> parseTreeNode, Tree<XmlLite.Data> interpNode,
-                                                             List<IsOptionalFunction> optionalFunctions) {
+                                                             List<IsOptionalFunction> optionalFunctions, boolean[] gotOne) {
       Tree<XmlLite.Data> result = null;
 
       final List<Tree<String>> selectedParseTreeNodes = getSelectedParseTreeNodes(parseTreeNode);
@@ -674,12 +675,13 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
             final Tree<XmlLite.Data> interpValueNode = valueFunction.getInterpretationValue(selectedParseTreeNode);
             if (interpValueNode != null) {
               interpNodeChild.addChild(interpValueNode);
+              gotOne[0] = true;
             }
           }
           else {
             // recurse for nested fields
             for (Field field : children) {
-              field.buildInterpretationTree(selectedParseTreeNode, interpNodeChild, optionalFunctions);
+              field.buildInterpretationTree(selectedParseTreeNode, interpNodeChild, optionalFunctions, gotOne);
             }
           }
         }
