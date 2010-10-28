@@ -47,26 +47,29 @@ public class FileUtil {
    * @return true if files successfully deleted.
    */
   public static boolean deleteFiles(String dirName) {
-    return deleteDir(getFile(dirName), false);
+    return deleteDir(getFile(dirName), false, null);
   }
 
   public static boolean deleteDirContents(File dir) {
-    return deleteDir(dir, false);
+    return deleteDir(dir, false, null);
   }
 
   public static boolean deleteDir(File dir) {
-    return deleteDir(dir, true);
+    return deleteDir(dir, true, null);
   }
 
-  private static boolean deleteDir(File dir, boolean includeThisDir) {
+  public static boolean deleteDir(File dir, boolean includeThisDir, FilenameFilter exceptions) {
 
     boolean success = true;
+
+    if (includeThisDir && exceptions != null && exceptions.accept(dir, dir.getName())) return success;
+
     if (dir.exists()) {
       if (dir.isDirectory()) {
         final File[] files = dir.listFiles();
         if (files != null) {
           for (File file : files) {
-            success &= deleteDir(file, true);
+            success &= deleteDir(file, true, exceptions);
           }
         }
 
