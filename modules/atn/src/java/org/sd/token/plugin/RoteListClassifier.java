@@ -124,7 +124,7 @@ public class RoteListClassifier extends AbstractTokenClassifier {
       if (!caseSensitive) termText = termText.toLowerCase();
 
       if (terms != null) {
-        terms.add(termText);
+        addTerms(termText, terms);
       }
 
       if (term2attributes != null) {
@@ -156,7 +156,7 @@ public class RoteListClassifier extends AbstractTokenClassifier {
         final String[] lineFields = line.trim().split("\t");
         final String term = (!caseSensitive) ? lineFields[0].toLowerCase() : lineFields[0];
         if (term.length() >= minChars) {
-          if (terms != null) terms.add(term);
+          if (terms != null) addTerms(term, terms);
           if (term2attributes != null) {
             Map<String, String> termAttributes = null;
             if (lineFields.length > 1) {
@@ -177,6 +177,16 @@ public class RoteListClassifier extends AbstractTokenClassifier {
     }
     catch (IOException e) {
       throw new IllegalStateException(e);
+    }
+  }
+
+  private final void addTerms(String termText, Set<String> terms) {
+    terms.add(termText);
+    if (termText.indexOf(' ') > 0) {
+      final String[] pieces = termText.split(" ");
+      for (String piece : pieces) {
+        terms.add(piece);
+      }
     }
   }
 }

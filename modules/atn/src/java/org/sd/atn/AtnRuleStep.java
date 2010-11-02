@@ -37,6 +37,20 @@ public class AtnRuleStep {
     return category;
   }
 
+  private String require;
+  /**
+   * If non-null, this indicates that a rule step only applies if the specified
+   * constituent or category has been matched. This aids in disabling
+   * superfluous extraneous parses when the step's category could have beeen
+   * matched in a prior constituent followed by a missing optional constituent,
+   * which leads to this step. Specifying the optional constituent as required
+   * for this step ensures that the extraneous parse with this step's category
+   * is not redundantly generated when the optional constituent is missing.
+   */
+  public String getRequire() {
+    return require;
+  }
+
   private boolean isOptional;
   public boolean isOptional() {
     return isOptional;
@@ -85,6 +99,7 @@ public class AtnRuleStep {
 
   AtnRuleStep(DomElement stepElement, ResourceManager resourceManager) {
     this.category = stepElement.getLocalName();
+    this.require = stepElement.getAttributeValue("require", null);
     this.isOptional = stepElement.getAttributeBoolean("optional", false);
     this.repeats = stepElement.getAttributeBoolean("repeats", false);
     this.isTerminal = stepElement.getAttributeBoolean("terminal", false);
