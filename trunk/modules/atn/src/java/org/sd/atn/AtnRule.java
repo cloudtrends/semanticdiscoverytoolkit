@@ -75,7 +75,7 @@ public class AtnRule {
     // RuleElement is of the form:
     //
     // <ruleName start='' tokenFilter='tokenFilterId' id='ruleId'>
-    //   <ruleStep optional='' repeats='' terminal=''>
+    //   <ruleStep require='' optional='' repeats='' terminal=''>
     //     <postdelim><disallowall|allowall|disallow|allow /></postdelim>
     //     <predelim><disallowall|allowall|disallow|allow /></predelim>
     //     <test>
@@ -116,5 +116,15 @@ public class AtnRule {
 
   boolean isTerminal(int stepNum) {
     return isLast(stepNum) || steps.get(stepNum).isTerminal();
+  }
+
+  AtnRuleStep getStep(int stepNum) {
+    AtnRuleStep result = null;
+
+    if (stepNum >= 0 && stepNum < steps.size()) {
+      return steps.get(stepNum);
+    }
+
+    return result;
   }
 }

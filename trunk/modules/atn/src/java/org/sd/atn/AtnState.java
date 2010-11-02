@@ -221,14 +221,18 @@ public class AtnState {
     AtnState result = null;
 
     if (!rule.isLast(stepNum)) {
-      if (incToken && !getRuleStep().consumeToken()) incToken = false;
+      final int nextStepNum = getNextStepNum();
+      if (nextStepNum >= 0) {
 
-      final Token nextToken = incToken ? getNextToken(stopList) : this.inputToken;
-      if (nextToken != null) {
-        result =
-          new AtnState(
-            nextToken, rule, stepNum + 1,
-            curStateNode, parseOptions, repeatNum, 0, pushState);
+        if (incToken && !getRuleStep().consumeToken()) incToken = false;
+
+        final Token nextToken = incToken ? getNextToken(stopList) : this.inputToken;
+        if (nextToken != null) {
+          result =
+            new AtnState(
+              nextToken, rule, nextStepNum,
+              curStateNode, parseOptions, repeatNum, 0, pushState);
+        }
       }
     }
 
@@ -260,11 +264,14 @@ public class AtnState {
 
     if (getRuleStep().isOptional()) {
       if (!rule.isLast(stepNum)) {
-        // increment step
-        result =
-          new AtnState(
-            inputToken, rule, stepNum + 1,
-            parentStateNode, parseOptions, 0, 0, pushState);
+        final int nextStepNum = getNextStepNum();
+        if (nextStepNum >= 0) {
+          // increment step
+          result =
+            new AtnState(
+              inputToken, rule, nextStepNum,
+              parentStateNode, parseOptions, 0, 0, pushState);
+        }
       }
       // else, return null and let caller add Pop state
     }
@@ -304,7 +311,68 @@ public class AtnState {
     return _nextToken;
   }
 
-  private Token computeNextToken(Token inputToken) {
+  /**
+   * Get the next step num or -1 if there isn't another step after all.
+   */
+  private final int getNextStepNum() {
+    int result = stepNum + 1;
+
+    // check the step's 'require' attribute
+    while (true) {
+      final AtnRuleStep step = rule.getStep(result);
+      if (step == null) {
+        result = -1;
+        break;
+      }
+      final String require = step.getRequire();
+      if (require == null) break;
+      else {
+        // if require is met, we're done
+        if (haveRequired(require)) {
+          break;
+        }
+
+        // if require isn't met, increment and loop
+        else {
+          ++result;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private final boolean haveRequired(String require) {
+    boolean result = false;
+
+    for (AtnState curState = this; curState != null; curState = curState.getParentState()) {
+
+      // quit when pushState is reached
+      if (curState == pushState) break;
+
+      // check for 'require' on states with the same pushState
+      if (curState.pushState == this.pushState) {
+        if (require.equals(curState.getRuleStep().getCategory()) && curState.getMatched()) {
+          result = true;
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private final AtnState getParentState() {
+    AtnState result = null;
+
+    if (parentStateNode != null) {
+      result = parentStateNode.getData();
+    }
+
+    return result;
+  }
+
+  private final Token computeNextToken(Token inputToken) {
     Token result = null;
 
     // get the next token without crossing a hard break boundary

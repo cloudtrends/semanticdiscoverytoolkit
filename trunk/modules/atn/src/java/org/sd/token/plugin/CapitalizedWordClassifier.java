@@ -67,7 +67,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
           if ("textfile".equals(curNodeName)) {
             loadTextFile(curElement, stopWords, null);
           }
-          else if ("terms".equals(curNodeName)) {  // fix this to be "terms", use super
+          else if ("terms".equals(curNodeName)) {
             loadTerms(curElement, stopWords, null);
           }
         }
