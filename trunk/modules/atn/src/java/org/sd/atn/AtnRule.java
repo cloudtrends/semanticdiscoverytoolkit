@@ -75,7 +75,7 @@ public class AtnRule {
     // RuleElement is of the form:
     //
     // <ruleName start='' tokenFilter='tokenFilterId' id='ruleId'>
-    //   <ruleStep require='' optional='' repeats='' terminal=''>
+    //   <ruleStep require='' optional='' repeats='' terminal='' skip=''>
     //     <postdelim><disallowall|allowall|disallow|allow /></postdelim>
     //     <predelim><disallowall|allowall|disallow|allow /></predelim>
     //     <test>

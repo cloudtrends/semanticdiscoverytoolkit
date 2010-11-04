@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import org.sd.util.tree.Tree;
+import org.sd.xml.DomElement;
 import org.sd.xml.XmlLite;
 
 /**
@@ -83,6 +84,19 @@ public class ParseInterpretation implements Serializable {
 
   public Tree<XmlLite.Data> getInterpTree() {
     return this.interpTree;
+  }
+
+  public String getInterpXml() {
+    String result = null;
+
+    if (interpTree != null) {
+      final StringBuilder builder = new StringBuilder();
+      final DomElement domElement = (DomElement)(interpTree.getData().asDomNode());
+      domElement.asFlatString(builder);
+      result = builder.toString();
+    }
+
+    return result;
   }
 
   /**

@@ -208,7 +208,7 @@ public class ParseOutputCollector {
         final List<ParseInterpretation> interpretations = parse.getParseInterpretations();
         final Extraction extraction = parse.getExtraction();
 
-        System.out.println(" Parse #" + parseNum + " has " + interpretations.size() + " interpretations.");
+        System.out.println(" IParse #" + parseNum + " has " + interpretations.size() + " interpretations.");
         System.out.println("        Text: " + parse.getParsedText());
         System.out.println("     Context: " + parse.getInputContext().toString());
         System.out.println("   ParseTree: " + parse.getParseTree().toString());
@@ -216,10 +216,16 @@ public class ParseOutputCollector {
 
         int interpNum = 1;
         for (ParseInterpretation interpretation : interpretations) {
+          final String interpXml = interpretation.getInterpXml();
+
           System.out.println("  Interpretation #" + interpNum + " = " + interpretation.toString());
+          if (interpXml != null) System.out.println("\tinterpXml=" + interpXml);
+          ++interpNum;
         }
 
         System.out.println();
+
+        ++parseNum;
       }
     }
   }
