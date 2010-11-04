@@ -282,7 +282,7 @@ public class AtnState {
   AtnState getNextSkippedState(Tree<AtnState> curStateNode, Set<Integer> stopList) {
     AtnState result = null;
 
-    if (skipNum < parseOptions.getSkipTokenLimit()) {
+    if (skipNum < parseOptions.getSkipTokenLimit() || skipNum < getRuleStep().getSkip()) {
       // increment the token, not the rule step
       final Token nextToken = getNextToken(stopList);
       if (nextToken != null) {
@@ -452,6 +452,73 @@ public class AtnState {
   }
 
 
+  private final boolean matchesRulePath(AtnState other) {
+    if (other == null) return false;
+    if (this == other) return true;
+
+    boolean result = false;
+
+    if (rule == other.getRule() &&
+        stepNum == other.getStepNum() &&
+        repeatNum == other.getRepeatNum()) {
+
+      if (parentStateNode == other.getParentStateNode()) {
+        result = true;
+      }
+      else if (parentStateNode != null && other.getParentStateNode() != null) {
+        final AtnState parentState = parentStateNode.getData();
+        final AtnState otherParentState = other.getParentStateNode().getData();
+
+        if (parentState == otherParentState) {
+          result = true;
+        }
+        else if (parentState != null) {
+          result = parentState.matchesRulePath(otherParentState);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private final boolean priorSiblingSucceeded() {
+    boolean result = false;
+
+    if (parentStateNode != null && parentStateNode.hasChildren()) {
+      for (Tree<AtnState> sibStateNode : parentStateNode.getChildren()) {
+        final AtnState sibState = sibStateNode.getData();
+        if (sibState == this) break;
+        if (sibState.isSkipped()) continue;
+        if (sibState.hasSuccess()) {
+          result = true;
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private final boolean hasSuccess() {
+    boolean result = false;
+
+    if (parentStateNode != null) {
+      final List<Tree<AtnState>> terminals = parentStateNode.gatherLeaves();
+      if (terminals != null) {
+        for (Tree<AtnState> terminal : terminals) {
+          final AtnState terminalState = terminal.getData();
+          if (terminalState != null && terminal.getData().getMatched() && !terminalState.isSkipped()) {
+            result = true;
+            break;
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+
   static List<CategorizedToken> computeTokens(Tree<AtnState> stateNode) {
     final List<CategorizedToken> result = new ArrayList<CategorizedToken>();
     final LinkedList<Tree<AtnState>> stateNodes = stateNode.getRootPath();
@@ -472,6 +539,9 @@ public class AtnState {
 
     while (states.size() > 0 && !result) {
       final AtnState curstate = states.removeFirst();
+
+      // if curstate is marked as skip and a prior non-skipped sibling succeeded, ignore
+      if (curstate.isSkipped() && curstate.priorSiblingSucceeded()) continue;
 
       boolean success = false;
       boolean matches = curstate.tokenMatchesStepCategory(grammar);
@@ -511,7 +581,7 @@ public class AtnState {
     if (foundOne) {
       nextstate = curstate.getNextRepeatState(nextStateNode, isPop ? curstate : null, inc, stopList);
       if (nextstate != null) {
-        states.addLast(nextstate);
+        addState(states, nextstate);
 
         if (nextstate.getRuleStep().isOptional() && nextstate.isRuleEnd()) {
           // is optional end, so pop rule
@@ -525,21 +595,25 @@ public class AtnState {
 
       nextstate = curstate.getNextStepState(nextStateNode, inc, stopList);
       if (nextstate != null) {
-        states.addLast(nextstate);
+        addState(states, nextstate);
       }
+
+      // revise token
+      nextstate = curstate.getNextRevisedState();
+      if (nextstate != null) { addState(states, nextstate); foundOne = true; }
 
       return foundOne;
     }
 
     // revise token
     nextstate = curstate.getNextRevisedState();
-    if (nextstate != null) { states.addLast(nextstate); foundOne = true; }
+    if (nextstate != null) { addState(states, nextstate); foundOne = true; }
 
     // account for optional step.
     if (curstate.getRuleStep().isOptional() && !curstate.isRepeat()) {
       nextstate = curstate.getSkipOptionalState();
       if (nextstate != null) {
-        states.addLast(nextstate); foundOne = true;
+        addState(states, nextstate); foundOne = true;
       }
     }
 
@@ -548,16 +622,30 @@ public class AtnState {
     if (grammar.getCat2Rules().containsKey(category)) {
       foundOne = true;
       for (AtnRule rule : grammar.getCat2Rules().get(category)) {
-        states.addLast(new AtnState(curstate.getInputToken(), rule, 0, nextStateNode, curstate.parseOptions, 0, 0, curstate));
+        addState(states, new AtnState(curstate.getInputToken(), rule, 0, nextStateNode, curstate.parseOptions, 0, 0, curstate));
       }
     }
 
     // skip tokens
     if (!foundOne) {
       nextstate = curstate.getNextSkippedState(nextStateNode, stopList);
-      if (nextstate != null) states.addLast(nextstate);
+      if (nextstate != null) addState(states, nextstate);
     }
 
     return foundOne;
+  }
+
+  private static final void addState(LinkedList<AtnState> states, AtnState nextstate) {
+    boolean isDup = false;
+
+    final Token token = nextstate.getInputToken();
+    for (AtnState state : states) {
+      if (token == state.getInputToken() && nextstate.matchesRulePath(state)) {
+        isDup = true;
+        break;
+      }
+    }
+
+    if (!isDup) states.addLast(nextstate);
   }
 }

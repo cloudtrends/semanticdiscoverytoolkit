@@ -96,6 +96,11 @@ public class AtnRuleStep {
     return ignoreToken;
   }
 
+  private int skip;
+  public int getSkip() {
+    return skip;
+  }
+
 
   AtnRuleStep(DomElement stepElement, ResourceManager resourceManager) {
     this.category = stepElement.getLocalName();
@@ -105,6 +110,7 @@ public class AtnRuleStep {
     this.isTerminal = stepElement.getAttributeBoolean("terminal", false);
     this.consumeToken = stepElement.getAttributeBoolean("consumeToken", true);
     this.ignoreToken = stepElement.getAttributeBoolean("ignoreToken", false);
+    this.skip = stepElement.getAttributeInt("skip", 0);
     final boolean clusterFlag = stepElement.getAttributeBoolean("cluster", false);
 
     final DomElement postDelimElement = (DomElement)stepElement.selectSingleNode("postdelim");

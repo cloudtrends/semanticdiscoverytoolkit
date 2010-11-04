@@ -174,13 +174,13 @@ public class DomElement extends DomNode implements Element {
   }
 
   public String getAttributeValue(String attributeName, String defaultValue) {
-    String result = defaultValue;
+    String result = null;
 
     if (hasAttributes()) {
       result = backref.asTag().attributes.get(attributeName);
     }
 
-    return result;
+    return result == null ? defaultValue : result;
   }
 
   public boolean getAttributeBoolean(String attributeName) {

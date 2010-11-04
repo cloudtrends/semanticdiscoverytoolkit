@@ -668,21 +668,24 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
             }
           }
 
-          final Tree<XmlLite.Data> interpNodeChild = select == null ? interpNode : interpNode.addChild(XmlLite.createTagNode(name));
-
           if (valueFunction != null) {
             // add interp value
             final Tree<XmlLite.Data> interpValueNode = valueFunction.getInterpretationValue(selectedParseTreeNode);
             if (interpValueNode != null) {
+              final Tree<XmlLite.Data> interpNodeChild = select == null ? interpNode : interpNode.addChild(XmlLite.createTagNode(name));
               interpNodeChild.addChild(interpValueNode);
               gotOne[0] = true;
             }
           }
           else {
+            final Tree<XmlLite.Data> interpNodeChild = select == null ? interpNode : XmlLite.createTagNode(name);
+
             // recurse for nested fields
             for (Field field : children) {
               field.buildInterpretationTree(selectedParseTreeNode, interpNodeChild, optionalFunctions, gotOne);
             }
+
+            if (gotOne[0] && select != null) interpNode.addChild(interpNodeChild);
           }
         }
       }

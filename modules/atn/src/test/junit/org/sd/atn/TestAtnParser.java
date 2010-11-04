@@ -33,7 +33,6 @@ import org.sd.token.StandardTokenizerFactory;
 import org.sd.token.StandardTokenizerOptions;
 import org.sd.token.Tokenizer;
 import org.sd.util.tree.Tree;
-import org.sd.util.tree.TreeBuilderFactory;
 import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
 import org.sd.xml.XmlFactory;
@@ -378,7 +377,7 @@ public class TestAtnParser extends TestCase {
                    "(A (B C) (B C C))",
                    "(A (B C C) (B C))",
                    "(A (B C C C))",
-                 });
+                   });
   }
 
   public void testClustering() throws IOException {
@@ -522,6 +521,111 @@ public class TestAtnParser extends TestCase {
                  });
   }
 
+  public void testLenghtenToken() throws IOException {
+    // D <- H Y
+    final AtnParser test13_Parser = buildParser("<grammar><classifiers><H><jclass>org.sd.token.plugin.RoteListClassifier</jclass><terms><term>Easter</term><term>Easter Sunday</term></terms></H></classifiers><rules><D start='true'><H/><Y/></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer13a = buildTokenizer("<tokenizer><revisionStrategy>SL</revisionStrategy></tokenizer>", "Easter Y");
+    runParseTest("ParserTest.13a",
+                 test13_Parser,
+                 tokenizer13a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(D (H Easter) Y)"
+                 });
+
+    final StandardTokenizer tokenizer13b = buildTokenizer("<tokenizer><revisionStrategy>SL</revisionStrategy></tokenizer>", "Easter Sunday Y");
+    runParseTest("ParserTest.13b",
+                 test13_Parser,
+                 tokenizer13b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(D (H Easter Sunday) Y)"
+                 });
+  }
+
+  public void testRuleStepSkip() throws IOException {
+    //
+    // X <- A Y? E(s2)
+    // Y <- B C(s1) D
+    //
+    // A B C D U E  (succeed)
+    // A B C D U U E  (succeed)
+    // A B U C D U U E  (succeed)
+    //
+    // A B U U C D E  (fail)
+    // A B C D U U U E  (fail)
+    //
+    // A B D E  (succeed with B,D unknown)
+    // A B D U E  (B,D unknown; U fails due to exceeding limit)
+    //
+    final AtnParser test14_Parser = buildParser("<grammar><rules><X start='true'><A/><Y optional='true'/><E skip='2'/></X><Y><B/><C skip='1'/><D/></Y></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer14a = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B C D U E");
+
+    runParseTest("ParserTest.14a",
+                 test14_Parser,
+                 tokenizer14a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X A (Y B C D) (? U) E)",
+                 });
+
+    final StandardTokenizer tokenizer14b = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B C D U U E");
+
+    runParseTest("ParserTest.14b",
+                 test14_Parser,
+                 tokenizer14b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X A (Y B C D) (? U) (? U) E)",
+                 });
+
+    final StandardTokenizer tokenizer14c = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B U C D U U E");
+
+    runParseTest("ParserTest.14c",
+                 test14_Parser,
+                 tokenizer14c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X A (Y B (? U) C D) (? U) (? U) E)",
+                 });
+
+    final StandardTokenizer tokenizer14d = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B U U C D E");
+
+    runParseTest("ParserTest.14d",
+                 test14_Parser,
+                 tokenizer14d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer14e = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B C D U U U E");
+
+    runParseTest("ParserTest.14e",
+                 test14_Parser,
+                 tokenizer14e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer14f = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B D E");
+
+    runParseTest("ParserTest.14f",
+                 test14_Parser,
+                 tokenizer14f,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X A (? B) (? D) E)",
+                 });
+
+    final StandardTokenizer tokenizer14g = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B D U E");
+
+    runParseTest("ParserTest.14g",
+                 test14_Parser,
+                 tokenizer14g,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+  }
+
 
   private final DomElement stringToXml(String xmlString, boolean htmlFlag) throws IOException {
     final DomDocument domDocument = XmlFactory.loadDocument(xmlString, htmlFlag);
@@ -555,18 +659,7 @@ public class TestAtnParser extends TestCase {
       new AtnParseOptions(resourceManager) :
       new AtnParseOptions(stringToXml(parseOptionsXml, false), resourceManager);
 
-    List<Tree<String>> expectedOutput = null;
-
-    if (expectedTreeStrings != null) {
-      expectedOutput = new ArrayList<Tree<String>>();
-
-      for (String expectedTreeString : expectedTreeStrings) {
-        final Tree<String> expectedTree = TreeBuilderFactory.getStringTreeBuilder().buildTree(expectedTreeString);
-        expectedOutput.add(expectedTree);
-      }
-    }
-
-    final AtnParseTest atnParseTest = new AtnParseTest(name, parser, tokenizer, parseOptions, expectedOutput, expectedRemainder, seek);
+    final AtnParseTest atnParseTest = new AtnParseTest(name, parser, tokenizer, parseOptions, expectedTreeStrings, expectedRemainder, seek);
     atnParseTest.runTest();
   }
 
@@ -577,29 +670,29 @@ public class TestAtnParser extends TestCase {
     private AtnParser parser;
     private Tokenizer tokenizer;
     private AtnParseOptions options;
-    private List<Tree<String>> expectedOutput;
+    private String[] expectedTreeStrings;
     private String[] expectedRemainder;
     private boolean seek;
     private Set<Integer> stopList;
 
-    public AtnParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, List<Tree<String>> expectedOutput) {
-      init(name, parser, tokenizer, options, expectedOutput, null, false, null);
+    public AtnParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings) {
+      init(name, parser, tokenizer, options, expectedTreeStrings, null, false, null);
     }
 
-    public AtnParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, List<Tree<String>> expectedOutput, String[] expectedRemainder, boolean seek) {
-      init(name, parser, tokenizer, options, expectedOutput, expectedRemainder, seek, null);
+    public AtnParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek) {
+      init(name, parser, tokenizer, options, expectedTreeStrings, expectedRemainder, seek, null);
     }
 
-    public AtnParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, List<Tree<String>> expectedOutput, String[] expectedRemainder, boolean seek, Set<Integer> stopList) {
-      init(name, parser, tokenizer, options, expectedOutput, expectedRemainder, seek, stopList);
+    public AtnParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek, Set<Integer> stopList) {
+      init(name, parser, tokenizer, options, expectedTreeStrings, expectedRemainder, seek, stopList);
     }
 
-    private final void init(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, List<Tree<String>> expectedOutput, String[] expectedRemainder, boolean seek, Set<Integer> stopList) {
+    private final void init(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek, Set<Integer> stopList) {
       this.name = name;
       this.parser = parser;
       this.tokenizer = tokenizer;
       this.options = options;
-      this.expectedOutput = expectedOutput;
+      this.expectedTreeStrings = expectedTreeStrings;
       this.expectedRemainder = expectedRemainder;
       this.seek = seek;
       this.stopList = stopList;
@@ -609,7 +702,7 @@ public class TestAtnParser extends TestCase {
       final AtnParseResult parseResult = seek ? parser.seekParse(tokenizer, options, stopList) : parser.parse(tokenizer, options, stopList);
 
 
-      if (expectedOutput == null) {
+      if (expectedTreeStrings == null) {
         final AtnParse parse = parseResult.getParse(0);
         final Tree<String> parseTree = parse == null ? null : parse.getParseTree();
 
@@ -626,15 +719,15 @@ public class TestAtnParser extends TestCase {
                    parse);
       }
       else {
-        parseResult.generateParses(expectedOutput.size());
+        parseResult.generateParses(expectedTreeStrings.length);
 
-        for (int parseNum = 0; parseNum < expectedOutput.size(); ++parseNum) {
+        for (int parseNum = 0; parseNum < expectedTreeStrings.length; ++parseNum) {
           final AtnParse parse = parseResult.getParse(parseNum);
           final Tree<String> parseTree = parse == null ? null : parse.getParseTree();
-          final Tree<String> expectedParse = expectedOutput.get(parseNum);
+          final String expectedParse = expectedTreeStrings[parseNum];
 
           assertEquals(name + ": Bad parse #" + parseNum + ".",
-                       expectedParse, parseTree);
+                       expectedParse, parseTree.toString());
 
           if (expectedRemainder != null && parseNum < expectedRemainder.length) {
 
@@ -645,7 +738,7 @@ public class TestAtnParser extends TestCase {
       }
 
       parseResult.generateParses(0);
-      final int expectedCount = expectedOutput == null ? 1 : expectedOutput.size();
+      final int expectedCount = expectedTreeStrings == null ? 1 : expectedTreeStrings.length;
       if (parseResult.getNumParses() > expectedCount) {
         System.out.println("*** WARNING: " + name + " yielded " + parseResult.getNumParses() +
                            " parses when expected " + expectedCount + ".");
