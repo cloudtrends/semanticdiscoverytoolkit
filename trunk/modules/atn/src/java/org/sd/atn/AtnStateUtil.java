@@ -240,6 +240,41 @@ public class AtnStateUtil {
     return depth;
   }
 
+
+  public static String showStateTree(Tree<AtnState> stateTree) {
+    final StringBuilder result = new StringBuilder();
+    final Tree<AtnState> root = stateTree.getRoot();
+    result.append('\n');
+    showStateTree(result, root, stateTree, 0);
+    return result.toString();
+  }
+
+  private static void showStateTree(StringBuilder result, Tree<AtnState> current, Tree<AtnState> marker, int indent) {
+    final AtnState curstate = current.getData();
+
+    for (int i = 0; i < indent; ++i) result.append(' ');
+    result.append(curstate == null ? "null" : curstate.toString());
+
+    if (curstate != null) {
+      final StringBuilder flags = new StringBuilder();
+      if (curstate.getMatched()) flags.append('m');
+      if (curstate.isSkipped()) flags.append('s').append(curstate.skipNum);
+      if (curstate.isRepeat()) flags.append('r').append(curstate.getRepeatNum());
+      if (curstate.isPoppedState()) flags.append('p').append(curstate.getPopCount());
+      if (flags.length() > 0) result.append("  ").append(flags);
+    }
+
+    if (current == marker) result.append(" ***");
+    result.append('\n');
+    if (current.hasChildren()) {
+      for (Tree<AtnState> child : current.getChildren()) {
+        showStateTree(result, child, marker, indent + 2);
+      }
+    }
+  }
+
+
+
   public static interface AtnStateVisitor {
     /**
      * Visit the given state.

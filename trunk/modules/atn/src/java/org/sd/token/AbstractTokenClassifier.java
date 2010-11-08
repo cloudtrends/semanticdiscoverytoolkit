@@ -134,7 +134,7 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
    * normalizer, returning null if the MaxWordCount constraint is not met.
    */
   protected String getNormalizedText(Token token) {
-    if (token.getWordCount() > maxWordCount) return null;
+    if (maxWordCount > 0 && token.getWordCount() > maxWordCount) return null;
 
     String result = token.getText();
 
