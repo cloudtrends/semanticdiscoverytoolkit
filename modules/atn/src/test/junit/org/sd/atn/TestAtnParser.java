@@ -626,6 +626,273 @@ public class TestAtnParser extends TestCase {
                  null);
   }
 
+  public void testRuleStepConstituentSkip() throws IOException {
+    //
+    // X <- Y? Z(s2)
+    // Y <- A? B
+    // Z <- C D
+    //
+    // A B C D
+    // A B U C D
+    // A B U U C D
+    // A B U U U C D (fail)
+    // B C D
+    // B U C D
+    // B U U C D
+    // B U U U C D (fail)
+    // C D
+    // U C D
+    // U U C D
+    // U U U C D (fail)
+    //
+    final AtnParser test15_Parser = buildParser("<grammar><rules><X start='true'><Y optional='true'/><Z skip='2'/></X><Y><A optional='true'/><B/></Y><Z><C/><D/></Z></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer15a = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B C D");
+
+    runParseTest("ParserTest.15a",
+                 test15_Parser,
+                 tokenizer15a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y A B) (Z C D))",
+                 });
+
+    final StandardTokenizer tokenizer15b = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B U C D");
+
+    runParseTest("ParserTest.15b",
+                 test15_Parser,
+                 tokenizer15b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y A B) (? U) (Z C D))",
+                 });
+
+    final StandardTokenizer tokenizer15c = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B U U C D");
+
+    runParseTest("ParserTest.15c",
+                 test15_Parser,
+                 tokenizer15c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y A B) (? U) (? U) (Z C D))",
+                 });
+
+    final StandardTokenizer tokenizer15d = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B U U U C D");
+
+    runParseTest("ParserTest.15d",
+                 test15_Parser,
+                 tokenizer15d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer15e = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "B C D");
+
+    runParseTest("ParserTest.15e",
+                 test15_Parser,
+                 tokenizer15e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y B) (Z C D))",
+                 });
+
+    final StandardTokenizer tokenizer15f = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "B U C D");
+
+    runParseTest("ParserTest.15f",
+                 test15_Parser,
+                 tokenizer15f,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y B) (? U) (Z C D))",
+                 });
+
+    final StandardTokenizer tokenizer15g = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "B U U C D");
+
+    runParseTest("ParserTest.15g",
+                 test15_Parser,
+                 tokenizer15g,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y B) (? U) (? U) (Z C D))",
+                 });
+
+    final StandardTokenizer tokenizer15h = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "B U U U C D");
+
+    runParseTest("ParserTest.15h",
+                 test15_Parser,
+                 tokenizer15h,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer15i = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C D");
+
+    runParseTest("ParserTest.15i",
+                 test15_Parser,
+                 tokenizer15i,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Z C D))",
+                 });
+
+    final StandardTokenizer tokenizer15j = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "U C D");
+
+    runParseTest("ParserTest.15j",
+                 test15_Parser,
+                 tokenizer15j,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (? U) (Z C D))",
+                 });
+    runParseTest("ParserTest.15j2",
+                 test15_Parser,
+                 tokenizer15j,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>false</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer15k = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "U U C D");
+
+    runParseTest("ParserTest.15k",
+                 test15_Parser,
+                 tokenizer15k,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (? U) (? U) (Z C D))",
+                 });
+    runParseTest("ParserTest.15k2",
+                 test15_Parser,
+                 tokenizer15k,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>false</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer15l = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "U U U C D");
+
+    runParseTest("ParserTest.15l",
+                 test15_Parser,
+                 tokenizer15l,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+    runParseTest("ParserTest.15l2",
+                 test15_Parser,
+                 tokenizer15l,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>false</consumeAllText></parseOptions>",
+                 null);
+  }
+
+  public void testRuleStepDeepConstituentSkip() throws IOException {
+    //
+    // X <- Y? Z(s2)
+    // Y <- A? B(s2)
+    // Z <- C D(s2)
+    //
+    // C D
+    // C U D
+    // C U U D
+    // U C D  (succeed when consumeAllText, fail when !)
+    // 
+    // B U U C D
+    // B U U C U U D
+    // U B U U C D  (succeed when consumeAllText, fail when !)
+    // U B U U C U U D  (succeed when consumeAllText, fail when !)
+    // 
+
+    final AtnParser test16_Parser = buildParser("<grammar><rules><X start='true'><Y optional='true'/><Z skip='2'/></X><Y><A optional='true'/><B skip='2'/></Y><Z><C/><D skip='2'/></Z></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer16a = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C D");
+
+    runParseTest("ParserTest.16a",
+                 test16_Parser,
+                 tokenizer16a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Z C D))",
+                 });
+
+    final StandardTokenizer tokenizer16b = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C U D");
+
+    runParseTest("ParserTest.16b",
+                 test16_Parser,
+                 tokenizer16b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Z C (? U) D))",
+                 });
+
+    final StandardTokenizer tokenizer16c = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C U U D");
+
+    runParseTest("ParserTest.16c",
+                 test16_Parser,
+                 tokenizer16c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Z C (? U) (? U) D))",
+                 });
+
+    final StandardTokenizer tokenizer16d = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "U C D");
+
+    runParseTest("ParserTest.16d",
+                 test16_Parser,
+                 tokenizer16d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (? U) (Z C D))",
+                 });
+    runParseTest("ParserTest.16d2",
+                 test16_Parser,
+                 tokenizer16d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>false</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer16e = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "B U U C D");
+
+    runParseTest("ParserTest.16e",
+                 test16_Parser,
+                 tokenizer16e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y B) (? U) (? U) (Z C D))",
+                 });
+
+    final StandardTokenizer tokenizer16f = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "B U U C U U D");
+
+    runParseTest("ParserTest.16f",
+                 test16_Parser,
+                 tokenizer16f,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y B) (? U) (? U) (Z C (? U) (? U) D))",
+                 });
+
+    final StandardTokenizer tokenizer16g = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "U B U U C D");
+
+    runParseTest("ParserTest.16g",
+                 test16_Parser,
+                 tokenizer16g,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y (? U) B) (? U) (? U) (Z C D))",
+                 });
+    runParseTest("ParserTest.16g2",
+                 test16_Parser,
+                 tokenizer16g,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>false</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer16h = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "U B U U C U U D");
+
+    runParseTest("ParserTest.16h",
+                 test16_Parser,
+                 tokenizer16h,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y (? U) B) (? U) (? U) (Z C (? U) (? U) D))",
+                 });
+    runParseTest("ParserTest.16h2",
+                 test16_Parser,
+                 tokenizer16h,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>false</consumeAllText></parseOptions>",
+                 null);
+    
+  }
+
 
   private final DomElement stringToXml(String xmlString, boolean htmlFlag) throws IOException {
     final DomDocument domDocument = XmlFactory.loadDocument(xmlString, htmlFlag);
@@ -727,7 +994,7 @@ public class TestAtnParser extends TestCase {
           final String expectedParse = expectedTreeStrings[parseNum];
 
           assertEquals(name + ": Bad parse #" + parseNum + ".",
-                       expectedParse, parseTree.toString());
+                       expectedParse, (parseTree == null) ? null : parseTree.toString());
 
           if (expectedRemainder != null && parseNum < expectedRemainder.length) {
 

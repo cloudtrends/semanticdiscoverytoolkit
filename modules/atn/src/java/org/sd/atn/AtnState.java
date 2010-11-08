@@ -133,6 +133,25 @@ public class AtnState {
     this._isSkipped = false;
   }
 
+  /** Copy constructor */
+  AtnState(AtnState other) {
+    this.inputToken = other.inputToken;
+    this.rule = other.rule;
+    this.stepNum = other.stepNum;
+    this.parentStateNode = other.parentStateNode;
+    this.parseOptions = other.parseOptions;
+    this.repeatNum = other.repeatNum;
+    this.skipNum = other.skipNum;
+    this.matched = other.matched;
+    this.pushState = other.pushState;
+    this.isPoppedState = other.isPoppedState;
+    this.popCount = other.popCount;
+    this._isSkipped = other._isSkipped;
+    this._ruleStep = other._ruleStep;
+    this.computedNextToken = other.computedNextToken;
+    this._nextToken = other._nextToken;
+  }
+
   /**
    * Determine whether this instance (if verified to match) is a valid end.
    */
@@ -279,10 +298,25 @@ public class AtnState {
     return result;
   }
 
+  private boolean canBeSkipped() {
+    boolean result = skipNum < Math.max(parseOptions.getSkipTokenLimit(), getRuleStep().getSkip());
+
+    if (result && !parseOptions.getConsumeAllText()) {
+      // when not consuming all text,
+      // disable skip functionality for first matching rule step in a rule
+      final AtnState parentState = (parentStateNode != null) ? parentStateNode.getData() : null;
+      if (parentState == null || !parentState.getMatched()) {
+        result = false;
+      }
+    }
+
+    return result;
+  }
+
   AtnState getNextSkippedState(Tree<AtnState> curStateNode, Set<Integer> stopList) {
     AtnState result = null;
 
-    if (skipNum < parseOptions.getSkipTokenLimit() || skipNum < getRuleStep().getSkip()) {
+    if (canBeSkipped()) {
       // increment the token, not the rule step
       final Token nextToken = getNextToken(stopList);
       if (nextToken != null) {
@@ -518,6 +552,11 @@ public class AtnState {
     return result;
   }
 
+  private final void removeSkipStates(LinkedList<AtnState> skipStates) {
+    //todo: it may be necessary to remove specific skipStates related to this state.
+    skipStates.clear();
+  }
+
 
   static List<CategorizedToken> computeTokens(Tree<AtnState> stateNode) {
     final List<CategorizedToken> result = new ArrayList<CategorizedToken>();
@@ -534,14 +573,11 @@ public class AtnState {
     return result;
   }
 
-  static boolean matchTokenToRule(AtnGrammar grammar, LinkedList<AtnState> states, Set<Integer> stopList) {
+  static boolean matchTokenToRule(AtnGrammar grammar, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, Set<Integer> stopList) {
     boolean result = false;
 
-    while (states.size() > 0 && !result) {
-      final AtnState curstate = states.removeFirst();
-
-      // if curstate is marked as skip and a prior non-skipped sibling succeeded, ignore
-      if (curstate.isSkipped() && curstate.priorSiblingSucceeded()) continue;
+    while ((states.size() + skipStates.size() > 0) && !result) {
+      final AtnState curstate = states.size() > 0 ? states.removeFirst() : skipStates.removeFirst();
 
       boolean success = false;
       boolean matches = curstate.tokenMatchesStepCategory(grammar);
@@ -554,24 +590,27 @@ public class AtnState {
         if (curstate.isValidEnd(stopList)) {
           // found a valid full parse
           result = true;
+
+          // remove invalidated skipped states
+          curstate.removeSkipStates(skipStates);
         }
 
         if (curstate.isRuleEnd()) {
           final AtnState popState = curstate.popState(nextStateNode);
           if (popState != null) {
             final Tree<AtnState> popStateNode = nextStateNode.addChild(popState);
-            addNextStates(grammar, states, popState, popStateNode, true, true, stopList);
+            addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList);
           }
         }
       }
 
-      success = addNextStates(grammar, states, curstate, nextStateNode, false, matches, stopList);
+      success = addNextStates(grammar, states, skipStates, curstate, nextStateNode, false, matches, stopList);
     }
 
     return result;
   }
 
-  private static boolean addNextStates(AtnGrammar grammar, LinkedList<AtnState> states, AtnState curstate, Tree<AtnState> nextStateNode, boolean isPop, boolean inc, Set<Integer> stopList) {
+  private static boolean addNextStates(AtnGrammar grammar, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, AtnState curstate, Tree<AtnState> nextStateNode, boolean isPop, boolean inc, Set<Integer> stopList) {
     if (curstate == null) return false;
 
     boolean foundOne = inc || isPop;
@@ -588,7 +627,7 @@ public class AtnState {
           final AtnState popState = nextstate.popState(nextStateNode);
           if (popState != null) {
             final Tree<AtnState> popStateNode = nextStateNode.addChild(popState);
-            addNextStates(grammar, states, popState, popStateNode, true, false, stopList);
+            addNextStates(grammar, states, skipStates, popState, popStateNode, true, false, stopList);
           }
         }
       }
@@ -624,12 +663,24 @@ public class AtnState {
       for (AtnRule rule : grammar.getCat2Rules().get(category)) {
         addState(states, new AtnState(curstate.getInputToken(), rule, 0, nextStateNode, curstate.parseOptions, 0, 0, curstate));
       }
+
+      // skip constituents
+      if (curstate.canBeSkipped()) {
+        final AtnState dupstate = new AtnState(curstate);
+        final Tree<AtnState> dupstateNode = new Tree<AtnState>(dupstate);
+        nextstate = dupstate.getNextSkippedState(dupstateNode, stopList);
+        if (nextstate != null) {
+          nextStateNode.getParent().addChild(dupstateNode);
+          dupstate.parentStateNode = nextStateNode.getParent();
+          addState(skipStates, nextstate);
+        }
+      }
     }
 
     // skip tokens
     if (!foundOne) {
       nextstate = curstate.getNextSkippedState(nextStateNode, stopList);
-      if (nextstate != null) addState(states, nextstate);
+      if (nextstate != null) addState(skipStates, nextstate);
     }
 
     return foundOne;
@@ -638,6 +689,7 @@ public class AtnState {
   private static final void addState(LinkedList<AtnState> states, AtnState nextstate) {
     boolean isDup = false;
 
+    // check for duplicates
     final Token token = nextstate.getInputToken();
     for (AtnState state : states) {
       if (token == state.getInputToken() && nextstate.matchesRulePath(state)) {

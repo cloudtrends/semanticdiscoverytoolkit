@@ -53,6 +53,7 @@ public class AtnParseResult {
 
   private Tree<AtnState> parse;
   private LinkedList<AtnState> states;
+  private LinkedList<AtnState> skipStates;
   private List<AtnRule> startRules;
   private int startRuleIndex;
 
@@ -62,7 +63,7 @@ public class AtnParseResult {
    * Determine whether all parses have been generated for this result. 
    */
   public boolean isComplete() {
-    return states.size() == 0 && startRuleIndex == startRules.size();
+    return states.size() + skipStates.size() == 0 && startRuleIndex == startRules.size();
   }
 
   /**
@@ -88,6 +89,7 @@ public class AtnParseResult {
 
     this.parse = new Tree<AtnState>(null);
     this.states = new LinkedList<AtnState>();
+    this.skipStates = new LinkedList<AtnState>();
     this.startRules = grammar.getStartRules(options);
     this.startRuleIndex = 0;
 
@@ -123,6 +125,10 @@ public class AtnParseResult {
     }
 
     return result;
+  }
+
+  Tree<AtnState> getStateTree() {
+    return parse;
   }
 
   private List<AtnParse> getParses() {
@@ -173,7 +179,7 @@ public class AtnParseResult {
   public boolean continueParsing() {
     boolean success = false;
 
-    while (startRuleIndex < startRules.size() || states.size() > 0) {
+    while (startRuleIndex < startRules.size() || (states.size() + skipStates.size() > 0)) {
       if (states.size() == 0) {
         final AtnRule startRule = startRules.get(startRuleIndex);
         final Token firstToken = getFirstToken(startRule, this.firstToken);
@@ -183,7 +189,7 @@ public class AtnParseResult {
         ++startRuleIndex;
       }
 
-      success = AtnState.matchTokenToRule(grammar, states, stopList);
+      success = AtnState.matchTokenToRule(grammar, states, skipStates, stopList);
 
       if (success && options.getFirstParseOnly()) {
         break;
