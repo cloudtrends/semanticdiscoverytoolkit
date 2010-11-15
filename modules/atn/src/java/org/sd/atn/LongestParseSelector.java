@@ -20,10 +20,11 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import org.sd.token.Token;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
@@ -46,55 +47,41 @@ public class LongestParseSelector implements AtnParseSelector {
   }
 
   public List<AtnParse> selectParses(AtnParseResult parseResult) {
-    final List<AtnParse> result = new ArrayList<AtnParse>();
+    final List<ParseData> parseDatas = new ArrayList<ParseData>();
 
-    final Map<Integer, Integer> parseNum2Len = new HashMap<Integer, Integer>();
-
-    String note = "Not longest";
-
-    // find the maxLen of all parses
-    int maxLen = 0;
     for (int parseIndex = 0; parseIndex < parseResult.getNumParses(); ++parseIndex) {
       final AtnParse parse = parseResult.getParse(parseIndex);
       if (!parse.getSelected()) continue;
-
-      final int curLen = parse.getEndIndex() - parse.getStartIndex();
-      if (curLen > maxLen) maxLen = curLen;
-
-      parseNum2Len.put(parseIndex, curLen);
+      parseDatas.add(new ParseData(parse));
     }
 
-    // find the min complexity (num parse tree nodes) of all longest parses
-    final Map<Integer, Integer> parseNum2NumNodes = simplest ? new HashMap<Integer, Integer>() : null;
-    int minNodes = 0;
-    if (simplest) {
-      for (int parseIndex = 0; parseIndex < parseResult.getNumParses(); ++parseIndex) {
-        final int curLen = parseNum2Len.get(parseIndex);
+    Collections.sort(parseDatas);
 
-        if (curLen == maxLen) {
-          final AtnParse parse = parseResult.getParse(parseIndex);
-          final int numNodes = countParseTreeNodes(parse.getParseTree());
+    final Set<Integer> selected = new HashSet<Integer>();
 
-          if (minNodes == 0 || numNodes < minNodes) {
-            minNodes = numNodes;
-          }
-
-          parseNum2NumNodes.put(parseIndex, numNodes);
-        }
+    ParseData lastParseData = null;
+    for (ParseData parseData : parseDatas) {
+      if (lastParseData == null) {
+        selected.add(parseData.getAtnParse().getParseNum());
       }
+      else if (parseData.compareTo(lastParseData) != 0) {
+        break;
+      }
+      else {
+        selected.add(parseData.getAtnParse().getParseNum());
+      }
+
+      lastParseData = parseData;
     }
 
-    // find parses with longest length and (optionally) min complexity
+
+    final List<AtnParse> result = new ArrayList<AtnParse>();
+    String note = "Not longest";
+
+    // collect non-duplicate selected parses
     for (int parseIndex = 0; parseIndex < parseResult.getNumParses(); ++parseIndex) {
-      boolean select = false;
-      final int curLen = parseNum2Len.get(parseIndex);
       final AtnParse parse = parseResult.getParse(parseIndex);
-
-      if (curLen == maxLen) {
-        if (parseNum2NumNodes == null || parseNum2NumNodes.get(parseIndex) == minNodes) {
-          select = true;
-        }
-      }
+      boolean select = selected.contains(parse.getParseNum());
 
       if (select && isDuplicate(parse, result)) {
         note = "Is duplicate";
@@ -109,18 +96,7 @@ public class LongestParseSelector implements AtnParseSelector {
     return result;
   }
 
-  private final int countParseTreeNodes(Tree<String> parseTree) {
-    int result = 0;
-
-    for (Iterator<Tree<String>> iter = parseTree.iterator(Tree.Traversal.DEPTH_FIRST); iter.hasNext(); ) {
-      final Tree<String> curNode = iter.next();
-      ++result;
-    }
-
-    return result;
-  }
-
-  private final boolean isDuplicate(AtnParse parse, List<AtnParse> parses) {
+  private static final boolean isDuplicate(AtnParse parse, List<AtnParse> parses) {
     boolean result = false;
 
     final Tree<String> parseTree = parse.getParseTree();
@@ -134,5 +110,195 @@ public class LongestParseSelector implements AtnParseSelector {
     }
 
     return result;
+  }
+
+
+  private static final class ParseData implements Comparable<ParseData> {
+    private AtnParse atnParse;
+
+    private List<Token> skipTokens;
+    private int skipCount;
+    private int length;
+    private int complexity;  // the lower, the simpler
+    
+    ParseData(AtnParse atnParse) {
+      this.atnParse = atnParse;
+
+      this.skipTokens = null;
+      this.skipCount = 0;
+      this.length = 0;
+      this.complexity = 0;
+
+      initialize();
+    }
+
+    private final void initialize() {
+      this.length = atnParse.getEndIndex() - atnParse.getStartIndex();
+
+      for (Tree<AtnState> stateNode = atnParse.getEndState(); stateNode != null; stateNode = stateNode.getParent()) {
+        final AtnState pathState = stateNode.getData();
+        if (pathState == null) break;
+
+        ++complexity;
+
+        if (pathState.isSkipped()) {
+          final Token skipToken = pathState.getInputToken();
+          if (skipTokens == null) skipTokens = new ArrayList<Token>();
+          skipTokens.add(skipToken);
+          skipCount += skipToken.getWordCount();
+        }
+      }
+    }
+
+    public String toString() {
+      return atnParse.getParseTree().toString();
+    }
+
+    AtnParse getAtnParse() {
+      return atnParse;
+    }
+
+    public List<Token> getSkipTokens() {
+      return skipTokens;
+    }
+
+    public int getSkipCount() {
+      return skipCount;
+    }
+
+    public int getLength() {
+      return length;
+    }
+
+    public int getComplexity() {
+      return complexity;
+    }
+
+    public int compareTo(ParseData other) {
+      int result = this == other ? 0 : -1;
+
+      if (result != 0) {
+        if (length == other.getLength() &&
+            complexity == other.getComplexity() &&
+            skipCount == other.getSkipCount()) {
+          result = 0;
+        }
+        else {
+          // the parse that skips fewer tokens comes first
+          result = compareSkips(other);
+
+          // when still unresolved, the longest parse comes first
+          if (result == 0) {
+            result = other.getLength() - length;
+
+            // when still unresolved, the minimum complexity comes first
+            if (result == 0) {
+              result = this.complexity - other.getComplexity();
+            }
+          }
+        }
+      }
+
+      return result;
+    }
+
+    private final int compareSkips(ParseData other) {
+      int result = 0;
+
+      if (skipCount > 0 || other.skipCount > 0) {
+        if (skipCount > 0 && other.skipCount > 0) {
+          final boolean otherReducesThis = reducesSkipCount(other);
+          final boolean thisReducesOther = other.reducesSkipCount(this);
+          if (otherReducesThis && !thisReducesOther) {
+            // prefer other
+            result = 1;
+          }
+          else if (thisReducesOther && !otherReducesThis) {
+            // prefer this
+            result = -1;
+          }
+          // else, no preference
+        }
+        else if (skipCount > 0) {
+          // if the other parse reduces this' skip count, other is better (+1)
+          if (reducesSkipCount(other)) {
+            result = 1;
+          }
+        }
+        else { // other.skipCount > 0
+          // if this reduces other's skip count, this is better (-1)
+          if (other.reducesSkipCount(this)) {
+            result = -1;
+          }
+        }
+      }
+
+      return result;
+    }
+
+    private final boolean reducesSkipCount(ParseData other) {
+      boolean result = false;
+
+      if (skipCount > 0) {
+        for (Token skipToken : skipTokens) {
+          final int overlap = other.overlapFlag(skipToken);
+          if (overlap != 1) {
+            result = true;
+            break;
+          }
+        }
+      }
+
+      return result;
+    }
+
+    /**
+     * Return
+     * <ul>
+     * <li>0 if token is fully covered by this parse;</li>
+     * <li>1 if token is fully outside this parse;</li>
+     * <li>-1 if token partially overlaps with this parse</li>
+     * </ul>
+     */
+    private final int overlapFlag(Token token) {
+      int result = 0;
+
+      final int myStartIndex = atnParse.getStartIndex();
+      final int myEndIndex = atnParse.getEndIndex();
+      final int tokenStartIndex = token.getStartIndex();
+      final int tokenEndIndex = token.getEndIndex();
+
+      if (Token.encompasses(myStartIndex, myEndIndex, tokenStartIndex, tokenEndIndex)) {
+        // count how many of token's words are not skipped by this
+        if (skipCount == 0) {
+          // nothing is skipped, so all are covered
+          result = 0;
+        }
+        else {
+          // if any part of the token is skipped, then not all are covered
+          for (Token skipToken : skipTokens) {
+            if (skipToken.encompasses(token)) {
+              // token is entirely skipped, so not covered
+              result = 1;
+              break;
+            }
+            else if (skipToken.overlaps(token)) {
+              // token is partially skipped, so not entirely covered
+              result = -1;
+            }
+          }
+        }
+      }
+      else if (Token.overlaps(myStartIndex, myEndIndex, tokenStartIndex, tokenEndIndex)) {
+        // token is not entirely covered by this (and not at all if overlap is skipped)
+        result = -1;
+      }
+      else {
+        // else no coverage
+        result = 1;
+      }
+
+      return result;
+    }
   }
 }

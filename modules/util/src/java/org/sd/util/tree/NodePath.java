@@ -40,6 +40,7 @@ public class NodePath<T> {
     public DataMatcher<T> makeDataMatcher(final String dataString) {
       return new DataMatcher<T>() {
         public boolean matches(Tree<T> node) {
+          if ("*".equals(dataString)) return true;
           final T dataInNode = node.getData();
           boolean result = dataInNode == dataString;
           if (!result && dataInNode != null) {
@@ -77,6 +78,7 @@ public class NodePath<T> {
    *                       index is a member of the comma-delimited list of
    *                       'subscript' integers and/or hyphenated ranges or </li>
    * <li>"**" -- matches any "x" down any number of nodes along the path.</li>
+   * <li>"*" -- mathces any "x" for the current path node.</li>
    * </ul>
    */
   public NodePath(String patternString) {
@@ -96,6 +98,7 @@ public class NodePath<T> {
    *                       index is a member of the comma-delimited list of
    *                       'subscript' integers and/or hyphenated ranges or </li>
    * <li>"**" -- matches any "x" down any number of nodes along the path.</li>
+   * <li>"*" -- mathces any "x" for the current path node.</li>
    * </ul>
    */
   public NodePath(String patternString, DataMatcherMaker<T> dataMatcherMaker) {
@@ -115,6 +118,7 @@ public class NodePath<T> {
    *                       index is a member of the comma-delimited list of
    *                       'subscript' integers and/or hyphenated ranges or </li>
    * <li>"**" -- matches any "x" down any number of nodes along the path.</li>
+   * <li>"*" -- mathces any "x" for the current path node.</li>
    * </ul>
    */
   public NodePath(String patternString, DataMatcherMaker<T> dataMatcherMaker, PatternSplitter patternSplitter) {

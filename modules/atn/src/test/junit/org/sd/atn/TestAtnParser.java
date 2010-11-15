@@ -893,6 +893,43 @@ public class TestAtnParser extends TestCase {
     
   }
 
+  public void testDeepPopAndContinueWithSkip() throws IOException {
+    //
+    // Z <- T Y(s5)
+    // Y <- W X
+    // W <- V
+    // X <- V
+    // V <- B? U
+    // U <- C
+    // T <- A
+    //
+    // A C C
+    // A D D C C
+    //
+
+    final AtnParser test17_Parser = buildParser("<grammar><rules><Z start='true'><T/><Y skip='5'/></Z><Y><W/><X/></Y><W><V/></W><X><V/></X><V><B optional='true'/><U/></V><U><C/></U><T><A repeats='true' cluster='true'/></T></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer17a = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A C C");
+
+    runParseTest("ParserTest.17a",
+                 test17_Parser,
+                 tokenizer17a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (T A) (Y (W (V (U C))) (X (V (U C)))))",
+                 });
+
+    final StandardTokenizer tokenizer17b = buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A D D C C");
+
+    runParseTest("ParserTest.17b",
+                 test17_Parser,
+                 tokenizer17b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (T A) (? D) (? D) (Y (W (V (U C))) (X (V (U C)))))",
+                 });
+  }
+
 
   private final DomElement stringToXml(String xmlString, boolean htmlFlag) throws IOException {
     final DomDocument domDocument = XmlFactory.loadDocument(xmlString, htmlFlag);

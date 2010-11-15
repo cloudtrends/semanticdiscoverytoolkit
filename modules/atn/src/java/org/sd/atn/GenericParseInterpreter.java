@@ -21,6 +21,7 @@ package org.sd.atn;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Feature;
@@ -139,22 +140,6 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
     else {
       // no args, just the command
       result = new String[]{expr.trim()};
-    }
-
-    return result;
-  }
-
-  private static final List<Field> loadFields(DomElement parentElement, ResourceManager resourceManager, XPathApplicator xpathApplicator) {
-    final List<Field> result = new ArrayList<Field>();
-
-    final NodeList childNodeList = parentElement.getChildNodes();
-    for (int nodeNum = 0; nodeNum < childNodeList.getLength(); ++nodeNum) {
-      final DomNode childNode = (DomNode)childNodeList.item(nodeNum);
-      if (childNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
-      final String nodeName = childNode.getNodeName();
-      if (!("field".equals(nodeName) || "fields".equals(nodeName))) continue;
-      final DomElement fieldElement = (DomElement)childNode;
-      result.add(new Field(fieldElement, resourceManager, xpathApplicator));
     }
 
     return result;
@@ -521,27 +506,34 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
 
   static final class FieldsContainer {
 
-    private List<Fields> fields;
+    private List<Field> topFields;  // top fields
     private XPathApplicator xpathApplicator;
+    private Map<String, Field> id2field;
 
     FieldsContainer(DomNode parseInterpreterNode, ResourceManager resourceManager) {
-      this.fields = new ArrayList<Fields>();
+      this.topFields = new ArrayList<Field>();
       this.xpathApplicator = new XPathApplicator();
+      this.id2field = new HashMap<String, Field>();
 
       final NodeList childNodeList = parseInterpreterNode.getChildNodes();
       for (int nodeNum = 0; nodeNum < childNodeList.getLength(); ++nodeNum) {
         final DomNode childNode = (DomNode)childNodeList.item(nodeNum);
-        if (childNode.getNodeType() != DomNode.ELEMENT_NODE || !"fields".equals(childNode.getNodeName())) continue;
-        final DomElement fieldsElement = (DomElement)childNode;
-        fields.add(new Fields(fieldsElement, resourceManager, xpathApplicator));
+        if (childNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
+        final DomElement fieldElement = (DomElement)childNode;
+        final Field topField = loadField(fieldElement, resourceManager, xpathApplicator);
+        if (topField != null) this.topFields.add(topField);
       }
+    }
+
+    Field getField(String id) {
+      return id2field.get(id);
     }
 
     List<Tree<XmlLite.Data>> getInterpretationTrees(Tree<String> parseTree) {
       List<Tree<XmlLite.Data>> result = null;
 
-      for (Fields fieldsInstance : fields) {
-        final Tree<XmlLite.Data> interp = fieldsInstance.getInterpretationTree(parseTree);
+      for (Field fieldInstance : topFields) {
+        final Tree<XmlLite.Data> interp = fieldInstance.getInterpretationTree(parseTree);
         if (interp != null) {
           if (result == null) result = new ArrayList<Tree<XmlLite.Data>>();
           result.add(interp);
@@ -550,31 +542,118 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
 
       return result;
     }
+
+    List<Field> loadFields(DomElement parentElement, ResourceManager resourceManager, XPathApplicator xpathApplicator) {
+      List<Field> result = null;
+
+      final NodeList childNodeList = parentElement.getChildNodes();
+      for (int nodeNum = 0; nodeNum < childNodeList.getLength(); ++nodeNum) {
+        final DomNode childNode = (DomNode)childNodeList.item(nodeNum);
+        if (childNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
+        final String nodeName = childNode.getNodeName();
+        final DomElement fieldElement = (DomElement)childNode;
+
+        final Field field = loadField(fieldElement, resourceManager, xpathApplicator);
+        if (field != null) {
+          if (result == null) result = new ArrayList<Field>();
+          result.add(field);
+        }
+      }
+
+      return result;
+    }
+
+    private final Field loadField(DomElement fieldElement, ResourceManager resourceManager, XPathApplicator xpathApplicator) {
+      Field result = null;
+
+      final String eltName = fieldElement.getNodeName();
+      if (eltName.startsWith("field")) {
+        result = new Field(this, fieldElement, resourceManager, xpathApplicator);
+
+        final String fieldId = result.getId();
+        if (fieldId != null) {
+          id2field.put(fieldId, result);
+        }
+      }
+
+      return result;
+    }
   }
 
-  static final class Fields {
+  static final class Field {
 
-    // each "fields" instance corresponds to a potential interpretation for a parseTree
+    // each "field" instance builds a parse interpretation node (and its children)
+
+    private FieldsContainer fieldsContainer;
+
+    private String id;
+    private String xref;
 
     private String select;
     private String name;
     private NodePath<String> nodePath;
-    private List<Field> fields;
+    private IsOptionalFunction optional;
+    private VerificationFunction verificationFunction;
+    private ValueFunction valueFunction;  // non-null when "terminal"
+    private List<Field> children;         // non-null when not "terminal"
 
-    Fields(DomElement fieldsElement, ResourceManager resourceManager, XPathApplicator xpathApplicator) {
-      this.select = fieldsElement.getAttributeValue("select");
-      this.name = fieldsElement.getAttributeValue("name", select);
 
-      if (select == null && name == null) {
-        final String xmlString = getXmlString(fieldsElement);
-        throw new IllegalArgumentException("fieldsElement missing 'select' and 'name' attrs! " + xmlString);
+    Field(FieldsContainer fieldsContainer, DomElement fieldElement,
+          ResourceManager resourceManager, XPathApplicator xpathApplicator) {
+
+      this.fieldsContainer = fieldsContainer;
+
+      this.id = fieldElement.getAttributeValue("id", null);
+      this.xref = fieldElement.getAttributeValue("xref", null);
+
+      this.select = fieldElement.getAttributeValue("select", null);
+      this.name = fieldElement.getAttributeValue("name", select);
+      this.nodePath = select != null ? new NodePath<String>(select) : null;
+
+      final String optionalString = fieldElement.getAttributeValue("optional", "false");
+      this.optional = buildIsOptionalFunction(optionalString, xpathApplicator);
+
+      final String verifyString = fieldElement.getAttributeValue("verify", null);
+      this.verificationFunction = buildVerificationFunction(verifyString);
+
+      if (this.xref != null) {
+        this.children = null;
+        this.valueFunction = null;
       }
+      else {
+        // recurse
+        this.children = fieldsContainer.loadFields(fieldElement, resourceManager, xpathApplicator);
 
-      this.nodePath = new NodePath<String>(select);
-      this.fields = loadFields(fieldsElement, resourceManager, xpathApplicator);
+        // build value function
+        if (this.children == null) {
+          final String valueString = fieldElement.getAttributeValue("value", "nodeText");
+          this.valueFunction = buildValueFunction(valueString);
+        }
+      }
     }
 
+    String getId() {
+      return id;
+    }
+
+    public String toString() {
+      final StringBuilder result = new StringBuilder();
+
+      result.append("field:");
+      if (xref != null) result.append(" xref=").append(xref);
+      if (name != null) result.append(" name=").append(name);
+      if (select != null) result.append(" select=").append(select);
+      result.append(" ").append(children == null ? 0 : children.size()).append(" children");
+
+      return result.toString();
+    }
+
+    // top-level
     Tree<XmlLite.Data> getInterpretationTree(Tree<String> parseTree) {
+      if (children == null) {
+        throw new IllegalStateException("Bad 'top' field '" + this + "'");
+      }
+
       Tree<XmlLite.Data> result = null;
 
       final List<Tree<String>> parseTreeNodes = nodePath.apply(parseTree);
@@ -588,7 +667,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
         final Tree<XmlLite.Data> interp = XmlLite.createTagNode(name);
 
         final boolean[] gotOne = new boolean[]{false};
-        for (Field field : fields) {
+        for (Field field : children) {
           final Tree<XmlLite.Data> fieldTree = field.buildInterpretationTree(parseTreeNode, interp, optionalFunctions, gotOne);
         }
 
@@ -607,55 +686,18 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
 
       return result;
     }
-  }
 
-  static final class Field {
-
-    // each "field" instance builds a parse interpretation node (and its children)
-
-    private String select;
-    private String name;
-    private NodePath<String> nodePath;
-    private IsOptionalFunction optional;
-    private VerificationFunction verificationFunction;
-    private ValueFunction valueFunction;  // non-null when "terminal"
-    private List<Field> children;         // non-null when not "terminal"
-
-
-    Field(DomElement fieldElement, ResourceManager resourceManager, XPathApplicator xpathApplicator) {
-      final String eltName = fieldElement.getNodeName();
-
-      this.select = fieldElement.getAttributeValue("select", null);
-      this.name = fieldElement.getAttributeValue("name", select);
-      this.nodePath = select != null ? new NodePath<String>(select) : null;
-
-      final String optionalString = fieldElement.getAttributeValue("optional", "false");
-      this.optional = buildIsOptionalFunction(optionalString, xpathApplicator);
-
-      final String verifyString = fieldElement.getAttributeValue("verify", null);
-      this.verificationFunction = buildVerificationFunction(verifyString);
-
-      if ("field".equals(eltName)) {
-        // build value function
-        final String valueString = fieldElement.getAttributeValue("value", "nodeText");
-        if (valueString == null) {
-          final String xmlString = getXmlString(fieldElement);
-          throw new IllegalArgumentException("fieldElement missing 'value' attr! " + xmlString);
-        }
-        this.valueFunction = buildValueFunction(valueString);
-      }
-      else if ("fields".equals(eltName)) {
-        // recurse
-        this.children = loadFields(fieldElement, resourceManager, xpathApplicator);
-      }
-    }
-
-    /**
-     * Recursive auxiliary for building an interpretation tree.
-     */
     private final Tree<XmlLite.Data> buildInterpretationTree(Tree<String> parseTreeNode, Tree<XmlLite.Data> interpNode,
                                                              List<IsOptionalFunction> optionalFunctions, boolean[] gotOne) {
       Tree<XmlLite.Data> result = null;
+
+      if (xref != null && select == null) {
+        final Field xrefField = fieldsContainer.getField(xref);
+        if (xrefField != null) {
+          result = xrefField.buildInterpretationTree(parseTreeNode, interpNode, optionalFunctions, gotOne);
+        }
+        return result;
+      }
 
       final List<Tree<String>> selectedParseTreeNodes = getSelectedParseTreeNodes(parseTreeNode);
       if (selectedParseTreeNodes != null) {
@@ -668,7 +710,13 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
             }
           }
 
-          if (valueFunction != null) {
+          if (xref != null) {
+            final Field xrefField = fieldsContainer.getField(xref);
+            if (xrefField != null) {
+              xrefField.buildInterpretationTree(selectedParseTreeNode, interpNode, optionalFunctions, gotOne);
+            }
+          }
+          else if (valueFunction != null) {
             // add interp value
             final Tree<XmlLite.Data> interpValueNode = valueFunction.getInterpretationValue(selectedParseTreeNode);
             if (interpValueNode != null) {

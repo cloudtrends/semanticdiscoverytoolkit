@@ -180,7 +180,7 @@ public class AtnParseResult {
     boolean success = false;
 
     while (startRuleIndex < startRules.size() || (states.size() + skipStates.size() > 0)) {
-      if (states.size() == 0) {
+      if (states.size() + skipStates.size() == 0) {
         final AtnRule startRule = startRules.get(startRuleIndex);
         final Token firstToken = getFirstToken(startRule, this.firstToken);
         if (firstToken == null) return false;
@@ -189,7 +189,9 @@ public class AtnParseResult {
         ++startRuleIndex;
       }
 
+      final AtnState state = states.size() > 0 ? states.getFirst() : skipStates.getFirst();
       success = AtnState.matchTokenToRule(grammar, states, skipStates, stopList);
+      // if (!success) System.out.println(AtnStateUtil.showStateTree(state.parentStateNode))
 
       if (success && options.getFirstParseOnly()) {
         break;
