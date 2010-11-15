@@ -37,6 +37,11 @@ public interface Tokenizer {
   public Token getToken(int startPosition);
 
   /**
+   * Get the smallest token after the given token.
+   */
+  public Token getNextSmallestToken(Token token);
+
+  /**
    * Get the smallest token that starts at the given position.
    */
   public Token getSmallestToken(int startPosition);

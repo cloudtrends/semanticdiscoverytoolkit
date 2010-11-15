@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -266,7 +267,7 @@ public class AtnState {
     AtnState result = null;
 
     if (getRuleStep().consumeToken()) {
-      final Token nextToken = computeRevisedToken(inputToken);
+      final Token nextToken = computeRevisedToken();
 
       if (nextToken != null) {
         result = new AtnState(
@@ -299,13 +300,13 @@ public class AtnState {
   }
 
   private boolean canBeSkipped() {
-    boolean result = skipNum < Math.max(parseOptions.getSkipTokenLimit(), getRuleStep().getSkip());
+    boolean result = (skipNum + inputToken.getWordCount() - 1) < Math.max(parseOptions.getSkipTokenLimit(), getRuleStep().getSkip());
 
     if (result && !parseOptions.getConsumeAllText()) {
       // when not consuming all text,
       // disable skip functionality for first matching rule step in a rule
       final AtnState parentState = (parentStateNode != null) ? parentStateNode.getData() : null;
-      if (parentState == null || !parentState.getMatched()) {
+      if (parentState == null || !(parentState.getMatched() || parentState.isPoppedState() || parentState.isSkipped())) {
         result = false;
       }
     }
@@ -316,9 +317,13 @@ public class AtnState {
   AtnState getNextSkippedState(Tree<AtnState> curStateNode, Set<Integer> stopList) {
     AtnState result = null;
 
+if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith("person-event")) {
+  final boolean stopHere = true;
+}
+
     if (canBeSkipped()) {
       // increment the token, not the rule step
-      final Token nextToken = getNextToken(stopList);
+      final Token nextToken = getNextSmallestToken(stopList);
       if (nextToken != null) {
         markAsSkipped();
         result = new AtnState(nextToken, rule, stepNum, curStateNode, parseOptions, repeatNum, skipNum, pushState);
@@ -343,6 +348,20 @@ public class AtnState {
       computedNextToken = true;
     }
     return _nextToken;
+  }
+
+  private Token getNextSmallestToken(Set<Integer> stopList) {
+    Token result = inputToken.getNextSmallestToken();
+
+    if (result != null) {
+      result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), result, false, inputToken, false, false, this);
+
+      if (result != null && stopList != null && stopList.contains(result.getStartIndex())) {
+        result = null;
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -396,7 +415,7 @@ public class AtnState {
     return result;
   }
 
-  private final AtnState getParentState() {
+  public final AtnState getParentState() {
     AtnState result = null;
 
     if (parentStateNode != null) {
@@ -418,8 +437,13 @@ public class AtnState {
     return result;
   }
 
-  private Token computeRevisedToken(Token inputToken) {
-    Token result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), inputToken.getRevisedToken(), true, inputToken, true, false, this);
+  private Token computeRevisedToken() {
+    Token result = null;
+
+    if (!isSkipped()) {
+      result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), inputToken.getRevisedToken(), true, inputToken, true, false, this);
+    }
+
     return result;
   }
 
@@ -463,6 +487,10 @@ public class AtnState {
     }
 
     return result;
+  }
+
+  private final boolean applyTests() {
+    return getRuleStep().verify(inputToken, this);
   }
 
   void markAsSkipped() {
@@ -515,35 +543,47 @@ public class AtnState {
     return result;
   }
 
-  private final boolean priorSiblingSucceeded() {
-    boolean result = false;
+  private final boolean applyAllPops(Tree<AtnState> nextStateNode, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, Set<Integer> stopList) {
+    boolean result = true;
 
-    if (parentStateNode != null && parentStateNode.hasChildren()) {
-      for (Tree<AtnState> sibStateNode : parentStateNode.getChildren()) {
-        final AtnState sibState = sibStateNode.getData();
-        if (sibState == this) break;
-        if (sibState.isSkipped()) continue;
-        if (sibState.hasSuccess()) {
-          result = true;
+    if (isRuleEnd()) {
+      final int statesSize = states.size();
+      final int skipStatesSize = skipStates.size();
+
+      final AtnGrammar grammar = rule.getGrammar();
+      Tree<AtnState> popStateNode = nextStateNode;
+      AtnState popState = popState(popStateNode);
+      while (popState != null) {
+        // apply popState test
+        result = popState.applyTests();
+        if (!result) {
+          // back out of popping
+          while (states.size() > statesSize) states.removeLast();
+          while (skipStates.size() > skipStatesSize) skipStates.removeLast();
+
           break;
         }
+
+        popStateNode = popStateNode.addChild(popState);
+        if (addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList)) {
+          if (!popState.isRuleEnd()) popState = null;
+          else {
+            popState = popState.popState(popStateNode);
+          }
+        }
+        else break;
       }
-    }
 
-    return result;
-  }
-
-  private final boolean hasSuccess() {
-    boolean result = false;
-
-    if (parentStateNode != null) {
-      final List<Tree<AtnState>> terminals = parentStateNode.gatherLeaves();
-      if (terminals != null) {
-        for (Tree<AtnState> terminal : terminals) {
-          final AtnState terminalState = terminal.getData();
-          if (terminalState != null && terminal.getData().getMatched() && !terminalState.isSkipped()) {
-            result = true;
-            break;
+      if (result) {
+        // remove now unnecessary skipped states
+        for (AtnState parentState = this; skipStates.size() > 0 && parentState != null; parentState = parentState.getParentState()) {
+          if (parentState == this || parentState.getMatched()) {
+            for (Iterator<AtnState> skipIter = skipStates.iterator(); skipIter.hasNext(); ) {
+              final AtnState skipState = skipIter.next();
+              if (parentState.encompassesToken(skipState.getInputToken())) {
+                skipIter.remove();
+              }
+            }
           }
         }
       }
@@ -552,9 +592,11 @@ public class AtnState {
     return result;
   }
 
-  private final void removeSkipStates(LinkedList<AtnState> skipStates) {
-    //todo: it may be necessary to remove specific skipStates related to this state.
-    skipStates.clear();
+  /**
+   * Determine whether this state's input token encompasses the given token.
+   */
+  private final boolean encompassesToken(Token token) {
+    return inputToken.encompasses(token);
   }
 
 
@@ -579,9 +621,17 @@ public class AtnState {
     while ((states.size() + skipStates.size() > 0) && !result) {
       final AtnState curstate = states.size() > 0 ? states.removeFirst() : skipStates.removeFirst();
 
+if (curstate.getInputToken().getText().startsWith("songwriter") && curstate.toString().startsWith("person-event")) {
+  final boolean stopHere = true;
+}
+
       boolean success = false;
       boolean matches = curstate.tokenMatchesStepCategory(grammar);
       final Tree<AtnState> nextStateNode = curstate.parentStateNode.addChild(curstate);
+
+      if (matches) {
+        matches = curstate.applyAllPops(nextStateNode, states, skipStates, stopList);
+      }
 
       if (matches) {
         success = true;
@@ -590,17 +640,6 @@ public class AtnState {
         if (curstate.isValidEnd(stopList)) {
           // found a valid full parse
           result = true;
-
-          // remove invalidated skipped states
-          curstate.removeSkipStates(skipStates);
-        }
-
-        if (curstate.isRuleEnd()) {
-          final AtnState popState = curstate.popState(nextStateNode);
-          if (popState != null) {
-            final Tree<AtnState> popStateNode = nextStateNode.addChild(popState);
-            addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList);
-          }
         }
       }
 
@@ -621,15 +660,6 @@ public class AtnState {
       nextstate = curstate.getNextRepeatState(nextStateNode, isPop ? curstate : null, inc, stopList);
       if (nextstate != null) {
         addState(states, nextstate);
-
-        if (nextstate.getRuleStep().isOptional() && nextstate.isRuleEnd()) {
-          // is optional end, so pop rule
-          final AtnState popState = nextstate.popState(nextStateNode);
-          if (popState != null) {
-            final Tree<AtnState> popStateNode = nextStateNode.addChild(popState);
-            addNextStates(grammar, states, skipStates, popState, popStateNode, true, false, stopList);
-          }
-        }
       }
 
       nextstate = curstate.getNextStepState(nextStateNode, inc, stopList);

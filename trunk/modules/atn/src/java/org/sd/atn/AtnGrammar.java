@@ -62,6 +62,9 @@ public class AtnGrammar {
   Map<String, List<TokenClassifier>> getCat2Classifiers() {
     return cat2Classifiers;
   }
+  public List<TokenClassifier> getClassifiers(String cat) {
+    return cat2Classifiers.get(cat);
+  }
 
   private Map<String, List<AtnRule>> cat2Rules;
   Map<String, List<AtnRule>> getCat2Rules() {

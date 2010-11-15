@@ -122,6 +122,38 @@ public class Token {
 		}
 
   /**
+   * Assuming the token comes from the same tokenizer, determine whether this
+   * token fully encompasses the other.
+   */
+  public boolean encompasses(Token other) {
+    return encompasses(getStartIndex(), getEndIndex(), other.getStartIndex(), other.getEndIndex());
+  }
+
+  /**
+   * Assuming the token comes from the same tokenizer, determine whether this
+   * token overlaps (including fully encompassing) the other.
+   */
+  public boolean overlaps(Token other) {
+    return overlaps(getStartIndex(), getEndIndex(), other.getStartIndex(), other.getEndIndex());
+  }
+
+  /**
+   * Utility method encoding encompass logic.
+   */
+  public static boolean encompasses(int myStartIndex, int myEndIndex, int otherStartIndex, int otherEndIndex) {
+    return otherStartIndex >= myStartIndex && otherEndIndex <= myEndIndex;
+  }
+
+  /**
+   * Utility method encoding overlap logic.
+   */
+  public static boolean overlaps(int myStartIndex, int myEndIndex, int otherStartIndex, int otherEndIndex) {
+    return
+      (myStartIndex >= otherStartIndex && myStartIndex < otherEndIndex) ||
+      (myEndIndex <= otherEndIndex && myEndIndex > otherStartIndex);
+  }
+
+  /**
    * Convenience method for setting a feature on this token with a
    * probability of 1.
    */
@@ -264,6 +296,10 @@ public class Token {
       computedRevisedToken = true;
     }
     return _revisedToken;
+  }
+
+  public Token getNextSmallestToken() {
+    return tokenizer.getNextSmallestToken(this);
   }
 
   private boolean computedSmallestToken = false;

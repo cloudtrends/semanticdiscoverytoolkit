@@ -346,6 +346,11 @@ public class StandardTokenizer implements Tokenizer {
     return doGetToken(options.getRevisionStrategy(), startPosition, 0);
   }
 
+  public Token getNextSmallestToken(Token token) {
+    final int startPosition = findEndBreakForward(token.getEndIndex(), false);
+    return getSmallestToken(startPosition);
+  }
+
   public Token getSmallestToken(int startPosition) {
     return doGetNextToken(startPosition, BreakType.SOFT, options.getRevisionStrategy(), 0, 0);
   }

@@ -33,7 +33,7 @@ import org.w3c.dom.NodeList;
 public class AtnRule {
   
   private AtnGrammar grammar;
-  AtnGrammar getGrammar() {
+  public AtnGrammar getGrammar() {
     return grammar;
   }
 

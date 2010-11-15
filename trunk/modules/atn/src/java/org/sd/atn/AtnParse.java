@@ -307,6 +307,10 @@ public class AtnParse {
     return _parseTree;
   }
 
+  public Tree<AtnState> getEndState() {
+    return endState;
+  }
+
   public Extraction getExtraction() {
     if (_extraction == null) {
       _extraction = generateExtraction(getParseTree());
