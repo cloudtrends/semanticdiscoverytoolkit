@@ -363,7 +363,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
     protected final Tree<XmlLite.Data> doGetInterpretationValue(CategorizedToken cToken) {
       Tree<XmlLite.Data> result = null;
 
-      if (cToken.token.hasFeatures()) {
+      if (cToken != null && cToken.token != null && cToken.token.hasFeatures()) {
         //NOTE: only getting the *first* matching feature!
         final Feature feature = cToken.token.getFeature(featureKey, null, featureClass);
         if (feature != null) {
