@@ -486,6 +486,7 @@ public class AtnParseRunner {
     //   diffHtml -- path to html file to use as mask for inputHtml
     //   
     //   verbose -- (optional, default=true)
+    //   trace -- (optional, default=false) true to trace/debug AtnStates
     //
     //   parseFlow -- (optional, default uses all) cpId1:pId1,...,pIdN;cpId2:...
     //                semi-colon delimited list of compound parser flows of the form:
@@ -508,6 +509,9 @@ public class AtnParseRunner {
     //
 
     final DataProperties dataProperties = new DataProperties(args);
+
+    if (dataProperties.getBoolean("trace", false)) AtnState.setTrace(true);
+
     final AtnParseRunner runner = new AtnParseRunner(dataProperties);
     try {
       runner.run();

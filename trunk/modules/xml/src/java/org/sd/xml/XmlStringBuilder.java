@@ -92,6 +92,16 @@ public class XmlStringBuilder {
   }
 
   /**
+   * Set this instance's data to be a copy of the other.
+   */
+  public void copy(XmlStringBuilder other) {
+    this.xml = other.xml;
+    this._xmlElement = other._xmlElement;
+    this.rootTag = other.rootTag;
+    this.ended = other.ended;
+  }
+
+  /**
    * Adds the full element to this instance if possible.
    */
   public XmlStringBuilder addElement(DomElement element) {
