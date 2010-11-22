@@ -58,6 +58,7 @@ public class AtnParseResult {
   private int startRuleIndex;
 
   private List<AtnParse> _parses;
+  private int[] _parsedRange;
 
   /**
    * Determine whether all parses have been generated for this result. 
@@ -106,6 +107,34 @@ public class AtnParseResult {
   public int getNumParses() {
     final List<AtnParse> parses = getParses();
     return (parses == null) ? 0 : parses.size();
+  }
+
+  /**
+   * Get the (maximum) range {start(inc), end(excl)} of parsed text within this
+   * instances parses regardless of parse selection.
+   *
+   * @return the range or null when nothing has been successfuly parsed.
+   */
+  public int[] getParsedRange() {
+    if (_parsedRange == null) {
+      int startPos = -1;
+      int endPos = -1;
+
+      final List<AtnParse> parses = getParses();
+      if (parses != null) {
+        for (AtnParse parse : parses) {
+          if (parse != null) {
+            final int startIndex = parse.getStartIndex();
+            final int endIndex = parse.getEndIndex();
+            if (startPos < 0 || startIndex < startPos) startPos = startIndex;
+            if (endPos < 0 || endIndex > endPos) endPos = endIndex;
+          }
+        }
+      }
+
+      _parsedRange = (startPos >= 0 && endPos >= 0) ? new int[]{startPos, endPos} : null;
+    }
+    return _parsedRange;
   }
 
   /**

@@ -138,8 +138,35 @@ public class AtnParser {
     for (AtnParseResult parseResult = seekParse(tokenizer, options, stopList); parseResult != null; parseResult = (parse == null) ? null : seekNextParse(parse, options, stopList)) {
       int numParses = parseResult.getNumParses();
       if (numParses > 0) {
-        parse = parseResult.getParse(numParses - 1);
-        if (parse != null) {
+        int numSelectedParses = 0;
+
+        // don't add completely subsumed parses
+        //
+        // NOTE: this happens when we've incremented over tokens after a
+        //       successful parse and we get a parse similar to a prior where
+        //       the initial tokens were optional or skipped, so the new parse
+        //       is a subset of prior parses and is ignored.
+
+        for (int parseNum = 0; parseNum < numParses; ++parseNum) {
+          parse = parseResult.getParse(parseNum);
+          boolean keeper = false;
+          if (parse != null && parse.getSelected()) {
+            keeper = true;
+            for (AtnParseResult existingResult : result) {
+              final int[] parsedRange = existingResult.getParsedRange();
+              if (parsedRange != null) {
+                if (Token.encompasses(parsedRange[0], parsedRange[1], parse.getStartIndex(), parse.getEndIndex())) {
+                  parse.setSelected(false);
+                  keeper = false;
+                  break;
+                }
+              }
+            }
+            if (keeper) ++numSelectedParses;
+          }
+        }
+
+        if (numSelectedParses > 0) {
           result.add(parseResult);
         }
       }

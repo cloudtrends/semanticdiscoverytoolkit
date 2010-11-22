@@ -600,6 +600,12 @@ if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith(
   }
 
 
+  private static boolean trace = false;
+
+  public static final void setTrace(boolean traceValue) {
+    trace = traceValue;
+  }
+
   static List<CategorizedToken> computeTokens(Tree<AtnState> stateNode) {
     final List<CategorizedToken> result = new ArrayList<CategorizedToken>();
     final LinkedList<Tree<AtnState>> stateNodes = stateNode.getRootPath();
@@ -621,13 +627,13 @@ if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith(
     while ((states.size() + skipStates.size() > 0) && !result) {
       final AtnState curstate = states.size() > 0 ? states.removeFirst() : skipStates.removeFirst();
 
-if (curstate.getInputToken().getText().startsWith("songwriter") && curstate.toString().startsWith("person-event")) {
-  final boolean stopHere = true;
-}
-
       boolean success = false;
       boolean matches = curstate.tokenMatchesStepCategory(grammar);
       final Tree<AtnState> nextStateNode = curstate.parentStateNode.addChild(curstate);
+
+      if (trace) {
+        System.out.println(curstate + "\t" + matches + "\t" + (matches ? AtnStateUtil.showStateTree(nextStateNode) : ""));
+      }
 
       if (matches) {
         matches = curstate.applyAllPops(nextStateNode, states, skipStates, stopList);
