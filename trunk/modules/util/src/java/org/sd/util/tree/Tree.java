@@ -49,6 +49,8 @@ public class Tree<T> {
 
 
   private LinkedList<Tree<T>> _path;
+  private boolean gotHashCode;
+  private int _hashCode;
 
   public Tree(T data) {
     this.data = data;
@@ -57,6 +59,9 @@ public class Tree<T> {
     this.transientId = 0;
     this.rootPath = null;
     this.attributes = null;
+
+    this.gotHashCode = false;
+    this._hashCode = 0;
   }
 
   public String toString() {
@@ -141,7 +146,15 @@ public class Tree<T> {
     return result;
   }
 
-  public int hashCode() {
+  public synchronized int hashCode() {
+    if (!gotHashCode) {
+      this._hashCode = computeHashCode();
+      gotHashCode = true;
+    }
+    return _hashCode;
+  }
+
+  private final int computeHashCode() {
     int result = 1;
 
     result = result * 31 + (data == null ? 0 : data.hashCode());
@@ -467,6 +480,42 @@ public class Tree<T> {
     return leaves;
   }
   
+  /**
+   * Determine whether this node is 'equidepth', defined as all terminal
+   * nodes under this node being at the same depth relative to this node.
+   */
+  public boolean equidepth() {
+    boolean result = true;
+
+    int depth = -1;
+    final List<Tree<T>> leafNodes = gatherLeaves();
+    for (Tree<T> leafNode : leafNodes) {
+      final int curDepth = leafNode.depth(this);
+      if (depth == -1) {
+        depth = curDepth;
+      }
+      else if (depth != curDepth) {
+        result = false;
+        break;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Ascend to an ancestor that has siblings. 
+   */
+  public Tree<T> ascend() {
+    Tree<T> node = this;
+    Tree<T> priorNode = node;
+    while (node.getNumSiblings() == 1 && node.getParent() != null) {
+      priorNode = node;
+      node = node.getParent();
+    }
+    return priorNode;
+  }
+
   public Tree<T> addChild(T childData) {
     Tree<T> result = new Tree<T>(childData);
     addChild(result);
@@ -474,6 +523,7 @@ public class Tree<T> {
   }
 
   public Tree<T> addChild(Tree<T> child) {
+    this.gotHashCode = false;
     if (children == null) {
       children = new ArrayList<Tree<T>>();
     }
@@ -594,6 +644,7 @@ public class Tree<T> {
    */
   public void prune(boolean disconnectParent, boolean disconnectAsChild) {
     if (disconnectAsChild && parent != null && parent.children != null) {
+      gotHashCode = false;
       parent.children.remove(this);
       if (parent.children.size() == 0) parent.children = null;
     }
@@ -750,6 +801,8 @@ public class Tree<T> {
    */
   public Tree<T> setChild(int childPos, Tree<T> newChild) {
     Tree<T> result = null;
+
+    gotHashCode = false;
 
     if (children != null && childPos < children.size() && childPos >= 0) {
       result = children.get(childPos);
