@@ -20,7 +20,10 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import org.sd.token.CategorizedToken;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DomNode;
 import org.sd.xml.XmlLite;
@@ -32,7 +35,10 @@ import org.sd.xml.XmlLite;
  */
 public class IdentityParseInterpreter implements AtnParseInterpreter {
   
+  private boolean compress;
+
   public IdentityParseInterpreter(DomNode domNode, ResourceManager resourceManager) {
+    this.compress = domNode.getAttributeBoolean("compress", false);
   }
 
   /**
@@ -58,10 +64,46 @@ public class IdentityParseInterpreter implements AtnParseInterpreter {
   }
 
   private final Tree<XmlLite.Data> asInterpTree(Tree<String> parseTree, Tree<XmlLite.Data> parent) {
-    final boolean isTag = parseTree.hasChildren();
+    Set<Tree<String>> compressNodes = null;
 
-    final String text = parseTree.getData();
-    final Tree<XmlLite.Data> curInterpNode = isTag ? XmlLite.createTagNode(text) : XmlLite.createTextNode(text);
+    if (compress) {
+      compressNodes = getCompressNodes(parseTree);
+    }
+
+    final Tree<XmlLite.Data> result = convertTree(parseTree, parent, compressNodes);
+    return result;
+  }
+
+  private final Tree<XmlLite.Data> convertTree(Tree<String> parseTree, Tree<XmlLite.Data> parent, Set<Tree<String>> compressNodes) {
+
+    boolean isTag = parseTree.hasChildren();
+    Tree<XmlLite.Data> curInterpNode = null;
+
+    if (isTag) {
+      curInterpNode = XmlLite.createTagNode(parseTree.getData());
+
+      if (compressNodes != null && compressNodes.contains(parseTree)) {
+        if (parent != null) {
+          parent.addChild(curInterpNode);
+        }
+        parent = curInterpNode;
+        isTag = false;
+      }
+    }
+
+    if (!isTag) {
+      final CategorizedToken cToken = ParseInterpretationUtil.getCategorizedToken(parseTree);
+
+      String text = null;
+      if (cToken != null) {
+        text = cToken.token.getText();
+      }
+      else {
+        text = parseTree.getData();
+      }
+
+      curInterpNode = XmlLite.createTextNode(text);
+    }
 
     // construct tree
     if (parent != null) {
@@ -71,10 +113,36 @@ public class IdentityParseInterpreter implements AtnParseInterpreter {
     // recurse
     if (isTag) {
       for (Tree<String> childTree : parseTree.getChildren()) {
-        asInterpTree(childTree, curInterpNode);
+        convertTree(childTree, curInterpNode, compressNodes);
       }
     }
 
     return curInterpNode;
+  }
+
+  private final Set<Tree<String>> getCompressNodes(Tree<String> parseTree) {
+    final Set<Tree<String>> result = new HashSet<Tree<String>>();
+    final Set<Tree<String>> gpNodes = new HashSet<Tree<String>>();
+
+    // collect nodes 2 above the leaves
+    final List<Tree<String>> leaves = parseTree.gatherLeaves();
+    for (Tree<String> leaf : leaves) {
+      final Tree<String> parent = leaf.getParent();
+      if (parent != null) {
+        final Tree<String> gparent = parent.getParent();
+        if (gparent != null) {
+          gpNodes.add(gparent);
+        }
+      }
+    }
+
+    // ascend nodes
+    for (Tree<String> gpNode : gpNodes) {
+      if (gpNode.equidepth()) {
+        result.add(gpNode.ascend());
+      }
+    }
+
+    return result;
   }
 }
