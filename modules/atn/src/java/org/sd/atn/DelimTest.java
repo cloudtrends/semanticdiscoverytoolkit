@@ -173,8 +173,7 @@ public class DelimTest implements AtnRuleStepTest {
     if (isPre) {
       delim = token.getTokenizer().getPreDelim(token);
     }
-    else
-    {
+    else {
       delim = token.getTokenizer().getPostDelim(token);
     }
 

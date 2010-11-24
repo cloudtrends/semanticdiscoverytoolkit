@@ -21,6 +21,7 @@ package org.sd.atn;
 
 import org.sd.token.Token;
 import org.sd.xml.DomElement;
+import org.w3c.dom.NodeList;
 
 /**
  * Container for a rule step within a Rule.
@@ -121,8 +122,23 @@ public class AtnRuleStep {
 
     this.clusterTest = clusterFlag ? CLUSTER_TEST : null;
 
-    final DomElement testElement = (DomElement)stepElement.selectSingleNode("test");
-    this.test = (testElement != null) ? (AtnRuleStepTest)resourceManager.getResource(testElement) : null;
+    // load test(s)
+    this.test = null;
+    final NodeList testNodes = stepElement.selectNodes("test");
+    if (testNodes.getLength() > 0) {
+      if (testNodes.getLength() == 1) {
+        final DomElement testElement = (DomElement)testNodes.item(0);
+        this.test = (AtnRuleStepTest)resourceManager.getResource(testElement);
+      }
+      else {
+        final AtnRuleStepTestPipeline pipeline = new AtnRuleStepTestPipeline();
+        for (int nodeNum = 0; nodeNum < testNodes.getLength(); ++nodeNum) {
+          final DomElement testElement = (DomElement)testNodes.item(nodeNum);
+          pipeline.add((AtnRuleStepTest)resourceManager.getResource(testElement));
+        }
+        this.test = pipeline;
+      }
+    }
   }
 
   /**
