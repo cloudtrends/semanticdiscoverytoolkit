@@ -111,8 +111,23 @@ public class RoteListClassifier extends AbstractTokenClassifier {
   protected final void loadTerms(DomElement termsNode, Set<String> terms, Map<String, Map<String, String>> term2attributes) {
     if (termsNode == null) return;
 
+    // currently caseSensitivity is applied globally
     this.caseSensitive = termsNode.getAttributeBoolean("caseSensitive", false);
 
+    // get global attributes to apply to each term
+    Map<String, String> globalAttributes = null;
+    if (termsNode.hasAttributes()) {
+      final Map<String, String> termsNodeAttributes = termsNode.getDomAttributes().getAttributes();
+      final int minAttrCount = termsNodeAttributes.containsKey("caseSensitive") ? 2 : 1;
+      if (termsNodeAttributes.size() >= minAttrCount) {
+        globalAttributes = new HashMap<String, String>(termsNodeAttributes);
+
+        // ignore caseSensitive attribute
+        globalAttributes.remove("caseSensitive");
+      }
+    }
+
+    // load each "term" under "terms"
     Map<String, String> termAttributes = null;
     final NodeList termNodes = termsNode.selectNodes("term");
     for (int i = 0; i < termNodes.getLength(); ++i) {
@@ -130,6 +145,15 @@ public class RoteListClassifier extends AbstractTokenClassifier {
       if (term2attributes != null) {
         if (termElement.hasAttributes()) {
           termAttributes = termElement.getDomAttributes().getAttributes();
+
+          // apply global attributes, but don't clobber term-level overrides
+          if (globalAttributes != null) {
+            for (Map.Entry<String, String> entry : globalAttributes.entrySet()) {
+              if (!termAttributes.containsKey(entry.getKey())) {
+                termAttributes.put(entry.getKey(), entry.getValue());
+              }
+            }
+          }
         }
         else termAttributes = null;
 

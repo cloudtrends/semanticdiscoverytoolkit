@@ -76,9 +76,11 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
   }
 
   public boolean doClassify(Token token) {
+    if (token.getWordCount() > 1) return false;  // just take one word at a time
+
     final String tokenText = token.getText();
 
-    if (stopWords != null &&
+    if (stopWords != null && tokenText.length() > 1 &&
         stopWords.contains(caseSensitive() ? tokenText : tokenText.toLowerCase())) {
       return false;
     }
@@ -91,6 +93,14 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
 
     if (!result) {
       result = super.doClassify(token);
+
+      // accept a single letter followed by a '.', even if not capitalized.
+      if (!result && tokenText.length() == 1) {
+        final String postDelim = token.getTokenizer().getPostDelim(token);
+        if (postDelim.length() > 0 && postDelim.charAt(0) == '.') {
+          result = true;
+        }
+      }
     }
 
     if (result) {

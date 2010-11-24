@@ -58,10 +58,10 @@ public class TokenHistoryTest implements AtnRuleStepTest {
   //         if same as category, then category is tested first and then search is halted.
   //
   // test directives (child nodes) are of the form:
-  //   <values>
-  //     <include/exclude classifier='...' />
+  //   <categories>
+  //     <category tokenClassifier='...' />
   //     ...
-  //   </values>
+  //   </categories>
   //
   //   Each directive is applied in order to identified (normalized) token text.
   //   If any directive fails, then the test fails. [todo: parameterize this behavior]
@@ -72,9 +72,9 @@ public class TokenHistoryTest implements AtnRuleStepTest {
   // <event>
   //   <test category='eventKeyword' halt='event' missing='pass'>
   //     <jclass>org.sd.atn.TokenHistoryTest</jclass>
-  //     <values>
-  //       <include classifier='birthKeyword' />
-  //     </values>
+  //     <categories>
+  //       <eventKeyword tokenClassifier='birthKeyword' />
+  //     </categories>
   //   </test>
   // </event>
   //
