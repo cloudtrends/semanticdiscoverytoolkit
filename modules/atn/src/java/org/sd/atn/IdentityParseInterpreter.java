@@ -41,6 +41,10 @@ public class IdentityParseInterpreter implements AtnParseInterpreter {
     this.compress = domNode.getAttributeBoolean("compress", false);
   }
 
+  public IdentityParseInterpreter(boolean compress) {
+    this.compress = compress;
+  }
+
   /**
    * Get classifications offered by this interpreter.
    * 

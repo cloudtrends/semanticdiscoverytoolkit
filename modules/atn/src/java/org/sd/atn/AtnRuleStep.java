@@ -38,6 +38,11 @@ public class AtnRuleStep {
     return category;
   }
 
+  private String label;
+  public String getLabel() {
+    return label == null ? category : label;
+  }
+
   private String require;
   /**
    * If non-null, this indicates that a rule step only applies if the specified
@@ -105,6 +110,7 @@ public class AtnRuleStep {
 
   AtnRuleStep(DomElement stepElement, ResourceManager resourceManager) {
     this.category = stepElement.getLocalName();
+    this.label = stepElement.getAttributeValue("label", null);
     this.require = stepElement.getAttributeValue("require", null);
     this.isOptional = stepElement.getAttributeBoolean("optional", false);
     this.repeats = stepElement.getAttributeBoolean("repeats", false);

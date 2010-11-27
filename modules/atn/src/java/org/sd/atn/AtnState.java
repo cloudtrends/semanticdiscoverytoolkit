@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Set;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Token;
-import org.sd.token.TokenClassifier;
 import org.sd.util.tree.Tree;
 
 /**
@@ -462,8 +461,8 @@ if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith(
       String category = ruleStep.getCategory();
 
       if (grammar.getCat2Classifiers().containsKey(category)) {
-        for (TokenClassifier classifier : grammar.getCat2Classifiers().get(category)) {
-          if (classifier.classify(inputToken) && ruleStep.verify(inputToken, this)) {
+        for (AtnStateTokenClassifier classifier : grammar.getCat2Classifiers().get(category)) {
+          if (classifier.classify(inputToken, this) && ruleStep.verify(inputToken, this)) {
             result = true;
             break;
           }

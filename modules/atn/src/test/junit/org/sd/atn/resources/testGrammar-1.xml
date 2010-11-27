@@ -36,12 +36,12 @@
 
 	<classifiers>
 		<namePart>
-			<jclass>org.sd.token.plugin.CapitalizedWordClassifier</jclass>
+			<jclass>org.sd.atn.CapitalizedWordClassifier</jclass>
       <terms><term>of</term><term>the</term></terms>
 		</namePart>
 
 		<nameMod>
-			<jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+			<jclass>org.sd.atn.RoteListClassifier</jclass>
       <terms><term>Jr</term><term>Sr</term></terms>
 		</nameMod>
 

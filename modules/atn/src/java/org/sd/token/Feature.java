@@ -45,6 +45,9 @@ public class Feature {
   public Object getValue() {
     return value;
   }
+  public void setValue(Object value) {
+    this.value = value;
+  }
 
   private double p;
   /**
@@ -52,6 +55,9 @@ public class Feature {
    */
   public double getP() {
     return p;
+  }
+  public void setP(double p) {
+    this.p = p;
   }
 
   private Object source;

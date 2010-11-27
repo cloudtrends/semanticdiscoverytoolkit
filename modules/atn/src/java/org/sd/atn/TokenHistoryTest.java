@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.sd.token.Token;
-import org.sd.token.TokenClassifier;
 import org.sd.xml.DomNode;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -197,7 +196,7 @@ public class TokenHistoryTest implements AtnRuleStepTest {
     private DirectiveResult resultWhenMismatch;
     private DirectiveResult resultWhenMissing;
 
-    private List<TokenClassifier> _tokenClassifiers;
+    private List<AtnStateTokenClassifier> _tokenClassifiers;
 
     DirectiveData(DomNode domNode) {
       this.category = domNode.getNodeName();
@@ -227,7 +226,7 @@ public class TokenHistoryTest implements AtnRuleStepTest {
       if (classifierId != null) {
         boolean foundMatch = false;
 
-        final List<TokenClassifier> tokenClassifiers = getTokenClassifiers(curState);
+        final List<AtnStateTokenClassifier> tokenClassifiers = getTokenClassifiers(curState);
 
         if (tokenClassifiers == null) {
           throw new IllegalStateException("Unknown referenced classifier '" + classifierId + "'!");
@@ -235,8 +234,8 @@ public class TokenHistoryTest implements AtnRuleStepTest {
 
         final Token token = curState.getInputToken();
 
-        for (TokenClassifier tokenClassifier : tokenClassifiers) {
-          if (tokenClassifier.classify(token)) {
+        for (AtnStateTokenClassifier tokenClassifier : tokenClassifiers) {
+          if (tokenClassifier.classify(token, curState)) {
             foundMatch = true;
             break;
           }
@@ -248,7 +247,7 @@ public class TokenHistoryTest implements AtnRuleStepTest {
       return result;
     }
 
-    private final List<TokenClassifier> getTokenClassifiers(AtnState curState) {
+    private final List<AtnStateTokenClassifier> getTokenClassifiers(AtnState curState) {
       if (_tokenClassifiers == null) {
         _tokenClassifiers = curState.getRule().getGrammar().getClassifiers(classifierId);
       }

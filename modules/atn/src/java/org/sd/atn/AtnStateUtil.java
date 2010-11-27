@@ -72,7 +72,7 @@ public class AtnStateUtil {
     for (int pathIndex = 1; pathIndex < stateNodes.size(); ++pathIndex) {
       final Tree<AtnState> pathStateNode = stateNodes.get(pathIndex);
       final AtnState pathState = pathStateNode.getData();
-      final String category = pathState.getRuleStep().getCategory();
+      final String category = pathState.getRuleStep().getLabel();
       final AtnState pushState = pathState.getPushState();
 
       if (!pathState.getRuleStep().consumeToken()) continue;

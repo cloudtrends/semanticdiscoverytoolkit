@@ -307,6 +307,18 @@ public class AtnParse {
     return _parseTree;
   }
 
+  public AtnRule getStartRule() {
+    // Get the state just under the root (which holds null) leading to the endState
+    Tree<AtnState> firstStateNode = endState;
+    for (Tree<AtnState> stateNode = endState.getParent(); stateNode.getParent() != null; stateNode = stateNode.getParent()) {
+      if (stateNode.getParent().getData() == null) {
+        firstStateNode = stateNode;
+        break;
+      }
+    }
+    return firstStateNode.getData().getRule();
+  }
+
   public Tree<AtnState> getEndState() {
     return endState;
   }

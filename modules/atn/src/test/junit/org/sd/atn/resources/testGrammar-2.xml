@@ -4,7 +4,7 @@
 
 	<classifiers>
 		<eventKeyword>
-			<jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+			<jclass>org.sd.atn.RoteListClassifier</jclass>
 			<classifierClass>NLP.RoteListClassifier</classifierClass>
 			<terms caseSensitive="false">
 				<term eventClass="marriage">married</term>
@@ -12,7 +12,7 @@
 		</eventKeyword>
 
 		<eventKeywordPreposition>
-			<jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+			<jclass>org.sd.atn.RoteListClassifier</jclass>
 			<classifierClass>NLP.RoteListClassifier</classifierClass>
 			<terms caseSensitive="true">
 				<term>at</term>
@@ -23,7 +23,7 @@
 
 
 		<relKeyword>
-			<jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+			<jclass>org.sd.atn.RoteListClassifier</jclass>
 			<classifierClass>NLP.RoteListClassifier</classifierClass>
 			<terms caseSensitive="false">
 				<term relClass="wife">wife</term>
@@ -31,7 +31,7 @@
 		</relKeyword>
 
 		<eventKeywordPreposition>
-			<jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+			<jclass>org.sd.atn.RoteListClassifier</jclass>
 			<classifierClass>NLP.RoteListClassifier</classifierClass>
 			<terms caseSensitive="true">
 				<term>of</term>

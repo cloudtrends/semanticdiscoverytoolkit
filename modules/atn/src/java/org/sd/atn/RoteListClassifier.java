@@ -16,7 +16,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.sd.token.plugin;
+package org.sd.atn;
 
 
 import java.io.BufferedReader;
@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import org.sd.io.FileUtil;
 import org.sd.atn.ResourceManager;
-import org.sd.token.AbstractTokenClassifier;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
 import org.sd.xml.DomElement;
@@ -48,7 +47,7 @@ import org.w3c.dom.NodeList;
  * 
  * @author Spence Koehler
  */
-public class RoteListClassifier extends AbstractTokenClassifier {
+public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   
   private String roteListType;
   public String getRoteListType() {
