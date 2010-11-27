@@ -377,14 +377,26 @@ if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith(
         break;
       }
       final String require = step.getRequire();
-      if (require == null) break;
-      else {
+      final String unless = step.getUnless();
+      if (require == null && unless == null) break;
+      else if (require != null) {
         // if require is met, we're done
         if (haveRequired(require)) {
           break;
         }
 
         // if require isn't met, increment and loop
+        else {
+          ++result;
+        }
+      }
+      else if (unless != null) {
+        // if unless is met, we're done
+        if (!haveRequired(unless)) {
+          break;
+        }
+
+        // haven't met 'unless', increment and loop
         else {
           ++result;
         }
@@ -404,7 +416,8 @@ if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith(
 
       // check for 'require' on states with the same pushState
       if (curState.pushState == this.pushState) {
-        if (require.equals(curState.getRuleStep().getCategory()) && curState.getMatched()) {
+        if (require.equals(curState.getRuleStep().getCategory()) &&
+            (curState.getMatched() || curState.isPoppedState())) {
           result = true;
           break;
         }
