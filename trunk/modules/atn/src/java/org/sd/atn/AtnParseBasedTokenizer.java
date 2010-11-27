@@ -262,17 +262,21 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
       if (tic != null) {
         final TokenInfo first = tic.getFirst(token.getEndIndex());
 
-        if (first != null) {
-          // Add the matched grammar rule's category as a token feature
-          token.setFeature(first.getCategory(), first.getParse(), this);
+        final List<TokenInfo> tokenInfos = tic.getAll(token.getEndIndex());
+        if (tokenInfos != null) {
+          for (TokenInfo tokenInfo : tokenInfos) {
 
-          if (first.getParse() != null) {
-            // Add the interpretation classifications as token features
-            final List<ParseInterpretation> interpretations = first.getParse().getParseInterpretations();
-            if (interpretations != null) {
-              for (ParseInterpretation interpretation : interpretations) {
-                if (interpretation.getClassification() != null) {
-                  token.setFeature(interpretation.getClassification(), interpretation, this);
+            // Add the matched grammar rule's category as a token feature
+            token.setFeature(tokenInfo.getCategory(), tokenInfo.getParse(), this);
+
+            if (tokenInfo.getParse() != null) {
+              // Add the interpretation classifications as token features
+              final List<ParseInterpretation> interpretations = tokenInfo.getParse().getParseInterpretations();
+              if (interpretations != null) {
+                for (ParseInterpretation interpretation : interpretations) {
+                  if (interpretation.getClassification() != null) {
+                    token.setFeature(interpretation.getClassification(), interpretation, this);
+                  }
                 }
               }
             }

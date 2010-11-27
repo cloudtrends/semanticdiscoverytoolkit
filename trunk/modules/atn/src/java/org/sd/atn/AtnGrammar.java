@@ -27,7 +27,6 @@ import org.sd.token.Normalizer;
 import org.sd.token.StandardNormalizer;
 import org.sd.token.StandardNormalizerOptions;
 import org.sd.token.Token;
-import org.sd.token.TokenClassifier;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.Node;
@@ -58,11 +57,11 @@ public class AtnGrammar {
     return id2TokenFilter;
   }
 
-  private Map<String, List<TokenClassifier>> cat2Classifiers;
-  Map<String, List<TokenClassifier>> getCat2Classifiers() {
+  private Map<String, List<AtnStateTokenClassifier>> cat2Classifiers;
+  Map<String, List<AtnStateTokenClassifier>> getCat2Classifiers() {
     return cat2Classifiers;
   }
-  public List<TokenClassifier> getClassifiers(String cat) {
+  public List<AtnStateTokenClassifier> getClassifiers(String cat) {
     return cat2Classifiers.get(cat);
   }
 
@@ -290,8 +289,8 @@ public class AtnGrammar {
     return result;
   }
 
-  private Map<String, List<TokenClassifier>> loadClassifiers(DomElement grammarNode, Map<String, Normalizer> id2Normalizer) {
-    Map<String, List<TokenClassifier>> result = new HashMap<String, List<TokenClassifier>>();
+  private Map<String, List<AtnStateTokenClassifier>> loadClassifiers(DomElement grammarNode, Map<String, Normalizer> id2Normalizer) {
+    Map<String, List<AtnStateTokenClassifier>> result = new HashMap<String, List<AtnStateTokenClassifier>>();
 
     //
     // Classifier elements under the grammar node should have the form:
@@ -322,13 +321,13 @@ public class AtnGrammar {
       NodeList classifierNodes = classifiersNode.getChildNodes();
       for (int i = 0; i < classifierNodes.getLength(); ++i) {
         final DomElement classifierElement = (DomElement)classifierNodes.item(i);
-        final TokenClassifier classifier =
-          (TokenClassifier)resourceManager.getResource(classifierElement, new Object[] { id2Normalizer });
+        final AtnStateTokenClassifier classifier =
+          (AtnStateTokenClassifier)resourceManager.getResource(classifierElement, new Object[] { id2Normalizer });
         final String classifierId = classifierElement.getLocalName();
 
-        List<TokenClassifier> classifiers = result.get(classifierId);
+        List<AtnStateTokenClassifier> classifiers = result.get(classifierId);
         if (classifiers == null) {
-          classifiers = new ArrayList<TokenClassifier>();
+          classifiers = new ArrayList<AtnStateTokenClassifier>();
           result.put(classifierId, classifiers);
         }
 

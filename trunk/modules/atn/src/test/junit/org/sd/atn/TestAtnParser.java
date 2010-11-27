@@ -523,7 +523,7 @@ public class TestAtnParser extends TestCase {
 
   public void testLenghtenToken() throws IOException {
     // D <- H Y
-    final AtnParser test13_Parser = buildParser("<grammar><classifiers><H><jclass>org.sd.token.plugin.RoteListClassifier</jclass><terms><term>Easter</term><term>Easter Sunday</term></terms></H></classifiers><rules><D start='true'><H/><Y/></rules></grammar>", false);
+    final AtnParser test13_Parser = buildParser("<grammar><classifiers><H><jclass>org.sd.atn.RoteListClassifier</jclass><terms><term>Easter</term><term>Easter Sunday</term></terms></H></classifiers><rules><D start='true'><H/><Y/></rules></grammar>", false);
 
     final StandardTokenizer tokenizer13a = buildTokenizer("<tokenizer><revisionStrategy>SL</revisionStrategy></tokenizer>", "Easter Y");
     runParseTest("ParserTest.13a",

@@ -60,7 +60,7 @@
 						<grammar>
 							<classifiers>
 								<prep>
-                  <jclass>org.sd.token.plugin.RoteListClassifier</jclass>
+                  <jclass>org.sd.atn.RoteListClassifier</jclass>
 									<terms caseSensitive='false'>
 										<term>on</term>
 										<term>at</term>

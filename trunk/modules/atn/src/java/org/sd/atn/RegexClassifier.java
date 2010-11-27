@@ -16,7 +16,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.sd.token.plugin;
+package org.sd.atn;
 
 
 import java.util.ArrayList;
@@ -26,7 +26,6 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.sd.atn.ResourceManager;
-import org.sd.token.AbstractTokenClassifier;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
 import org.sd.xml.DomElement;
@@ -37,7 +36,7 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
-public class RegexClassifier extends AbstractTokenClassifier {
+public class RegexClassifier extends AbstractAtnStateTokenClassifier {
   
   private List<RegexData> regexes;
 
