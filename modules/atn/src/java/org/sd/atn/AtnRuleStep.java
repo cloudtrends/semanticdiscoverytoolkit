@@ -46,15 +46,32 @@ public class AtnRuleStep {
   private String require;
   /**
    * If non-null, this indicates that a rule step only applies if the specified
-   * constituent or category has been matched. This aids in disabling
-   * superfluous extraneous parses when the step's category could have beeen
-   * matched in a prior constituent followed by a missing optional constituent,
-   * which leads to this step. Specifying the optional constituent as required
-   * for this step ensures that the extraneous parse with this step's category
-   * is not redundantly generated when the optional constituent is missing.
+   * constituent or category has been matched.
+   * <p>
+   * This allows for a rule to specify a step that only applies when an
+   * optional step has matched.
+   * <p>
+   * Also, this aids in disabling superfluous extraneous parses when the step's
+   * category could have been matched in a prior constituent followed by a
+   * missing optional constituent, which leads to this step. Specifying the
+   * optional constituent as required for this step ensures that the extraneous
+   * parse with this step's category is not redundantly generated when the
+   * optional constituent is missing.
    */
   public String getRequire() {
     return require;
+  }
+
+  private String unless;
+  /**
+   * If non-null, this indicates that a rule step only applies if the specified
+   * constituent or category has NOT been matched.
+   * <p>
+   * This allows for a rule to specify a step that only applies when an
+   * optional step has not matched.
+   */
+  public String getUnless() {
+    return unless;
   }
 
   private boolean isOptional;
@@ -112,6 +129,7 @@ public class AtnRuleStep {
     this.category = stepElement.getLocalName();
     this.label = stepElement.getAttributeValue("label", null);
     this.require = stepElement.getAttributeValue("require", null);
+    this.unless = stepElement.getAttributeValue("unless", null);
     this.isOptional = stepElement.getAttributeBoolean("optional", false);
     this.repeats = stepElement.getAttributeBoolean("repeats", false);
     this.isTerminal = stepElement.getAttributeBoolean("terminal", false);
