@@ -41,7 +41,7 @@ public class SimpleClient {
     try {
       this.nodeClient =
         new NodeClient(
-          "simple-client[" + name + "](" + ExecUtil.getUser() + "@" + ExecUtil.getMachineName(),
+          "simple-client[" + name + "](" + ExecUtil.getUser() + "@" + ExecUtil.getMachineName() + ")",
           InetAddress.getLocalHost(),
           numSocketThreads);
     }
@@ -51,7 +51,7 @@ public class SimpleClient {
   }
 
   public void close()  {
-    nodeClient.shutdown(false);
+    nodeClient.shutdown(true);
   }
 
   public final Message sendMessage(InetSocketAddress serverAddress, Message message, int timeout) {

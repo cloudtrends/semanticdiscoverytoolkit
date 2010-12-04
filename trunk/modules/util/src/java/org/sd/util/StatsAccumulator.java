@@ -23,6 +23,7 @@ import java.beans.ConstructorProperties;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * A helper class to collect statistical samples and provide summary
@@ -34,7 +35,7 @@ import java.io.IOException;
  *
  * @author Spence Koehler
  */
-public class StatsAccumulator {
+public class StatsAccumulator implements Serializable {
 
   private int n;
   private double sos;
@@ -42,6 +43,8 @@ public class StatsAccumulator {
   private double min;
   private double max;
   private String label;
+
+  private static final long serialVersionUID = 42L;
 
   /**
    * Default constructor.

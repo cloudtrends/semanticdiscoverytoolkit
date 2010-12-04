@@ -56,14 +56,25 @@ public class TestParseConfig extends TestCase {
   // Tests for multipass CompoundParser functionality through ParseConfig.
 
 
+  private final boolean debug = false;
 
   public void test1() throws IOException {
 
+    if (debug) AtnState.setTrace(true);
+    if (debug) System.out.println("test1a");
+
     runTest("parseConfigTest.1.xml", "ParseConfigTest.1a", "test1", "input1", "expectedText-1a", "expectedTrees-1a", "1", null, false, null);
+
+    if (debug) System.out.println("test1b");
+
     runTest("parseConfigTest.1.xml", "ParseConfigTest.1b", "test1", "input1", "expectedText-1b", "expectedTrees-1b", "1", null, true, null);
+
+    if (debug) System.out.println("test1c");
 
     // run all compound parsers and their parsers in order with 'reset' input reconfiguration
     runTest("parseConfigTest.1.xml", "ParseConfigTest.1c", "test1", "input1", "expectedText-1c", "expectedTrees-1c", null, null, true, ParseSettingsFactory.ReconfigureStrategy.RESET);
+
+    if (debug) System.out.println("test1d");
 
     // run all compound parsers and their parsers in order with a root input reconfiguration
     runTest("parseConfigTest.1.xml", "ParseConfigTest.1d", "test1", "input1", "expectedText-1d", "expectedTrees-1d", null, null, true, ParseSettingsFactory.ReconfigureStrategy.ROOT);
@@ -73,11 +84,15 @@ public class TestParseConfig extends TestCase {
 
   public void test2() throws IOException {
 
+    if (debug) System.out.println("test2a");
+
     runTest("parseConfigTest.2.xml", "ParseConfigTest.2a", "test2", "input2", "expectedText-2a", "expectedTrees-2a", null, null, true, ParseSettingsFactory.ReconfigureStrategy.ROOT);
   }
 
 
   public void test3() throws IOException {
+
+    if (debug) System.out.println("test3a");
 
     runTest("parseConfigTest.3.xml", "ParseConfigTest.3a", "test3", "input3", "expectedText-3a", "expectedTrees-3a", "parser1", null, true, null);
   }
@@ -96,6 +111,7 @@ public class TestParseConfig extends TestCase {
 
     final TestParams testParams = paramsContainer.testId2Params.get(testId);
     final ParseConfig parseConfig = buildParseConfig(testParams.getInput("parseConfig"));
+    if (debug) parseConfig.setVerbose(true);
     final DomElement testInput = testParams.getInput(inputId);
 
     assertNotNull("No input '" + inputId + "' specified for test!",
@@ -304,11 +320,9 @@ public class TestParseConfig extends TestCase {
       if (expectedText != null) {
 
         final int numParseResults = output == null ? 0 : output.getParseResults() == null ? 0 : output.getParseResults().size();
-        assertEquals(name + ": Bad number of parses.",
-                     expectedText.size(), numParseResults);
+        int parseResultNum = 0;
 
         if (numParseResults > 0) {
-          int parseResultNum = 0;
           for (AtnParseResult parseResult : output.getParseResults()) {
 
             int expectedParseNum = 0;
@@ -319,6 +333,14 @@ public class TestParseConfig extends TestCase {
               final AtnParse parse = parseResult.getParse(parseNum);
 
               if (onlySelected && parse.getSelected() || !onlySelected) {
+
+                assertTrue(name + ": more parseResults (" + (parseResultNum + 1) + ") than expected (" + expectedText.size() + ")!" +
+                           " parse=" + parse.getParsedText(),
+                           parseResultNum < expectedText.size());
+                assertTrue(name + ": more parses(" + (expectedParseNum + 1) + ") than expected (" +
+                           expectedText.get(parseResultNum).size() + ") parseResultNum=" + parseResultNum +
+                           " parse=" + parse.getParsedText(),
+                           expectedParseNum < expectedText.get(parseResultNum).size());
 
                 // ParsedText
                 assertEquals(name + ": Bad parsed text (#" + parseResultNum + ", " + expectedParseNum + ").",
@@ -331,16 +353,19 @@ public class TestParseConfig extends TestCase {
                 ++expectedParseNum;
               }
             }
-
             ++parseResultNum;
           }
         }
+
+//        final int numParseResults = output == null ? 0 : output.getParseResults() == null ? 0 : output.getParseResults().size();
+        assertEquals(name + ": Bad number of parses.",
+                     expectedText.size(), parseResultNum);
       }
       else {
         if (showText) {
-          System.out.println("\n<list>");
 
           if (output.getParseResults() != null) {
+            System.out.println("\n<list>");
 
             for (AtnParseResult parseResult : output.getParseResults()) {
 
@@ -354,12 +379,12 @@ public class TestParseConfig extends TestCase {
                 if (onlySelected && parse.getSelected() || !onlySelected) {
                   System.out.println("\t\t<item>" + parse.getParsedText() + "</item>");
 								}
-                
-								System.out.println("\t</list>");
 							}
+                
+              System.out.println("\t</list>");
 						}
 
-						System.out.println("</list>");
+            System.out.println("</list>");
 					}
 
 
