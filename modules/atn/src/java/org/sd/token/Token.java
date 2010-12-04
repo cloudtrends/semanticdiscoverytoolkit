@@ -19,6 +19,7 @@
 package org.sd.token;
 
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -109,8 +110,7 @@ public class Token {
   /**
    * Construct a new token with the given text. Usually constructed by a Tokenizer.
    */
-  Token(Tokenizer tokenizer, String text, int startIndex, TokenRevisionStrategy revisionStrategy, int revisionNumber, int sequenceNumber, int wordCount)
-		{
+  Token(Tokenizer tokenizer, String text, int startIndex, TokenRevisionStrategy revisionStrategy, int revisionNumber, int sequenceNumber, int wordCount) {
 			this.tokenizer = tokenizer;
 			this.features = null;
 			this.text = text;
@@ -157,11 +157,20 @@ public class Token {
    * Convenience method for setting a feature on this token with a
    * probability of 1.
    */
-  public Feature setFeature(String type, Object value, Object source) {
+  public Feature setFeature(String type, Serializable value, Object source) {
     Feature result = new Feature(type, value, 1.0, source);
     if (this.features == null) this.features = new Features();
     this.features.add(result);
     return result;
+  }
+
+  /**
+   * Set this token's features.
+   * <p>
+   * Note: all existing features will be replaced by the given features.
+   */
+  public void setFeatures(Features features) {
+    this.features = features;
   }
 
   /**
@@ -193,7 +202,7 @@ public class Token {
     Feature result = null;
 
     if (this.features != null) {
-      final FeatureConstraint constraint = makeConstraint(type, source, featureValueType);
+      final FeatureConstraint constraint = FeatureConstraint.getInstance(type, source, featureValueType);
       result = features.getFirst(constraint);
     }
 
@@ -207,19 +216,11 @@ public class Token {
     List<Feature> result = null;
 
     if (this.features != null) {
-      final FeatureConstraint constraint = makeConstraint(type, source, featureValueType);
+      final FeatureConstraint constraint = FeatureConstraint.getInstance(type, source, featureValueType);
       result = features.getFeatures(constraint);
     }
 
     return result;
-  }
-
-  private final FeatureConstraint makeConstraint(String type, Object source, Class featureValueType) {
-    FeatureConstraint constraint = new FeatureConstraint();
-    constraint.setType(type);
-    constraint.setClassType(source != null ? source.getClass() : null);
-    constraint.setFeatureValueType(featureValueType != null ? featureValueType : null);
-    return constraint;
   }
 
   /**

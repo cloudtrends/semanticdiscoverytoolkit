@@ -20,11 +20,14 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Feature;
+import org.sd.token.FeatureConstraint;
 import org.sd.token.Token;
+import org.sd.token.Tokenizer;
 import org.sd.util.tree.Tree;
 
 /**
@@ -127,7 +130,7 @@ public class ParseInterpretationUtil {
   }
 
   /**
-   * Get the first interpretation with the given featureKey from the
+   * Get all interpretations with the given featureKey from the
    * tokens under the given parseTreeNode or null.
    */
   public static List<ParseInterpretation> getInterpretations(Tree<String> parseTreeNode, String featureKey) {
@@ -139,6 +142,119 @@ public class ParseInterpretationUtil {
       for (Feature feature : features) {
         result.add((ParseInterpretation)feature.getValue());
       }
+    }
+
+    return result;
+  }
+
+  /**
+   * Resolve the interpretations with the given featureKey from the
+   * tokens under the given parseTreeNode to the given interpretation.
+   */
+  public static void resolveInterpretation(Tree<String> parseTreeNode, String featureKey, ParseInterpretation resolved) {
+
+    boolean sawResolved = false;
+
+    final CategorizedToken cToken = getCategorizedToken(parseTreeNode, false);
+    if (cToken != null && cToken.token.hasFeatures()) {
+      final List<Feature> features = cToken.token.getFeatures().getFeatures();
+      final FeatureConstraint constraint = FeatureConstraint.getInstance(featureKey, null, ParseInterpretation.class);
+      for (Iterator<Feature> iter = features.iterator(); iter.hasNext(); ) {
+        final Feature feature = iter.next();
+        if (!constraint.includes(feature)) continue;
+        if (resolved == feature.getValue()) {
+          sawResolved = true;
+          continue;
+        }
+        final ParseInterpretation interp = (ParseInterpretation)feature.getValue();
+        final Parse parse = interp.getParse();
+        if (parse != null) {
+          final Tree<String> parseTree = parse.getParseTree();
+          parseTree.prune(true, true);
+        }
+        
+        iter.remove();
+      }
+    }
+
+    if (cToken != null && !sawResolved) {
+      // set the feature on the token
+      cToken.token.setFeature(resolved.getClassification(), resolved, null);
+    }
+  }
+
+  private enum CharType {
+    UPPER('A'), LOWER('a'), DIGIT('x'), OTHER('-'), WHITE('.'), NONE('*');
+
+    private char c;
+    private CharType(char c) {
+      this.c = c;
+    }
+    char getChar() { return c; }
+  };
+
+  public static final String getTextPattern(ParseInterpretation interp) {
+    String text = null;
+
+    final Parse parse = interp.getParse();
+    if (parse != null) {
+      final Tokenizer tokenizer = parse.getTokenizer();
+      if (tokenizer != null) {
+        text = tokenizer.getText();
+      }
+      else {
+        final Tree<String> parseTree = parse.getParseTree();
+        if (parseTree != null) {
+          text = parseTree.getLeafText();
+        }
+      }
+    }
+    else {
+      text = interp.toString();
+    }
+
+    return getTextPattern(text);
+  }
+
+  public static final String getTextPattern(String text) {
+    final StringBuilder result = new StringBuilder();
+
+    final int len = text.length();
+
+    CharType lastCharType = CharType.NONE;
+
+    for (int cPos = 0; cPos < len; ++cPos) {
+      final char c = text.charAt(cPos);
+      
+      final CharType curCharType = getCharType(c);
+
+      if (!curCharType.equals(lastCharType)) {
+        result.append(curCharType.getChar());
+      }
+
+      lastCharType = curCharType;
+    }
+
+    return result.toString();
+  }
+
+  private static final CharType getCharType(char c) {
+    CharType result = null;
+
+    if (Character.isWhitespace(c) || c == '.') {
+      result = CharType.WHITE;
+    }
+    else if (Character.isDigit(c)) {
+      result = CharType.DIGIT;
+    }
+    else if (Character.isUpperCase(c)) {
+      result = CharType.UPPER;
+    }
+    else if (Character.isLowerCase(c)) {
+      result = CharType.LOWER;
+    }
+    else {
+      result = CharType.OTHER;
     }
 
     return result;

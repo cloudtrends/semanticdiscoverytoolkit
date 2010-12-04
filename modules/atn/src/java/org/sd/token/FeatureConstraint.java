@@ -26,6 +26,15 @@ package org.sd.token;
  */
 public class FeatureConstraint {
   
+  public static FeatureConstraint getInstance(String type, Object source, Class featureValueType) {
+    final FeatureConstraint constraint = new FeatureConstraint();
+    constraint.setType(type);
+    constraint.setClassType(source != null ? source.getClass() : null);
+    constraint.setFeatureValueType(featureValueType != null ? featureValueType : null);
+    return constraint;
+  }
+
+
   private String type;
   public String getType() {
     return type;
@@ -102,7 +111,14 @@ public class FeatureConstraint {
     }
 
     if (result && classType != null) {
-      result = classType.isInstance(feature.getSource());
+      //result = classType.isInstance(feature.getSource());
+      final Class<?> sourceType = feature.getSourceType();
+      if (sourceType == null) {
+        result = false;
+      }
+      else {
+        result = sourceType.isAssignableFrom(classType);
+      }
     }
 
     if (result && featureValueType != null) {

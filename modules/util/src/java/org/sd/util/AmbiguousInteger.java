@@ -19,6 +19,7 @@
 package org.sd.util;
 
 
+import java.io.Serializable;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -27,10 +28,12 @@ import java.util.TreeSet;
  * <p>
  * @author Spence Koehler
  */
-public class AmbiguousInteger {
+public class AmbiguousInteger implements Serializable {
 
   private TreeSet<Integer> values;
-  private int[] _values;
+  private transient int[] _values;
+
+  private static final long serialVersionUID = 42L;
 
   public AmbiguousInteger(Integer value) {
     this.values = new TreeSet<Integer>();

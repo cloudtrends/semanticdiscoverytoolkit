@@ -228,19 +228,19 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
   }
 
 
-  /**
-   * A feature constraint for locating parse category features on tokens
-   * <p>
-   * Note that values of features found through this constraint will be AtnParse
-   * instances.
-   */
-  public static final FeatureConstraint createParseFeatureConstraint(String category) {
-    final FeatureConstraint result = new FeatureConstraint();
-    result.setType(category);
-    result.setClassType(AtnParseBasedTokenizer.class);
-    result.setFeatureValueType(AtnParse.class);
-    return result;
-  }
+  // /**
+  //  * A feature constraint for locating parse category features on tokens
+  //  * <p>
+  //  * Note that values of features found through this constraint will be Parse
+  //  * instances.
+  //  */
+  // public static final FeatureConstraint createParseFeatureConstraint(String category) {
+  //   final FeatureConstraint result = new FeatureConstraint();
+  //   result.setType(category);
+  //   result.setClassType(AtnParseBasedTokenizer.class);
+  //   result.setFeatureValueType(Parse.class);
+  //   return result;
+  // }
 
   /**
    * A feature constraint for locating parse interpretation features on tokens
@@ -267,11 +267,17 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
           for (TokenInfo tokenInfo : tokenInfos) {
 
             // Add the matched grammar rule's category as a token feature
-            token.setFeature(tokenInfo.getCategory(), tokenInfo.getParse(), this);
+            // (NOTE: this feature is used by AtnState.tokenMatchesStepCategory to
+            //        identify a token match and needs to be present whether we
+            //        have a parse or not.)
+            token.setFeature(tokenInfo.getCategory(), new Boolean(true), this);
 
             if (tokenInfo.getParse() != null) {
+
+              final AtnParse atnParse = tokenInfo.getParse();
+
               // Add the interpretation classifications as token features
-              final List<ParseInterpretation> interpretations = tokenInfo.getParse().getParseInterpretations();
+              final List<ParseInterpretation> interpretations = atnParse.getParseInterpretations();
               if (interpretations != null) {
                 for (ParseInterpretation interpretation : interpretations) {
                   if (interpretation.getClassification() != null) {

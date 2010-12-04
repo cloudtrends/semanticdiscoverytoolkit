@@ -19,11 +19,19 @@
 package org.sd.atn;
 
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import org.sd.cio.MessageHelper;
+import org.sd.io.Publishable;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
+import org.sd.xml.XmlFactory;
 import org.sd.xml.XmlLite;
 
 /**
@@ -31,18 +39,22 @@ import org.sd.xml.XmlLite;
  * <p>
  * @author Spence Koehler
  */
-public class ParseInterpretation implements Serializable {
+public class ParseInterpretation implements Publishable, Serializable {
   
+  private static final long serialVersionUID = 42L;
+
   private String classification;
-  private Object interpretation;
+  private Serializable interpretation;
   private double confidence;
   private String toStringOverride;
-  private Map<String, Object> category2Value;
+  private Map<String, Serializable> category2Value;
 
   //todo: phase out above fields add confidence as attr on tree nodes; add xml accessors
-  private Tree<XmlLite.Data> interpTree;
+  private transient Tree<XmlLite.Data> _interpTree;
+  private String _interpXml;
 
-  private transient AtnParse sourceParse;
+  private transient AtnParse _sourceParse;
+  private Parse _parse;
 
   public ParseInterpretation() {
     init(null);
@@ -53,13 +65,15 @@ public class ParseInterpretation implements Serializable {
   }
 
   public ParseInterpretation(Tree<XmlLite.Data> interpTree) {
-    this.interpTree = interpTree;
+    this._interpTree = interpTree;
 
     init(interpTree.getData().asTag().name);
   }
 
   private final void init(String classification) {
-    if (this.interpTree == null) this.interpTree = XmlLite.createTagNode(classification);
+    if (this._interpTree == null && classification != null) {
+      this._interpTree = XmlLite.createTagNode(classification);
+    }
 
     this.classification = classification;
     this.interpretation = null;
@@ -72,31 +86,51 @@ public class ParseInterpretation implements Serializable {
    * Set the source parse for this interpretation.
    */
   public void setSourceParse(AtnParse sourceParse) {
-    this.sourceParse = sourceParse;
+    this._sourceParse = sourceParse;
   }
 
   /**
-   * Get the source parse for this interpretation, if available.
+   * Get the (atn) source parse for this interpretation, if available.
+   * <p>
+   * Note that this will be unavailable in instances built through
+   * deserialization.
    */
   public AtnParse getSourceParse() {
-    return sourceParse;
+    return _sourceParse;
+  }
+
+  /**
+   * Get the free-standing parse information connected with this instance, if
+   * available.
+   */
+  public Parse getParse() {
+    if (_parse == null && _sourceParse != null) {
+      _parse = _sourceParse.getParse();
+    }
+    return _parse;
   }
 
   public Tree<XmlLite.Data> getInterpTree() {
-    return this.interpTree;
+    if (_interpTree == null && _interpXml != null) {
+      try {
+        _interpTree = XmlFactory.buildXmlTree(_interpXml, true, false);
+      }
+      catch (IOException e) {
+        throw new IllegalArgumentException(e);
+      }
+    }
+    return this._interpTree;
   }
 
   public String getInterpXml() {
-    String result = null;
-
-    if (interpTree != null) {
+    if (_interpXml == null && _interpTree != null) {
       final StringBuilder builder = new StringBuilder();
-      final DomElement domElement = (DomElement)(interpTree.getData().asDomNode());
+      final DomElement domElement = (DomElement)(_interpTree.getData().asDomNode());
       domElement.asFlatString(builder);
-      result = builder.toString();
+      _interpXml = builder.toString();
     }
 
-    return result;
+    return _interpXml;
   }
 
   /**
@@ -115,11 +149,21 @@ public class ParseInterpretation implements Serializable {
 
   /**
    * An object representing the detailed interpretation when non-null.
-   * <p>
-   * NOTE: If this interpretation is to be persisted, the Object must be serializable.
    */
   public Object getInterpretation() {
-    return interpretation == null ? (interpTree == null ? classification : interpTree) : interpretation;
+    Object result = interpretation;
+
+    if (result == null) {
+      final Tree<XmlLite.Data> interpTree = getInterpTree();
+      if (interpTree != null) {
+        result = interpTree;
+      }
+      else {
+        result = classification;
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -127,7 +171,7 @@ public class ParseInterpretation implements Serializable {
    * <p>
    * NOTE: If this interpretation is to be persisted, the Object must be serializable.
    */
-  public void setInterpretation(Object interpretation) {
+  public void setInterpretation(Serializable interpretation) {
     this.interpretation = interpretation;
   }
 
@@ -165,7 +209,7 @@ public class ParseInterpretation implements Serializable {
    * Mappings from categories to their interpreted values for components
    * of the interpretation.
    */
-  public Map<String, Object> getCategory2Value() {
+  public Map<String, Serializable> getCategory2Value() {
     return category2Value;
   }
 
@@ -187,8 +231,8 @@ public class ParseInterpretation implements Serializable {
    * <p>
    * NOTE: If this interpretation is to be persisted, the Object must be serializable.
    */
-  public void add(String category, Object value) {
-    if (category2Value == null) category2Value = new HashMap<String, Object>();
+  public void add(String category, Serializable value) {
+    if (category2Value == null) category2Value = new HashMap<String, Serializable>();
     category2Value.put(category, value);
   }
 
@@ -230,5 +274,67 @@ public class ParseInterpretation implements Serializable {
     }
 
     return result;
+  }
+  /**
+   * Write this message to the dataOutput stream such that this message
+   * can be completely reconstructed through this.read(dataInput).
+   *
+   * @param dataOutput  the data output to write to.
+   */
+  public void write(DataOutput dataOutput) throws IOException {
+    MessageHelper.writeString(dataOutput, classification);
+    MessageHelper.writeSerializable(dataOutput, interpretation);
+    dataOutput.writeDouble(confidence);
+    MessageHelper.writeString(dataOutput, toStringOverride);
+
+    if (category2Value == null) {
+      dataOutput.writeInt(0);
+    }
+    else {
+      dataOutput.writeInt(category2Value.size());
+      for (Map.Entry<String, Serializable> entry : category2Value.entrySet()) {
+        MessageHelper.writeString(dataOutput, entry.getKey());
+        MessageHelper.writeSerializable(dataOutput, entry.getValue());
+      }
+    }
+
+    MessageHelper.writeString(dataOutput, getInterpXml());
+    MessageHelper.writePublishable(dataOutput, getParse());
+  }
+
+  /**
+   * Read this message's contents from the dataInput stream that was written by
+   * this.write(dataOutput).
+   * <p>
+   * NOTE: this requires all implementing classes to have a default constructor
+   *       with no args.
+   *
+   * @param dataInput  the data output to write to.
+   */
+  public void read(DataInput dataInput) throws IOException {
+    this.classification = MessageHelper.readString(dataInput);
+    this.interpretation = MessageHelper.readSerializable(dataInput);
+    this.confidence = dataInput.readDouble();
+    this.toStringOverride = MessageHelper.readString(dataInput);
+
+    final int numC2Vs = dataInput.readInt();
+    if (numC2Vs > 0) {
+      this.category2Value = new HashMap<String, Serializable>();
+      for (int c2vNum = 0; c2vNum < numC2Vs; ++c2vNum) {
+        category2Value.put(MessageHelper.readString(dataInput),
+                           MessageHelper.readSerializable(dataInput));
+      }
+    }
+
+    this._interpXml = MessageHelper.readString(dataInput);
+    this._parse = (Parse)MessageHelper.readPublishable(dataInput);
+  }
+
+  private void writeObject(ObjectOutputStream out) throws IOException {
+    write(out);
+  }
+
+  private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+    read(in);
   }
 }

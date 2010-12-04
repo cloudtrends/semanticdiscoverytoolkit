@@ -19,6 +19,7 @@
 package org.sd.atn;
 
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import org.sd.token.CategorizedToken;
@@ -89,12 +90,13 @@ public class AtnStateUtil {
         }
       }
       else {
+        final Token inputToken = pathState.getInputToken();
         if (!pathState.getMatched()) {
           // add skipped token
           if (pathState.isSkipped()) {
             final Tree<String> unknownNode = curResultNode.addChild("?");
-            unknownNode.addChild(pathState.getInputToken().getText());
-            unknownNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(pathState.getInputToken(), "?"));
+            unknownNode.addChild(inputToken.getText());
+            unknownNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(inputToken, "?"));
           }
           else {
             curResultNode = curResultNode.addChild(category);
@@ -104,19 +106,24 @@ public class AtnStateUtil {
           // add matched token
           final Tree<String> categoryNode = curResultNode.addChild(category);
 
-          if (!category.equals(pathState.getInputToken().getText())) {
+          if (!category.equals(inputToken.getText())) {
             // add non-literal matched token
-            final Tree<String> tokenParse = goDeep ? getTokenParse(pathState.getInputToken(), category) : null;
-            if (tokenParse == null) {
+            final List<Tree<String>> tokenParses = goDeep ? getTokenParses(inputToken, category) : null;
+            if (tokenParses == null) {
               // add token text
-              categoryNode.addChild(pathState.getInputToken().getText());
+              categoryNode.addChild(inputToken.getText());
             }
             else {
-              categoryNode.addChild(tokenParse);
+              if (tokenParses.size() > 1) {
+                categoryNode.getAttributes().put("ambiguous", "true");
+              }
+              for (Tree<String> tokenParse : tokenParses) {
+                categoryNode.addChild(tokenParse);
+              }
             }
 
             // store CategorizedToken as an attribute on the parse tree node
-            categoryNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(pathState.getInputToken(), category));
+            categoryNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(inputToken, category));
           }
         }
 
@@ -135,8 +142,8 @@ public class AtnStateUtil {
    * AtnParseBasedTokenizer) with an AtnParse. If there is unresolved
    * ambiguity, then null will be returned.
    */
-  public static final Tree<String> getTokenParse(Token token, String category) {
-    Tree<String> result = null;
+  public static final List<Tree<String>> getTokenParses(Token token, String category) {
+    List<Tree<String>> result = null;
 
     final Features tokenFeatures = token.getFeatures();
     if (tokenFeatures != null) {
@@ -148,15 +155,9 @@ public class AtnStateUtil {
           final ParseInterpretation interp = (ParseInterpretation)parseFeature.getValue();
           final AtnParse atnParse = interp.getSourceParse();
           if (atnParse != null && atnParse.getSelected()) {
-            if (result != null) {
-              // found ambiguity -- fail
-              result = null;
-              break;
-            }
-            else {
-              // found first parse
-              result = atnParse.getParseTree();
-            }
+            if (result == null) result = new ArrayList<Tree<String>>();
+            final Tree<String> deepParseTree = atnParse.getParse().getParseTree();
+            result.add(deepParseTree);
           }
         }
       }

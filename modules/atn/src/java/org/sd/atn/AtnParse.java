@@ -19,6 +19,7 @@
 package org.sd.atn;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -285,6 +286,7 @@ public class AtnParse {
 
   Tree<AtnState> endState;
   private Tree<String> _parseTree;
+  private Parse _parse;
   private Extraction _extraction;
   private Double _maxConfidence;
 
@@ -294,6 +296,7 @@ public class AtnParse {
     this.endState = endState;
     this.parseResult = parseResult;
     this._parseTree = null;
+    this._parse = null;
     this._extraction = null;
     this.selected = true;
     this._parseInterpretations = null;
@@ -305,6 +308,19 @@ public class AtnParse {
       _parseTree = AtnStateUtil.convertToTree(endState);
     }
     return _parseTree;
+  }
+
+  /**
+   * Get a parse instance for this parse.
+   * <p>
+   * A parse instance is a serializable form of the parse information that is
+   * disconnected from the AtnState objects used to generate the parse.
+   */
+  public Parse getParse() {
+    if (_parse == null) {
+      _parse = new Parse(this);
+    }
+    return _parse;
   }
 
   public AtnRule getStartRule() {
@@ -675,12 +691,12 @@ public class AtnParse {
     final Extraction interpClass = new Extraction("class", interp.getInterpretation().getClass().getName());
     result.addField(interpClass);
 
-    final Map<String, Object> attrs = interp.getCategory2Value();
+    final Map<String, Serializable> attrs = interp.getCategory2Value();
     if (attrs != null && attrs.size() > 0) {
       final Extraction attrsExtraction = new Extraction("_attrs_", "");
-      for (Map.Entry<String, Object> attr : attrs.entrySet()) {
+      for (Map.Entry<String, Serializable> attr : attrs.entrySet()) {
         final String key = attr.getKey();
-        final Object value = attr.getValue();
+        final Serializable value = attr.getValue();
         if (value != null) {
           final Extraction attrExtr = new Extraction(key, value.toString());
           attrsExtraction.addField(attrExtr);

@@ -279,7 +279,7 @@ public class StandardTokenizer implements Tokenizer {
   }
 
 
-  private void setBreak(Map<Integer, Break> pos2break, int pos, Break theBreak) {
+  protected void setBreak(Map<Integer, Break> pos2break, int pos, Break theBreak) {
     if (theBreak != null && theBreak != Break.NO_BREAK) {
       pos2break.put(pos, theBreak);
     }
