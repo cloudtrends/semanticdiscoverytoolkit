@@ -435,7 +435,7 @@
 						<item>(B M D Y)</item>
 					</list>
 					<list>
-						<item>(C (A X&space;X,&space;X&space;X:) (B M&space;D&space;Y))</item>
+						<item>(C (A X&space;X,&space;X&space;X) (B M&space;D&space;Y))</item>
 					</list>
 					<list>
 						<item>(C (A X&space;X&space;X))</item>
@@ -560,7 +560,7 @@
 						<item>(B M D Y)</item>
 					</list>
 					<list>
-						<item>(C (A X&space;X,&space;X&space;X:) (B M&space;D&space;Y))</item>
+						<item>(C (A X&space;X,&space;X&space;X) (B M&space;D&space;Y))</item>
 					</list>
 					<list>
 						<item>(C (A X&space;X&space;X))</item>

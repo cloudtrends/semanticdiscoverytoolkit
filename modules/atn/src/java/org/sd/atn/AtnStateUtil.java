@@ -95,7 +95,7 @@ public class AtnStateUtil {
           // add skipped token
           if (pathState.isSkipped()) {
             final Tree<String> unknownNode = curResultNode.addChild("?");
-            unknownNode.addChild(inputToken.getTextWithDelims());
+            unknownNode.addChild(inputToken.getText()/*WithDelims()*/);
             unknownNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(inputToken, "?"));
           }
           else {
@@ -111,7 +111,7 @@ public class AtnStateUtil {
             final List<Tree<String>> tokenParses = goDeep ? getTokenParses(inputToken, category) : null;
             if (tokenParses == null) {
               // add token text
-              categoryNode.addChild(inputToken.getTextWithDelims());
+              categoryNode.addChild(inputToken.getText()/*WithDelims()*/);
             }
             else {
               if (tokenParses.size() > 1) {
