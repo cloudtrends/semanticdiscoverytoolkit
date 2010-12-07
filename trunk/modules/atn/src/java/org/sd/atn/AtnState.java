@@ -316,9 +316,9 @@ public class AtnState {
   AtnState getNextSkippedState(Tree<AtnState> curStateNode, Set<Integer> stopList) {
     AtnState result = null;
 
-if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith("person-event")) {
-  final boolean stopHere = true;
-}
+// if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith("person-event")) {
+//   final boolean stopHere = true;
+// }
 
     if (canBeSkipped()) {
       // increment the token, not the rule step
