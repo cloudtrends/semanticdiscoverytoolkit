@@ -56,6 +56,36 @@ public class Token {
     return text;
   }
 
+  private String _textWithDelims = null;
+  public String getTextWithDelims() {
+    if (_textWithDelims == null) {
+      final StringBuilder builder = new StringBuilder();
+
+      // get token text
+      builder.append(text);
+
+      // prepend immediate pre-delims
+      final String preDelim = tokenizer.getPreDelim(this);
+      for (int idx = preDelim.length() - 1; idx >= 0; --idx) {
+        final char delim = preDelim.charAt(idx);
+        if (delim == ' ') break;
+        builder.insert(0, delim);
+      }
+
+      // append immediate post-delims
+      final String postDelim = tokenizer.getPostDelim(this);
+      final int postLen = postDelim.length();
+      for (int idx = 0; idx < postLen; ++idx) {
+        final char delim = postDelim.charAt(idx);
+        if (delim == ' ') break;
+        builder.append(delim);
+      }
+
+      _textWithDelims = builder.toString();
+    }
+    return _textWithDelims;
+  }
+
   private int startIndex;
   /**
    * The index of this token's start in the full text from which this token came.

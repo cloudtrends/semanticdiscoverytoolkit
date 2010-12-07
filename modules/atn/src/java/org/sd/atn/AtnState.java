@@ -250,7 +250,7 @@ public class AtnState {
           result =
             new AtnState(
               nextToken, rule, nextStepNum,
-              curStateNode, parseOptions, repeatNum, 0, pushState);
+              curStateNode, parseOptions, 0, 0, pushState);
         }
       }
     }
@@ -369,38 +369,30 @@ if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith(
   private final int getNextStepNum() {
     int result = stepNum + 1;
 
+    if (rule.getStep(result) == null) {
+      result = -1;
+    }
+
+    return result;
+  }
+
+  private final boolean meetsRequirements() {
+    boolean result = true;
+
     // check the step's 'require' attribute
-    while (true) {
-      final AtnRuleStep step = rule.getStep(result);
-      if (step == null) {
-        result = -1;
-        break;
-      }
-      final String require = step.getRequire();
-      final String unless = step.getUnless();
-      if (require == null && unless == null) break;
-      else if (require != null) {
-        // if require is met, we're done
-        if (haveRequired(require)) {
-          break;
-        }
+    final AtnRuleStep step = rule.getStep(stepNum);
 
-        // if require isn't met, increment and loop
-        else {
-          ++result;
-        }
-      }
-      else if (unless != null) {
-        // if unless is met, we're done
-        if (!haveRequired(unless)) {
-          break;
-        }
+    final String require = step.getRequire();
+    final String unless = step.getUnless();
 
-        // haven't met 'unless', increment and loop
-        else {
-          ++result;
-        }
-      }
+    if (require != null) {
+      // if require is met, we're done
+      result &= haveRequired(require);
+    }
+
+    if (unless != null) {
+      // if unless is met, we're done
+      result &= !haveRequired(unless);
     }
 
     return result;
@@ -417,7 +409,7 @@ if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith(
       // check for 'require' on states with the same pushState
       if (curState.pushState == this.pushState) {
         if (require.equals(curState.getRuleStep().getCategory()) &&
-            (curState.getMatched() || curState.isPoppedState())) {
+            (curState.getMatched() || curState.isPoppedState() || curState.pushState == null)) {
           result = true;
           break;
         }
@@ -425,6 +417,10 @@ if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith(
     }
 
     return result;
+  }
+
+  private String showStateTree() {
+    return AtnStateUtil.showStateTree(parentStateNode);
   }
 
   public final AtnState getParentState() {
@@ -640,7 +636,7 @@ if (inputToken.getText().startsWith("songwriter") && this.toString().startsWith(
       final AtnState curstate = states.size() > 0 ? states.removeFirst() : skipStates.removeFirst();
 
       boolean success = false;
-      boolean matches = curstate.tokenMatchesStepCategory(grammar);
+      boolean matches = curstate.meetsRequirements() && curstate.tokenMatchesStepCategory(grammar);
       final Tree<AtnState> nextStateNode = curstate.parentStateNode.addChild(curstate);
 
       if (trace) {

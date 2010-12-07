@@ -100,7 +100,7 @@ public class IdentityParseInterpreter implements AtnParseInterpreter {
 
       String text = null;
       if (cToken != null) {
-        text = cToken.token.getText();
+        text = cToken.token.getTextWithDelims();
       }
       else {
         text = parseTree.getData();

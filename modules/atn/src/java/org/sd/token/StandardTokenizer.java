@@ -376,8 +376,8 @@ public class StandardTokenizer implements Tokenizer {
     final int endPos = token.getStartIndex();
     final int startPos = findEndBreakReverse(endPos);
 
-    if (endPos > startPos && startPos >= 0) {
-      result = text.substring(startPos, endPos);
+    if (endPos > startPos && endPos > 0) {
+      result = text.substring(Math.max(startPos, 0), endPos);
     }
 
     return result == null ? "" : result;

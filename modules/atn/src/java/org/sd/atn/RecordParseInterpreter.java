@@ -550,7 +550,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
       final CategorizedToken cToken = ParseInterpretationUtil.getCategorizedToken(parseNode);
       if (cToken != null) {
-        result = cToken.token.getText();
+        result = cToken.token.getTextWithDelims();
       }
 
       if (result == null) {

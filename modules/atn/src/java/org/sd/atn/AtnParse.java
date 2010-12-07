@@ -120,6 +120,16 @@ public class AtnParse {
     final CategorizedToken firstCToken = getFirstCategorizedToken();
     if (firstCToken != null) {
       result = firstCToken.token.getStartIndex();
+
+      /*
+    // adjust backward over immediate delims
+      final String preDelim = firstCToken.token.getTokenizer().getPreDelim(firstCToken.token);
+      for (int idx = preDelim.length() - 1; idx >= 0; --idx) {
+        final char delim = preDelim.charAt(idx);
+        if (delim == ' ') break;
+        --result;
+      }
+      */
     }
 
     return result;
@@ -132,7 +142,19 @@ public class AtnParse {
     int result = -1;
 
     if (endState != null) {
-      result = endState.getData().getInputToken().getEndIndex();
+      final Token endToken = endState.getData().getInputToken();
+      result = endToken.getEndIndex();
+
+/*
+      // adjust forward over immediate delims
+      final String postDelim = endToken.getTokenizer().getPostDelim(endToken);
+      final int postLen = postDelim.length();
+      for (int idx = 0; idx < postLen; ++idx) {
+        final char delim = postDelim.charAt(idx);
+        if (delim == ' ') break;
+        ++result;
+      }
+*/
     }
 
     return result;
