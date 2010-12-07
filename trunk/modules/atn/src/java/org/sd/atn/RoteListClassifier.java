@@ -107,6 +107,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     return this.caseSensitive;
   }
 
+  protected Map<String, Map<String, String>> getTerm2Attributes() {
+    return term2attributes;
+  }
+
   protected final void loadTerms(DomElement termsNode, Set<String> terms, Map<String, Map<String, String>> term2attributes) {
     if (termsNode == null) return;
 

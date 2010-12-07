@@ -431,7 +431,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
       Tree<XmlLite.Data> result = null;
 
       //NOTE: only getting the *first* matching feature!
-      result = XmlLite.createTextNode(cToken.token.getText());
+      result = XmlLite.createTextNode(cToken.token.getTextWithDelims());
 
       return result;
     }
