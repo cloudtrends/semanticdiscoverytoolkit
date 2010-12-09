@@ -95,6 +95,10 @@ public class Parse implements Publishable, Serializable {
     return ruleId;
   }
 
+  public String getParsedText() {
+    return tokenizer.getText();
+  }
+
   /**
    * Write this message to the dataOutput stream such that this message
    * can be completely reconstructed through this.read(dataInput).

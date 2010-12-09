@@ -269,6 +269,18 @@ public class TestStandardTokenizer extends TestCase {
     tokenizeTest.runTest();
   }
 
+  public void testTextWithDelims1() {
+    final StandardTokenizerOptions options = new StandardTokenizerOptions();
+    options.setRevisionStrategy(TokenRevisionStrategy.SO);
+
+    final StandardTokenizer tokenizer = StandardTokenizerFactory.getTokenizer("Mr. John /Smith/,");
+    Token token = tokenizer.getToken(0);
+    token = tokenizer.getNextToken(token);
+    token = tokenizer.getNextToken(token);
+
+    assertEquals("/Smith/,", token.getTextWithDelims());
+  }
+
 
   private final class TokenizeTest {
 

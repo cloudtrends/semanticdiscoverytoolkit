@@ -149,7 +149,7 @@ public class AtnParseRunner {
 
     this.activeFlow.clear();
 
-    if (flowSpec == null) {
+    if (flowSpec == null || "".equals(flowSpec)) {
       final String[] compoundParserIds = parseConfig.getCompoundParserIds();
       for (String compoundParserId : compoundParserIds) {
         final ParserFlow parserFlow = id2parserFlow.get(compoundParserId);

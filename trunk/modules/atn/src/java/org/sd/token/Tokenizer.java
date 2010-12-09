@@ -133,4 +133,9 @@ public interface Tokenizer {
    * @return the token or null if the positions are out of range.
    */
   public Token buildToken(int startPosition, int endPosition);
+
+  /**
+   * Determine whether this instance is still initializing.
+   */
+  public boolean initializing();
 }

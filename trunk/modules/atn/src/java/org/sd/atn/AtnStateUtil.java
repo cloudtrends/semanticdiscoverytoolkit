@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import org.sd.token.CategorizedToken;
 import org.sd.token.FeatureConstraint;
 import org.sd.token.Feature;
@@ -129,6 +130,72 @@ public class AtnStateUtil {
 
         lastPushState = pushState;
       }
+    }
+
+    return result;
+  }
+
+  /**
+   * Find the first state prior to the given state whose token 'matched'.
+   */
+  public static final AtnState getLastMatchingState(AtnState curState) {
+    AtnState result = curState;
+
+    if (curState != null) {
+      for (AtnState prevState = curState.getParentState(); prevState != null; prevState = prevState.getParentState()) {
+        if (prevState.getMatched()) {
+          result = prevState;
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Find the last matching token prior to the given state.
+   */
+  public static final Token getLastMatchingToken(AtnState curState) {
+    Token result = null;
+
+    final AtnState prevState = getLastMatchingState(curState);
+    if (prevState != null) {
+      result = prevState.getInputToken();
+    }
+
+    return result;
+  }
+
+  /**
+   * Find the last matching category prior to the given state.
+   */
+  public static final String getLastMatchingCategory(AtnState curState) {
+    String result = null;
+
+    final AtnState prevState = getLastMatchingState(curState);
+    if (prevState != null) {
+      result = prevState.getRuleStep().getCategory();
+    }
+
+    return result;
+  }
+
+  public static final boolean matchesCategory(AtnState atnState, Set<String> categories) {
+    boolean result = false;
+
+    for (; !result && atnState != null; atnState = atnState.getPushState()) {
+      result = categories.contains(atnState.getRuleStep().getCategory());
+    }
+
+    return result;
+  }
+
+  public static final boolean matchesCategory(AtnState atnState, String category) {
+    boolean result = false;
+
+    for (; !result && atnState != null; atnState = atnState.getPushState()) {
+      result = category.equals(atnState.getRuleStep().getCategory());
     }
 
     return result;

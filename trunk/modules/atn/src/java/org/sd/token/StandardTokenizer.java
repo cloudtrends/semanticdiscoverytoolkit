@@ -47,6 +47,7 @@ public class StandardTokenizer implements Tokenizer {
    */
   private Map<Integer, Break> _pos2break;
   private Object pos2breakLock = new Object();
+  private boolean pos2breakInit = false;
 
   private boolean computedWordCount;
   private int _wordCount;
@@ -288,13 +289,21 @@ public class StandardTokenizer implements Tokenizer {
     }
   }
 
+  public boolean initializing() {
+    return pos2breakInit;
+  }
+
   /**
    * Get the pos2break map, initializing through CreateBreaks if necessary.
    */
   protected Map<Integer, Break> getPos2Break() {
+    if (pos2breakInit) return null;
+
     synchronized (pos2breakLock) {
       if (this._pos2break == null) {
+        pos2breakInit = true;
         this._pos2break = createBreaks();
+        pos2breakInit = false;
       }
     }
     return this._pos2break;
@@ -347,7 +356,8 @@ public class StandardTokenizer implements Tokenizer {
   }
 
   public Token getNextSmallestToken(Token token) {
-    final int startPosition = findEndBreakForward(token.getEndIndex(), false);
+    int startPosition = findEndBreakForward(token.getEndIndex(), false);
+    if (startPosition < 0) startPosition = token.getEndIndex();
     return getSmallestToken(startPosition);
   }
 
@@ -452,7 +462,8 @@ public class StandardTokenizer implements Tokenizer {
   }
 
   public Token getNextToken(Token token) {
-    final int startPosition = findEndBreakForward(token.getEndIndex(), false);
+    int startPosition = findEndBreakForward(token.getEndIndex(), false);
+    if (startPosition < 0) startPosition = token.getEndIndex();
     return doGetToken(token.getRevisionStrategy(), startPosition, token.getSequenceNumber() + 1);
   }
 
@@ -473,7 +484,8 @@ public class StandardTokenizer implements Tokenizer {
   }
 
   public String getNextText(Token token) {
-    final int startPos = findEndBreakForward(token.getEndIndex(), false);
+    int startPos = findEndBreakForward(token.getEndIndex(), false);
+    if (startPos < 0) startPos = token.getEndIndex();
     return (startPos < text.length()) ? text.substring(startPos) : "";
   }
 
@@ -626,6 +638,7 @@ public class StandardTokenizer implements Tokenizer {
   private int findEndBreakForward(int startPosition, boolean softOnly) {
     int result = startPosition;
     final Map<Integer, Break> pos2break = getPos2Break();
+    if (pos2break == null) return result;  // still initializing
 
     while (result < text.length()) {
       final Break posBreak = pos2break.get(result);
@@ -656,6 +669,7 @@ public class StandardTokenizer implements Tokenizer {
   private int findEndBreakReverse(int startPosition) {
     int result = startPosition;
     final Map<Integer, Break> pos2break = getPos2Break();
+    if (pos2break == null) return result;  // still initializing
 
     if (!pos2break.containsKey(startPosition)) --result;
 
