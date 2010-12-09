@@ -56,6 +56,22 @@ public class Token {
     return text;
   }
 
+  private String _preDelim;
+  public String getPreDelim() {
+    if (_preDelim == null) {
+      _preDelim = tokenizer.getPreDelim(this);
+    }
+    return _preDelim;
+  }
+
+  private String _postDelim;
+  public String getPostDelim() {
+    if (_postDelim == null) {
+      _postDelim = tokenizer.getPostDelim(this);
+    }
+    return _postDelim;
+  }
+
   private String _textWithDelims = null;
   public String getTextWithDelims() {
     if (_textWithDelims == null) {
@@ -65,7 +81,7 @@ public class Token {
       builder.append(text);
 
       // prepend immediate pre-delims
-      final String preDelim = tokenizer.getPreDelim(this);
+      final String preDelim = getPreDelim();
       for (int idx = preDelim.length() - 1; idx >= 0; --idx) {
         final char delim = preDelim.charAt(idx);
         if (delim == ' ') break;
@@ -73,7 +89,7 @@ public class Token {
       }
 
       // append immediate post-delims
-      final String postDelim = tokenizer.getPostDelim(this);
+      final String postDelim = getPostDelim();
       final int postLen = postDelim.length();
       for (int idx = 0; idx < postLen; ++idx) {
         final char delim = postDelim.charAt(idx);
@@ -149,6 +165,9 @@ public class Token {
 			this.revisionNumber = revisionNumber;
 			this.sequenceNumber = sequenceNumber;
 			this.wordCount = wordCount;
+
+      this._preDelim = tokenizer.initializing() ? null : tokenizer.getPreDelim(this);
+      this._postDelim = tokenizer.initializing() ? null : tokenizer.getPostDelim(this);
 		}
 
   /**

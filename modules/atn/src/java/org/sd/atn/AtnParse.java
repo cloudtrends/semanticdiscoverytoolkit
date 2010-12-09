@@ -123,7 +123,7 @@ public class AtnParse {
 
       /*
     // adjust backward over immediate delims
-      final String preDelim = firstCToken.token.getTokenizer().getPreDelim(firstCToken.token);
+      final String preDelim = firstCToken.getPreDelim();
       for (int idx = preDelim.length() - 1; idx >= 0; --idx) {
         final char delim = preDelim.charAt(idx);
         if (delim == ' ') break;
@@ -147,7 +147,7 @@ public class AtnParse {
 
 /*
       // adjust forward over immediate delims
-      final String postDelim = endToken.getTokenizer().getPostDelim(endToken);
+      final String postDelim = endToken.getPostDelim();
       final int postLen = postDelim.length();
       for (int idx = 0; idx < postLen; ++idx) {
         final char delim = postDelim.charAt(idx);

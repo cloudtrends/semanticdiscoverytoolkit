@@ -96,7 +96,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
 
       // accept a single letter followed by a '.', even if not capitalized.
       if (!result && tokenText.length() == 1) {
-        final String postDelim = token.getTokenizer().getPostDelim(token);
+        final String postDelim = token.getPostDelim();
         if (postDelim.length() > 0 && postDelim.charAt(0) == '.') {
           result = true;
         }

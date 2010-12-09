@@ -223,13 +223,30 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
         final List<Tree<String>> selectedNodes = fieldTemplate.select(parse, parseNode);
 
         if (selectedNodes != null && selectedNodes.size() > 0) {
+          final StringBuilder builder = fieldTemplate.collapse() ? new StringBuilder() : null;
+
           for (Tree<String> selectedNode : selectedNodes) {
             final List<Tree<XmlLite.Data>> values = fieldTemplate.extract(parse, selectedNode);
+
             if (values != null && values.size() > 0) {
-              for (Tree<XmlLite.Data> value : values) {
-                result.addChild(value);
+              if (builder != null) {  // collapse
+                for (Tree<XmlLite.Data> value : values) {
+                  if (builder.length() > 0) builder.append(' ');
+                  builder.append(value.getData().asDomNode().getTextContent());
+                }
+              }
+              else {
+                for (Tree<XmlLite.Data> value : values) {
+                  result.addChild(value);
+                }
               }
             }
+          }
+
+          if (builder != null) {  // collapse
+            final Tree<XmlLite.Data> collapsedNode = XmlLite.createTagNode(fieldTemplate.getName());
+            collapsedNode.addChild(XmlLite.createTextNode(builder.toString()));
+            result.addChild(collapsedNode);
           }
         }
       }
@@ -248,8 +265,22 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
 
   private static final NodeMatcher buildNodeMatcher(DomElement matchElement, InnerResources resources) {
-    //todo: decode attributes... for now, only RuleIdMatcher is being used...
-    return new RuleIdMatcher(matchElement, resources);
+    NodeMatcher result = null;
+    final String attribute = matchElement.getAttributeValue("attribute", "any");
+
+    if ("id".equals(attribute)) {
+      // match against rule id
+      result = new RuleIdMatcher(matchElement, resources);
+    }
+    else if ("path".equals(attribute)) {
+      // match against node path
+      result = new NodePathMatcher(matchElement, resources);
+    }
+    else {
+      result = new AnyNodeMatcher(matchElement, resources);
+    }
+
+    return result;
   }
 
   private static interface NodeMatcher {
@@ -276,12 +307,39 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
     }
   }
 
+  private static final class NodePathMatcher implements NodeMatcher {
+
+    private NodePath<String> nodePath;
+
+    NodePathMatcher(DomElement matchElement, InnerResources resources) {
+      //todo: decode attributes, for now, only doing regex 'matches'
+      this.nodePath = new NodePath<String>(matchElement.getTextContent());
+    }
+
+    public boolean matches(AtnParse parse) {
+      boolean result = false;
+
+      final Tree<String> parseTree = parse.getParseTree();
+      return nodePath.apply(parseTree) != null;
+    }
+  }
+
+  private static final class AnyNodeMatcher implements NodeMatcher {
+    AnyNodeMatcher(DomElement matchElement, InnerResources resources) {
+    }
+
+    public boolean matches(AtnParse parse) {
+      return true;
+    }
+  }
+
 
   private static final class FieldTemplate {
 
     private String name;
     private boolean repeats;
     private boolean nameOverride;
+    private boolean collapse;
     private NodeSelector selector;
     private NodeExtractor extractor;
 
@@ -292,6 +350,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       this.name = fieldElement.getAttributeValue("name");
       this.repeats = fieldElement.getAttributeBoolean("repeats", false);
       this.nameOverride = "nameOverride".equals(fieldElement.getAttributeValue("type", null));
+      this.collapse = fieldElement.getAttributeBoolean("collapse", false);
 
       // select
       final DomElement selectNode = (DomElement)fieldElement.selectSingleNode("select");
@@ -312,6 +371,10 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
     boolean repeats() {
       return repeats;
+    }
+
+    boolean collapse() {
+      return collapse;
     }
 
     List<Tree<String>> select(AtnParse parse, Tree<String> parseNode) {
@@ -364,7 +427,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
     // <extract type='record'>relative</extract>
     // <extract type='attribute'>eventClass</extract>
     // <extract type='interp'>date</extract>
-    // <extract type='text' />
+    // <extract type='text' delims='true' />
 
     if ("record".equals(type)) {
       result = new RecordNodeExtractor(fieldTemplate, resources, data);
@@ -376,7 +439,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       result = new InterpNodeExtractor(fieldTemplate, resources, data);
     }
     else if ("text".equals(type)) {
-      result = new TextNodeExtractor(fieldTemplate, resources);
+      result = new TextNodeExtractor(fieldTemplate, resources, extractElement);
     }
 
     return result;
@@ -533,8 +596,12 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
   private static final class TextNodeExtractor extends AbstractNodeExtractor {
 
-    TextNodeExtractor(FieldTemplate fieldTemplate, InnerResources resources) {
+    private boolean delims;
+
+    TextNodeExtractor(FieldTemplate fieldTemplate, InnerResources resources, DomElement extractElement) {
       super(fieldTemplate, resources);
+
+      this.delims = extractElement.getAttributeBoolean("delims", false);
     }
 
     public List<Tree<XmlLite.Data>> extract(AtnParse parse, Tree<String> parseNode) {
@@ -550,7 +617,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
       final CategorizedToken cToken = ParseInterpretationUtil.getCategorizedToken(parseNode);
       if (cToken != null) {
-        result = cToken.token.getTextWithDelims();
+        result = delims ? cToken.token.getTextWithDelims() : cToken.token.getText();
       }
 
       if (result == null) {
