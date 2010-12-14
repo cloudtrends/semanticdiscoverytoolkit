@@ -217,9 +217,12 @@ public class StandardTokenizer implements Tokenizer {
               curBreak = Break.NO_BREAK;
             }
           }
-          else if (curChar == '"' || curChar == '(' || curChar == '[' || curChar == '{' || curChar == '<' || curChar == '\'' || curChar == '/' || curChar == '\\') {
+          else if (curChar == '"' || curChar == '(' || curChar == '[' || curChar == '{' || curChar == '<' || curChar == '\'') {
             // symbol is open quote, paren, or slash
             curBreak = options.getQuoteAndParenBreak();
+          }
+          else if (curChar == '/' || curChar == '\\') {
+            curBreak = options.getSlashBreak();
           }
           else {
             // e.g. "$24.99"
@@ -229,6 +232,9 @@ public class StandardTokenizer implements Tokenizer {
         else if (curChar == '%' && charPos > 0 && Character.isDigit(text.codePointAt(charPos - 1))) {
           // e.g. "99.9%"
           curBreak = Break.NO_BREAK;
+        }
+        else if (curChar == '/' || curChar == '\\') {
+          curBreak = options.getSlashBreak();
         }
         else if (isPunctuation(curChar)) {
           //todo: apply other heuristics for recognizing a punctuation char as a part of a token

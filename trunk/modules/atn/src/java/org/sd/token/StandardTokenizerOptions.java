@@ -272,6 +272,14 @@ public class StandardTokenizerOptions {
     this.symbolBreak = symbolBreak;
   }
 
+  private Break slashBreak;
+  public Break getSlashBreak() {
+    return slashBreak;
+  }
+  public void setSlashBreak(Break slashBreak) {
+    this.slashBreak = slashBreak;
+  }
+
 
   /**
    * Construct with default options.
@@ -295,6 +303,7 @@ public class StandardTokenizerOptions {
     this.whitespaceBreak = Break.SINGLE_WIDTH_SOFT_BREAK;
     this.quoteAndParenBreak = Break.SINGLE_WIDTH_HARD_BREAK;
     this.symbolBreak = Break.NO_BREAK;
+    this.slashBreak = Break.SINGLE_WIDTH_HARD_BREAK;
   }
 
   /**
@@ -333,6 +342,7 @@ public class StandardTokenizerOptions {
     String whitespaceBreak = options.getString("whitespaceBreak", "SINGLE_WIDTH_SOFT_BREAK");
     String quoteAndParenBreak = options.getString("quoteAndParenBreak", "SINGLE_WIDTH_HARD_BREAK");
     String symbolBreak = options.getString("symbolBreak", "NO_BREAK");
+    String slashBreak = options.getString("slashBreak", "SINGLE_WIDTH_HARD_BREAK");
 
     // NOTES:
     //   a leftBorderedDashBreak of NO_BREAK allows handling e.g. negative numbers as a single token
@@ -361,6 +371,7 @@ public class StandardTokenizerOptions {
     this.whitespaceBreak = translateBreak(whitespaceBreak);
     this.quoteAndParenBreak = translateBreak(quoteAndParenBreak);
     this.symbolBreak = translateBreak(symbolBreak);
+    this.slashBreak = translateBreak(slashBreak);
   }
 
   /**
@@ -446,7 +457,8 @@ public class StandardTokenizerOptions {
         this.freeStandingDashBreak == other.freeStandingDashBreak &&
         this.whitespaceBreak == other.whitespaceBreak &&
         this.quoteAndParenBreak == other.quoteAndParenBreak &&
-        this.symbolBreak == other.symbolBreak;
+        this.symbolBreak == other.symbolBreak &&
+        this.slashBreak == other.slashBreak;
     }
 
     return result;
@@ -472,6 +484,7 @@ public class StandardTokenizerOptions {
     result = result * 17 + this.whitespaceBreak.hashCode();
     result = result * 17 + this.quoteAndParenBreak.hashCode();
     result = result * 17 + this.symbolBreak.hashCode();
+    result = result * 17 + this.slashBreak.hashCode();
 
     return result;
   }

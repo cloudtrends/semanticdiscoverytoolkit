@@ -281,6 +281,33 @@ public class TestStandardTokenizer extends TestCase {
     assertEquals("/Smith/,", token.getTextWithDelims());
   }
 
+  public void testSymbolBreak1() {
+    final StandardTokenizerOptions options = new StandardTokenizerOptions();
+
+    options.setRevisionStrategy(TokenRevisionStrategy.SO);
+    options.setLowerUpperBreak(Break.NO_BREAK);
+    options.setUpperLowerBreak(Break.NO_BREAK);
+    options.setUpperDigitBreak(Break.NO_BREAK);
+    options.setLowerDigitBreak(Break.NO_BREAK);
+    options.setDigitUpperBreak(Break.NO_BREAK);
+    options.setDigitLowerBreak(Break.NO_BREAK);
+    options.setNonEmbeddedDoubleDashBreak(Break.SINGLE_WIDTH_HARD_BREAK);
+    options.setEmbeddedDoubleDashBreak(Break.SINGLE_WIDTH_HARD_BREAK);
+    options.setEmbeddedDashBreak(Break.NO_BREAK);
+    options.setLeftBorderedDashBreak(Break.SINGLE_WIDTH_SOFT_BREAK);
+    options.setRightBorderedDashBreak(Break.SINGLE_WIDTH_SOFT_BREAK);
+    options.setFreeStandingDashBreak(Break.SINGLE_WIDTH_HARD_BREAK);
+    options.setWhitespaceBreak(Break.SINGLE_WIDTH_SOFT_BREAK);
+    options.setQuoteAndParenBreak(Break.NO_BREAK);
+    options.setSymbolBreak(Break.SINGLE_WIDTH_HARD_BREAK);
+    options.setSlashBreak(Break.SINGLE_WIDTH_HARD_BREAK);
+
+    final StandardTokenizer tokenizer = new StandardTokenizer("/Smith/", options);
+    final Token token = tokenizer.getToken(0);
+    assertEquals("Smith", token.getText());
+    assertEquals("/Smith/", token.getTextWithDelims());
+  }
+
 
   private final class TokenizeTest {
 

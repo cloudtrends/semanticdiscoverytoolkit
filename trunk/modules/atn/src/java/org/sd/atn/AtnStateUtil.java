@@ -139,14 +139,24 @@ public class AtnStateUtil {
    * Find the first state prior to the given state whose token 'matched'.
    */
   public static final AtnState getLastMatchingState(AtnState curState) {
-    AtnState result = curState;
+    return getLastMatchingState(curState, null);
+  }
+
+  public static final AtnState getLastMatchingState(AtnState curState, int[] levelDiff) {
+    AtnState result = null;
 
     if (curState != null) {
+      AtnState prevPush = curState.getPushState();
       for (AtnState prevState = curState.getParentState(); prevState != null; prevState = prevState.getParentState()) {
         if (prevState.getMatched()) {
           result = prevState;
           break;
         }
+        else if (levelDiff != null) {
+          if (prevState.isPoppedState()) --levelDiff[0];
+          else if (prevPush != prevState.getPushState()) ++levelDiff[0];
+        }
+        prevPush = prevState.getPushState();
       }
     }
 
@@ -182,20 +192,49 @@ public class AtnStateUtil {
   }
 
   public static final boolean matchesCategory(AtnState atnState, Set<String> categories) {
+    return matchesCategory(atnState, categories, null);
+  }
+
+  public static final boolean matchesCategory(AtnState atnState, Set<String> categories, int[] levelDiff) {
     boolean result = false;
 
     for (; !result && atnState != null; atnState = atnState.getPushState()) {
       result = categories.contains(atnState.getRuleStep().getCategory());
+      if (!result && levelDiff != null) ++levelDiff[0];
     }
 
     return result;
   }
 
   public static final boolean matchesCategory(AtnState atnState, String category) {
+    return matchesCategory(atnState, category, null);
+  }
+
+  public static final boolean matchesCategory(AtnState atnState, String category, int[] levelDiff) {
     boolean result = false;
 
-    for (; !result && atnState != null; atnState = atnState.getPushState()) {
-      result = category.equals(atnState.getRuleStep().getCategory());
+    if (atnState.getMatched()) {
+      for (; !result && atnState != null; atnState = atnState.getPushState()) {
+        result = category.equals(atnState.getRuleStep().getCategory());
+        if (!result && levelDiff != null) ++levelDiff[0];
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Find the first state prior to the given state that matches the given
+   * category, or null.
+   */
+  public static final AtnState findPriorMatch(AtnState atnState, String category, int[] levelDiff) {
+    AtnState result = null;
+
+    for (AtnState prevState = getLastMatchingState(atnState, levelDiff); prevState != null; prevState = getLastMatchingState(prevState, levelDiff)) {
+      if (matchesCategory(prevState, category, levelDiff)) {
+        result = prevState;
+        break;
+      }
     }
 
     return result;
