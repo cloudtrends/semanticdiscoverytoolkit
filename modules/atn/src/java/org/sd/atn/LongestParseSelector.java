@@ -52,7 +52,7 @@ public class LongestParseSelector implements AtnParseSelector {
     for (int parseIndex = 0; parseIndex < parseResult.getNumParses(); ++parseIndex) {
       final AtnParse parse = parseResult.getParse(parseIndex);
       if (!parse.getSelected()) continue;
-      parseDatas.add(new ParseData(parse));
+      parseDatas.add(new ParseData(parse, simplest));
     }
 
     Collections.sort(parseDatas);
@@ -115,14 +115,16 @@ public class LongestParseSelector implements AtnParseSelector {
 
   private static final class ParseData implements Comparable<ParseData> {
     private AtnParse atnParse;
+    private boolean simplest;
 
     private List<Token> skipTokens;
     private int skipCount;
     private int length;
     private int complexity;  // the lower, the simpler
     
-    ParseData(AtnParse atnParse) {
+    ParseData(AtnParse atnParse, boolean simplest) {
       this.atnParse = atnParse;
+      this.simplest = simplest;
 
       this.skipTokens = null;
       this.skipCount = 0;
@@ -179,7 +181,7 @@ public class LongestParseSelector implements AtnParseSelector {
 
       if (result != 0) {
         if (length == other.getLength() &&
-            complexity == other.getComplexity() &&
+            (!simplest || complexity == other.getComplexity()) &&
             skipCount == other.getSkipCount()) {
           result = 0;
         }
@@ -192,7 +194,7 @@ public class LongestParseSelector implements AtnParseSelector {
             result = other.getLength() - length;
 
             // when still unresolved, the minimum complexity comes first
-            if (result == 0) {
+            if (result == 0 && simplest) {
               result = this.complexity - other.getComplexity();
             }
           }

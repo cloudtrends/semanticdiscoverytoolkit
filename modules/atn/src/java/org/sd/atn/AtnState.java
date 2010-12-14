@@ -369,36 +369,94 @@ public class AtnState {
   private final int getNextStepNum() {
     int result = stepNum + 1;
 
-    if (rule.getStep(result) == null) {
-      result = -1;
+    // check the step's 'require' attribute
+    while (true) {
+      final AtnRuleStep step = rule.getStep(result);
+      if (step == null) {
+        result = -1;
+        break;
+      }
+
+      // Check for 'unless' to see if we can skip considering this next step
+      // Note that we won't fully know if we have met 'require' constraints
+      // until we get to that state, so we won't rule out 'requires' just yet.
+      // Also, the 'unless' constraint will need to be checked again once
+      // we've parsed through the current constituent.
+
+      final String unless = step.getUnless();
+      if (unless == null || !haveRequired(unless, true)) {
+        break;
+      }
+      // if requirements aren't met, increment and loop
+      else {
+        ++result;
+      }
     }
 
     return result;
   }
 
+  // Double-Check require and unless with new information of considering this state in context
   private final boolean meetsRequirements() {
+
+    final AtnRuleStep step = rule.getStep(stepNum);
+    final String require = step.getRequire();
+    boolean result = (require == null || haveRequired(require, false));
+
+    if (result) {
+      final String unless = step.getUnless();
+      if (unless != null) {
+        result = !haveRequired(unless, false);
+      }
+    }
+    
+
+    return result;
+/*
+    return meetsRequirements(rule.getStep(stepNum), includeThisState);
+  }
+
+  private final boolean meetsRequirements(AtnRuleStep step, boolean includeThisState) {
     boolean result = true;
 
-    // check the step's 'require' attribute
-    final AtnRuleStep step = rule.getStep(stepNum);
-
+    // check the step's 'require' & 'unless' attributes
     final String require = step.getRequire();
     final String unless = step.getUnless();
 
     if (require != null) {
       // if require is met, we're done
-      result &= haveRequired(require);
+      result &= haveRequired(require, includeThisState);
     }
 
-    if (unless != null) {
+    if (result && unless != null) {
       // if unless is met, we're done
-      result &= !haveRequired(unless);
+      result &= !haveRequired(unless, includeThisState);
     }
 
     return result;
+*/
   }
 
-  private final boolean haveRequired(String require) {
+  private final boolean haveRequired(String require, boolean includeThisState) {
+    boolean result = false;
+
+    if (includeThisState) {
+      result = AtnStateUtil.matchesCategory(this, require);
+    }
+
+    if (!result) {
+      // haven't verified yet, look back in state history
+      final int[] levelDiff = new int[]{0};
+      final AtnState priorMatch = AtnStateUtil.findPriorMatch(this, require, levelDiff);
+
+      if (priorMatch != null) {
+        // can find match 'down' (pushed), but not up (popped)
+        result = (levelDiff[0] <= 0);
+      }
+    }
+
+    return result;
+/*
     boolean result = false;
 
     for (AtnState curState = this; curState != null; curState = curState.getParentState()) {
@@ -417,6 +475,7 @@ public class AtnState {
     }
 
     return result;
+*/
   }
 
   private String showStateTree() {
@@ -510,8 +569,13 @@ public class AtnState {
   public String toString() {
     final StringBuilder result = new StringBuilder();
 
+    result.append(rule.getRuleName());
+
+    if (rule.getRuleId() != null) {
+      result.append('[').append(rule.getRuleId()).append(']');
+    }
+
     result.
-      append(rule.getRuleName()).
       append('-').
       append(getRuleStep().getCategory()).
       append('(').
@@ -573,7 +637,7 @@ public class AtnState {
         }
 
         popStateNode = popStateNode.addChild(popState);
-        if (addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList)) {
+        if (addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList, true)) {
           if (!popState.isRuleEnd()) popState = null;
           else {
             popState = popState.popState(popStateNode);
@@ -636,7 +700,8 @@ public class AtnState {
       final AtnState curstate = states.size() > 0 ? states.removeFirst() : skipStates.removeFirst();
 
       boolean success = false;
-      boolean matches = curstate.meetsRequirements() && curstate.tokenMatchesStepCategory(grammar);
+      final boolean meetsRequirements = curstate.meetsRequirements();
+      boolean matches = meetsRequirements && curstate.tokenMatchesStepCategory(grammar);
       final Tree<AtnState> nextStateNode = curstate.parentStateNode.addChild(curstate);
 
       if (trace) {
@@ -657,13 +722,13 @@ public class AtnState {
         }
       }
 
-      success = addNextStates(grammar, states, skipStates, curstate, nextStateNode, false, matches, stopList);
+      success = addNextStates(grammar, states, skipStates, curstate, nextStateNode, false, matches, stopList, meetsRequirements);
     }
 
     return result;
   }
 
-  private static boolean addNextStates(AtnGrammar grammar, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, AtnState curstate, Tree<AtnState> nextStateNode, boolean isPop, boolean inc, Set<Integer> stopList) {
+  private static boolean addNextStates(AtnGrammar grammar, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, AtnState curstate, Tree<AtnState> nextStateNode, boolean isPop, boolean inc, Set<Integer> stopList, boolean meetsRequirements) {
     if (curstate == null) return false;
 
     boolean foundOne = inc || isPop;
@@ -701,22 +766,24 @@ public class AtnState {
     }
 
     // apply (push) rules
-    final String category = curstate.getRuleStep().getCategory();
-    if (grammar.getCat2Rules().containsKey(category)) {
-      foundOne = true;
-      for (AtnRule rule : grammar.getCat2Rules().get(category)) {
-        addState(states, new AtnState(curstate.getInputToken(), rule, 0, nextStateNode, curstate.parseOptions, 0, 0, curstate));
-      }
+    if (meetsRequirements) {
+      final String category = curstate.getRuleStep().getCategory();
+      if (grammar.getCat2Rules().containsKey(category)) {
+        foundOne = true;
+        for (AtnRule rule : grammar.getCat2Rules().get(category)) {
+          addState(states, new AtnState(curstate.getInputToken(), rule, 0, nextStateNode, curstate.parseOptions, 0, 0, curstate));
+        }
 
-      // skip constituents
-      if (curstate.canBeSkipped()) {
-        final AtnState dupstate = new AtnState(curstate);
-        final Tree<AtnState> dupstateNode = new Tree<AtnState>(dupstate);
-        nextstate = dupstate.getNextSkippedState(dupstateNode, stopList);
-        if (nextstate != null) {
-          nextStateNode.getParent().addChild(dupstateNode);
-          dupstate.parentStateNode = nextStateNode.getParent();
-          addState(skipStates, nextstate);
+        // skip constituents
+        if (curstate.canBeSkipped()) {
+          final AtnState dupstate = new AtnState(curstate);
+          final Tree<AtnState> dupstateNode = new Tree<AtnState>(dupstate);
+          nextstate = dupstate.getNextSkippedState(dupstateNode, stopList);
+          if (nextstate != null) {
+            nextStateNode.getParent().addChild(dupstateNode);
+            dupstate.parentStateNode = nextStateNode.getParent();
+            addState(skipStates, nextstate);
+          }
         }
       }
     }

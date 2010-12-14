@@ -751,6 +751,68 @@ public class TestAtnParser extends TestCase {
                  null);
   }
 
+  public void testConstituentStepUnlessConstituent() throws IOException {
+    // X <- A? Y?(uA) Z?(uY)
+    // Y <- B
+    // Z <- C
+    final AtnParser test12B_Parser = AtnParseTest.buildParser("<grammar><rules><X start='true'><A optional='true'/><Y optional='true' unless='A'/><Z optional='true' unless='Y'/></X><Y><B/></Y><Z><C/></Z></rules></grammar>", false);
+
+    // Succeed:
+    // - B
+    // - C
+    // - A
+    final StandardTokenizer tokenizer12Ba = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "B"); 
+    runParseTest("ParserTest.12Ba",
+                 test12B_Parser,
+                 tokenizer12Ba,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Y B))",
+                 });
+    final StandardTokenizer tokenizer12Bb = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C"); 
+    runParseTest("ParserTest.12Bb",
+                 test12B_Parser,
+                 tokenizer12Bb,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X (Z C))",
+                 });
+
+    final StandardTokenizer tokenizer12Bc = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A"); 
+    runParseTest("ParserTest.12Bc",
+                 test12B_Parser,
+                 tokenizer12Bc,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X A)",
+                 });
+
+    // Fail:
+    // - A B
+    // - A B C
+    // - B C
+    final StandardTokenizer tokenizer12Bd = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B"); 
+    runParseTest("ParserTest.12Bd",
+                 test12B_Parser,
+                 tokenizer12Bd,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer12Be = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B C"); 
+    runParseTest("ParserTest.12Be",
+                 test12B_Parser,
+                 tokenizer12Be,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer12Bf = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "B C"); 
+    runParseTest("ParserTest.12Bf",
+                 test12B_Parser,
+                 tokenizer12Bf,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+  }
+
   public void testLenghtenToken() throws IOException {
     // D <- H Y
     final AtnParser test13_Parser = AtnParseTest.buildParser("<grammar><classifiers><H><jclass>org.sd.atn.RoteListClassifier</jclass><terms><term>Easter</term><term>Easter Sunday</term></terms></H></classifiers><rules><D start='true'><H/><Y/></rules></grammar>", false);

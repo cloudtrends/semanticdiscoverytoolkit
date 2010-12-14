@@ -254,9 +254,11 @@ public class CompoundParser {
           final AtnParse parse = parseResult.getParse(parsit);
           final String asterisk = parse.getSelected() ? "*" : " ";
           if (verbose) {
+            final String ruleId = parse.getStartRule().getRuleId();
+            final String ruleText = (ruleId == null) ? "" : "  [" + ruleId + "]";
             System.out.println("   " + asterisk + " Parse #" + (parsit + 1) +
                                ": \"" + parse.getParsedText() + "\" == " +
-                               parse.getParseTree().toString());
+                               parse.getParseTree().toString() + ruleText);
           }
           
           if (parse.getSelected()) {
