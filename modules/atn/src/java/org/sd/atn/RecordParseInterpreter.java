@@ -77,7 +77,10 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
     for (RecordTemplate topTemplate : topTemplates) {
       if (topTemplate.matches(parse)) {
-        final ParseInterpretation interp = topTemplate.interpret(parse);
+        ParseInterpretation interp = topTemplate.interpret(parse);
+        if (interp != null) {
+          interp = interpretationHook(interp, parse);
+        }
         if (interp != null) {
           if (result == null) result = new ArrayList<ParseInterpretation>();
           result.add(interp);
@@ -88,6 +91,35 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
     return result;
   }
 
+  /**
+   * Hook on a final interpretation.
+   */
+  protected ParseInterpretation interpretationHook(ParseInterpretation interp, AtnParse parse) {
+    return interp;
+  }
+
+  /**
+   * Hook on each record interpNode just after creation and before insertion
+   * as a child into its tree.
+   */
+  protected Tree<XmlLite.Data> interpRecordNodeHook(Tree<XmlLite.Data> recordNode, AtnParse parse,
+                                                    Tree<String> parseNode, Tree<XmlLite.Data> parentNode,
+                                                    String fieldName, DomElement recordElement) {
+    return recordNode;
+  }
+
+  /**
+   * Hook on each field interpNode just after creation and before insertion
+   * as a child into its tree.
+   * <p>
+   * Note that each non-root record node will come back through as a field
+   * but not all fields come through as a record.
+   */
+  protected Tree<XmlLite.Data> interpFieldNodeHook(Tree<XmlLite.Data> fieldNode, AtnParse parse,
+                                                   Tree<String> selectedNode, Tree<XmlLite.Data> parentNode,
+                                                   String fieldName, DomElement fieldElement) {
+    return fieldNode;
+  }
 
   // fill id2recordTemplate and topTemplates
   private final void loadRecords(DomNode domNode, InnerResources resources) {
@@ -97,7 +129,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       for (int recordNodeNum = 0; recordNodeNum < numRecordNodes; ++recordNodeNum) {
         final DomElement recordNode = (DomElement)recordNodes.item(recordNodeNum);
 
-        final RecordTemplate recordTemplate = new RecordTemplate(recordNode, resources);
+        final RecordTemplate recordTemplate = new RecordTemplate(recordNode, resources, this);
         resources.id2recordTemplate.put(recordTemplate.getId(), recordTemplate);
         if (recordTemplate.isTop()) topTemplates.add(recordTemplate);
       }
@@ -121,6 +153,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
     private DomElement recordNode;
     private InnerResources resources;
+    private RecordParseInterpreter controller;
 
     private String name;
     private String id;
@@ -130,9 +163,10 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
     private List<FieldTemplate> fieldTemplates;
     private FieldTemplate nameOverride;
 
-    RecordTemplate(DomElement recordNode, InnerResources resources) {
+    RecordTemplate(DomElement recordNode, InnerResources resources, RecordParseInterpreter controller) {
       this.recordNode = recordNode;
       this.resources = resources;
+      this.controller = controller;
 
       this.name = recordNode.getAttributeValue("name");
       this.id = recordNode.getAttributeValue("type", this.name);
@@ -237,16 +271,18 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
               }
               else {
                 for (Tree<XmlLite.Data> value : values) {
-                  result.addChild(value);
+                  value = controller.interpFieldNodeHook(value, parse, selectedNode, result, fieldTemplate.getName(), fieldTemplate.getFieldElement());
+                  if (value != null) result.addChild(value);
                 }
               }
             }
           }
 
           if (builder != null) {  // collapse
-            final Tree<XmlLite.Data> collapsedNode = XmlLite.createTagNode(fieldTemplate.getName());
+            Tree<XmlLite.Data> collapsedNode = XmlLite.createTagNode(fieldTemplate.getName());
             collapsedNode.addChild(XmlLite.createTextNode(builder.toString()));
-            result.addChild(collapsedNode);
+            collapsedNode = controller.interpFieldNodeHook(collapsedNode, parse, parseNode, result, fieldTemplate.getName(), fieldTemplate.getFieldElement());
+            if (collapsedNode != null) result.addChild(collapsedNode);
           }
         }
       }
@@ -255,7 +291,10 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
         if (!id.equals(fieldName)) {
           result.getData().asTag().attributes.put("type", id);
         }
-        if (parentNode != null) parentNode.addChild(result);
+        if (result != null) {
+          result = controller.interpRecordNodeHook(result, parse, parseNode, parentNode, fieldName, recordNode);
+        }
+        if (result != null && parentNode != null) parentNode.addChild(result);
       }
       else result = null;
 
@@ -336,6 +375,8 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
   private static final class FieldTemplate {
 
+    private DomElement fieldElement;
+
     private String name;
     private boolean repeats;
     private boolean nameOverride;
@@ -347,6 +388,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
     private NodeExtractor nameExtractor;
 
     FieldTemplate(DomElement fieldElement, InnerResources resources) {
+      this.fieldElement = fieldElement;
       this.name = fieldElement.getAttributeValue("name");
       this.repeats = fieldElement.getAttributeBoolean("repeats", false);
       this.nameOverride = "nameOverride".equals(fieldElement.getAttributeValue("type", null));
@@ -359,6 +401,10 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       // extract
       final DomElement extractNode = (DomElement)fieldElement.selectSingleNode("extract");
       this.extractor = buildNodeExtractor(this, extractNode, resources);
+    }
+
+    public DomElement getFieldElement() {
+      return fieldElement;
     }
 
     boolean isNameOverride() {
@@ -436,7 +482,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       result = new AttributeNodeExtractor(fieldTemplate, resources, data);
     }
     else if ("interp".equals(type)) {
-      result = new InterpNodeExtractor(fieldTemplate, resources, data);
+      result = new InterpNodeExtractor(fieldTemplate, resources, extractElement, data);
     }
     else if ("text".equals(type)) {
       result = new TextNodeExtractor(fieldTemplate, resources, extractElement);
@@ -566,10 +612,14 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
   private static final class InterpNodeExtractor extends AbstractNodeExtractor {
 
     private String classification;
+    private String subType;
 
-    InterpNodeExtractor(FieldTemplate fieldTemplate, InnerResources resources, String classification) {
+    InterpNodeExtractor(FieldTemplate fieldTemplate, InnerResources resources, DomElement extractElement, String classification) {
       super(fieldTemplate, resources);
       this.classification = classification;
+
+      // subTypes 'tree' (default), 'toString' (future: attribute)
+      this.subType = extractElement.getAttributeValue("subType", "tree");
     }
 
     public List<Tree<XmlLite.Data>> extract(AtnParse parse, Tree<String> parseNode) {
@@ -582,7 +632,10 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
         result = new ArrayList<Tree<XmlLite.Data>>();
         for (ParseInterpretation interp : interps) {
-          result.add(interp.getInterpTree());
+          final Tree<XmlLite.Data> content = getContent(interp);
+          if (content != null) {
+            result.add(content);
+          }
         }
       }
 
@@ -591,6 +644,20 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
     public String extractString(AtnParse parse, Tree<String> parseNode) {
       return null;
+    }
+
+    private final Tree<XmlLite.Data> getContent(ParseInterpretation interp) {
+      Tree<XmlLite.Data> result = null;
+
+      if ("tree".equals(subType)) {
+        result = interp.getInterpTree();
+      }
+      else if ("toString".equals(subType)) {
+        result = XmlLite.createTagNode(interp.getClassification());
+        result.addChild(XmlLite.createTextNode(interp.toString()));
+      }
+
+      return result;
     }
   }
 

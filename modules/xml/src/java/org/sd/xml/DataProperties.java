@@ -219,7 +219,7 @@ public class DataProperties extends BaseDataProperties {
 
     if (filename != null) {
       filename = replaceVariables(filename);
-      final String workingDir = replaceVariables(getString(workingDirKey, null));
+      final String workingDir = filename.startsWith("/") ? null : replaceVariables(getString(workingDirKey, null));
       if (workingDir != null) {
         result = new File(new File(workingDir), filename);
       }
