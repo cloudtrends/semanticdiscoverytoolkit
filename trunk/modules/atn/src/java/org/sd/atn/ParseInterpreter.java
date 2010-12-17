@@ -26,7 +26,7 @@ import java.util.List;
  * <p>
  * @author Spence Koehler
  */
-public interface AtnParseInterpreter {
+public interface ParseInterpreter {
   
   /**
    * Get classifications offered by this interpreter.
@@ -41,6 +41,6 @@ public interface AtnParseInterpreter {
   /**
    * Get the interpretations for the parse or null.
    */
-  public List<ParseInterpretation> getInterpretations(AtnParse parse);
+  public List<ParseInterpretation> getInterpretations(Parse parse);
 
 }

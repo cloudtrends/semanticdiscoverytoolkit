@@ -29,11 +29,11 @@ import org.sd.xml.DomNode;
 import org.sd.xml.XmlLite;
 
 /**
- * An AtnParseInterpreter that uses the parse itself as the interpretation.
+ * An ParseInterpreter that uses the parse itself as the interpretation.
  * <p>
  * @author Spence Koehler
  */
-public class IdentityParseInterpreter implements AtnParseInterpreter {
+public class IdentityParseInterpreter implements ParseInterpreter {
   
   private boolean compress;
 
@@ -60,7 +60,7 @@ public class IdentityParseInterpreter implements AtnParseInterpreter {
   /**
    * Get the interpretations for the parse or null.
    */
-  public List<ParseInterpretation> getInterpretations(AtnParse parse) {
+  public List<ParseInterpretation> getInterpretations(Parse parse) {
     final List<ParseInterpretation> result = new ArrayList<ParseInterpretation>();
     final Tree<XmlLite.Data> interpTree = asInterpTree(parse.getParseTree(), null);
     result.add(new ParseInterpretation(interpTree));

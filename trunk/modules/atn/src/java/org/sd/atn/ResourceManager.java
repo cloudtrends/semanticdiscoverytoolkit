@@ -81,11 +81,18 @@ public class ResourceManager {
     if (this.options == null) this.options = options;
     this.name2resource = new HashMap<String, Object>();
 
-    final NodeList resourceNodes = options == null ? null : options.getDomElement().selectNodes("resource");
-    if (resourceNodes != null) {
-      for (int i = 0; i < resourceNodes.getLength(); ++i) {
-        final DomElement resourceElement = (DomElement)resourceNodes.item(i);
-        getResource(resourceElement);
+    final DomElement resourceElement = (options == null) ? null : options.getDomElement();
+    loadResources(resourceElement);
+  }
+
+  public final void loadResources(DomElement resourcesElement) {
+    if (resourcesElement != null) {
+      final NodeList resourceNodes = resourcesElement.selectNodes("resource");
+      if (resourceNodes != null) {
+        for (int i = 0; i < resourceNodes.getLength(); ++i) {
+          final DomElement resourceElement = (DomElement)resourceNodes.item(i);
+          getResource(resourceElement);
+        }
       }
     }
   }

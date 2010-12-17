@@ -41,7 +41,7 @@ import org.w3c.dom.NodeList;
  *
  * @author Spence Koehler
  */
-public class RecordParseInterpreter implements AtnParseInterpreter {
+public class RecordParseInterpreter implements ParseInterpreter {
   
   private String[] classifications;
   private InnerResources resources;
@@ -72,7 +72,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
   /**
    * Get the interpretations for the parse or null.
    */
-  public List<ParseInterpretation> getInterpretations(AtnParse parse) {
+  public List<ParseInterpretation> getInterpretations(Parse parse) {
     List<ParseInterpretation> result = null;
 
     for (RecordTemplate topTemplate : topTemplates) {
@@ -94,7 +94,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
   /**
    * Hook on a final interpretation.
    */
-  protected ParseInterpretation interpretationHook(ParseInterpretation interp, AtnParse parse) {
+  protected ParseInterpretation interpretationHook(ParseInterpretation interp, Parse parse) {
     return interp;
   }
 
@@ -102,7 +102,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
    * Hook on each record interpNode just after creation and before insertion
    * as a child into its tree.
    */
-  protected Tree<XmlLite.Data> interpRecordNodeHook(Tree<XmlLite.Data> recordNode, AtnParse parse,
+  protected Tree<XmlLite.Data> interpRecordNodeHook(Tree<XmlLite.Data> recordNode, Parse parse,
                                                     Tree<String> parseNode, Tree<XmlLite.Data> parentNode,
                                                     String fieldName, DomElement recordElement) {
     return recordNode;
@@ -115,7 +115,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
    * Note that each non-root record node will come back through as a field
    * but not all fields come through as a record.
    */
-  protected Tree<XmlLite.Data> interpFieldNodeHook(Tree<XmlLite.Data> fieldNode, AtnParse parse,
+  protected Tree<XmlLite.Data> interpFieldNodeHook(Tree<XmlLite.Data> fieldNode, Parse parse,
                                                    Tree<String> selectedNode, Tree<XmlLite.Data> parentNode,
                                                    String fieldName, DomElement fieldElement) {
     return fieldNode;
@@ -204,7 +204,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       return top;
     }
 
-    String getNameOverride(AtnParse parse, Tree<String> parseNode, String fieldName) {
+    String getNameOverride(Parse parse, Tree<String> parseNode, String fieldName) {
       String result = fieldName;
 
       if (nameOverride != null) {
@@ -219,7 +219,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       return result;
     }
 
-    boolean matches(AtnParse parse) {
+    boolean matches(Parse parse) {
       boolean result = true;
 
       if (matcher != null) {
@@ -229,7 +229,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       return result;
     }
 
-    ParseInterpretation interpret(AtnParse parse) {
+    ParseInterpretation interpret(Parse parse) {
       ParseInterpretation result = null;
       
       final Tree<String> parseTree = parse.getParseTree();
@@ -237,7 +237,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
 
       if (interpTree != null) {
         // add 'rule' attribute to interp (top)
-        interpTree.getData().asTag().attributes.put("rule", parse.getStartRule().getRuleId());
+        interpTree.getData().asTag().attributes.put("rule", parse.getRuleId());
 
         result = new ParseInterpretation(interpTree);
       }
@@ -245,7 +245,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       return result;
     }
 
-    Tree<XmlLite.Data> interpret(AtnParse parse, Tree<String> parseNode,
+    Tree<XmlLite.Data> interpret(Parse parse, Tree<String> parseNode,
                                  Tree<XmlLite.Data> parentNode, String fieldName) {
 
       fieldName = getNameOverride(parse, parseNode, fieldName);
@@ -323,7 +323,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
   }
 
   private static interface NodeMatcher {
-    public boolean matches(AtnParse parse);
+    public boolean matches(Parse parse);
   }
 
   private static final class RuleIdMatcher implements NodeMatcher {
@@ -335,9 +335,9 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       this.pattern = Pattern.compile(matchElement.getTextContent());
     }
 
-    public boolean matches(AtnParse parse) {
+    public boolean matches(Parse parse) {
       boolean result = false;
-      final String ruleId = parse.getStartRule().getRuleId();
+      final String ruleId = parse.getRuleId();
       if (ruleId != null && !"".equals(ruleId)) {
         final Matcher m = pattern.matcher(ruleId);
         result = m.matches();
@@ -355,7 +355,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       this.nodePath = new NodePath<String>(matchElement.getTextContent());
     }
 
-    public boolean matches(AtnParse parse) {
+    public boolean matches(Parse parse) {
       boolean result = false;
 
       final Tree<String> parseTree = parse.getParseTree();
@@ -367,7 +367,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
     AnyNodeMatcher(DomElement matchElement, InnerResources resources) {
     }
 
-    public boolean matches(AtnParse parse) {
+    public boolean matches(Parse parse) {
       return true;
     }
   }
@@ -423,15 +423,15 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       return collapse;
     }
 
-    List<Tree<String>> select(AtnParse parse, Tree<String> parseNode) {
+    List<Tree<String>> select(Parse parse, Tree<String> parseNode) {
       return selector.select(parse, parseNode);
     }
 
-    List<Tree<XmlLite.Data>> extract(AtnParse parse, Tree<String> parseNode) {
+    List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode) {
       return extractor.extract(parse, parseNode);
     }
 
-    String extractString(AtnParse parse, Tree<String> parseNode) {
+    String extractString(Parse parse, Tree<String> parseNode) {
       return extractor.extractString(parse, parseNode);
     }
   }
@@ -443,7 +443,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
   }
 
   private static interface NodeSelector {
-    public List<Tree<String>> select(AtnParse parse, Tree<String> parseTreeNode);
+    public List<Tree<String>> select(Parse parse, Tree<String> parseTreeNode);
   }
 
   private static final class NodePathSelector implements NodeSelector {
@@ -458,7 +458,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       this.nodePath = new NodePath<String>(selectElement.getTextContent());
     }
 
-    public List<Tree<String>> select(AtnParse parse, Tree<String> parseTreeNode) {
+    public List<Tree<String>> select(Parse parse, Tree<String> parseTreeNode) {
       return nodePath.apply(parseTreeNode);
     }
   }
@@ -492,8 +492,8 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
   }
 
   private static interface NodeExtractor {
-    public List<Tree<XmlLite.Data>> extract(AtnParse parse, Tree<String> parseNode);
-    public String extractString(AtnParse parse, Tree<String> parseNode);
+    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode);
+    public String extractString(Parse parse, Tree<String> parseNode);
   }
 
   private static abstract class AbstractNodeExtractor implements NodeExtractor {
@@ -505,7 +505,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       this.resources = resources;
     }
 
-    protected List<Tree<XmlLite.Data>> cleanup(Tree<XmlLite.Data> result, AtnParse parse, Tree<String> parseNode, boolean insertFieldNode) {
+    protected List<Tree<XmlLite.Data>> cleanup(Tree<XmlLite.Data> result, Parse parse, Tree<String> parseNode, boolean insertFieldNode) {
       List<Tree<XmlLite.Data>> retval = null;
 
       if (result != null) {
@@ -524,7 +524,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
     }
 
     // if !repeats, insert a node designating ambiguity if necessary
-    protected List<Tree<XmlLite.Data>> cleanup(List<Tree<XmlLite.Data>> result, AtnParse parse, Tree<String> parseNode, boolean insertFieldNode) {
+    protected List<Tree<XmlLite.Data>> cleanup(List<Tree<XmlLite.Data>> result, Parse parse, Tree<String> parseNode, boolean insertFieldNode) {
       List<Tree<XmlLite.Data>> retval = result;
 
       if (retval != null) {
@@ -554,7 +554,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       this.recordId = recordId;
     }
 
-    public List<Tree<XmlLite.Data>> extract(AtnParse parse, Tree<String> parseNode) {
+    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode) {
       List<Tree<XmlLite.Data>> result = null;
 
       final RecordTemplate recordTemplate = resources.id2recordTemplate.get(recordId);
@@ -566,7 +566,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       return result;
     }
 
-    public String extractString(AtnParse parse, Tree<String> parseNode) {
+    public String extractString(Parse parse, Tree<String> parseNode) {
       return null;
     }
   }
@@ -580,7 +580,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       this.attribute = attribute;
     }
 
-    public List<Tree<XmlLite.Data>> extract(AtnParse parse, Tree<String> parseNode) {
+    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode) {
       List<Tree<XmlLite.Data>> result = null;
 
       //todo: parameterize featureClass (currently null) if/when needed
@@ -596,7 +596,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       return cleanup(result, parse, parseNode, true);
     }
 
-    public String extractString(AtnParse parse, Tree<String> parseNode) {
+    public String extractString(Parse parse, Tree<String> parseNode) {
       String result = null;
 
       //todo: parameterize featureClass (currently null) if/when needed
@@ -622,7 +622,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       this.subType = extractElement.getAttributeValue("subType", "tree");
     }
 
-    public List<Tree<XmlLite.Data>> extract(AtnParse parse, Tree<String> parseNode) {
+    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode) {
       List<Tree<XmlLite.Data>> result = null;
 
       final List<ParseInterpretation> interps = ParseInterpretationUtil.getInterpretations(parseNode, classification);
@@ -642,7 +642,7 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       return cleanup(result, parse, parseNode, false);
     }
 
-    public String extractString(AtnParse parse, Tree<String> parseNode) {
+    public String extractString(Parse parse, Tree<String> parseNode) {
       return null;
     }
 
@@ -671,11 +671,11 @@ public class RecordParseInterpreter implements AtnParseInterpreter {
       this.delims = extractElement.getAttributeBoolean("delims", false);
     }
 
-    public List<Tree<XmlLite.Data>> extract(AtnParse parse, Tree<String> parseNode) {
+    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode) {
       return super.cleanup(XmlLite.createTextNode(getText(parseNode)), parse, parseNode, true);
     }
 
-    public String extractString(AtnParse parse, Tree<String> parseNode) {
+    public String extractString(Parse parse, Tree<String> parseNode) {
       return getText(parseNode);
     }
 
