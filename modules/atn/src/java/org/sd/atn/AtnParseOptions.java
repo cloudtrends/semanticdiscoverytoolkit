@@ -91,14 +91,14 @@ public class AtnParseOptions {
     this.adjustInputForTokens = adjustInputForTokens;
   }
 
-  private AtnParseInterpreter parseInterpreter;
+  private ParseInterpreter parseInterpreter;
   /**
    * An interpreter to use with parses.
    */
-  public AtnParseInterpreter getParseInterpreter() {
+  public ParseInterpreter getParseInterpreter() {
     return parseInterpreter;
   }
-  public void setParseInterpreter(AtnParseInterpreter parseInterpreter) {
+  public void setParseInterpreter(ParseInterpreter parseInterpreter) {
     this.parseInterpreter = parseInterpreter;
   }
 
@@ -148,7 +148,7 @@ public class AtnParseOptions {
    *   <skipTokenLimit>0</skipTokenLimit>
    *   <firstParseOnly>false</firstParseOnly>
    *   <adjustInputForTokens>false</adjustInputForTokens>
-   *   <parseInterpreter><class>IAtnParseInterpreter-class</class><dll>parse-interpreter-dll</dll></parseInterpreter>
+   *   <parseInterpreter><class>IParseInterpreter-class</class><dll>parse-interpreter-dll</dll></parseInterpreter>
    *   <start>acceptable-start-category-1</start>
    *   <start>acceptable-start-category-2</start>
    *   ...
@@ -196,7 +196,7 @@ public class AtnParseOptions {
     //   <skipTokenLimit>0</skipTokenLimit>
     //   <firstParseOnly>false</firstParseOnly>
     //   <adjustInputForTokens>false</adjustInputForTokens>
-    //   <parseInterpreter><class>IAtnParseInterpreter-class</class><dll>parse-interpreter-dll</dll></parseInterpreter>
+    //   <parseInterpreter><class>IParseInterpreter-class</class><dll>parse-interpreter-dll</dll></parseInterpreter>
     //   <start>acceptable-start-category-1</start>
     //   <start>acceptable-start-category-2</start>
     //   ...
@@ -215,7 +215,7 @@ public class AtnParseOptions {
     this.adjustInputForTokens = options.getBoolean("adjustInputForTokens", false);
 
     final DomElement parseInterpreterNode = (DomElement)options.getDomElement().selectSingleNode("parseInterpreter");
-    this.parseInterpreter = (parseInterpreterNode != null) ? (AtnParseInterpreter)resourceManager.getResource(parseInterpreterNode) : null;
+    this.parseInterpreter = (parseInterpreterNode != null) ? (ParseInterpreter)resourceManager.getResource(parseInterpreterNode) : null;
 
     final NodeList startNodes = options.getDomElement().selectNodes("start");
     if (startNodes != null) {

@@ -289,9 +289,9 @@ public class AtnParse {
   public List<ParseInterpretation> getParseInterpretations() {
     synchronized (parseInterpretationsLock) {
       if (_parseInterpretations == null && parseResult != null) {
-        final AtnParseInterpreter interpreter = parseResult.getOptions().getParseInterpreter();
+        final ParseInterpreter interpreter = parseResult.getOptions().getParseInterpreter();
         if (interpreter != null) {
-          _parseInterpretations = interpreter.getInterpretations(this);
+          _parseInterpretations = interpreter.getInterpretations(this.getParse());
         }
         
         if (_parseInterpretations == null) _parseInterpretations = new ArrayList<ParseInterpretation>();

@@ -39,7 +39,7 @@ import org.w3c.dom.NodeList;
  *
  * @author Spence Koehler
  */
-public class GenericParseInterpreter implements AtnParseInterpreter {
+public class GenericParseInterpreter implements ParseInterpreter {
   
   private String[] classifications;
   private FieldsContainer fields;
@@ -76,7 +76,7 @@ public class GenericParseInterpreter implements AtnParseInterpreter {
   /**
    * Get the interpretations for the parse or null.
    */
-  public List<ParseInterpretation> getInterpretations(AtnParse parse) {
+  public List<ParseInterpretation> getInterpretations(Parse parse) {
     List<ParseInterpretation> result = null;
 
     final List<Tree<XmlLite.Data>> interpTrees = fields.getInterpretationTrees(parse.getParseTree());

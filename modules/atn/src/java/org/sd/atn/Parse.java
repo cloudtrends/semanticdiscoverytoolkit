@@ -54,6 +54,8 @@ public class Parse implements Publishable, Serializable {
   // rule used to generate the parse
   private String ruleId;
   
+  private List<CategorizedToken> _cTokens;
+
   private static final long serialVersionUID = 42L;
 
   /**
@@ -97,6 +99,42 @@ public class Parse implements Publishable, Serializable {
 
   public String getParsedText() {
     return tokenizer.getText();
+  }
+
+  public List<CategorizedToken> getTokens() {
+    if (_cTokens == null) {
+      _cTokens = buildCategorizedTokens();
+    }
+    return _cTokens;
+  }
+
+  private final List<CategorizedToken> buildCategorizedTokens() {
+    final List<CategorizedToken> result = new ArrayList<CategorizedToken>();
+
+    for (Tree<String> leaf : parseTree.gatherLeaves()) {
+      final CategorizedToken cToken = ParseInterpretationUtil.getCategorizedToken(leaf);
+      result.add(cToken);
+    }
+
+    return result;
+  }
+
+  public CategorizedToken getFirstCategorizedToken() {
+    CategorizedToken result = null;
+    final List<CategorizedToken> cTokens = getTokens();
+    if (cTokens != null && cTokens.size() > 0) {
+      result = cTokens.get(0);
+    }
+    return result;
+  }
+
+  public CategorizedToken getLastCategorizedToken() {
+    CategorizedToken result = null;
+    final List<CategorizedToken> cTokens = getTokens();
+    if (cTokens != null && cTokens.size() > 0) {
+      result = cTokens.get(cTokens.size() - 1);
+    }
+    return result;
   }
 
   /**
