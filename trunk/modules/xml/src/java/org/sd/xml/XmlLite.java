@@ -19,6 +19,7 @@
 package org.sd.xml;
 
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.sd.util.StringSplitter;
 import org.sd.util.tree.Tree;
 
@@ -356,7 +357,8 @@ public class XmlLite {
   }
 
   private static final String escape(String string) {
-    return EntityConverter.escape(string);
+    return StringEscapeUtils.escapeXml(string);
+//    return EntityConverter.escape(string);
   }
 
   private final Tree<Data> readText(XmlInputStream inputStream, StringBuilder data, boolean incremental, AtomicBoolean die, boolean forceIgnoreComments, Tree<XmlLite.Data> altTopNode) throws IOException {

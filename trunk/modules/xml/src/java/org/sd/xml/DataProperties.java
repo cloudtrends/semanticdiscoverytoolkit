@@ -198,6 +198,16 @@ public class DataProperties extends BaseDataProperties {
     return text;
   }
 
+  public String getFilename(String key) {
+    String filename = getString(key);
+    return replaceVariables(filename);
+  }
+
+  public String getFilename(String key, String defaultValue) {
+    String filename = getString(key, defaultValue);
+    return replaceVariables(filename);
+  }
+
   /**
    * Get the file referenced by the 'key', replacing variables and taking
    * the value of the 'workingDirKey' into account if present.
@@ -269,6 +279,8 @@ public class DataProperties extends BaseDataProperties {
 
 
   protected String getValueString(String key) {
+    if (properties == null || key == null) return null;
+
     String result = properties.getProperty(key);
 
     if (result == null) {
