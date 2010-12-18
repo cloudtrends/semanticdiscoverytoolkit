@@ -80,7 +80,8 @@ public class Parse implements Publishable, Serializable {
     }
     this.tokenizer = new LiteralTokenizer(parse.getParsedText(), tokens);
 
-    this.parseTree = buildParseTree(parse.getParseTree(), tokenizer, zeroIndex);
+    int[] offset = new int[]{0};
+    this.parseTree = buildParseTree(parse.getParseTree(), tokenizer, zeroIndex, offset);
 
     this.ruleId = parse.getStartRule().getRuleId();
   }
@@ -309,18 +310,18 @@ public class Parse implements Publishable, Serializable {
   }
 
 
-  private final Tree<String> buildParseTree(Tree<String> parseTree, LiteralTokenizer tokenizer, int zeroIndex) {
-    final Tree<String> result = buildNode(parseTree, tokenizer, zeroIndex);
+  private final Tree<String> buildParseTree(Tree<String> parseTree, LiteralTokenizer tokenizer, int zeroIndex, int[] offset) {
+    final Tree<String> result = buildNode(parseTree, tokenizer, zeroIndex, offset);
 
     if (parseTree.hasChildren()) {
       for (Tree<String> child : parseTree.getChildren()) {
-        result.addChild(buildParseTree(child, tokenizer, zeroIndex));
+        result.addChild(buildParseTree(child, tokenizer, zeroIndex, offset));
       }
     }
     return result;
   }
 
-  private final Tree<String> buildNode(Tree<String> parseTreeNode, LiteralTokenizer tokenizer, int zeroIndex) {
+  private final Tree<String> buildNode(Tree<String> parseTreeNode, LiteralTokenizer tokenizer, int zeroIndex, int[] offset) {
     final String category = parseTreeNode.getData();
     final Tree<String> result = new Tree<String>(category);
 
@@ -337,7 +338,11 @@ public class Parse implements Publishable, Serializable {
           if (cToken != null && cToken.token != null) {
             final int startPos = cToken.token.getStartIndex() - zeroIndex;
             final int endPos = cToken.token.getEndIndex() - zeroIndex;
-            final Token lToken = tokenizer.buildToken(startPos, endPos);
+
+            final int adjustment = startPos < offset[0] ? (offset[0] + zeroIndex) : 0;
+            final Token lToken = tokenizer.buildToken(startPos + adjustment, endPos + adjustment);
+            if (adjustment == 0) offset[0] = startPos;
+
             if (cToken.token.hasFeatures()) {
               if (!lToken.hasFeatures()) {
                 lToken.setFeatures(cToken.token.getFeatures());
