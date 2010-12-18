@@ -53,25 +53,23 @@ public class ConfigLoader {
     return _resources;
   }
 
-  public Object getResource(File configFile, String resourceNodeName) throws IOException {
+  public Object getResource(String configFilename, String resourceNodeName) throws IOException {
     Object result = null;
 
+    final ResourceManager resources = getResourceManager();
+
     // load xml
+    final File configFile = resources.getOptions().getWorkingFile(configFilename, "workingDir");
     final DomDocument domDocument = XmlFactory.loadDocument(configFile, false, options);
     final DomElement configElement = (DomElement)domDocument.getDocumentElement();
     final DomElement resourcesElement = (DomElement)configElement.selectSingleNode("resources");
 
     // get "resources"
-    if (_resources == null) {
-      _resources = new ResourceManager(resourcesElement);
-    }
-    else {
-      _resources.loadResources(resourcesElement);
-    }
+    resources.loadResources(resourcesElement);
 
     // get specified resource
     if (resourceNodeName != null) {
-      final DomElement resourceElement = (DomElement)configElement.selectSingleNode("resourceNodeName");
+      final DomElement resourceElement = (DomElement)configElement.selectSingleNode(resourceNodeName);
       if (resourceElement != null) {
         result = _resources.getResource(resourceElement);
       }

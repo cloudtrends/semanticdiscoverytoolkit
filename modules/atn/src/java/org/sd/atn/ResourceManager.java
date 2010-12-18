@@ -103,6 +103,10 @@ public class ResourceManager {
     }
   }
 
+  public DataProperties getOptions() {
+    return options;
+  }
+
   /**
    * Retrieve or load a resource.
    * <p>
