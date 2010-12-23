@@ -170,9 +170,11 @@ public class AtnParseRunner {
         final String[] parserIds = (idSpec.length == 1 || "".equals(idSpec[1])) ? null : idSpec[1].split("\\s*,\\s*");
 
         final ParserFlow parserFlow = id2parserFlow.get(id);
-        parserFlow.setActive(true);      // activate flow
-        parserFlow.setActive(parserIds); // activate only specified flow ids
-        activeFlow.add(parserFlow);
+        if (parserFlow != null) {
+          parserFlow.setActive(true);      // activate flow
+          parserFlow.setActive(parserIds); // activate only specified flow ids
+          activeFlow.add(parserFlow);
+        }
       }
     }
 
