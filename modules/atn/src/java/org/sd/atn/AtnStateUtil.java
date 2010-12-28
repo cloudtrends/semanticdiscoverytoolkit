@@ -122,10 +122,10 @@ public class AtnStateUtil {
                 categoryNode.addChild(tokenParse);
               }
             }
-
-            // store CategorizedToken as an attribute on the parse tree node
-            categoryNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(inputToken, category));
           }
+
+          // store CategorizedToken as an attribute on the parse tree node
+          categoryNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(inputToken, category));
         }
 
         lastPushState = pushState;
@@ -280,7 +280,7 @@ public class AtnStateUtil {
   public static final CategorizedToken getCategorizedToken(Tree<String> parseTreeNode) {
     CategorizedToken result = null;
 
-    if (!parseTreeNode.hasChildren()) parseTreeNode = parseTreeNode.getParent();
+    if (!parseTreeNode.hasChildren() && parseTreeNode.getParent().numChildren() == 1) parseTreeNode = parseTreeNode.getParent();
     if (parseTreeNode.hasAttributes()) {
       result = (CategorizedToken)(parseTreeNode.getAttributes().get(AtnStateUtil.TOKEN_KEY));
     }
