@@ -284,6 +284,24 @@ public class ParseOutputCollector {
       });
   }
 
+  public List<Parse> getParses() {
+    final List<Parse> result = new ArrayList<Parse>();
+
+    if (parseResults != null) {
+      for (AtnParseResult parseResult : parseResults) {
+        final int numParses = parseResult.getNumParses();
+        for (int parseNum = 0; parseNum < numParses; ++parseNum) {
+          final AtnParse parse = parseResult.getParse(parseNum);
+          if (parse.getSelected()) {
+            result.add(parse.getParse());
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
   private List<ParseInterpretation> getParseInterpretations(ParseInterpretationSelector selector) {
     final List<ParseInterpretation> result = new ArrayList<ParseInterpretation>();
 

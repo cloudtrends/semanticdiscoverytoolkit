@@ -33,6 +33,11 @@ public class AtnRuleStep {
   private static final ClusteringTest CLUSTER_TEST = new ClusteringTest();
 
 
+  private AtnRule rule;
+  public AtnRule getRule() {
+    return rule;
+  }
+
   private String category;
   public String getCategory() {
     return category;
@@ -125,7 +130,8 @@ public class AtnRuleStep {
   }
 
 
-  AtnRuleStep(DomElement stepElement, ResourceManager resourceManager) {
+  AtnRuleStep(DomElement stepElement, ResourceManager resourceManager, AtnRule rule) {
+    this.rule = rule;
     this.category = stepElement.getLocalName();
     this.label = stepElement.getAttributeValue("label", null);
     this.require = stepElement.getAttributeValue("require", null);

@@ -146,18 +146,26 @@ public class AtnStateUtil {
     AtnState result = null;
 
     if (curState != null) {
-      AtnState prevPush = curState.getPushState();
       for (AtnState prevState = curState.getParentState(); prevState != null; prevState = prevState.getParentState()) {
         if (prevState.getMatched()) {
           result = prevState;
           break;
         }
-        else if (levelDiff != null) {
-          if (prevState.isPoppedState()) --levelDiff[0];
-          else if (prevPush != prevState.getPushState()) ++levelDiff[0];
-        }
-        prevPush = prevState.getPushState();
       }
+    }
+
+    if (result != null && levelDiff != null) {
+      levelDiff[0] += (getPushDepth(curState) - getPushDepth(result));
+    }
+
+    return result;
+  }
+
+  public static final int getPushDepth(AtnState atnState) {
+    int result = 0;
+
+    for (AtnState pushState = atnState.getPushState(); pushState != null; pushState = pushState.getPushState()) {
+      ++result;
     }
 
     return result;
@@ -198,10 +206,12 @@ public class AtnStateUtil {
   public static final boolean matchesCategory(AtnState atnState, Set<String> categories, int[] levelDiff) {
     boolean result = false;
 
+    int popCount = 0;
     for (; !result && atnState != null; atnState = atnState.getPushState()) {
       result = categories.contains(atnState.getRuleStep().getCategory());
-      if (!result && levelDiff != null) ++levelDiff[0];
+      if (!result && levelDiff != null) ++popCount;
     }
+    if (result &&levelDiff != null) levelDiff[0] += popCount;
 
     return result;
   }
@@ -214,10 +224,12 @@ public class AtnStateUtil {
     boolean result = false;
 
     if (atnState.getMatched()) {
+      int popCount = 0;
       for (; !result && atnState != null; atnState = atnState.getPushState()) {
         result = category.equals(atnState.getRuleStep().getCategory());
-        if (!result && levelDiff != null) ++levelDiff[0];
+        if (!result && levelDiff != null) ++popCount;
       }
+      if (result && levelDiff != null) levelDiff[0] += popCount;
     }
 
     return result;

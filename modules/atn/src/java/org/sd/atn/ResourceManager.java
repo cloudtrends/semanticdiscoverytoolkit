@@ -46,6 +46,7 @@ import org.w3c.dom.NodeList;
 public class ResourceManager {
 
   private DataProperties options;
+  private boolean disableLoad;
 
   /**
    * Map to store named instances for reference by later instances.
@@ -80,13 +81,18 @@ public class ResourceManager {
   private final void init(DataProperties options) {
     if (this.options == null) this.options = options;
     this.name2resource = new HashMap<String, Object>();
+    this.disableLoad = options.getBoolean("_disableLoad", false);
 
     final DomElement resourceElement = (options == null) ? null : options.getDomElement();
     loadResources(resourceElement);
   }
 
+  public void setDisableLoad(boolean disableLoad) {
+    this.disableLoad = disableLoad;
+  }
+
   public final void loadResources(DomElement resourcesElement) {
-    if (resourcesElement != null) {
+    if (resourcesElement != null && !disableLoad) {
       final NodeList resourceNodes = resourcesElement.selectNodes("resource");
       if (resourceNodes != null) {
         for (int i = 0; i < resourceNodes.getLength(); ++i) {
@@ -125,23 +131,46 @@ public class ResourceManager {
   public synchronized final Object getResource(DomElement resourceElement, Object[] extraArgs) {
     Object result = null;
 
+    if (resourceElement == null) return null;
+
     // attribute 'resource' gives resource name for lookups
     String resourceName = resourceElement.getAttributeValue("resource", null);
     if (resourceName != null) {
       result = getResource(resourceName);
     }
 
-    if (result == null) {
+    if (result == null && !disableLoad) {
       result = buildInstance(resourceElement, extraArgs);
 
       // attribute 'name' (or 'resource') gives resource name for storage
-      if (resourceName == null) resourceName = resourceElement.getAttributeValue("name", null);
+      if (resourceName == null) {
+        resourceName = resourceElement.getAttributeValue("name", null);
+      }
 
       if (result != null && resourceName != null) {
         name2resource.put(resourceName, result);
 
         System.out.println(new Date() + ": ResourceManager built/stored '" + resourceName + "' resource.");
       }
+    }
+
+    return result;
+  }
+
+  public final Object getResourceByClass(String classPath) {
+    return getResourceByClass(classPath, null);
+  }
+
+  public final Object getResourceByClass(String classPath, Object[] extraArgs) {
+    Object result = null;
+
+    try {
+      final Class theClass = Class.forName(classPath);
+      final Object[] args = getArgs(null, extraArgs);
+      result = ReflectUtil.constructInstance(theClass, args);
+    }
+    catch (ClassNotFoundException e) {
+      throw new IllegalArgumentException(e);
     }
 
     return result;
@@ -195,20 +224,7 @@ public class ResourceManager {
   private final Object buildInstance(DomElement resourceElement, Object[] extraArgs) {
    Object result = null;
 
-   Object[] args = null;
-   if (extraArgs == null) {
-     args = new Object[] { resourceElement, this };
-   }
-   else {
-     args = new Object[extraArgs.length + 2];
-
-     args[0] = resourceElement;
-     args[1] = this;
-
-     for (int argIdx = 0; argIdx < extraArgs.length; ++argIdx) {
-       args[argIdx + 2] = extraArgs[argIdx];
-     }
-   }
+   final Object[] args = getArgs(resourceElement, extraArgs);
 
     try {
       final DomNode classnameNode = resourceElement.selectSingleNode("jclass");
@@ -226,5 +242,23 @@ public class ResourceManager {
     }
 
     return result;
+  }
+
+  private final Object[] getArgs(DomElement resourceElement, Object[] extraArgs) {
+    Object[] args = null;
+    if (extraArgs == null) {
+      args = new Object[] { resourceElement, this };
+    }
+    else {
+      args = new Object[extraArgs.length + 2];
+
+      args[0] = resourceElement;
+      args[1] = this;
+
+      for (int argIdx = 0; argIdx < extraArgs.length; ++argIdx) {
+        args[argIdx + 2] = extraArgs[argIdx];
+      }
+    }
+    return args;
   }
 }

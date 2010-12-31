@@ -31,7 +31,9 @@ import java.util.Set;
 import org.sd.util.InputContext;
 import org.sd.util.InputContextIterator;
 import org.sd.xml.DataProperties;
+import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
+import org.sd.xml.XmlFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -42,6 +44,19 @@ import org.w3c.dom.NodeList;
  */
 public class ParseConfig {
   
+  public static ParseConfig buildInstance(DataProperties options) throws IOException {
+    final File parseConfigFile = options.getFile("parseConfig", "workingDir");
+
+    if (parseConfigFile == null) {
+      throw new IllegalStateException("Must define 'parseConfig'!");
+    }
+
+    final DomDocument domDocument = XmlFactory.loadDocument(parseConfigFile, false, options);
+    final DomElement parseElement = (DomElement)domDocument.getDocumentElement();
+    return new ParseConfig(parseElement);
+  }
+
+
   private String[] compoundParserIds;
 
   private DataProperties parseConfigProperties;

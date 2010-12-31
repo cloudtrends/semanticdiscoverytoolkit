@@ -68,7 +68,7 @@ public class AtnParseRunner {
 
   public AtnParseRunner(DataProperties dataProperties) throws IOException {
     this.options = dataProperties;
-    this.parseConfig = loadParseConfig(options);
+    this.parseConfig = ParseConfig.buildInstance(options);
     this.verbose = false;
     this.id2parserFlow = createParserFlow();
     this.activeFlowSpec = null;
@@ -109,18 +109,6 @@ public class AtnParseRunner {
 
   public List<ParserFlow> getActiveFlow() {
     return activeFlow;
-  }
-
-  private final ParseConfig loadParseConfig(DataProperties options) throws IOException {
-    final File parseConfigFile = options.getFile("parseConfig", "workingDir");
-
-    if (parseConfigFile == null) {
-      throw new IllegalStateException("Must define 'parseConfig'!");
-    }
-
-    final DomDocument domDocument = XmlFactory.loadDocument(parseConfigFile, false, options);
-    final DomElement parseElement = (DomElement)domDocument.getDocumentElement();
-    return new ParseConfig(parseElement);
   }
 
   /**
