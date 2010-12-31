@@ -38,7 +38,7 @@ import org.sd.xml.DomElement;
 public class AtnParser {
   
   private AtnGrammar grammar;
-  AtnGrammar getGrammar() {
+  public AtnGrammar getGrammar() {
     return grammar;
   }
 

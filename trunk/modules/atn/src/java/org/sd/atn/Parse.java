@@ -65,6 +65,24 @@ public class Parse implements Publishable, Serializable {
   }
 
   /**
+   * Hardwired constructor (for testing and analysis).
+   */
+  public Parse(String ruleId, Tree<String> parseTree) {
+    this(ruleId, parseTree, null);
+  }
+
+  /**
+   * Hardwired constructor (for testing and analysis).
+   */
+  public Parse(String ruleId, Tree<String> parseTree, String parsedText) {
+    if (parsedText == null) parsedText = parseTree.getLeafText();    
+    this.tokenizer = new LiteralTokenizer(parsedText);
+    this.parseTree = parseTree;
+    this.ruleId = ruleId;
+    this._cTokens = null;
+  }
+
+  /**
    * Construct with the given atn parse.
    * <p>
    * Package protected to provide access to AtnParse to build while it

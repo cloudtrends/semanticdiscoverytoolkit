@@ -55,6 +55,13 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
   }
 
   /**
+   * Construct with the given text.
+   */
+  public LiteralTokenizer(String text) {
+    this(text, null);
+  }
+
+  /**
    * Construct with the given (consecutive) tokens, resetting their offsets
    * such that the first token's start offset is zero.
    */

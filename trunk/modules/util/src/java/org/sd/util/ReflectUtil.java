@@ -442,7 +442,7 @@ public class ReflectUtil {
         if (params.length == args.length) {
           boolean paramsMatch = true;
           for (int i = 0; i < params.length; ++i) {
-            if (!params[i].isAssignableFrom(args[i].getClass())) {
+            if (params[i] != null && args[i] != null && !params[i].isAssignableFrom(args[i].getClass())) {
               paramsMatch = false;
             }
           }

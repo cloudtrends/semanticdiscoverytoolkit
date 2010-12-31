@@ -93,7 +93,7 @@ public class AtnRule {
       if (curNode.getNodeType() != DomElement.ELEMENT_NODE) continue;
 
       final DomElement stepElement = (DomElement)curNode;
-      AtnRuleStep step = new AtnRuleStep(stepElement, resourceManager);
+      AtnRuleStep step = new AtnRuleStep(stepElement, resourceManager, this);
       this.steps.addLast(step);
 
       if (this.steps.size() == childNodes.getLength()) step.setIsTerminal(true);

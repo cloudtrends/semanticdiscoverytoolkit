@@ -38,12 +38,17 @@ public class ConfigLoader {
   private ResourceManager _resources;
 
   public ConfigLoader() {
-    this(null);
+    this((DataProperties)null);
   }
 
   public ConfigLoader(DataProperties options) {
     this.options = options;
     this._resources = null;
+  }
+
+  public ConfigLoader(ResourceManager resourceManager) {
+    this.options = resourceManager.getOptions();
+    this._resources = resourceManager;
   }
 
   public ResourceManager getResourceManager() {
