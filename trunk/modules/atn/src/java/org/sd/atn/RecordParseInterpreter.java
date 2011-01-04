@@ -77,7 +77,8 @@ public class RecordParseInterpreter implements ParseInterpreter {
 
     for (RecordTemplate topTemplate : topTemplates) {
       if (topTemplate.matches(parse)) {
-        ParseInterpretation interp = topTemplate.interpret(parse);
+        final boolean doInterpret = foundMatchingTemplateHook(topTemplate, parse);
+        ParseInterpretation interp = doInterpret ? topTemplate.interpret(parse) : null;
         if (interp != null) {
           interp = interpretationHook(interp, parse);
         }
@@ -89,6 +90,13 @@ public class RecordParseInterpreter implements ParseInterpreter {
     }
 
     return result;
+  }
+
+  /**
+   * @return true to execute recordTemplate.interpret(parse); otherwise, false.
+   */
+  protected boolean foundMatchingTemplateHook(RecordTemplate recordTemplate, Parse parse) {
+    return true;
   }
 
   /**
@@ -137,7 +145,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
   }
 
 
-  private static final class InnerResources {
+  protected static final class InnerResources {
 
     public final ResourceManager resourceManager;
     public final Map<String, RecordTemplate> id2recordTemplate;
@@ -149,7 +157,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
   }
 
 
-  private static final class RecordTemplate {
+  protected static class RecordTemplate {
 
     private DomElement recordNode;
     private InnerResources resources;
@@ -303,7 +311,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
   }
 
 
-  private static final NodeMatcher buildNodeMatcher(DomElement matchElement, InnerResources resources) {
+  protected static NodeMatcher buildNodeMatcher(DomElement matchElement, InnerResources resources) {
     NodeMatcher result = null;
     final String attribute = matchElement.getAttributeValue("attribute", "any");
 
@@ -322,11 +330,11 @@ public class RecordParseInterpreter implements ParseInterpreter {
     return result;
   }
 
-  private static interface NodeMatcher {
+  protected static interface NodeMatcher {
     public boolean matches(Parse parse);
   }
 
-  private static final class RuleIdMatcher implements NodeMatcher {
+  protected static class RuleIdMatcher implements NodeMatcher {
 
     private Pattern pattern;
 
@@ -346,7 +354,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
     }
   }
 
-  private static final class NodePathMatcher implements NodeMatcher {
+  protected static class NodePathMatcher implements NodeMatcher {
 
     private NodePath<String> nodePath;
 
@@ -363,7 +371,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
     }
   }
 
-  private static final class AnyNodeMatcher implements NodeMatcher {
+  protected static class AnyNodeMatcher implements NodeMatcher {
     AnyNodeMatcher(DomElement matchElement, InnerResources resources) {
     }
 
@@ -373,7 +381,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
   }
 
 
-  private static final class FieldTemplate {
+  protected static class FieldTemplate {
 
     private DomElement fieldElement;
 
@@ -442,11 +450,11 @@ public class RecordParseInterpreter implements ParseInterpreter {
     return new NodePathSelector(matchElement, resources);
   }
 
-  private static interface NodeSelector {
+  protected static interface NodeSelector {
     public List<Tree<String>> select(Parse parse, Tree<String> parseTreeNode);
   }
 
-  private static final class NodePathSelector implements NodeSelector {
+  protected static class NodePathSelector implements NodeSelector {
 
     private NodePath<String> nodePath;
     private InnerResources resources;
@@ -464,7 +472,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
   }
 
 
-  private static final NodeExtractor buildNodeExtractor(FieldTemplate fieldTemplate, DomElement extractElement, InnerResources resources) {
+  protected static NodeExtractor buildNodeExtractor(FieldTemplate fieldTemplate, DomElement extractElement, InnerResources resources) {
     NodeExtractor result = null;
 
     final String type = extractElement.getAttributeValue("type");
@@ -545,7 +553,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
     }
   }
 
-  private static final class RecordNodeExtractor extends AbstractNodeExtractor {
+  protected static class RecordNodeExtractor extends AbstractNodeExtractor {
 
     private String recordId;
 
@@ -571,7 +579,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
     }
   }
 
-  private static final class AttributeNodeExtractor extends AbstractNodeExtractor {
+  protected static class AttributeNodeExtractor extends AbstractNodeExtractor {
 
     private String attribute;
 
@@ -609,7 +617,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
     }
   }
 
-  private static final class InterpNodeExtractor extends AbstractNodeExtractor {
+  protected static class InterpNodeExtractor extends AbstractNodeExtractor {
 
     private String classification;
     private String subType;
@@ -661,7 +669,7 @@ public class RecordParseInterpreter implements ParseInterpreter {
     }
   }
 
-  private static final class TextNodeExtractor extends AbstractNodeExtractor {
+  protected static class TextNodeExtractor extends AbstractNodeExtractor {
 
     private boolean delims;
 

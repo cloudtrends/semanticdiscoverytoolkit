@@ -82,7 +82,7 @@ public class TestDateTimeExtractor extends TestCase {
   public void testSkip5AndIgnoreExtra() throws IOException {
     final DateTimeExtractor extractor = new DateTimeExtractor(2003, true, 5);
 
-    verify(extractor, "Gobbledygook: 12 Dec 2005", new String[]{"(DATE (DAY '12') (MONTH 'Dec') (YEAR '2005'))"});
+    verify(extractor, "Gobbledygook: 12 Dec 2005", new String[]{"(DATE (YEAR '12') (MONTH 'Dec'))", "(DATE (DAY '12') (MONTH 'Dec') (YEAR '2005'))"});
     verify(extractor, "September 2005(11)", new String[]{"(DATE (MONTH 'September') (YEAR '2005'))"});
     verify(extractor, "MyFinances.co.uk, UK - Jun 15, 2005", new String[]{"(DATE (MONTH 'Jun') (DAY '15') (YEAR '2005'))"});
     verify(extractor, "Published: December 24, 2005", new String[]{"(DATE (MONTH 'December') (DAY '24') (YEAR '2005'))"});
