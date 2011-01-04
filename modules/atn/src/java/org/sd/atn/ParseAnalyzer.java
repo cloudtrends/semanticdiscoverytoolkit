@@ -20,8 +20,10 @@ package org.sd.atn;
 
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DataProperties;
 
@@ -40,6 +42,10 @@ public class ParseAnalyzer {
   private boolean infoMode;
   private ParseInterpreter parseInterpreter;
 
+  public ParseAnalyzer() {
+    this.options = null;
+  }
+
   // Properties:
   //  parseConfig -- (required) path to parseConfig file with grammar to analyze
   //  resourcesDir -- (required) path to resources (e.g. "${HOME}/co/ancestry/resources")
@@ -51,11 +57,20 @@ public class ParseAnalyzer {
   public ParseAnalyzer(DataProperties options) throws IOException {
     this.options = options;
 
-    this.parseRunner = new AtnParseRunner(options);
+    final AtnParseRunner parseRunner = new AtnParseRunner(options);
+    final String grammarId = options.getString("grammarId");
+    final boolean infoMode = options.getBoolean("infoMode", true);
+
+    init(parseRunner, grammarId, infoMode);
+  }
+
+  public final void init(AtnParseRunner parseRunner, String grammarId, boolean infoMode) throws IOException {
+    this.parseRunner = parseRunner;
+    this.infoMode = infoMode;
+
     final ParseConfig parseConfig = parseRunner.getParseConfig();
     this.resourceManager = parseConfig.getResourceManager();
       
-    final String grammarId = options.getString("grammarId");
     final String[] idPieces = grammarId.split(":");
     final AtnParserWrapper parserWrapper = parseConfig.getId2CompoundParser().get(idPieces[0]).getParserWrapper(idPieces[1]);
     final AtnGrammar grammar = parserWrapper.getParser().getGrammar();
@@ -63,7 +78,6 @@ public class ParseAnalyzer {
     this.grammarAnalyzer = new AtnGrammarAnalyzer(grammar, parseOptions);
     
     this.textGenerator = AtnGrammarAnalyzer.buildTextGenerator(resourceManager);
-    this.infoMode = options.getBoolean("infoMode", true);
 
     this.parseInterpreter = grammarAnalyzer.getParseInterpreter();
   }
@@ -88,8 +102,16 @@ public class ParseAnalyzer {
     return textGenerator;
   }
 
+  public void setTextGenerator(TextGenerator textGenerator) {
+    this.textGenerator = textGenerator;
+  }
+
   public boolean getInfoMode() {
     return infoMode;
+  }
+
+  public void setInfoMode(boolean infoMode) {
+    this.infoMode = infoMode;
   }
 
   public ParseInterpreter getParseInterpreter() {
@@ -104,8 +126,12 @@ public class ParseAnalyzer {
     return grammarAnalyzer.generateParses(parseRunner, tree, textGenerator);
   }
 
+  public Map<String, List<Tree<String>>> buildTrees() {
+    return grammarAnalyzer.buildTrees(infoMode, textGenerator);
+  }
+
   public void analyzeGrammarTrees() {
-    final Map<String, List<Tree<String>>> treeMaps = grammarAnalyzer.buildTrees(infoMode, textGenerator);
+    final Map<String, List<Tree<String>>> treeMaps = buildTrees();
 
     for (Map.Entry<String, List<Tree<String>>> entry : treeMaps.entrySet()) {
       final String id = entry.getKey();
@@ -116,6 +142,10 @@ public class ParseAnalyzer {
   }
 
   protected void analyzeGrammarTrees(String id, List<Tree<String>> trees) {
+    final Set<String> interpXmlStrings = getInterpXml(trees);
+    System.out.println("For id=" + id + ", found " + interpXmlStrings.size() + " unique interps from " + trees.size() + " trees.");
+    System.out.println("\t" + interpXmlStrings.iterator().next());
+
     for (Tree<String> tree : trees) {
       analyzeGrammarTree(id, tree);
     }
@@ -125,6 +155,34 @@ public class ParseAnalyzer {
     final Parse parse = getHardwiredParse(tree);
 
     final boolean stopHere = true;
+  }
+
+  public Set<String> getInterpXml(List<Tree<String>> trees) {
+    return getInterpXml(trees, parseInterpreter);
+  }
+
+  public Set<String> getInterpXml(List<Tree<String>> trees, ParseInterpreter parseInterpreter) {
+    final Set<String> result = new HashSet<String>();
+
+    for (Tree<String> tree : trees) {
+      final List<ParseInterpretation> interps = getInterps(tree, parseInterpreter);
+      if (interps != null) {
+        for (ParseInterpretation interp : interps) {
+          result.add(interp.getInterpXml());
+        }
+      }
+    }
+
+    return result;
+  }
+
+  public List<ParseInterpretation> getInterps(Tree<String> tree) {
+    return getInterps(tree, parseInterpreter);
+  }
+
+  public List<ParseInterpretation> getInterps(Tree<String> tree, ParseInterpreter parseInterpreter) {
+    final Parse parse = getHardwiredParse(tree);
+    return parseInterpreter.getInterpretations(parse);
   }
 
 
