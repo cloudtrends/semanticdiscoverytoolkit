@@ -20,6 +20,7 @@ package org.sd.xml;
 
 
 import java.io.File;
+import java.io.PrintStream;
 import java.util.List;
 import org.sd.util.tree.*;
 
@@ -31,6 +32,10 @@ import org.sd.util.tree.*;
 public class TreeDiffViewer {
   
   public static final void view1(Tree<XmlLite.Data> xmlTree1, Tree<XmlLite.Data> xmlTree2) throws Exception {
+    view1(xmlTree1, xmlTree2, System.out);
+  }
+
+  public static final void view1(Tree<XmlLite.Data> xmlTree1, Tree<XmlLite.Data> xmlTree2, PrintStream out) throws Exception {
 
     final StructureMatcher<XmlLite.Data> matcher = new StructureMatcher<XmlLite.Data>(xmlTree1, xmlTree2);
     matcher.setNodeComparer(new NodeComparer<XmlLite.Data>() {
@@ -57,23 +62,27 @@ public class TreeDiffViewer {
     final StructureMatcher.MatchRatio matchRatio2 = matcher.getMatchRatio2();
     final StructureMatcher.MatchRatio matchRatio = matcher.getMatchRatio();
 
-    System.out.println("\nIntersection:");
+    out.println("\nIntersection:");
     if (ix == null) {
-      System.out.println("  <NULL>");
+      out.println("  <NULL>");
     }
     else {
-      PathHelper.dumpPaths(ix);
+      PathHelper.dumpPaths(ix, out);
     }
 
-    System.out.println();
-    System.out.println("matchRatio1=" + matchRatio1);
-    System.out.println("matchRatio2=" + matchRatio2);
-    System.out.println();
-    System.out.println("matchRatio=" + matchRatio);
+    out.println();
+    out.println("matchRatio1=" + matchRatio1);
+    out.println("matchRatio2=" + matchRatio2);
+    out.println();
+    out.println("matchRatio=" + matchRatio);
   }
 
 
   public static final void view2(Tree<XmlLite.Data> xmlTree1, Tree<XmlLite.Data> xmlTree2) throws Exception {
+    view2(xmlTree1, xmlTree2, System.out);
+  }
+
+  public static final void view2(Tree<XmlLite.Data> xmlTree1, Tree<XmlLite.Data> xmlTree2, PrintStream out) throws Exception {
 
     final LeafDiffer<XmlLite.Data> leafDiffer = new LeafDiffer<XmlLite.Data>(xmlTree1, xmlTree2);
     leafDiffer.setTextExtractor(new TextExtractor<XmlLite.Data>() {
@@ -94,17 +103,17 @@ public class TreeDiffViewer {
 
     int counter = 0;
     for (Tree<XmlLite.Data> dx : dxs1) {
-      System.out.println("\nDisjunction1 #" + counter);
-      PathHelper.dumpPaths(dx);
+      out.println("\nDisjunction1 #" + counter);
+      PathHelper.dumpPaths(dx, out);
       ++counter;
     }
 
-    System.out.println();
+    out.println();
 
     counter = 0;
     for (Tree<XmlLite.Data> dx : dxs2) {
-      System.out.println("\nDisjunction2 #" + counter);
-      PathHelper.dumpPaths(dx);
+      out.println("\nDisjunction2 #" + counter);
+      PathHelper.dumpPaths(dx, out);
       ++counter;
     }
   }

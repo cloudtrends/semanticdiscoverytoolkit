@@ -77,6 +77,22 @@ public class AtnParseRunner {
     updateOptions();
   }
 
+  public AtnParseOptions getParseOptions(String compoundParserId, String parserId) {
+    AtnParseOptions result = null;
+
+    if (parseConfig != null) {
+      final CompoundParser compoundParser = parseConfig.getCompoundParser(compoundParserId);
+      if (compoundParser != null) {
+        final AtnParserWrapper parserWrapper = compoundParser.getParserWrapper(parserId);
+        if (parserWrapper != null) {
+          result = parserWrapper.getParseOptions();
+        }
+      }
+    }
+
+    return result;
+  }
+
   /**
    * Update internal variables according to the current state of the
    * options.

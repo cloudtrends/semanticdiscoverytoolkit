@@ -25,6 +25,7 @@ import org.sd.util.tree.TreeAnalyzer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -200,12 +201,16 @@ public class PathHelper {
 
 
   public static final void dumpPaths(Tree<XmlLite.Data> xmlTree) {
+    dumpPaths(xmlTree, System.out);
+  }
+
+  public static final void dumpPaths(Tree<XmlLite.Data> xmlTree, PrintStream out) {
     final PathHelper pathHelper = new PathHelper(xmlTree, null);
     
     final List<Tree<XmlLite.Data>> leaves = pathHelper.getLeaves();
 
     for (Tree<XmlLite.Data> leaf : leaves) {
-      System.out.println(pathHelper.buildPathKey(leaf));
+      out.println(pathHelper.buildPathKey(leaf));
     }
   }
 

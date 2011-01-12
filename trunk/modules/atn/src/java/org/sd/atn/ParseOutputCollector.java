@@ -468,9 +468,12 @@ public class ParseOutputCollector {
       return wasInterpreted;
     }
 
-    private String interpretation;
+    private String _interpretation;
     String getInterpretation() {
-      return interpretation;
+      if (_interpretation == null && parse != null && parse.getSelected()) {
+        _interpretation = getInterpretationString(parse);
+      }
+      return _interpretation;
     }
 
     public InputContext getInputContext() {
@@ -496,7 +499,7 @@ public class ParseOutputCollector {
     }
 
     boolean hasInterpretation() {
-      return this.interpretation != null;
+      return getInterpretation() != null;
     }
 
     ParseInfo(AtnParse parse, boolean hideUninterpreted, String defaultStyle, String interpretedStyle) {
@@ -506,11 +509,7 @@ public class ParseOutputCollector {
       this.interpretedStyle = interpretedStyle;
 
       this.wasInterpreted = false;
-      this.interpretation = null;
-
-      if (parse.getSelected()) {
-        this.interpretation = getInterpretationString(parse);
-      }
+      this._interpretation = null;
     }
 
 
@@ -551,7 +550,7 @@ public class ParseOutputCollector {
     boolean addMarkup(Map<DomNode, MarkupContainer> textNode2Markup) {
       boolean result = false;
 
-      final String interpretation = this.interpretation;
+      final String interpretation = getInterpretation();
 
       final DomNode textNode = getTextNode();
       if (this.wasInterpreted() && textNode != null && (defaultStyle != null || interpretedStyle != null)) {
