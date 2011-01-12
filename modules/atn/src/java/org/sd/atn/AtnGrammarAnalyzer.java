@@ -19,23 +19,30 @@
 package org.sd.atn;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.sd.atn.ResourceManager;
+import org.sd.util.DotWrapper;
 import org.sd.util.GeneralUtil;
 import org.sd.util.tree.Tree;
+import org.sd.util.tree.Tree2Dot;
 import org.sd.util.tree.TreeUtil;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
+import org.sd.xml.TreeDiffViewer;
 import org.sd.xml.XmlFactory;
+import org.sd.xml.XmlLite;
 
 /**
  * Utility class for analyzing an atn grammar.
@@ -44,10 +51,17 @@ import org.sd.xml.XmlFactory;
  */
 public class AtnGrammarAnalyzer {
   
+  private static final int MAX_BRANCH = 128;
+
+
   private AtnGrammar grammar;
   private AtnParseOptions parseOptions;
   private List<AtnRule> startRules;
   private Set<String> _terminalCategories;
+  private boolean onlyConsistentCombos;
+  private File imageDir;
+
+  private static final ParseInterpreter identityInterpreter = new IdentityParseInterpreter(false);
 
   public AtnGrammarAnalyzer(AtnGrammar grammar) {
     this(grammar, null);
@@ -58,6 +72,8 @@ public class AtnGrammarAnalyzer {
     this.parseOptions = parseOptions;
     this.startRules = grammar.getStartRules(parseOptions);
     this._terminalCategories = null;
+    this.onlyConsistentCombos = true;
+    this.imageDir = null;
   }
 
   public AtnGrammar getGrammar() {
@@ -68,24 +84,48 @@ public class AtnGrammarAnalyzer {
     return parseOptions;
   }
 
+  public boolean onlyConsistentCombos() {
+    return onlyConsistentCombos;
+  }
+
+  /**
+   * Be wary of setting this to false because the combinatorics can (and will)
+   * get out of hand for anything more than the most simplistic grammars!
+   */
+  public void setOnlyConsistentCombos(boolean onlyConsistentCombos) {
+    this.onlyConsistentCombos = onlyConsistentCombos;
+  }
+
+  public File getImageDir() {
+    return imageDir;
+  }
+
+  public void setImageDir(File imageDir) {
+    this.imageDir = imageDir;
+  }
+
+  public List<AtnRule> getStartRules() {
+    return startRules;
+  }
+
+  public void setStartRules(List<AtnRule> startRules) {
+    this.startRules = startRules;
+  }
+
   public Map<String, List<Tree<String>>> buildTrees(boolean infoMode, TextGenerator textGenerator) {
+    return buildTrees(infoMode, textGenerator, null);
+  }
+
+  public Map<String, List<Tree<String>>> buildTrees(boolean infoMode, TextGenerator textGenerator, List<String> pivotCategories) {
     final Map<String, List<Tree<String>>> result = new HashMap<String, List<Tree<String>>>();
 
     for (AtnRule startRule : startRules) {
+      final List<Map<String, Integer>> consistentCombos = buildConsistentCombos(startRule);
       final String ruleData = buildVisualRuleName(startRule, infoMode);
 
-      if (textGenerator != null) textGenerator.startRule(this, startRule);
-      final List<Tree<String>> trees = buildTrees(startRule, ruleData, infoMode, textGenerator, new HashSet<String>());
-      if (textGenerator != null) textGenerator.endRule(this, startRule, trees);
-
-      String key = startRule.getRuleId();
-      if (key == null || "".equals(key)) key = startRule.getRuleName();
-      List<Tree<String>> curTrees = result.get(key);
-      if (curTrees == null) {
-        curTrees = new ArrayList<Tree<String>>();
-        result.put(key, curTrees);
+      for (Map<String, Integer> consistentCombo : consistentCombos) {
+        doBuildTrees(startRule, ruleData, infoMode, textGenerator, pivotCategories, consistentCombo, result);
       }
-      curTrees.addAll(trees);
     }
 
     return result;
@@ -144,7 +184,36 @@ public class AtnGrammarAnalyzer {
   }
 
 
-  private final List<Tree<String>> buildTrees(AtnRule rule, String ruleData, boolean infoMode, TextGenerator textGenerator, Set<String> ruleCategories) {
+  private final void doBuildTrees(AtnRule startRule, String ruleData, boolean infoMode,
+                                  TextGenerator textGenerator,
+                                  List<String> pivotCategories,
+                                  Map<String, Integer> consistentCategories,
+                                  Map<String, List<Tree<String>>> result) {
+
+    final Set<String> ruleCategories = pivotCategories == null ? new HashSet<String>() : new HashSet<String>(pivotCategories);
+
+    if (textGenerator != null) textGenerator.startRule(this, startRule);
+    final List<Tree<String>> trees = buildTrees(startRule, ruleData, infoMode, textGenerator, ruleCategories, consistentCategories);
+    if (textGenerator != null) textGenerator.endRule(this, startRule, trees);
+
+    String key = startRule.getRuleId();
+    if (key == null || "".equals(key)) key = startRule.getRuleName();
+    List<Tree<String>> curTrees = result.get(key);
+    if (curTrees == null) {
+      curTrees = new ArrayList<Tree<String>>();
+      result.put(key, curTrees);
+    }
+    curTrees.addAll(trees);
+  }
+
+  /**
+   * @param rule holds the current rule
+   * @param ruleData holds the current rule's node name text
+   * @param infoMode controls the detail of the node names
+   * @param ruleCategories detects circular rules
+   * @param consistentCategories enforces only building trees with the same version of a branching rule
+   */
+  private final List<Tree<String>> buildTrees(AtnRule rule, String ruleData, boolean infoMode, TextGenerator textGenerator, Set<String> ruleCategories, Map<String, Integer> consistentCategories) {
     final List<Tree<String>> result = new ArrayList<Tree<String>>();
 
     final String ruleCategory = rule.getRuleName();
@@ -158,7 +227,7 @@ public class AtnGrammarAnalyzer {
     }
     else {
       ruleCategories.add(ruleCategory);
-      final List<Collection<Tree<String>>> stepTreesList = buildStepTrees(rule, infoMode, textGenerator, ruleCategories);
+      final List<Collection<Tree<String>>> stepTreesList = buildStepTrees(rule, infoMode, textGenerator, ruleCategories, consistentCategories);
       for (Collection<Tree<String>> stepTrees : stepTreesList) {
         final Tree<String> ruleTree = new Tree<String>(ruleData);
         for (Tree<String> stepTree : stepTrees) {
@@ -172,20 +241,37 @@ public class AtnGrammarAnalyzer {
     return result;
   }
 
-  private final List<Collection<Tree<String>>> buildStepTrees(AtnRule rule, boolean infoMode, TextGenerator textGenerator, Set<String> ruleCategories) {
+  private final List<Collection<Tree<String>>> buildStepTrees(AtnRule rule, boolean infoMode, TextGenerator textGenerator, Set<String> ruleCategories, Map<String, Integer> consistentCategories) {
     final List<Collection<Tree<String>>> stepTreesList = new ArrayList<Collection<Tree<String>>>();
 
     int stepnum = 0;
     for (AtnRuleStep step : rule.getSteps()) {
       final String stepData = buildVisualRuleStepName(step, infoMode, stepnum++);
-      final List<Tree<String>> stepTrees = buildTrees(step, stepData, infoMode, textGenerator, ruleCategories);
+      List<Tree<String>> stepTrees = buildTrees(step, stepData, infoMode, textGenerator, ruleCategories, consistentCategories);
+      if (stepTrees.size() > MAX_BRANCH) {
+//System.out.println("rule '" + rule.getRuleName() + "' step '" + step.getCategory() + "' has " + stepTrees.size() + " stepTrees. Pruning to " + MAX_BRANCH);
+        stepTrees = stepTrees.subList(0, MAX_BRANCH);
+      }
+      for (Iterator<Tree<String>> iter = stepTrees.iterator(); iter.hasNext(); ) {
+        final Tree<String> curStepTree = iter.next();
+        boolean isDupe = false;
+        for (Tree<String> possibleDupe : stepTrees) {
+          if (curStepTree == possibleDupe) continue;
+          if (curStepTree.equals(possibleDupe)) {
+            isDupe = true;
+            break;
+          }
+        }
+        if (isDupe) iter.remove();
+      }
       stepTreesList.add(stepTrees);
     }
 
+//System.out.println("\tcombining stepTreesList!");
     return GeneralUtil.combine(stepTreesList);
   }
 
-  private final List<Tree<String>> buildTrees(AtnRuleStep step, String stepData, boolean infoMode, TextGenerator textGenerator, Set<String> ruleCategories) {
+  private final List<Tree<String>> buildTrees(AtnRuleStep step, String stepData, boolean infoMode, TextGenerator textGenerator, Set<String> ruleCategories, Map<String, Integer> consistentCategories) {
     final List<Tree<String>> result = new ArrayList<Tree<String>>();
 
     final String stepCategory = step.getCategory();
@@ -200,11 +286,140 @@ public class AtnGrammarAnalyzer {
       }
     }
     else {
-      for (AtnRule rule : rules) {
-        result.addAll(buildTrees(rule, stepData, infoMode, textGenerator, new HashSet<String>(ruleCategories)));
+      boolean done = false;
+      if (rules.size() > 1) {
+        // found a branching rule
+        if (consistentCategories != null && consistentCategories.get(stepCategory) != null) {
+          // only follow consistent branch
+          final int branchNum = consistentCategories.get(stepCategory);
+//System.out.println("Category '" + stepCategory + "' branches *" + rules.size() + " following " + branchNum);
+          final AtnRule rule = rules.get(branchNum);
+          result.addAll(buildTrees(rule, stepData, infoMode, textGenerator, new HashSet<String>(ruleCategories), consistentCategories));
+
+          done = true;
+        }
+//System.out.println("Category '" + stepCategory + "' branches *" + rules.size());
+      }
+
+      if (!done) {
+        for (AtnRule rule : rules) {
+          result.addAll(buildTrees(rule, stepData, infoMode, textGenerator, new HashSet<String>(ruleCategories), consistentCategories));
+        }
       }
     }
 
+    return result;
+  }
+
+  private final List<Map<String, Integer>> buildConsistentCombos(AtnRule rule) {
+    List<Map<String, Integer>> result = null;
+
+    if (onlyConsistentCombos) {
+      result = getConsistentCategoryCombos(rule);
+    }
+    else {
+      result = new ArrayList<Map<String, Integer>>();
+    }
+
+    if (result.size() == 0) {
+      result.add(null);
+    }
+
+    return result;
+  }
+
+  private final List<Map<String, Integer>> getConsistentCategoryCombos(AtnRule rule) {
+    final List<String> branchingCats = getBranchingCategories(rule);
+    final List<Collection<CatBranch>> catBranches = generateCatBranches(branchingCats);
+    final List<Collection<CatBranch>> combos = GeneralUtil.combine(catBranches);
+
+    final List<Map<String, Integer>> result = new ArrayList<Map<String, Integer>>();
+
+    for (Collection<CatBranch> combo : combos) {
+      final Map<String, Integer> map = new HashMap<String, Integer>();      
+
+      for (CatBranch catBranch : combo) {
+        map.put(catBranch.cat, catBranch.branch);
+      }
+
+      result.add(map);
+    }
+
+    return result;
+  }
+
+  private static final class CatBranch {
+    public final String cat;
+    public final int branch;
+
+    CatBranch(String cat, int branch) {
+      this.cat = cat;
+      this.branch = branch;
+    }
+  }
+
+  public List<String> getBranchingCategories() {
+    return getBranchingCategories(null);
+  }
+
+  public List<String> getBranchingCategories(AtnRule rule) {
+    List<String> result = null;
+
+    if (rule == null) {
+      result = findAllBranchingCategories();
+    }
+    else {
+      result = new ArrayList<String>();
+      findBranchingCategories(rule, result, new HashSet<String>());
+//System.out.println("Branching categories for '" + rule.getRuleName() + "' are: " + result);
+    }
+
+    return result;
+  }
+
+  private final void findBranchingCategories(AtnRule rule, List<String> result, Set<String> ruleCategories) {
+    for (AtnRuleStep step : rule.getSteps()) {
+      final String category = step.getCategory();
+      if (!ruleCategories.contains(category)) {
+        final List<AtnRule> rules = grammar.getCat2Rules().get(category);
+        ruleCategories.add(category);
+        if (rules != null) {
+          if (rules.size() > 1) {
+            result.add(category);
+          }
+          for (AtnRule nextRule : rules) {
+            findBranchingCategories(nextRule, result, ruleCategories);
+          }
+        }
+      }
+    }
+  }
+
+  private final List<String> findAllBranchingCategories() {
+    final List<String> result = new ArrayList<String>();
+
+    for (Map.Entry<String, List<AtnRule>> entry : grammar.getCat2Rules().entrySet()) {
+      final String key = entry.getKey();
+      final List<AtnRule> rules = entry.getValue();
+
+      if (rules.size() > 1) {
+        result.add(key);
+      }
+    }
+
+    return result;
+  }
+
+  private final List<Collection<CatBranch>> generateCatBranches(List<String> branchingCats) {
+    final List<Collection<CatBranch>> result = new ArrayList<Collection<CatBranch>>();
+    for (String branchingCat : branchingCats) {
+      final List<CatBranch> catBranches = new ArrayList<CatBranch>();
+      final int branchCount = grammar.getCat2Rules().get(branchingCat).size();
+      for (int branchNum = 0; branchNum < branchCount; ++branchNum) {
+        catBranches.add(new CatBranch(branchingCat, branchNum));
+      }
+      result.add(catBranches);
+    }
     return result;
   }
 
@@ -311,6 +526,15 @@ public class AtnGrammarAnalyzer {
     return result.toString();
   }
 
+  private final void writeTreeImage(Tree<String> tree, String label) throws IOException {
+    if (imageDir != null) {
+      final Tree2Dot<String> tree2dot = new Tree2Dot<String>(tree);
+      final DotWrapper dotWrapper = new DotWrapper(tree2dot, imageDir, label + ".");
+      final File imageFile = dotWrapper.getImageFile();
+      System.out.println("Created imageFile " + imageFile.getAbsolutePath());
+    }
+  }
+
   String prettyPrint(Tree<String> tree, TextGenerator textGenerator) {
     final StringBuilder result = new StringBuilder();
 
@@ -321,6 +545,40 @@ public class AtnGrammarAnalyzer {
       append(textGenerator == null ? tree.getLeafText() : textGenerator.getText(this, tree));
       
     return result.toString();
+  }
+
+  String diff(Tree<String> tree1, Tree<String> tree2) {
+    String result = null;
+
+    final Tree<XmlLite.Data> xmlTree1 = asXmlTree(tree1, null);
+    final Tree<XmlLite.Data> xmlTree2 = asXmlTree(tree2, null);
+    final ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+    final PrintStream out = new PrintStream(bytesOut);
+    try {
+      TreeDiffViewer.view2(xmlTree1, xmlTree2, out);
+      result = bytesOut.toString("UTF-8");
+    }
+    catch (Exception e) {
+      // eat it
+    }
+    finally {
+      out.close();
+      try {
+        bytesOut.close();
+      }
+      catch (IOException e) {
+        // eat it
+      }
+    }
+
+    return result;
+  }
+
+  public Tree<XmlLite.Data> asXmlTree(Tree<String> tree, TextGenerator textGenerator) {
+    final Parse parse = getHardwiredParse(tree, textGenerator);
+    final List<ParseInterpretation> interps = identityInterpreter.getInterpretations(parse);
+    final ParseInterpretation interp = interps.get(0);
+    return interp.getInterpTree();
   }
 
 
@@ -374,29 +632,60 @@ public class AtnGrammarAnalyzer {
     return result;
   }
 
+
+  public void handleTreeMaps(String header, Map<String, List<Tree<String>>> treeMaps, TextGenerator textGenerator, String label) throws IOException {
+    System.out.println("\n" + header);
+    for (Map.Entry<String, List<Tree<String>>> entry : treeMaps.entrySet()) {
+      final String id = entry.getKey();
+      final List<Tree<String>> trees = entry.getValue();
+      System.out.println(id + " has " + trees.size() + " trees");
+
+      Tree<String> firstTree = null;
+      int treeNum = 0;
+      for (Tree<String> tree : trees) {
+        if (firstTree == null) firstTree = tree;
+
+        // if label != null && imageDir != null, write out image
+        if (label != null) {
+          writeTreeImage(tree, label + "." + id + "." + (treeNum++));
+        }
+
+        //System.out.println(prettyPrint(tree, textGenerator) + "\n");
+//        if ("person.birthDeath".equals(id)) {
+        final boolean stopAtEachTreeHere = true;
+//        }
+      }
+
+      final boolean stopAtEachIdHere = true;
+    }
+  }
+
   public static void main(String[] args) throws IOException {
-    //
-    // Properties: (Mode 1: just analyze the grammar file, no plugin resources will be loaded)
-    //  grammarFile -- (required) path to Grammar file to analyze
+    // 
+    // Common Properties:
     //  infoMode -- (optional, default=true) true to denote grammar info;
     //              false to mirror generated parses.
     //  exampleFile -- (optional) path to tab-delimited file with terminal categories and example words.
     //  textGenerator -- (optional, default=null) classpath to text generator to be built through the resourceManager
+    //  consistent -- (optional, default=true) true to only generate consistent trees
+    //  pivot -- (optional) comma-delimited list of pivot categories
+    //  imageDir -- (optional) path to directory to dump images
+    //
+    // Properties: (Mode 1: just analyze the grammar file, no plugin resources will be loaded)
+    //  grammarFile -- (required) path to Grammar file to analyze
     //
     // Properties: (Mode 2: analyze a specific grammar loaded through a parseConfig with its resources)
     //  parseConfig -- (required) path to parseConfig file with grammar to analyze
     //  resourcesDir -- (required) path to resources (e.g. "${HOME}/co/ancestry/resources")
     //  grammarId -- (required) identifies grammar to analyze in form of cpId:pId
-    //  infoMode -- (optional, default=true) true to denote grammar info;
-    //              false to mirror generated parses.
-    //  exampleFile -- (optional) path to tab-delimited file with terminal categories and example words.
-    //  textGenerator -- (optional, default=null) classpath to text generator to be built through the resourceManager
     //
 
     final DataProperties options = new DataProperties(args);
 
     ResourceManager resourceManager = null;
     AtnGrammarAnalyzer analyzer = null;
+
+    final boolean consistent = options.getBoolean("consistent", true);
 
     if (options.hasProperty("parseConfig")) {
       // Mode 2
@@ -418,6 +707,13 @@ public class AtnGrammarAnalyzer {
       analyzer = buildInstance(resourceManager);
     }
 
+    final String imageDirString = options.getString("imageDir", null);
+    if (imageDirString != null) {
+      final File imageDir = new File(imageDirString);
+      analyzer.setImageDir(imageDir);
+    }
+
+    analyzer.setOnlyConsistentCombos(consistent);
     final Set<String> terminalCategories = analyzer.getTerminalCategories();
     System.out.println("Found " + terminalCategories.size() + " terminalCategories:");
     for (String terminalCategory : terminalCategories) {
@@ -426,19 +722,37 @@ public class AtnGrammarAnalyzer {
 
     final TextGenerator textGenerator = buildTextGenerator(resourceManager);
     final boolean infoMode = options.getBoolean("infoMode", true);
-    final Map<String, List<Tree<String>>> treeMaps = analyzer.buildTrees(infoMode, textGenerator);
 
-    for (Map.Entry<String, List<Tree<String>>> entry : treeMaps.entrySet()) {
-      final String id = entry.getKey();
-      final List<Tree<String>> trees = entry.getValue();
-      System.out.println(id + " has " + trees.size() + " trees");
-
-      for (Tree<String> tree : trees) {
-        //System.out.println(prettyPrint(tree, textGenerator) + "\n");
-        final boolean stopAtEachTreeHere = true;
+    // check for pivot
+    final String pivotString = options.getString("pivot", null);
+    if (pivotString != null) {
+      final List<String> pivotCategories = new ArrayList<String>();
+      final String[] pivots = pivotString.split("\\s*,\\s*");
+      for (String pivot : pivots) {
+        pivotCategories.add(pivot);
       }
 
-      final boolean stopAtEachIdHere = true;
+      // Generate trees down to pivots
+      final Map<String, List<Tree<String>>> treeMaps = analyzer.buildTrees(infoMode, textGenerator, pivotCategories);
+      analyzer.handleTreeMaps("Main trees with pivots: " + pivotCategories, treeMaps, textGenerator, "topLevel");
+
+      // Generate trees for each pivot
+      for (String pivot : pivots) {
+        final List<AtnRule> startRules = analyzer.getGrammar().getCat2Rules().get(pivot);
+        if (startRules != null) {
+          final List<String> curPivotCategories = new ArrayList<String>(pivotCategories);
+          curPivotCategories.remove(pivot);
+          analyzer.setStartRules(startRules);
+          final Map<String, List<Tree<String>>> pivotTreeMaps = analyzer.buildTrees(infoMode, textGenerator, curPivotCategories);
+          analyzer.handleTreeMaps("'" + pivot + "' pivot trees", pivotTreeMaps, textGenerator, pivot);
+        }
+      }
+    }
+    else {
+      // no pivot, generate and show all trees
+
+      final Map<String, List<Tree<String>>> treeMaps = analyzer.buildTrees(infoMode, textGenerator);
+      analyzer.handleTreeMaps("Non-pivot trees", treeMaps, textGenerator, null);
     }
   }
 }
