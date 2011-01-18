@@ -20,9 +20,11 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Feature;
 import org.sd.token.FeatureConstraint;
@@ -109,6 +111,37 @@ public class ParseInterpretationUtil {
     final CategorizedToken cToken = getCategorizedToken(parseTreeNode, false);
     if (cToken != null && cToken.token.hasFeatures()) {
       result = cToken.token.getFeatures(featureKey, null, featureValueClass);
+    }
+
+    return result;
+  }
+
+  public static String getFirstTokenFeatureValue(Tree<String> parseTreeNode, String featureKey, Class featureValueClass) {
+    String result = null;
+
+    final Feature feature = getFirstTokenFeature(parseTreeNode, featureKey, featureValueClass);
+    if (feature != null) {
+      final Object value = feature.getValue();
+      if (value != null) {
+        result = value.toString();
+      }
+    }
+
+    return result;
+  }
+
+  public static Set<String> getTokenFeatureValues(Tree<String> parseTreeNode, String featureKey, Class featureValueClass) {
+    Set<String> result = null;
+
+    final List<Feature> features = getAllTokenFeatures(parseTreeNode, featureKey, featureValueClass);
+    if (features != null) {
+      for (Feature feature : features) {
+        final Object value = feature.getValue();
+        if (value != null) {
+          if (result == null) result = new HashSet<String>();
+          result.add(value.toString());
+        }
+      }
     }
 
     return result;
