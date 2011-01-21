@@ -49,6 +49,9 @@ import org.w3c.dom.NodeList;
  */
 public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   
+  private static final Map<String, String> EMPTY_ATTRIBUTES = new HashMap<String, String>();
+
+
   private String roteListType;
   public String getRoteListType() {
     return roteListType;
@@ -84,6 +87,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
 
   public boolean doClassify(Token token) {
+    
     boolean result = false;
 
     String key = caseSensitive ? token.getText() : token.getText().toLowerCase();
@@ -97,6 +101,20 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         for (Map.Entry<String, String> kvPair : attributes.entrySet()) {
           token.setFeature(kvPair.getKey(), kvPair.getValue(), this);
         }
+      }
+    }
+
+    return result;
+  }
+
+  public Map<String, String> doClassify(String text) {
+    Map<String, String> result = null;
+
+    final String key = caseSensitive ? text : text.toLowerCase();
+    if (term2attributes.containsKey(key)) {
+      result = term2attributes.get(key);
+      if (result == null) {
+        result = EMPTY_ATTRIBUTES;
       }
     }
 
