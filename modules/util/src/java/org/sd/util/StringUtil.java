@@ -1538,6 +1538,140 @@ public class StringUtil {
     return result;    
   }
 
+  public static final Set<Character> VOWELS = new HashSet<Character>();
+  static {
+    VOWELS.add('a');
+    VOWELS.add('e');
+    VOWELS.add('i');
+    VOWELS.add('o');
+    VOWELS.add('u');
+    VOWELS.add('y');
+
+    VOWELS.add('A');
+    VOWELS.add('E');
+    VOWELS.add('I');
+    VOWELS.add('O');
+    VOWELS.add('U');
+    VOWELS.add('Y');
+
+    VOWELS.add('ä');
+    VOWELS.add('ë');
+    VOWELS.add('ï');
+    VOWELS.add('ö');
+    VOWELS.add('ü');
+    VOWELS.add('ÿ');
+
+    VOWELS.add('Ä');
+    VOWELS.add('Ë');
+    VOWELS.add('Ï');
+    VOWELS.add('Ö');
+    VOWELS.add('Ü');
+    VOWELS.add('ÿ');
+
+    VOWELS.add('á');
+    VOWELS.add('é');
+    VOWELS.add('í');
+    VOWELS.add('ó');
+    VOWELS.add('ú');
+    VOWELS.add('ý');
+
+    VOWELS.add('Á');
+    VOWELS.add('É');
+    VOWELS.add('Í');
+    VOWELS.add('Ó');
+    VOWELS.add('Ú');
+    VOWELS.add('Ý');
+
+    VOWELS.add('À');
+    VOWELS.add('È');
+    VOWELS.add('Ì');
+    VOWELS.add('Ò');
+    VOWELS.add('Ù');
+
+    VOWELS.add('ã');
+    VOWELS.add('õ');
+
+    VOWELS.add('Ã');
+    VOWELS.add('Õ');
+  }
+
+  public static final Set<Character> SILENTS = new HashSet<Character>();
+  static {
+    SILENTS.add('h');
+  }
+
+  public static final Set<Character> GROUPING_CONSONANTS = new HashSet<Character>();
+  static {
+    GROUPING_CONSONANTS.add('s');
+    GROUPING_CONSONANTS.add('c');
+    GROUPING_CONSONANTS.add('l');
+    GROUPING_CONSONANTS.add('r');
+    GROUPING_CONSONANTS.add('m');
+    GROUPING_CONSONANTS.add('n');
+  }
+
+  /**
+   * Non-abbreviations have at least one vowel overall and at least one vowel
+   * between at most 2 consonants, where some adjacent consonants are counted
+   * as one.
+   */
+  public static final boolean isLikelyAbbreviation(String word) {
+    return isLikelyAbbreviation(word, VOWELS, SILENTS, GROUPING_CONSONANTS);
+  }
+
+  /**
+   * Non-abbreviations have at least one vowel overall and at least one vowel
+   * between at most 2 consonants, where silent consonants, repeated consonants
+   * and those consonants immediately following a grouping consonant are not
+   * counted.
+   */
+  public static final boolean isLikelyAbbreviation(String word, Set<Character> vowels, Set<Character> silents,
+                                                   Set<Character> groupingConsonants) {
+    boolean result = false;
+
+    boolean sawVowel = false;
+    int consecutiveConsonantCount = 0;
+    char lastConsonant = 0;
+
+    final int len = word.length();
+    for (int idx = 0; idx < len; ++idx) {
+      final char curC = word.charAt(idx);
+
+      if (curC == '.') {
+        result = true;
+        break;
+      }
+      else if (Character.isLetterOrDigit(curC)) {
+        if (vowels.contains(curC)) {
+          sawVowel = true;
+          consecutiveConsonantCount = 0;
+        }
+        else {
+          if (!silents.contains(curC)) {
+            if (curC == lastConsonant) {
+              lastConsonant = 0;
+            }
+            else if (consecutiveConsonantCount == 0 || lastConsonant == 0 || !groupingConsonants.contains(lastConsonant)) {
+              lastConsonant = curC;
+              ++consecutiveConsonantCount;
+
+              if (consecutiveConsonantCount >= 3) {
+                result = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+      else {
+        lastConsonant = 0;
+        consecutiveConsonantCount = 0;
+      }
+    }
+
+    return !sawVowel || result;
+  }
+
   public static final class StringIterator implements Iterator<StringPointer> {
     private StringPointer nextPointer;
 

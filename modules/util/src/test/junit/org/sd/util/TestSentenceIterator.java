@@ -75,9 +75,11 @@ public class TestSentenceIterator extends TestCase {
   }
 
   public void testBadAbbreviation1() {
+    final String input = "Try parsing beyond tokens like Ph.D. and Dr. Smith, if you please.";
+
     // NOTE: This doesn't work quite right. If we find that it is fixed in the
     //       future, we can set this test to rights!
-    doTest("Try parsing beyond tokens like Ph.D. and Dr. Smith, if you please.",
+    doTest(input,
            new String[] {
              "Try parsing beyond tokens like Ph.D. and Dr.",
              "Smith, if you please.",
@@ -85,6 +87,16 @@ public class TestSentenceIterator extends TestCase {
            new int[][] {
              {0, 45},
              {45, 66},
+           });
+
+    // Here we've fixed it with the optional 'detectAbbrev' flag.
+    final SentenceIterator iter = new SentenceIterator(input, true);
+    doTest(iter,
+           new String[] {
+             "Try parsing beyond tokens like Ph.D. and Dr. Smith, if you please.",
+           },
+           new int[][] {
+             {0, 66},
            });
   }
 
