@@ -494,6 +494,30 @@ public class TestStringUtil extends TestCase {
       StringUtil.toMap(new String[]{"a", "b", "c", "d", "e", "f", "g"}));
   }
 
+  public void testIsLikelyAbbreviation() {
+    assertFalse(StringUtil.isLikelyAbbreviation("Schmidt"));
+    assertFalse(StringUtil.isLikelyAbbreviation("remembrance"));
+    assertFalse(StringUtil.isLikelyAbbreviation("A'li"));
+    assertFalse(StringUtil.isLikelyAbbreviation("w/o"));
+
+    assertTrue(StringUtil.isLikelyAbbreviation("Ph.D."));
+    assertTrue(StringUtil.isLikelyAbbreviation("M.D."));
+    assertTrue(StringUtil.isLikelyAbbreviation("Mr."));
+    assertTrue(StringUtil.isLikelyAbbreviation("Mrs."));
+    assertTrue(StringUtil.isLikelyAbbreviation("PhD"));
+    assertTrue(StringUtil.isLikelyAbbreviation("MD"));
+    assertTrue(StringUtil.isLikelyAbbreviation("Mr"));
+    assertTrue(StringUtil.isLikelyAbbreviation("Mrs"));
+    assertTrue(StringUtil.isLikelyAbbreviation("phd"));
+    assertTrue(StringUtil.isLikelyAbbreviation("md"));
+    assertTrue(StringUtil.isLikelyAbbreviation("mr"));
+    assertTrue(StringUtil.isLikelyAbbreviation("mrs"));
+
+    assertTrue(StringUtil.isLikelyAbbreviation("wt."));
+    assertTrue(StringUtil.isLikelyAbbreviation("cc"));
+    assertTrue(StringUtil.isLikelyAbbreviation("mgmnt"));
+  }
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestStringUtil.class);

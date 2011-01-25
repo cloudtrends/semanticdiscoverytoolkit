@@ -30,12 +30,23 @@ import java.util.Locale;
  */
 public class SentenceIterator extends BaseTextIterator {
   
+  private boolean detectAbbrev;
+
   /**
    * Construct with the string whose words are to be iterated over
    * using the default locale.
    */
   public SentenceIterator(String string) {
-    super(BreakIterator.getSentenceInstance());
+    this(string, false);
+  }
+
+  /**
+   * Construct with the string whose words are to be iterated over
+   * using the default locale.
+   */
+  public SentenceIterator(String string, boolean detectAbbrev) {
+    super(BreakIterator.getSentenceInstance(), false);
+    this.detectAbbrev = detectAbbrev;
     setText(string);
   }
 
@@ -44,17 +55,59 @@ public class SentenceIterator extends BaseTextIterator {
    * using the given local.
    */
   public SentenceIterator(String string, Locale locale) {
-    super(BreakIterator.getSentenceInstance(locale));
+    super(BreakIterator.getSentenceInstance(locale), false);
     setText(string);
+  }
+
+  /**
+   * Construt with the string whose words are to be iterated over
+   * using the given local.
+   */
+  public SentenceIterator(String string, Locale locale, boolean detectAbbrev) {
+    super(BreakIterator.getSentenceInstance(locale), false);
+    this.detectAbbrev = detectAbbrev;
+    setText(string);
+  }
+
+  /**
+   * Get the current detectAbbrev flag.
+   */
+  public boolean detectAbbrev() {
+    return detectAbbrev;
   }
 
   /**
    * Determine whether the the substring should be accepted as text to return.
    * <p>
-   * This default implementation accepts any text.
+   * This default implementation accepts any text, unless detectAbbrev is true,
+   * in which case capitalized abbreviations are rejected as sentence ending
+   * boundaries. See StringUtil.isLikelyAbbreviation.
    */
   protected boolean accept(String text, int start, int end) {
-    return true;
+    boolean result = true;
+
+    if (detectAbbrev) {
+      // scan backwards to first letter or digit
+      for (--end; end >= start; --end) {
+        final char curC = text.charAt(end);
+        if (Character.isLetterOrDigit(curC)) break;
+      }
+
+      // scan backwards to whitespace
+      int lastWordStart = end;
+
+      for (; lastWordStart > start; --lastWordStart) {
+        final char curC = text.charAt(lastWordStart - 1);
+        if (Character.isWhitespace(curC)) break;
+      }
+
+      // reject capitalized abbreviations as a sentence boundary
+      if (Character.isUpperCase(text.charAt(lastWordStart)) && StringUtil.isLikelyAbbreviation(text.substring(lastWordStart, end))) {
+        result = false;
+      }
+    }
+
+    return result;
   }
 
 

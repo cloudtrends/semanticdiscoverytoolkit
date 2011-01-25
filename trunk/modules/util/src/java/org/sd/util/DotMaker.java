@@ -39,6 +39,8 @@ public abstract class DotMaker {
    */
   protected abstract void populateEdges();
 
+  private boolean populatedEdges;
+
   private int nextId;
   private Map<Integer, String> id2label;
   private Map<Integer, List<Integer>> id2ids;
@@ -50,6 +52,7 @@ public abstract class DotMaker {
   private Map<String, String> graphAttributes;
 
   public DotMaker() {
+    this.populatedEdges = false;
     this.nextId = 0;
     this.id2label = id2label = new LinkedHashMap<Integer, String>();
     this.id2ids = new LinkedHashMap<Integer, List<Integer>>();
@@ -188,7 +191,10 @@ public abstract class DotMaker {
   }
 
   public void writeDot(Writer writer) throws IOException {
-    populateEdges();
+    if (!populatedEdges) {
+      populateEdges();
+      populatedEdges = true;
+    }
 
     makeHeader(writer);
     makeEdges(writer);
@@ -224,10 +230,24 @@ public abstract class DotMaker {
     }
   }
 
+  protected void collectAttributesList(StringBuilder builder, Map<String, String> attributes, boolean didOne) {
+    for (Map.Entry<String, String> entry : attributes.entrySet()) {
+      if (didOne) builder.append(", ");
+      collectAttributeEntry(entry, builder);
+      didOne = true;
+    }
+  }
+
   private final void writeAttributeEntry(Map.Entry<String, String> entry, Writer writer) throws IOException {
     writer.write(entry.getKey());
     writer.write('=');
     writer.write(entry.getValue());
+  }
+
+  private final void collectAttributeEntry(Map.Entry<String, String> entry, StringBuilder builder) {
+    builder.append(entry.getKey());
+    builder.append('=');
+    builder.append(entry.getValue());
   }
 
   protected void makeEdges(Writer writer) throws IOException {
@@ -256,12 +276,12 @@ public abstract class DotMaker {
         if (edgeLabel != null || edgeAttributes != null) {
           edgeString.append(" [");
           if (edgeLabel != null) {
-            edgeString.append("label=\"").append(edgeLabel);
+            edgeString.append("label=\"").append(edgeLabel).append("\"");
           }
           if (edgeAttributes != null) {
-            writeAttributesList(writer, edgeAttributes, edgeLabel != null);
+            collectAttributesList(edgeString, edgeAttributes, edgeLabel != null);
           }
-          edgeString.append("\"]");
+          edgeString.append("]");
         }
         edgeString.append(";\n");
 

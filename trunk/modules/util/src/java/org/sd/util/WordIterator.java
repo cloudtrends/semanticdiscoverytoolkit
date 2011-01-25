@@ -34,7 +34,7 @@ public class WordIterator extends BaseTextIterator {
    * using the default locale.
    */
   public WordIterator(String string) {
-    super(BreakIterator.getWordInstance());
+    super(BreakIterator.getWordInstance(), true);
     setText(string);
   }
 
@@ -43,7 +43,7 @@ public class WordIterator extends BaseTextIterator {
    * using the given locale.
    */
   public WordIterator(String string, Locale locale) {
-    super(BreakIterator.getWordInstance(locale));
+    super(BreakIterator.getWordInstance(locale), true);
     setText(string);
   }
 

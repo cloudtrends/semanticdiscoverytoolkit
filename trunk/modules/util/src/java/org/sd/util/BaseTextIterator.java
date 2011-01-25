@@ -30,6 +30,7 @@ import java.util.Iterator;
 public class BaseTextIterator implements TextIterator {
   
   private BreakIterator breakIterator;
+  private boolean canSkip;
   private String text;
   private int start;
   private int end;
@@ -41,8 +42,9 @@ public class BaseTextIterator implements TextIterator {
   /**
    * Construct with the string whose text is to be iterated over.
    */
-  public BaseTextIterator(BreakIterator breakIterator) {
+  public BaseTextIterator(BreakIterator breakIterator, boolean canSkip) {
     this.breakIterator = breakIterator;
+    this.canSkip = canSkip;
   }
 
   /**
@@ -142,9 +144,11 @@ public class BaseTextIterator implements TextIterator {
   private void computeNext(boolean isFirst) {
     String result = null;
 
+    start = isFirst ? breakIterator.first() : end;
+
     while (result == null && (isFirst || end != BreakIterator.DONE)) {
 
-      start = isFirst ? breakIterator.first() : end;
+      if (canSkip && !isFirst) start = end;
       end = breakIterator.next();
 
       if (end != BreakIterator.DONE) {
@@ -156,7 +160,7 @@ public class BaseTextIterator implements TextIterator {
         break;
       }
 
-      isFirst = false;
+      if (canSkip) isFirst = false;
     }
 
     this.next = result;
