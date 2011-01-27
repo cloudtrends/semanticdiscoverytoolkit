@@ -32,16 +32,34 @@ import org.sd.xml.DomElement;
  */
 public abstract class AbstractAtnStateTokenClassifier extends AbstractTokenClassifier implements AtnStateTokenClassifier {
 
+  private boolean consume;
+
   protected AbstractAtnStateTokenClassifier() {
     super();
   }
 
   protected AbstractAtnStateTokenClassifier(Normalizer normalizer, int maxWordCount) {
+    this(normalizer, maxWordCount, true);
+  }
+
+  protected AbstractAtnStateTokenClassifier(Normalizer normalizer, int maxWordCount, boolean consume) {
     super(normalizer, maxWordCount);
+    this.consume = consume;
   }
 
   protected AbstractAtnStateTokenClassifier(DomElement classifierIdElement, Map<String, Normalizer> id2Normalizer) {
     super();
+
+    // check for consume attribute; default to 'true'
+    this.consume = classifierIdElement.getAttributeBoolean("consume", true);
+  }
+
+  protected boolean consume() {
+    return consume;
+  }
+
+  protected void setConsume(boolean consume) {
+    this.consume = consume;
   }
 
   /**
@@ -51,7 +69,7 @@ public abstract class AbstractAtnStateTokenClassifier extends AbstractTokenClass
    * Note that this can be overridden to incorporate context information
    * from atnState.
    */
-  public boolean classify(Token token, AtnState atnState) {
-    return super.classify(token);
+  public MatchResult classify(Token token, AtnState atnState) {
+    return new MatchResult(super.classify(token), consume);
   }
 }
