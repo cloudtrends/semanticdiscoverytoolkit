@@ -31,6 +31,6 @@ public interface AtnStateTokenClassifier {
   /**
    * Classify the given token in the context of its AtnState.
    */
-  public boolean classify(Token token, AtnState atnState);
+  public MatchResult classify(Token token, AtnState atnState);
 
 }

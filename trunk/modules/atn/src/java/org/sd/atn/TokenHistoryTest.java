@@ -235,7 +235,8 @@ public class TokenHistoryTest implements AtnRuleStepTest {
         final Token token = curState.getInputToken();
 
         for (AtnStateTokenClassifier tokenClassifier : tokenClassifiers) {
-          if (tokenClassifier.classify(token, curState)) {
+          final MatchResult matchResult = tokenClassifier.classify(token, curState);
+          if (matchResult.matched()) {
             foundMatch = true;
             break;
           }

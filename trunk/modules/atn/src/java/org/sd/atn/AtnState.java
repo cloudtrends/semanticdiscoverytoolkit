@@ -66,12 +66,16 @@ public class AtnState {
   int skipNum;
 
 
-  private boolean matched;
+  private MatchResult matchResult;
   public boolean getMatched() {
-    return matched;
+    return matchResult == null ? false : matchResult.matched();
   }
-  void setMatched(boolean matched) {
-    this.matched = matched;
+  MatchResult getMatchResult() {
+    return matchResult;
+  }
+  void setMatchResult(MatchResult matchResult) {
+    this._nextToken = null;
+    this.matchResult = matchResult;
   }
 
   private AtnState pushState;
@@ -127,7 +131,7 @@ public class AtnState {
     this.parseOptions = parseOptions;
     this.repeatNum = repeatNum;
     this.skipNum = numSkipped;
-    this.matched = false;
+    this.matchResult = null;
     this.pushState = pushState;
     this.popCount = 0;
     this._isSkipped = false;
@@ -142,7 +146,7 @@ public class AtnState {
     this.parseOptions = other.parseOptions;
     this.repeatNum = other.repeatNum;
     this.skipNum = other.skipNum;
-    this.matched = other.matched;
+    this.matchResult = other.matchResult;
     this.pushState = other.pushState;
     this.isPoppedState = other.isPoppedState;
     this.popCount = other.popCount;
@@ -158,7 +162,7 @@ public class AtnState {
   boolean isValidEnd(Set<Integer> stopList) {
     boolean result = false;
 
-    if (matched && isRuleEnd() && isPushEnd()) {
+    if (getMatched() && isRuleEnd() && isPushEnd()) {
       final Token nextToken = getNextToken(stopList);
       result = (nextToken == null) || !parseOptions.getConsumeAllText();
     }
@@ -495,10 +499,15 @@ public class AtnState {
   private final Token computeNextToken(Token inputToken) {
     Token result = null;
 
-    // get the next token without crossing a hard break boundary
-    final Token nextToken = inputToken.getNextToken();
-    if (nextToken != null) {
-      result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), nextToken, false, inputToken, false, true, this);
+    if (matchResult != null && !matchResult.inc()) {
+      result = inputToken;
+    }
+    else {
+      // get the next token without crossing a hard break boundary
+      final Token nextToken = inputToken.getNextToken();
+      if (nextToken != null) {
+        result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), nextToken, false, inputToken, false, true, this);
+      }
     }
 
     return result;
@@ -518,20 +527,22 @@ public class AtnState {
    * Determine whether this instance's token matches the step category
    * according to the grammar.
    */
-  boolean tokenMatchesStepCategory(AtnGrammar grammar) {
-    boolean result = false;
+  MatchResult tokenMatchesStepCategory(AtnGrammar grammar) {
+    MatchResult result = null;
+    boolean matched = false;
 
     final AtnRuleStep ruleStep = getRuleStep();
     if (ruleStep.getIgnoreToken()) {
-      result = ruleStep.verify(inputToken, this);
+      matched = ruleStep.verify(inputToken, this);
     }
     else {
       String category = ruleStep.getCategory();
 
       if (grammar.getCat2Classifiers().containsKey(category)) {
         for (AtnStateTokenClassifier classifier : grammar.getCat2Classifiers().get(category)) {
-          if (classifier.classify(inputToken, this) && ruleStep.verify(inputToken, this)) {
-            result = true;
+          final MatchResult matchResult = classifier.classify(inputToken, this);
+          if (matchResult.matched() && ruleStep.verify(inputToken, this)) {
+            result = matchResult;
             break;
           }
         }
@@ -539,18 +550,22 @@ public class AtnState {
       else {
         if (!grammar.getCat2Rules().containsKey(category)) {
           // use an "identity" classifier for literal grammar tokens.
-          result = category.equals(inputToken.getText());
+          matched = category.equals(inputToken.getText());
         }
 
         // check for a feature that matches the category
-        if (!result) {
-          result = inputToken.getFeature(category, null) != null;
+        if (!matched) {
+          matched = inputToken.getFeature(category, null) != null;
         }
 
-        if (result) {
-          result = ruleStep.verify(inputToken, this);
+        if (matched) {
+          matched = ruleStep.verify(inputToken, this);
         }
       }
+    }
+
+    if (result == null) {
+      result = MatchResult.getInstance(matched);
     }
 
     return result;
@@ -701,7 +716,12 @@ public class AtnState {
 
       boolean success = false;
       final boolean meetsRequirements = curstate.meetsRequirements();
-      boolean matches = meetsRequirements && curstate.tokenMatchesStepCategory(grammar);
+      MatchResult matchResult = null;
+      boolean matches = meetsRequirements;
+      if (matches) {
+        matchResult = curstate.tokenMatchesStepCategory(grammar);
+        matches = matchResult.matched();
+      }
       final Tree<AtnState> nextStateNode = curstate.parentStateNode.addChild(curstate);
 
       if (trace) {
@@ -714,12 +734,15 @@ public class AtnState {
 
       if (matches) {
         success = true;
-        curstate.setMatched(true);
+        curstate.setMatchResult(matchResult);
 
         if (curstate.isValidEnd(stopList)) {
           // found a valid full parse
           result = true;
         }
+      }
+      else {
+        matchResult = null;
       }
 
       success = addNextStates(grammar, states, skipStates, curstate, nextStateNode, false, matches, stopList, meetsRequirements);
