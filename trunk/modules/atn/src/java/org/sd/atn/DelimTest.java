@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.List;
 import org.sd.token.Token;
+import org.sd.util.range.IntegerRange;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.Node;
@@ -63,6 +64,16 @@ public class DelimTest implements AtnRuleStepTest {
     return requiredDelimStrings;
   }
 
+  private IntegerRange ignoreRepeatRange;
+  IntegerRange getIgnoreRepeatRange() {
+    return ignoreRepeatRange;
+  }
+
+  private IntegerRange failRepeatRange;
+  IntegerRange getFailRepeatRange() {
+    return failRepeatRange;
+  }
+
 
   DelimTest(boolean isPre, DomNode delimNode) {
     this.isPre = isPre;
@@ -70,10 +81,13 @@ public class DelimTest implements AtnRuleStepTest {
     this.disallowAll = false;
     this.delimStrings = new ArrayList<DelimString>();
     this.requiredDelimStrings = null;
+    this.ignoreRepeatRange = null;
+    this.failRepeatRange = null;
 
     // under delim node, setup allowed and disallowed delims
     //
     // <pre-or-post-delim>
+    //   <repeatCheck type='ignore|test|fail'>integer-range-expression</repeatCheck>
     //   <disallowall />
     //   <allowall />
     //   <allow type='substr|exact'>delims-to-allow</allow>
@@ -89,29 +103,42 @@ public class DelimTest implements AtnRuleStepTest {
 
         final DomElement childNode = (DomElement)curNode;
         final String childName = childNode.getLocalName();
-        final boolean exact = "exact".equalsIgnoreCase(childNode.getAttributeValue("type", "substr"));
+
+        if ("repeatcheck".equalsIgnoreCase(childName)) {
+          final String rcType = childNode.getAttributeValue("type", "test");
+          if ("ignore".equalsIgnoreCase(rcType)) {
+            ignoreRepeatRange = new IntegerRange(childNode.getTextContent().trim());
+          }
+          else if ("fail".equalsIgnoreCase(rcType)) {
+            failRepeatRange = new IntegerRange(childNode.getTextContent().trim());
+          }
+        }
+        else {
+
+          final boolean exact = "exact".equalsIgnoreCase(childNode.getAttributeValue("type", "substr"));
         
-        if ("disallowall".equalsIgnoreCase(childName)) {
-          disallowAll = true;
-          allowAll = false;
-          delimStrings.clear();
-        }
-        else if ("allowall".equalsIgnoreCase(childName)) {
-          allowAll = true;
-          disallowAll = false;
-          delimStrings.clear();
-        }
-        else if ("allow".equalsIgnoreCase(childName)) {
-          if (!disallowAll && !allowAll) disallowAll = true;
-          delimStrings.add(new DelimString(true, exact, childNode.getTextContent()));
-        }
-        else if ("disallow".equalsIgnoreCase(childName)) {
-          if (!disallowAll && !allowAll) allowAll = true;
-          delimStrings.add(new DelimString(false, exact, childNode.getTextContent()));
-        }
-        else if ("require".equalsIgnoreCase(childName)) {
-          if (requiredDelimStrings == null) requiredDelimStrings = new ArrayList<DelimString>();
-          requiredDelimStrings.add(new DelimString(true, exact, childNode.getTextContent()));
+          if ("disallowall".equalsIgnoreCase(childName)) {
+            disallowAll = true;
+            allowAll = false;
+            delimStrings.clear();
+          }
+          else if ("allowall".equalsIgnoreCase(childName)) {
+            allowAll = true;
+            disallowAll = false;
+            delimStrings.clear();
+          }
+          else if ("allow".equalsIgnoreCase(childName)) {
+            if (!disallowAll && !allowAll) disallowAll = true;
+            delimStrings.add(new DelimString(true, exact, childNode.getTextContent()));
+          }
+          else if ("disallow".equalsIgnoreCase(childName)) {
+            if (!disallowAll && !allowAll) allowAll = true;
+            delimStrings.add(new DelimString(false, exact, childNode.getTextContent()));
+          }
+          else if ("require".equalsIgnoreCase(childName)) {
+            if (requiredDelimStrings == null) requiredDelimStrings = new ArrayList<DelimString>();
+            requiredDelimStrings.add(new DelimString(true, exact, childNode.getTextContent()));
+          }
         }
       }
     }
@@ -119,6 +146,18 @@ public class DelimTest implements AtnRuleStepTest {
 			
   public boolean accept(Token token, AtnState curState) {
     final String delim = getDelim(token);
+
+    if (ignoreRepeatRange != null || failRepeatRange != null) {
+      final int repeat = curState.getRepeatNum();
+
+      if (ignoreRepeatRange != null && ignoreRepeatRange.includes(repeat)) {
+        return true;
+      }
+
+      if (failRepeatRange != null && failRepeatRange.includes(repeat)) {
+        return false;
+      }
+    }
 
     if (!meetsRequiredConstraints(delim)) return false;
     else if (delimStrings.size() == 0) return true;
