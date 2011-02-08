@@ -158,17 +158,29 @@ public class AtnRuleStep {
     if (testNodes.getLength() > 0) {
       if (testNodes.getLength() == 1) {
         final DomElement testElement = (DomElement)testNodes.item(0);
-        this.test = (AtnRuleStepTest)resourceManager.getResource(testElement);
+        this.test = buildTest(testElement, resourceManager);
       }
       else {
         final AtnRuleStepTestPipeline pipeline = new AtnRuleStepTestPipeline();
         for (int nodeNum = 0; nodeNum < testNodes.getLength(); ++nodeNum) {
           final DomElement testElement = (DomElement)testNodes.item(nodeNum);
-          pipeline.add((AtnRuleStepTest)resourceManager.getResource(testElement));
+          pipeline.add(buildTest(testElement, resourceManager));
         }
         this.test = pipeline;
       }
     }
+  }
+
+  private final AtnRuleStepTest buildTest(DomElement testElement, ResourceManager resourceManager) {
+    AtnRuleStepTest result = null;
+
+    final boolean reverse = testElement.getAttributeBoolean("reverse", false);
+    result = (AtnRuleStepTest)resourceManager.getResource(testElement);
+    if (reverse) {
+      result = new ReversedAtnRuleStepTest(result);
+    }
+
+    return result;
   }
 
   /**

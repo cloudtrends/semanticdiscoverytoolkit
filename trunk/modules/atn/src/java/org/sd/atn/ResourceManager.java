@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.sd.token.Normalizer;
 import org.sd.util.ReflectUtil;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
@@ -52,6 +53,8 @@ public class ResourceManager {
    * Map to store named instances for reference by later instances.
    */
   private Map<String, Object> name2resource;
+
+  private Map<String, Normalizer> id2Normalizer;
 
   /**
    * Default constructor for empty instance.
@@ -85,10 +88,19 @@ public class ResourceManager {
 
     final DomElement resourceElement = (options == null) ? null : options.getDomElement();
     loadResources(resourceElement);
+    this.id2Normalizer = null;
   }
 
   public void setDisableLoad(boolean disableLoad) {
     this.disableLoad = disableLoad;
+  }
+
+  public void setId2Normalizer(Map<String, Normalizer> id2Normalizer) {
+    this.id2Normalizer = id2Normalizer;
+  }
+
+  public Map<String, Normalizer> getId2Normalizer() {
+    return id2Normalizer;
   }
 
   public final void loadResources(DomElement resourcesElement) {

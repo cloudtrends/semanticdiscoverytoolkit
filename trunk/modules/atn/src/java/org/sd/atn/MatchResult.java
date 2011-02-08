@@ -44,7 +44,7 @@ public class MatchResult {
 
   private MatchResult(boolean matched, int mutable) {
     this(matched);
-    this.mutable = true;
+    this.mutable = false;
   }
 
   public MatchResult(boolean matched) {

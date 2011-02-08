@@ -368,9 +368,19 @@ public class AtnStateUtil {
     return result.toString();
   }
 
-  private static void showStateTree(StringBuilder result, Tree<AtnState> current, Tree<AtnState> marker, int indent) {
+  private static final void showStateTree(StringBuilder result, Tree<AtnState> current, Tree<AtnState> marker, int indent) {
     final AtnState curstate = current.getData();
 
+    buildStateInfo(result, curstate, current == marker, indent);
+
+    if (current.hasChildren()) {
+      for (Tree<AtnState> child : current.getChildren()) {
+        showStateTree(result, child, marker, indent + 2);
+      }
+    }
+  }
+
+  private static final void buildStateInfo(StringBuilder result, AtnState curstate, boolean marker, int indent) {
     for (int i = 0; i < indent; ++i) result.append(' ');
     result.append(curstate == null ? "null" : curstate.toString());
 
@@ -383,15 +393,25 @@ public class AtnStateUtil {
       if (flags.length() > 0) result.append("  ").append(flags);
     }
 
-    if (current == marker) result.append(" ***");
+    if (marker) result.append(" ***");
     result.append('\n');
-    if (current.hasChildren()) {
-      for (Tree<AtnState> child : current.getChildren()) {
-        showStateTree(result, child, marker, indent + 2);
-      }
-    }
   }
 
+  public static String showStatePath(AtnState state) {
+    final StringBuilder result = new StringBuilder();
+
+    result.append('\n');
+
+    int indent = 0;
+    buildStateInfo(result, state, true, indent);
+
+    for (AtnState parentState = state.getParentState(); parentState != null; parentState = parentState.getParentState()) {
+      indent += 2;
+      buildStateInfo(result, parentState, false, indent);
+    }
+
+    return result.toString();
+  }
 
 
   public static interface AtnStateVisitor {
