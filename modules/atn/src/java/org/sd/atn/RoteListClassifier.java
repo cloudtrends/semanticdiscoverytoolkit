@@ -85,6 +85,9 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     }
   }
 
+  public boolean isEmpty() {
+    return term2attributes == null || term2attributes.size() == 0;
+  }
 
   public boolean doClassify(Token token) {
     

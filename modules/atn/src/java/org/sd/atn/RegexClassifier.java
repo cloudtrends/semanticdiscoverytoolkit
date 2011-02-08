@@ -59,6 +59,10 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
     }
   }
 
+  public boolean isEmpty() {
+    return regexes == null || regexes.size() == 0;
+  }
+
   public boolean doClassify(Token token) {
     boolean result = false;
 

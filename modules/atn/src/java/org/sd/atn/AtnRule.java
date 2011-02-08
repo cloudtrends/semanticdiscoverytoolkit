@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.LinkedList;
+import org.sd.token.Token;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
 import org.w3c.dom.Node;
@@ -62,6 +63,11 @@ public class AtnRule {
     return tokenFilterId;
   }
 
+  private AtnRuleStep popStep;
+  AtnRuleStep getPopStep() {
+    return popStep;
+  }
+
 
   AtnRule(AtnGrammar grammar, DomElement ruleElement, ResourceManager resourceManager) {
     this.grammar = grammar;
@@ -94,9 +100,19 @@ public class AtnRule {
 
       final DomElement stepElement = (DomElement)curNode;
       AtnRuleStep step = new AtnRuleStep(stepElement, resourceManager, this);
-      this.steps.addLast(step);
 
-      if (this.steps.size() == childNodes.getLength()) step.setIsTerminal(true);
+      if (stepElement.getAttributeBoolean("popTest", false)) {
+        this.popStep = step;
+        if (this.steps.size() + 1 == childNodes.getLength() && steps.size() > 0) {
+          step = steps.get(steps.size() - 1);
+          step.setIsTerminal(true);
+        }
+      }
+      else {
+        this.steps.addLast(step);
+        if (this.steps.size() == childNodes.getLength()) step.setIsTerminal(true);
+      }
+
 
       // mark prior steps as terminal while terminals are optional
       if (step.isTerminal()) {
@@ -123,6 +139,16 @@ public class AtnRule {
 
     if (stepNum >= 0 && stepNum < steps.size()) {
       return steps.get(stepNum);
+    }
+
+    return result;
+  }
+
+  boolean verifyPop(Token token, AtnState curState) {
+    boolean result = true;
+
+    if (popStep != null) {
+      result = popStep.verify(token, curState);
     }
 
     return result;
