@@ -279,7 +279,9 @@ public class SentenceSplitter {
           this.lastLetterPos = index;
 
           // set lastCapPos, but don't reset unless we've seen a space since the last time!
-          if (Character.isUpperCase(cp) && lastCapPos < lastSpacePos) {
+          // a capital may also begin a paragraph
+          if (Character.isUpperCase(cp) && 
+              (lastCapPos < lastSpacePos || index == 0)) {
             this.lastCapPos = index;
           }
         }

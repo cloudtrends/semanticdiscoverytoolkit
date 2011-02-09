@@ -105,6 +105,16 @@ public class TestSentenceSplitter extends TestCase {
                 });
   }
 
+  public void testBeginningAbbreviations() {
+    doSplitTest("Dr. James Johnson, a M.D. from St. Judy's Hospital, passed away Aug. 17th, 2010.  Dr. Johnson was well-known in the medical profession as a pioneer in E.M.G. research.  A.M.A. directors have lobbied to award him a Nobel Prize in the field of medicine posthumously.  Dr. Johnson is survived by his wife and two children.",
+                new String[] {
+	                "Dr. James Johnson, a M.D. from St. Judy's Hospital, passed away Aug. 17th, 2010.",
+	                "Dr. Johnson was well-known in the medical profession as a pioneer in E.M.G. research.",
+	                "A.M.A. directors have lobbied to award him a Nobel Prize in the field of medicine posthumously.",
+	                "Dr. Johnson is survived by his wife and two children.",
+                });
+  }
+
   public void testNonBreakingSpace() {
     doSplitTest("This is a test with a sentence ending in a non-breaking space.\u00A0It should break this into separate sentences.\u00A0 Even cases where a breaking space follows a non-breaking space.",
                 new String[] {
