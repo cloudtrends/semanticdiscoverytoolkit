@@ -100,6 +100,31 @@ public class TestSentenceIterator extends TestCase {
            });
   }
 
+  public void testBeginningAbbreviation() {
+    final String input = "Dr. Smith was well known in the medical industry.";
+
+    doTest(input,
+           new String[] {
+	           "Dr.",
+	           "Smith was well known in the medical industry.",
+           },
+           new int[][] {
+             {0, 4},
+             {4, 49},
+           });
+
+
+    // Here we've fixed it with the optional 'detectAbbrev' flag.
+    final SentenceIterator iter = new SentenceIterator(input, true);
+    doTest(iter,
+           new String[] {
+	           "Dr. Smith was well known in the medical industry.",
+           },
+           new int[][] {
+             {0, 49},
+           });
+  }
+
   public void testComplex1() {
     doTest("\"What is Machine Translation? Machine translation (MT) is the application of computers to the task of translating texts from one natural language to another. One of the very earliest pursuits in computer science, MT has proved to be an elusive goal, but today a number of systems are available which produce output which, if not perfect, is of sufficient quality to be useful in a number of specific domains.\" A definition from the European Association for Machine Translation (EAMT), \"an organization that serves the growing community of people interested in MT and translation tools, including users, developers, and researchers of this increasingly viable technology.\"",
            new String[] {
