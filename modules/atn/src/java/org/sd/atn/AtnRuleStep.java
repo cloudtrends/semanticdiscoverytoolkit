@@ -30,9 +30,6 @@ import org.w3c.dom.NodeList;
  */
 public class AtnRuleStep {
   
-  private static final ClusteringTest CLUSTER_TEST = new ClusteringTest();
-
-
   private AtnRule rule;
   public AtnRule getRule() {
     return rule;
@@ -104,9 +101,9 @@ public class AtnRuleStep {
     return preDelim;
   }
 
-  private ClusteringTest clusterTest;
-  ClusteringTest getClusterTest() {
-    return clusterTest;
+  private boolean clusterFlag;  // greedy flag
+  boolean getClusterFlag() {
+    return clusterFlag;
   }
 
   private AtnRuleStepTest test;
@@ -142,15 +139,13 @@ public class AtnRuleStep {
     this.consumeToken = stepElement.getAttributeBoolean("consumeToken", true);
     this.ignoreToken = stepElement.getAttributeBoolean("ignoreToken", false);
     this.skip = stepElement.getAttributeInt("skip", 0);
-    final boolean clusterFlag = stepElement.getAttributeBoolean("cluster", false);
+    this.clusterFlag = stepElement.getAttributeBoolean("cluster", false);
 
     final DomElement postDelimElement = (DomElement)stepElement.selectSingleNode("postdelim");
     this.postDelim = (postDelimElement != null) ? new DelimTest(false, postDelimElement) : null;
 
     final DomElement preDelimElement = (DomElement)stepElement.selectSingleNode("predelim");
     this.preDelim = (preDelimElement != null) ? new DelimTest(true, preDelimElement) : null;
-
-    this.clusterTest = clusterFlag ? CLUSTER_TEST : null;
 
     // load test(s)
     this.test = null;
@@ -196,10 +191,6 @@ public class AtnRuleStep {
 
     if (result && preDelim != null) {
       result = preDelim.accept(token, curState);
-    }
-
-    if (result && clusterTest != null) {
-      result = clusterTest.accept(token, curState);
     }
 
     if (result && test != null) {
