@@ -731,6 +731,214 @@ public class AtnState {
     return inputToken.encompasses(token);
   }
 
+  private final boolean clusterConditionFails(LinkedList<AtnState> states) {
+    boolean result = clusterConditionFailsBackward();
+
+    if (!result && getRuleStep().getClusterFlag()) {
+      if (!result) result = clusterConditionFailsForward();
+      if (!result) result = removeInvalidQueuedStates(states);
+    }
+
+    return result;
+  }
+
+  /**
+   * Check for cluster (greedy) flag in this state's path (parents)
+   * being broken by the potential addition of this state.
+   */
+  private final boolean clusterConditionFailsBackward() {
+    boolean result = false;
+
+    final String curCat = getRuleStep().getCategory();
+    final int tokenStart = inputToken.getStartIndex();
+
+    // look back for immediate ruleStep category (token match or constituent pop) repeat.
+    for (AtnState priorMatch = getParentState() ;
+         priorMatch != null ;
+         priorMatch = priorMatch.getParentState()) {
+
+      if (priorMatch.getMatched() || priorMatch.isPoppedState()) {
+        // if the next token doesn't start at my token's start, we've gone too far
+        final int nextTokenStart = priorMatch.getInputToken().getNextToken().getStartIndex();
+        if (nextTokenStart < tokenStart) break;
+
+        final AtnRuleStep priorMatchStep = priorMatch.getRuleStep();
+
+        if (curCat.equals(priorMatchStep.getCategory())) {
+          if (priorMatchStep.getClusterFlag()) {  // cluster flag is set
+            // found matching category state
+            if (pushState != priorMatch.pushState) {
+              // different constituent ==> cluster (greedy) condition fails
+              result = true;
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Check for cluster (greedy) flag already broken in the "future", fixing
+   * if found (and returning true=failed since tree will be fixed and the
+   * proposed state should not be added.
+   */
+  private final boolean clusterConditionFailsForward() {
+    boolean result = false;
+
+    if (!getRuleStep().getClusterFlag()) return result;
+
+    final String curCat = getRuleStep().getCategory();
+    final int tokenStart = inputToken.getStartIndex();
+
+    // look forward for ruleStep category (token match or constituent push)
+    // by scanning nextSiblings, parent, nextSiblings, parent, nextSiblings, etc.
+    AtnState refState = this;
+    Tree<AtnState> forwardStateNode = refState.getParentStateNode().getNextSibling();
+    while (forwardStateNode != null || refState != null) {
+      while (forwardStateNode == null) {
+        refState = refState.getParentState();
+        if (refState == null) break;
+        forwardStateNode = refState.getParentStateNode().getNextSibling();
+      }
+      if (forwardStateNode == null) break;
+
+      // search forwardStateNode's tree for match
+      final Tree<AtnState> forwardMatchNode = findNode(forwardStateNode, curCat, tokenStart);
+      if (forwardMatchNode != null) {
+        // prune/graft match into this state's place
+        forwardMatchNode.prune(true, true);
+        parentStateNode.addChild(forwardMatchNode);
+
+        result = true;
+        break;
+      }
+
+      // keep searching forward
+      forwardStateNode = forwardStateNode.getNextSibling();
+    }
+
+
+    return result;
+  }
+
+  private final Tree<AtnState> findNode(Tree<AtnState> stateNode, String category, int tokenStart) {
+    Tree<AtnState> result = null;
+
+    for (Iterator<Tree<AtnState>> iter = stateNode.iterator(Tree.Traversal.DEPTH_FIRST) ; iter.hasNext() ;) {
+      final Tree<AtnState> curNode = iter.next();
+      final AtnState curState = curNode.getData();
+      if (curState != null) {
+        // make sure we haven't gone too far
+        final int curTokenStart = curState.getInputToken().getStartIndex();
+        if (curTokenStart != tokenStart) break;
+
+        if (curState.getMatched() || curState.getPushState() == curState.getParentState()) {
+          final String curCat = curState.getRuleStep().getCategory();
+          if (category.equals(curCat)) {
+            // found match!
+            result = curNode;
+            break;
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private final boolean removeInvalidQueuedStates(LinkedList<AtnState> states) {
+    boolean result = false;
+
+    final String curCat = getRuleStep().getCategory();
+    final int tokenStart = inputToken.getStartIndex();
+
+    for (Iterator<AtnState> stateIter = states.iterator(); stateIter.hasNext(); ) {
+      final AtnState state = stateIter.next();
+      final int curTokenStart = state.getInputToken().getStartIndex();
+      if (curTokenStart == tokenStart) {
+        final String category = state.getRuleStep().getCategory();
+        if (category.equals(curCat)) {
+          // determine which comes sooner: this or state
+          final boolean thisPrecedes = this.statePrecedes(state);
+
+          if (thisPrecedes) {
+            // if this comes sooner, remove state and don't fail to add this
+            stateIter.remove();
+          }
+          else {
+            // else, fail this
+            result = true;
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private final boolean statePrecedes(AtnState otherState) {
+    boolean result = false;
+
+    // need to find common push and use ruleStepNum to decide
+    final AtnState commonPushState = getCommonPushState(otherState);
+    final int myRuleStepNum = this.getRuleStepNum(commonPushState);
+    final int otherRuleStepNum = otherState.getRuleStepNum(commonPushState);
+
+    // this precedes other if its ruleStepNum < other's ruleStepNum
+    result = myRuleStepNum < otherRuleStepNum;
+
+    return result;
+  }
+
+  private final List<AtnState> getPushPath() {
+    final LinkedList<AtnState> result = new LinkedList<AtnState>();
+
+    AtnState pushState = this.getPushState();
+    while (pushState != null) {
+      result.addFirst(pushState);
+      pushState = pushState.getPushState();
+    }
+
+    return result;
+  }
+
+  private final AtnState getCommonPushState(AtnState otherState) {
+    AtnState result = null;
+
+    final Iterator<AtnState> myPushPathIter = this.getPushPath().iterator();
+    final Iterator<AtnState> otherPushPathIter = otherState.getPushPath().iterator();
+
+    while (myPushPathIter.hasNext() && otherPushPathIter.hasNext()) {
+      final AtnState myPushState = myPushPathIter.next();
+      final AtnState otherPushState = otherPushPathIter.next();
+
+      if (myPushState != otherPushState) {
+        break;  // diverged
+      }
+      else {
+        result = myPushState;
+      }
+    }
+
+    return result;
+  }
+
+  private final int getRuleStepNum(AtnState pushState) {
+    int result = -1;
+
+    for (AtnState curState = this; curState != null; curState = curState.getPushState()) {
+      if (curState.getPushState() == pushState) {
+        result = curState.getStepNum();
+        break;
+      }
+    }
+
+    return result;
+  }
+
 
   private static boolean trace = false;
 
@@ -893,6 +1101,12 @@ public class AtnState {
         isDup = true;
         break;
       }
+    }
+
+    // check cluster (greedy) flag
+    if (!isDup && nextstate.clusterConditionFails(states)) {
+      // greedy conditions fail
+      isDup = true;
     }
 
     if (!isDup) states.addLast(nextstate);
