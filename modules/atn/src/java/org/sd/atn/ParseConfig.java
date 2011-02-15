@@ -114,7 +114,8 @@ public class ParseConfig {
   private void init(DataProperties properties) {
     this.parseConfigProperties = properties;
 
-    final DomElement resourcesElement = (DomElement)properties.getDomElement().selectSingleNode("resources");
+    final boolean disableResources = properties.getBoolean("_disableResources", false);
+    final DomElement resourcesElement = disableResources ? null : (DomElement)properties.getDomElement().selectSingleNode("resources");
     this.resourceManager = (resourcesElement == null) ? new ResourceManager(properties) : new ResourceManager(resourcesElement);
 
     this.id2CompoundParser = new LinkedHashMap<String, CompoundParser>();

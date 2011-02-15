@@ -47,7 +47,8 @@ import org.w3c.dom.NodeList;
 public class ResourceManager {
 
   private DataProperties options;
-  private boolean disableLoad;
+  private boolean disableLoad;        // disable EVERYTHING
+  private boolean disableResources;   // disable just 'resources' node(s)
 
   /**
    * Map to store named instances for reference by later instances.
@@ -85,6 +86,7 @@ public class ResourceManager {
     if (this.options == null) this.options = options;
     this.name2resource = new HashMap<String, Object>();
     this.disableLoad = options.getBoolean("_disableLoad", false);
+    this.disableResources = options.getBoolean("_disableResources", false);
 
     final DomElement resourceElement = (options == null) ? null : options.getDomElement();
     loadResources(resourceElement);
@@ -237,20 +239,33 @@ public class ResourceManager {
    Object result = null;
 
    final Object[] args = getArgs(resourceElement, extraArgs);
+   String classname = null;
 
     try {
       final DomNode classnameNode = resourceElement.selectSingleNode("jclass");
       if (classnameNode == null) {
-        throw new IllegalArgumentException("Required xpath 'jclass' not found " +
-                                           "(relative to '" +
-                                           resourceElement.getLocalName() + "' node)!");
+        if (disableLoad || disableResources) {
+          System.out.println("*** WARNING: ResourceManager(disabled) missing required xpath 'jclass' relative to '" +
+                             resourceElement.getLocalName() + "' node!");
+          return null;
+        }
+        else {
+          throw new IllegalArgumentException("Required xpath 'jclass' not found " +
+                                             "(relative to '" +
+                                             resourceElement.getLocalName() + "' node)!");
+        }
       }
-      final String classname = classnameNode.getTextContent().trim();
+      classname = classnameNode.getTextContent().trim();
       final Class theClass = Class.forName(classname);
       result = ReflectUtil.constructInstance(theClass, args);
     }
     catch (ClassNotFoundException e) {
-      throw new IllegalArgumentException(e);
+      if (disableLoad || disableResources) {
+        System.out.println("*** WARNING : ResourceManager(disabled) unable to load '" + classname + "'");
+      }
+      else {
+        throw new IllegalArgumentException(e);
+      }
     }
 
     return result;

@@ -303,7 +303,7 @@ public class StandardTokenizer implements Tokenizer {
    * Get the pos2break map, initializing through CreateBreaks if necessary.
    */
   protected Map<Integer, Break> getPos2Break() {
-    if (pos2breakInit) return null;
+    //if (pos2breakInit) return null;
 
     synchronized (pos2breakLock) {
       if (this._pos2break == null) {

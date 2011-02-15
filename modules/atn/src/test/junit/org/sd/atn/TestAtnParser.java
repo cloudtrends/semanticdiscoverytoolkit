@@ -1345,6 +1345,28 @@ public class TestAtnParser extends TestCase {
                  });
   }
 
+  public void testConstituentClustering() throws IOException {
+    //
+    // Z <- W+
+    // W <- X* Y X*(c)
+    // X <- A B
+    //
+    // A B Y A B A B A B Y A B
+    //        z1        ^  z2
+
+    final AtnParser test18_Parser = AtnParseTest.buildParser("<grammar><rules><Z start='true'><W repeats='true'/></Z><W><X optional='true' repeats='true' /><Y /><X optional='true' repeats='true' cluster='true' /></W><X><A /><B /></X></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer18a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B Y A B A B A B Y A B");
+
+    runParseTest("parserTest.18a",
+                 test18_Parser,
+                 tokenizer18a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                     "(Z (W (X A B) Y (X A B) (X A B) (X A B)) (W Y (X A B)))",
+                 });
+  }
+
 
   private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings) throws IOException {
     runParseTest(name, parser, tokenizer, parseOptionsXml, expectedTreeStrings, null, false);

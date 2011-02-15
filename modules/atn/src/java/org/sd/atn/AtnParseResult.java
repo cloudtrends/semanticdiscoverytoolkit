@@ -164,11 +164,13 @@ public class AtnParseResult {
     if (_parses == null) {
       _parses = new ArrayList<AtnParse>();
 
+      final List<AtnState> finalStates = getFinalStates();
+
       int curParseNum = 0;
-      for (Iterator<Tree<AtnState>> iter = parse.iterator(Tree.Traversal.DEPTH_FIRST); iter.hasNext(); ) {
-        final Tree<AtnState> curState = iter.next();
-        if (isValidEndNode(curState)) {
-          final AtnParse curParse = new AtnParse(curParseNum, curState, this);
+      for (AtnState finalState : finalStates) {
+        final Tree<AtnState> finalStateNode = finalState.getStateNode();
+        if (finalStateNode != null) {
+          final AtnParse curParse = new AtnParse(curParseNum, finalStateNode, this);
           _parses.add(curParse);
           
           ++curParseNum;
@@ -176,6 +178,31 @@ public class AtnParseResult {
       }
     }
     return _parses;
+  }
+
+  /**
+   * Find the final states for complete, valid parses.
+   */
+  private List<AtnState> getFinalStates() {
+    final List<AtnState> result = new ArrayList<AtnState>();
+
+    for (Iterator<Tree<AtnState>> iter = parse.iterator(Tree.Traversal.DEPTH_FIRST); iter.hasNext(); ) {
+      final Tree<AtnState> curStateNode = iter.next();
+      final AtnState curState = curStateNode.getData();
+      if (curState == null) continue;
+
+      if (isValidEndNode(curStateNode)) {
+        result.add(curState);
+      }
+      else if (curState.popFailed()) {
+        // failed pops are deeper, below potentially valid states. When we find one, we need to discount its associated parent match.
+        for (AtnState parentState = curState.getParentState(); parentState != null; parentState = parentState.getParentState()) {
+          if (result.remove(parentState)) break; // only nearest parent is invalidated
+        }
+      }
+    }
+
+    return result;
   }
 
   private boolean isValidEndNode(Tree<AtnState> stateNode) {

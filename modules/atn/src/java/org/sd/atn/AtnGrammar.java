@@ -430,6 +430,21 @@ public class AtnGrammar {
     return result;
   }
 
+  Bracket findEndBracket(Token token) {
+    Bracket result = null;
+
+    if (brackets != null) {
+      for (Bracket bracket : brackets) {
+        if (bracket.matchesEnd(token)) {
+          result = bracket;
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
 
   static interface Bracket {
     public boolean matchesStart(Token token);
