@@ -86,9 +86,7 @@ public class AtnStateUtil {
       }
 
       if (pathState.isPoppedState()) {
-        for (int popCounter = 0; popCounter < pathState.getPopCount(); ++popCounter) {
-          curResultNode = curResultNode.getParent();
-        }
+        if (pathState.getPopCount() > 1) curResultNode = curResultNode.getParent();
       }
       else {
         final Token inputToken = pathState.getInputToken();
@@ -130,6 +128,21 @@ public class AtnStateUtil {
 
         lastPushState = pushState;
       }
+    }
+
+    return result;
+  }
+
+  /**
+   * Get the first state of the state's constituent.
+   */
+  public static final AtnState getConstituentStartState(AtnState curState) {
+    AtnState result = null;
+
+    AtnState refPush = curState.getPushState();
+    for (result = curState; result != null; result = result.getParentState()) {
+      final AtnState curPush = result.getPushState();
+      if (curPush == refPush && curPush == result.getParentState()) break;
     }
 
     return result;
@@ -389,7 +402,12 @@ public class AtnStateUtil {
       if (curstate.getMatched()) flags.append('m');
       if (curstate.isSkipped()) flags.append('s').append(curstate.skipNum);
       if (curstate.isRepeat()) flags.append('r').append(curstate.getRepeatNum());
-      if (curstate.isPoppedState()) flags.append('p').append(curstate.getPopCount());
+      if (curstate.isPoppedState()) {
+        flags.append('p').append(curstate.getPopCount());
+        if (curstate.popFailed()) {
+          flags.append('F');
+        }
+      }
       if (flags.length() > 0) result.append("  ").append(flags);
     }
 
