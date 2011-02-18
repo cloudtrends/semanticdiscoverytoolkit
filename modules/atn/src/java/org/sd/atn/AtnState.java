@@ -116,6 +116,10 @@ public class AtnState {
     return result;
   }
 
+  boolean isRuleStart() {
+    return pushState == getParentState();
+  }
+
   private boolean verifyPop() {
     boolean result = verifyBracketPop();
     
@@ -696,8 +700,8 @@ public class AtnState {
   }
 
   private final void addStartBracket(AtnGrammar.Bracket startBracket) {
-    if (pushState != null) {
-      pushState.addActiveBracket(startBracket);
+    for (AtnState startPush = pushState; startPush != null && startPush.isRuleStart(); startPush = startPush.getPushState()) {
+      startPush.addActiveBracket(startBracket);
     }
   }
 
@@ -738,7 +742,7 @@ public class AtnState {
 
     if (startBracket != null) {
       // verify conditions for starting a bracket: must be first matching step for constituent
-      if (this.pushState != this.getParentState()) {
+      if (!isRuleStart()) {
         // can't start!
         startBracket = null;
         result = false;
@@ -772,9 +776,17 @@ public class AtnState {
     final AtnGrammar.Bracket endBracket = findEndBracket(null, hasBracket);
     if (hasBracket[0]) {
       result = endBracket != null;
+
+      if (!result) {
+        result = bracketCanRise();
+      }
     }
 
     return result;
+  }
+
+  private boolean bracketCanRise() {
+    return (pushState != null && pushState.activeBrackets != null);
   }
 
 

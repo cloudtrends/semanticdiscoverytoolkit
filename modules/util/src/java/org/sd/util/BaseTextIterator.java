@@ -145,6 +145,8 @@ public class BaseTextIterator implements TextIterator {
     String result = null;
 
     start = isFirst ? breakIterator.first() : end;
+    final int theStart = start;
+    boolean acceptedOne = false;
 
     while (result == null && (isFirst || end != BreakIterator.DONE)) {
 
@@ -153,6 +155,7 @@ public class BaseTextIterator implements TextIterator {
 
       if (end != BreakIterator.DONE) {
         if (accept(text, start, end)) {
+          acceptedOne = true;
           result = text.substring(start, end).trim();
         }
       }
@@ -161,6 +164,15 @@ public class BaseTextIterator implements TextIterator {
       }
 
       if (canSkip) isFirst = false;
+    }
+
+    if (result == null && !acceptedOne && !canSkip && theStart != BreakIterator.DONE && theStart < text.length()) {
+      result = text.substring(theStart, text.length()).trim();
+      if (!"".equals(result)) {
+        start = theStart;
+        end = text.length();
+      }
+      else result = null;
     }
 
     this.next = result;
