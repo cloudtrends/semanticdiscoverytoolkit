@@ -1367,6 +1367,52 @@ public class TestAtnParser extends TestCase {
                  });
   }
 
+  public void testBracketsPopTest() throws IOException {
+    //
+    // Z <- Y+
+    // Y <- a? A+ a?(ua)  [BracketPopTest]
+    //
+    // A (A A)
+    // A (a A)
+    // A (A a)
+
+    final AtnParser test19_Parser = AtnParseTest.buildParser("<grammar><rules><Z start='true'><Y repeats='true' /></Z><Y><a optional='true' /><A repeats='true' /><a optional='true' unless='a'/><no-op popTest='true'><test allowBalanced='true' includeEnds='false'><jclass>org.sd.atn.BracketPopTest</jclass><brackets><delim><start type='substr'>(</start><end type='substr'>)</end></delim></brackets></test></no-op></Y></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer19a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A (A A)");
+
+    runParseTest("parserTest_19a",
+                 test19_Parser,
+                 tokenizer19a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (Y A) (Y A) (Y A))",
+                   "(Z (Y A) (Y A A))",
+                 });
+
+
+    final StandardTokenizer tokenizer19b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A (a A)");
+
+    runParseTest("parserTest_19a",
+                 test19_Parser,
+                 tokenizer19b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (Y A) (Y a A))",
+                 });
+
+
+    final StandardTokenizer tokenizer19c = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A (A a)");
+
+    runParseTest("parserTest_19a",
+                 test19_Parser,
+                 tokenizer19c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (Y A) (Y A a))",
+                 });
+  }
+
+
 
   private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings) throws IOException {
     runParseTest(name, parser, tokenizer, parseOptionsXml, expectedTreeStrings, null, false);
