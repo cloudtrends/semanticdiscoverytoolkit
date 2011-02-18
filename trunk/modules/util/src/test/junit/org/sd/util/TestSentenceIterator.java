@@ -178,6 +178,28 @@ public class TestSentenceIterator extends TestCase {
            });
   }
 
+  public void testNoBreaksAtAll() {
+    doTest(new SentenceIterator("Schleehauf George W (Kathleen H)", true),
+           new String[] {
+             "Schleehauf George W (Kathleen H)",
+           },
+           new int[][] {
+             {0, 32},
+           });
+  }
+
+  public void testNoBreaksAtEnd() {
+    doTest(new SentenceIterator("This is the first sentence. Schleehauf George W (Kathleen H)", true),
+           new String[] {
+             "This is the first sentence.",
+             "Schleehauf George W (Kathleen H)",
+           },
+           new int[][] {
+             {0, 28},
+             {28, 60},
+           });
+  }
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestSentenceIterator.class);

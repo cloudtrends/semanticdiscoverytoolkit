@@ -54,22 +54,38 @@ public class BracketPopTest implements AtnRuleStepTest {
 
     boolean verified = false;
     final AtnState startState = AtnStateUtil.getConstituentStartState(curState);
+    final Token startToken = startState.getInputToken();
+    final int startTokenIndex = startToken.getStartIndex();
 
     if (rejectEnd && startState != null) {
       final AtnGrammar.Bracket endBracket = curState.getRule().getGrammar().findEndBracket(token);
       if (endBracket != null) {  // the constituent ends in a bracket
-        // only accept if the corresponding startBracket exists at the start of the constituent
-        result = endBracket.matchesStart(startState.getInputToken());
+        // only accept if
+        // - the corresponding startBracket exists at the start of the constituent
+        // - or doesn't exist at all within the constituent
+        for (Token curToken = token; curToken.getStartIndex() > startTokenIndex; curToken = curToken.getPrevToken()) {
+          if (endBracket.matchesStart(curToken)) {
+            result = false;
+            break;
+          }
+        }
         verified = result;
       }
     }
 
     if (result && rejectStart && !verified && startState != null) {
-      final Token startToken = startState.getInputToken();
       final AtnGrammar.Bracket startBracket = startState.getRule().getGrammar().findStartBracket(startToken);
+      final int endTokenIndex = token.getStartIndex();
       if (startBracket != null) { // the constituent starts in a bracket
-        // only accept if the corresponding endBracket exists at the end of the constituent (curState)
-        result = startBracket.matchesEnd(token);
+        // only accept if
+        // - the corresponding endBracket exists at the end of the constituent (curState)
+        // - or doesn't exist at all within the constituent
+        for (Token curToken = startToken; curToken.getStartIndex() < endTokenIndex; curToken = curToken.getNextToken()) {
+          if (startBracket.matchesEnd(curToken)) {
+            result = false;
+            break;
+          }
+        }
       }
     }
 

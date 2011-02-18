@@ -117,7 +117,7 @@ public class SentenceIterator extends BaseTextIterator {
   public static final void main(String[] args) {
     for (String arg : args) {
       System.out.println(arg + " --> ");
-      for (SentenceIterator iter = new SentenceIterator(arg); iter.hasNext(); ) {
+      for (SentenceIterator iter = new SentenceIterator(arg, true); iter.hasNext(); ) {
         System.out.println("\t" + iter.next());
       }
     }
