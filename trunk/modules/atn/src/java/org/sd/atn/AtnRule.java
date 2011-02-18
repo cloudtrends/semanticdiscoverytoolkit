@@ -68,11 +68,6 @@ public class AtnRule {
     return popStep;
   }
 
-  private boolean disableBrackets;
-  boolean bracketsDisabled() {
-    return disableBrackets;
-  }
-
 
   AtnRule(AtnGrammar grammar, DomElement ruleElement, ResourceManager resourceManager) {
     this.grammar = grammar;
@@ -81,12 +76,11 @@ public class AtnRule {
     this.steps = new LinkedList<AtnRuleStep>();
     this.isStart = ruleElement.getAttributeBoolean("start", false);
     this.tokenFilterId = ruleElement.getAttributeValue("tokenFilter", null);
-    this.disableBrackets = ruleElement.getAttributeBoolean("disableBrackets", false);
 
     //
     // RuleElement is of the form:
     //
-    // <ruleName start='' tokenFilter='tokenFilterId' id='ruleId' disableBrackets=''>
+    // <ruleName start='' tokenFilter='tokenFilterId' id='ruleId'>
     //   <ruleStep require='' unless='' optional='' repeats='' terminal='' skip=''>
     //     <postdelim><disallowall|allowall|disallow|allow /></postdelim>
     //     <predelim><disallowall|allowall|disallow|allow /></predelim>
@@ -155,16 +149,6 @@ public class AtnRule {
 
     if (popStep != null) {
       result = popStep.verify(token, curState);
-    }
-
-    return result;
-  }
-
-  AtnGrammar.Bracket findStartBracket(Token inputToken) {
-    AtnGrammar.Bracket result = null;
-
-    if (!disableBrackets) {
-      result = grammar.findStartBracket(inputToken);
     }
 
     return result;

@@ -139,10 +139,28 @@ public class AtnStateUtil {
   public static final AtnState getConstituentStartState(AtnState curState) {
     AtnState result = null;
 
-    AtnState refPush = curState.getPushState();
+    final AtnState refPush = curState.getPushState();
     for (result = curState; result != null; result = result.getParentState()) {
       final AtnState curPush = result.getPushState();
       if (curPush == refPush && curPush == result.getParentState()) break;
+    }
+
+    return result;
+  }
+
+  /**
+   * Get the 'match' states for the constituent ending at endState.
+   */
+  public static final LinkedList<AtnState> getConstituentMatchStates(AtnState endState) {
+    final LinkedList<AtnState> result = new LinkedList<AtnState>();
+
+    final AtnState refPush = endState.getPushState();
+    for (AtnState curState = endState; result != null; curState = curState.getParentState()) {
+      if (curState.getMatched()) {
+        result.add(0, curState);
+      }
+      final AtnState curPush = curState.getPushState();
+      if (curPush == refPush && curPush == curState.getParentState()) break;
     }
 
     return result;

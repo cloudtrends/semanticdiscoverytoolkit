@@ -121,13 +121,7 @@ public class AtnState {
   }
 
   private boolean verifyPop() {
-    boolean result = verifyBracketPop();
-    
-    if (result) {
-      result = rule.verifyPop(this.inputToken, this);
-    }
-
-    return result;
+    return rule.verifyPop(this.inputToken, this);
   }
 
   private AtnRuleStep _ruleStep;
@@ -140,7 +134,6 @@ public class AtnState {
 
   private boolean computedNextToken;
   private Token _nextToken;
-  private List<AtnGrammar.Bracket> activeBrackets;
   private boolean popFailed;
 
 
@@ -163,7 +156,6 @@ public class AtnState {
     this._isSkipped = false;
     this.computedNextToken = false;
     this._nextToken = null;
-    this.activeBrackets = null;
     this.popFailed = false;
   }
 
@@ -184,7 +176,6 @@ public class AtnState {
     this._ruleStep = other._ruleStep;
     this.computedNextToken = other.computedNextToken;
     this._nextToken = other._nextToken;
-    this.activeBrackets = other.activeBrackets;
     this.popFailed = other.popFailed;
   }
 
@@ -694,103 +685,8 @@ public class AtnState {
     return result;
   }
 
-  private final void addActiveBracket(AtnGrammar.Bracket bracket) {
-    if (this.activeBrackets == null) this.activeBrackets = new ArrayList<AtnGrammar.Bracket>();
-    this.activeBrackets.add(bracket);
-  }
 
-  private final void addStartBracket(AtnGrammar.Bracket startBracket) {
-    for (AtnState startPush = pushState; startPush != null && startPush.isRuleStart(); startPush = startPush.getPushState()) {
-      startPush.addActiveBracket(startBracket);
-    }
-  }
-
-  private final AtnGrammar.Bracket findStartBracket() {
-    return rule.findStartBracket(inputToken);
-  }
-
-  private final AtnGrammar.Bracket findEndBracket(AtnState[] bracketPushState, boolean[] hasBracket) {
-    AtnGrammar.Bracket result = null;
-
-    for (AtnState state = pushState; state != null; state = state.getPushState()) {
-      if (state.activeBrackets != null) {
-        final int num = state.activeBrackets.size();
-        if (hasBracket != null && num > 0) hasBracket[0] = true;
-        for (int i = num - 1; i >= 0; --i) {
-          final AtnGrammar.Bracket bracket = state.activeBrackets.get(i);
-          if (bracket.matchesEnd(inputToken)) {
-            result = bracket;
-            if (bracketPushState != null) bracketPushState[0] = state;
-            break;
-          }
-        }
-        if (result != null) break;
-      }
-    }
-
-    return result;
-  }
-
-  private boolean bracketsMatch(AtnState[] bracketPushState) {
-    boolean result = true;
-
-    AtnGrammar.Bracket endBracket = null;
-    bracketPushState[0] = null;
-
-    // check for start bracket match
-    AtnGrammar.Bracket startBracket = findStartBracket();
-
-    if (startBracket != null) {
-      // verify conditions for starting a bracket: must be first matching step for constituent
-      if (!isRuleStart()) {
-        // can't start!
-        startBracket = null;
-        result = false;
-      }
-    }
-
-    if (result) {
-      if (startBracket != null) {
-        // unless immediate end to startBracket
-        if (!startBracket.matchesEnd(inputToken)) {
-          // add start bracket to this state
-          addStartBracket(startBracket);
-        }
-        else {
-          bracketPushState[0] = pushState;
-        }
-      }
-      else {
-        endBracket = findEndBracket(bracketPushState, null);
-      }
-    }
-
-    return result;
-  }
-
-  private boolean verifyBracketPop() {
-    boolean result = true;
-
-    final boolean[] hasBracket = new boolean[]{false};
-
-    final AtnGrammar.Bracket endBracket = findEndBracket(null, hasBracket);
-    if (hasBracket[0]) {
-      result = endBracket != null;
-
-      if (!result) {
-        result = bracketCanRise();
-      }
-    }
-
-    return result;
-  }
-
-  private boolean bracketCanRise() {
-    return (pushState != null && pushState.activeBrackets != null);
-  }
-
-
-  private final boolean applyAllPops(Tree<AtnState> nextStateNode, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, Set<Integer> stopList, AtnState bracketPushState) {
+  private final boolean applyAllPops(Tree<AtnState> nextStateNode, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, Set<Integer> stopList) {
     boolean result = true;
 
     if (isRuleEnd()) {
@@ -800,9 +696,6 @@ public class AtnState {
       final AtnGrammar grammar = rule.getGrammar();
       Tree<AtnState> popStateNode = nextStateNode;
       AtnState popState = popState(popStateNode);
-      if (bracketPushState != null && popStateNode.getData().getPushState() == bracketPushState) {
-        bracketPushState = null;
-      }
       while (popState != null) {
         boolean popVerified = true;
 
@@ -831,7 +724,7 @@ public class AtnState {
               // states added due to the match.
 
               // After the first pop, we need to consider forward states from each pop.
-              addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList, true, bracketPushState);
+              addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList, true);
             }
 
             break;
@@ -863,7 +756,7 @@ public class AtnState {
           // states added due to the match.
 
           // After the first pop, we need to consider forward states from each pop.
-          if (addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList, true, bracketPushState)) {
+          if (addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList, true)) {
             if (!popState.isRuleEnd(false)) {
               // we need to stop popping when we get to one that isn't a rule end
               popState = null;
@@ -876,10 +769,6 @@ public class AtnState {
         }
 
         if (popState != null) {
-          if (bracketPushState != null && popStateNode.getData().getPushState() == bracketPushState) {
-            // no longer need to prevent forward branching (due to end bracket)
-            bracketPushState = null;
-          }
           popState = popState.popState(popStateNode);
         }
         else break;
@@ -1220,26 +1109,16 @@ public class AtnState {
   static boolean matchTokenToRule(AtnGrammar grammar, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, Set<Integer> stopList) {
     boolean result = false;
 
-    AtnState[] bracketPushState = new AtnState[]{null};
-
     while ((states.size() + skipStates.size() > 0) && !result) {
       final AtnState curstate = states.size() > 0 ? states.removeFirst() : skipStates.removeFirst();
 
       boolean success = false;
-      bracketPushState[0] = null;
       final boolean meetsRequirements = curstate.meetsRequirements();
       MatchResult matchResult = null;
       boolean matches = meetsRequirements;
       if (matches) {
         matchResult = curstate.tokenMatchesStepCategory(grammar);
         matches = matchResult.matched();
-
-        // check bracket conditions
-        if (matches) {
-          matches = curstate.bracketsMatch(bracketPushState);
-
-          if (!matches) matchResult = null;
-        }
       }
       final Tree<AtnState> nextStateNode = curstate.parentStateNode.addChild(curstate);
 
@@ -1248,7 +1127,7 @@ public class AtnState {
       }
 
       if (matches) {
-        matches = curstate.applyAllPops(nextStateNode, states, skipStates, stopList, bracketPushState[0]);
+        matches = curstate.applyAllPops(nextStateNode, states, skipStates, stopList);
       }
 
       if (matches) {
@@ -1264,16 +1143,14 @@ public class AtnState {
         matchResult = null;
       }
 
-      if (bracketPushState[0] == null) {
-        success = addNextStates(grammar, states, skipStates, curstate, nextStateNode,
-                                false, matches, stopList, meetsRequirements, null);
-      }
+      success = addNextStates(grammar, states, skipStates, curstate, nextStateNode,
+                              false, matches, stopList, meetsRequirements);
     }
 
     return result;
   }
 
-  private static boolean addNextStates(AtnGrammar grammar, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, AtnState curstate, Tree<AtnState> nextStateNode, boolean isPop, boolean inc, Set<Integer> stopList, boolean meetsRequirements, AtnState bracketPushState) {
+  private static boolean addNextStates(AtnGrammar grammar, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, AtnState curstate, Tree<AtnState> nextStateNode, boolean isPop, boolean inc, Set<Integer> stopList, boolean meetsRequirements) {
     if (curstate == null) return false;
 
     boolean foundOne = inc || isPop;
@@ -1281,19 +1158,15 @@ public class AtnState {
 
     // increment token
     if (foundOne) {
-      if (bracketPushState == null) {
-        nextstate = curstate.getNextRepeatState(nextStateNode, isPop ? curstate : null, inc, stopList);
+      nextstate = curstate.getNextRepeatState(nextStateNode, isPop ? curstate : null, inc, stopList);
 
-        if (nextstate != null) {
-          addState(grammar, states, skipStates, nextstate, stopList);
-        }
+      if (nextstate != null) {
+        addState(grammar, states, skipStates, nextstate, stopList);
       }
 
-      if (bracketPushState == null) {
-        nextstate = curstate.getNextStepState(nextStateNode, inc, stopList);
-        if (nextstate != null) {
-          addState(grammar, states, skipStates, nextstate, stopList);
-        }
+      nextstate = curstate.getNextStepState(nextStateNode, inc, stopList);
+      if (nextstate != null) {
+        addState(grammar, states, skipStates, nextstate, stopList);
       }
 
       // revise token
@@ -1323,7 +1196,7 @@ public class AtnState {
     }
 
     // apply (push) rules
-    if (meetsRequirements && bracketPushState == null) {
+    if (meetsRequirements) {
       final String category = curstate.getRuleStep().getCategory();
       if (grammar.getCat2Rules().containsKey(category)) {
         foundOne = true;
@@ -1349,7 +1222,7 @@ public class AtnState {
     }
 
     // skip tokens
-    if (!foundOne && bracketPushState == null) {
+    if (!foundOne) {
       nextstate = curstate.getNextSkippedState(nextStateNode, stopList);
       if (nextstate != null) addState(skipStates, nextstate);
     }
@@ -1364,7 +1237,7 @@ public class AtnState {
     // if can't add the state due to cluster condition failure, try revision, optional bypass, and skipping
     if (!addState(states, nextstate)) {
       final Tree<AtnState> nextStateNode = nextstate.parentStateNode.addChild(nextstate);
-      addNextStates(grammar, states, skipStates, nextstate, nextStateNode, false, false, stopList, false, null);
+      addNextStates(grammar, states, skipStates, nextstate, nextStateNode, false, false, stopList, false/*, null*/);
     }
   }
 

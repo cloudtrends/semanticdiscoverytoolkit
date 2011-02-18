@@ -75,14 +75,6 @@ public class AtnGrammar {
     return resourceManager;
   }
 
-  private List<Bracket> brackets;
-  List<Bracket> getBrackets() {
-    return brackets;
-  }
-  boolean hasBrackets() {
-    return brackets != null;
-  }
-
   private List<AtnRule> startRules;
 
   AtnGrammar(DomElement grammarNode, ResourceManager resourceManager) {
@@ -117,10 +109,6 @@ public class AtnGrammar {
     //       <!-- -->
     //     </classifiers>
     //
-    //     <brackets>
-    //       <!-- -->
-    //     </brackets>
-    //
     //     <rules>
     //       <!-- -->
     //     </rules>
@@ -141,9 +129,6 @@ public class AtnGrammar {
 
     // load classifiers
     this.cat2Classifiers = loadClassifiers(grammarNode, id2Normalizer);
-
-    // load brackets
-    this.brackets = loadBrackets(grammarNode);
 
     // load rules
     final DomElement rulesNode = (DomElement)grammarNode.selectSingleNode("rules");
@@ -359,37 +344,6 @@ public class AtnGrammar {
     return result;
   }
 
-  private List<Bracket> loadBrackets(DomNode grammarNode) {
-    List<Bracket> result = null;
-
-    final DomElement bracketsNode = (DomElement)grammarNode.selectSingleNode("brackets");
-    if (bracketsNode != null) {
-      NodeList bracketNodes = bracketsNode.getChildNodes();
-      for (int i = 0; i < bracketNodes.getLength(); ++i) {
-        final DomElement bracketElement = (DomElement)bracketNodes.item(i);
-        final String bracketClass = bracketElement.getLocalName();
-        if ("delim".equals(bracketClass)) {
-          final DomElement startElement = (DomElement)bracketElement.selectSingleNode("start");
-          final DomElement endElement = (DomElement)bracketElement.selectSingleNode("end");
-          
-          if (startElement == null || endElement == null) {
-            throw new IllegalArgumentException("'delim' bracket must have 'start' and 'end'!");
-          }
-          final String startData = startElement.getTextContent();
-          final String startType = startElement.getAttribute("type");
-          final String endData = endElement.getTextContent();
-          final String endType = endElement.getAttribute("type");
-
-          final Bracket bracket = new DelimBracket(startData, startType, endData, endType);
-          if (result == null) result = new ArrayList<Bracket>();
-          result.add(bracket);
-        }
-      }
-    }
-
-    return result;
-  }
-
   private Map<String, List<AtnRule>> loadRules(DomElement rulesElement, List<AtnRule> startRules) {
     final Map<String, List<AtnRule>> result = new HashMap<String, List<AtnRule>>();
 
@@ -413,92 +367,5 @@ public class AtnGrammar {
     }
 
     return result;
-  }
-
-  Bracket findStartBracket(Token token) {
-    Bracket result = null;
-
-    if (brackets != null) {
-      for (Bracket bracket : brackets) {
-        if (bracket.matchesStart(token)) {
-          result = bracket;
-          break;
-        }
-      }
-    }
-
-    return result;
-  }
-
-  Bracket findEndBracket(Token token) {
-    Bracket result = null;
-
-    if (brackets != null) {
-      for (Bracket bracket : brackets) {
-        if (bracket.matchesEnd(token)) {
-          result = bracket;
-          break;
-        }
-      }
-    }
-
-    return result;
-  }
-
-
-  static interface Bracket {
-    public boolean matchesStart(Token token);
-    public boolean matchesEnd(Token token);
-  }
-
-  static abstract class BaseBracket implements Bracket {
-    private String start;
-    private String end;
-    
-    BaseBracket(String start, String end) {
-      this.start = start;
-      this.end = end;
-    }
-
-    protected String getStart() {
-      return start;
-    }
-
-    protected String getEnd() {
-      return end;
-    }
-  }
-
-  static final class DelimBracket extends BaseBracket {
-    
-    private String startType;
-    private String endType;
-
-    DelimBracket(String start, String startType, String end, String endType) {
-      super(start, end);
-      this.startType = startType;
-      this.endType = endType;
-    }
-
-    public boolean matchesStart(Token token) {
-      return matches(getStart(), startType, token.getPreDelim());
-    }
-
-    public boolean matchesEnd(Token token) {
-      return matches(getEnd(), endType, token.getPostDelim());
-    }
-
-    private boolean matches(String value, String type, String data) {
-      boolean result = false;
-
-      if ("exact".equals(type)) {
-        result = data.equals(value);
-      }
-      else if ("substr".equals(type)) {
-        result = data.indexOf(value) >= 0;
-      }
-
-      return result;
-    }
   }
 }
