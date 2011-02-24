@@ -86,7 +86,10 @@ public class AtnStateUtil {
       }
 
       if (pathState.isPoppedState()) {
-        if (pathState.getPopCount() > 1) curResultNode = curResultNode.getParent();
+        final int pushDepth = getPushDepth(pathState);
+        for (int i = curResultNode.depth(); i > pushDepth; --i) {
+          curResultNode = curResultNode.getParent();
+        }
       }
       else {
         final Token inputToken = pathState.getInputToken();
