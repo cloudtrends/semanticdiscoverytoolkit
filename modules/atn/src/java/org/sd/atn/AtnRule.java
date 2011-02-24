@@ -19,7 +19,9 @@
 package org.sd.atn;
 
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import org.sd.token.Token;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
@@ -63,9 +65,13 @@ public class AtnRule {
     return tokenFilterId;
   }
 
-  private AtnRuleStep popStep;
-  AtnRuleStep getPopStep() {
-    return popStep;
+  private List<AtnRuleStep> popSteps;
+  List<AtnRuleStep> getPopSteps() {
+    return popSteps;
+  }
+  private void addPopStep(AtnRuleStep popStep) {
+    if (popSteps == null) popSteps = new ArrayList<AtnRuleStep>();
+    popSteps.add(popStep);
   }
 
 
@@ -92,25 +98,23 @@ public class AtnRule {
     // </ruleName>
     //
 
-    final NodeList childNodes = ruleElement.getChildNodes();
-    for (int i = 0; i < childNodes.getLength(); ++i) {
-      final Node curNode = childNodes.item(i);
-
-      if (curNode.getNodeType() != DomElement.ELEMENT_NODE) continue;
-
-      final DomElement stepElement = (DomElement)curNode;
+    final List<DomElement> childNodes = collectChildElements(ruleElement);
+    final int numChildNodes = childNodes.size();
+    for (int i = 0; i < numChildNodes; ++i) {
+      final DomElement stepElement = childNodes.get(i);
       AtnRuleStep step = new AtnRuleStep(stepElement, resourceManager, this);
 
       if (stepElement.getAttributeBoolean("popTest", false)) {
-        this.popStep = step;
-        if (this.steps.size() + 1 == childNodes.getLength() && steps.size() > 0) {
+        addPopStep(step);
+
+        if (i + 1 == numChildNodes && steps.size() > 0) {
           step = steps.get(steps.size() - 1);
           step.setIsTerminal(true);
         }
       }
       else {
         this.steps.addLast(step);
-        if (this.steps.size() == childNodes.getLength()) step.setIsTerminal(true);
+        if (i + 1 == numChildNodes) step.setIsTerminal(true);
       }
 
 
@@ -147,8 +151,27 @@ public class AtnRule {
   boolean verifyPop(Token token, AtnState curState) {
     boolean result = true;
 
-    if (popStep != null) {
-      result = popStep.verify(token, curState);
+    if (popSteps != null) {
+      for (AtnRuleStep popStep : popSteps) {
+        result = popStep.verify(token, curState);
+        if (!result) {
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private final List<DomElement> collectChildElements(DomElement parentElement) {
+    final List<DomElement> result = new ArrayList<DomElement>();
+
+    final NodeList childNodes = parentElement.getChildNodes();
+    for (int i = 0; i < childNodes.getLength(); ++i) {
+      final Node curNode = childNodes.item(i);
+      if (curNode.getNodeType() != DomElement.ELEMENT_NODE) continue;
+      final DomElement childElement = (DomElement)curNode;
+      result.add(childElement);
     }
 
     return result;

@@ -528,6 +528,39 @@ public class AtnState {
     return AtnStateUtil.showStatePath(this);
   }
 
+  /**
+   * Show this state with its push path and constituent start.
+   */
+  private String showStateContext() {
+    final StringBuilder result = new StringBuilder();
+
+    final List<AtnState> pushPath = getPushPath();
+    if (pushPath != null) {
+      for (AtnState pushState : pushPath) {
+        if (result.length() == 0) {
+          result.
+            append(pushState.getRule().getRuleName()).
+            append(" : ").
+            append(pushState.getRuleStep().getCategory());
+        }
+        else {
+          result.append(" : ").append(pushState.getRuleStep().getCategory());
+        }
+      }
+    }
+
+    final AtnState cStart = AtnStateUtil.getConstituentStartState(this);
+
+    result.
+      append("  ").
+      append(cStart.toString()).
+      append(" - ").
+      append(this.toString());
+
+    return result.toString();
+  }
+
+
   public final AtnState getParentState() {
     AtnState result = null;
 
@@ -704,7 +737,7 @@ public class AtnState {
         
         if (!result) {
           if (trace) {
-            System.out.println("POP tests FAILED\t" + popState.showStateTree(true));
+            System.out.println("POP tests FAILED\t" + popState.showStateContext() /*popState.showStateTree(true)*/);
           }
         }
         else {
@@ -716,12 +749,13 @@ public class AtnState {
             popStateNode.addChild(popState);
 
             if (trace) {
-              System.out.println("POP verification FAILED\t" + popState.showStateTree(true));
+              System.out.println("POP verification FAILED\t" + popState.showStateContext() /*popState.showStateTree(true)*/);
             }
 
             if (popState.getPopCount() != 1) {
               // first pop has popCount 1 and is same as matching token, which will have
               // states added due to the match.
+              popStateNode = popStateNode.addChild(popState);
 
               // After the first pop, we need to consider forward states from each pop.
               addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList, true);
@@ -734,7 +768,7 @@ public class AtnState {
         if (!result /*|| !popVerified*/) {
           // back out of popping
           while (states.size() > statesSize) {
-            if (trace) System.out.println("Failed pop backup ... removing queued state:\n" + states.getLast().showStatePath());
+            if (trace) System.out.println("Failed pop backup ... removing queued state:\n" + states.getLast().showStateContext() /*states.getLast().showStatePath()*/);
             states.removeLast();
           }
           while (skipStates.size() > skipStatesSize) skipStates.removeLast();
@@ -745,7 +779,7 @@ public class AtnState {
         popStateNode = popStateNode.addChild(popState);
 
         if (trace) {
-          System.out.println("POP \t" + popState.showStateTree(true));
+          System.out.println("POP \t" + popState.showStateContext() /*popState.showStateTree(true)*/);
         }
 
         statesSize = states.size();
@@ -790,7 +824,7 @@ public class AtnState {
     }
     else {
       if (trace) {
-        System.out.println("POP FAIL\t" + nextStateNode.getData().showStateTree(true));
+        System.out.println("POP FAIL\t" + nextStateNode.getData().showStateContext() /*nextStateNode.getData().showStateTree(true)*/);
       }
     }
 
@@ -809,26 +843,26 @@ public class AtnState {
     boolean result = clusterConditionFailsBackward();
 
     if (result && trace) {
-      System.out.println("***Cluster condition fails (backward) for state: ***\n" + showStateTree(true));
+      System.out.println("***Cluster condition fails (backward) for state: ***\n" + showStateContext() /*showStateTree(true)*/);
     }
 
     final boolean hasClusterFlag = getRuleStep().getClusterFlag();
 
-    if (!result && hasClusterFlag) {
+    if (!result) {
       if (!result) {
         // check for contradition later in the state tree
-        result = clusterConditionFailsForward();
+        result = clusterConditionFailsForward(hasClusterFlag);
 
         if (result && trace) {
-          System.out.println("***Cluster condition fails (forward) for state: ***\n" + showStateTree(true));
+          System.out.println("***Cluster condition fails (forward) for state: ***\n" + showStateContext() /*showStateTree(true)*/);
         }
       }
-      if (!result) {
+      if (!result && hasClusterFlag) {
         // check this 'cluster' state against those on the queue
         result = removeInvalidQueuedStates(states);
 
         if (result && trace) {
-          System.out.println("***Cluster condition fails (queued) for state: ***\n" + showStateTree(true));
+          System.out.println("***Cluster condition fails (queued) for state: ***\n" + showStateContext() /*showStateTree(true)*/);
         }
       }
     }
@@ -879,6 +913,19 @@ public class AtnState {
       }
     }
 
+    if (!result) {
+      // check push states
+      for (AtnState pushState = this.getPushState(); pushState != null; pushState = pushState.getPushState()) {
+        final AtnRuleStep pushStep = pushState.getRuleStep();
+        if (curCat.equals(pushStep.getCategory())) {
+          if (pushStep.getClusterFlag()) {  // cluster flag is set
+            result = true;
+          }
+          break;
+        }
+      }
+    }
+
     return result;
   }
 
@@ -887,7 +934,7 @@ public class AtnState {
    * if found (and returning true=failed since tree will be fixed and the
    * proposed state should not be added.
    */
-  private final boolean clusterConditionFailsForward() {
+  private final boolean clusterConditionFailsForward(boolean hasClusterFlag) {
     boolean result = false;
 
     //if (!getRuleStep().getClusterFlag()) return result;
@@ -908,16 +955,18 @@ public class AtnState {
       if (forwardStateNode == null) break;
 
       // search forwardStateNode's tree for match
-      final Tree<AtnState> forwardMatchNode = findNode(forwardStateNode, curCat, tokenStart);
+      final Tree<AtnState> forwardMatchNode = findNode(forwardStateNode, curCat, tokenStart, hasClusterFlag);
       if (forwardMatchNode != null) {
-        if (trace) System.out.println("Forward cluster failure ... moving state:\n" +
-                                      forwardMatchNode.getData().showStatePath() +
-                                      "\n\tto\n" +
-                                      parentStateNode.getData().showStatePath());
+        if (hasClusterFlag) {
+          if (trace) System.out.println("Forward cluster failure ... moving state:\n" +
+                                        forwardMatchNode.getData().showStateContext() /*forwardMatchNode.getData().showStatePath()*/ +
+                                        "\n\tto\n" +
+                                        parentStateNode.getData().showStateContext() /*parentStateNode.getData().showStatePath()*/);
 
-        // prune/graft match into this state's place
-        forwardMatchNode.prune(true, true);
-        parentStateNode.addChild(forwardMatchNode);
+          // prune/graft match into this state's place
+          forwardMatchNode.prune(true, true);
+          parentStateNode.addChild(forwardMatchNode);
+        }
 
         result = true;
         break;
@@ -931,7 +980,7 @@ public class AtnState {
     return result;
   }
 
-  private final Tree<AtnState> findNode(Tree<AtnState> stateNode, String category, int tokenStart) {
+  private final Tree<AtnState> findNode(Tree<AtnState> stateNode, String category, int tokenStart, boolean requireMatch) {
     Tree<AtnState> result = null;
 
     for (Iterator<Tree<AtnState>> iter = stateNode.iterator(Tree.Traversal.DEPTH_FIRST) ; iter.hasNext() ;) {
@@ -942,12 +991,15 @@ public class AtnState {
         final int curTokenStart = curState.getInputToken().getStartIndex();
         if (curTokenStart != tokenStart) break;
 
-        if (curState.getMatched() || curState.getPushState() == curState.getParentState()) {
-          final String curCat = curState.getRuleStep().getCategory();
+        if (!requireMatch || curState.getMatched() || curState.getPushState() == curState.getParentState()) {
+          final AtnRuleStep curRuleStep = curState.getRuleStep();
+          final String curCat = curRuleStep.getCategory();
           if (category.equals(curCat)) {
-            // found match!
-            result = curNode;
-            break;
+            if (requireMatch || curRuleStep.getClusterFlag()) {
+              // found match!
+              result = curNode;
+              break;
+            }
           }
         }
       }
@@ -975,7 +1027,7 @@ public class AtnState {
 
           if (thisPrecedes) {
             // if this comes sooner, remove state and don't fail to add this
-            if (trace) System.out.println("Failed cluster condition ... removing queued state:\n" + state.showStatePath());
+            if (trace) System.out.println("Failed cluster condition ... removing queued state:\n" + state.showStateContext() /*state.showStatePath()*/);
             stateIter.remove();
           }
           else {
@@ -1001,21 +1053,38 @@ public class AtnState {
 
       final int curTokenStart = state.getInputToken().getStartIndex();
       if (curTokenStart == tokenStart) {
+        boolean foundCC = false;  // cluster contradition
+
         final String category = state.getRuleStep().getCategory();
+
         // NOTE: only conditioned on category match since clustering failure is detected across constituents.
         if (category.equals(curCat)) {
+          foundCC = true;
+        }
+        else {
+          // check queued state's push states
+          for (AtnState pushState = state.getPushState(); pushState != null; pushState = pushState.getPushState()) {
+            final AtnRuleStep pushStep = pushState.getRuleStep();
+            if (curCat.equals(pushStep.getCategory())) {
+              foundCC = pushStep.getClusterFlag();
+              break;
+            }
+          }
+        }
 
+        if (foundCC) {
           // determine which comes sooner: this or state
           final boolean thisPrecedes = this.statePrecedes(state);
 
           if (thisPrecedes) {
             // if this doesn't come sooner, remove state and don't fail to add this
-            if (trace) System.out.println("Failed cluster condition ... removing queued state:\n" + state.showStatePath());
+            if (trace) System.out.println("Failed cluster condition ... removing queued state:\n" + state.showStateContext() /*state.showStatePath()*/);
             stateIter.remove();
           }
           else {
             // else, fail this
             result = true;
+            break;
           }
         }
       }
@@ -1123,7 +1192,7 @@ public class AtnState {
       final Tree<AtnState> nextStateNode = curstate.parentStateNode.addChild(curstate);
 
       if (trace) {
-        System.out.println("match=" + matches + "\t" + curstate.showStateTree(matches));
+        System.out.println("match=" + matches + "\t" + curstate.showStateContext() /*curstate.showStateTree(matches)*/);
       }
 
       if (matches) {
@@ -1255,6 +1324,10 @@ public class AtnState {
       }
     }
 
+if (nextstate.toString().endsWith("-qList('11-5-1882'[10,19{1}](1.0))")) {
+  final boolean stopHere = true;
+}
+
     // check cluster (greedy) flag
     if (!isDup && nextstate.clusterConditionFails(states)) {
       // greedy conditions fail
@@ -1263,11 +1336,11 @@ public class AtnState {
     }
 
     if (!isDup) {
-      if (trace) System.out.println("\nQueuing State: " + nextstate.showStatePath());
+      if (trace) System.out.println("\nQueuing State: " + nextstate.showStateContext() /*nextstate.showStatePath()*/);
       states.addLast(nextstate);
     }
     else {
-      if (trace) System.out.println("\nDiscarding State (clusterFail=" + !result + "): " + nextstate.showStatePath());
+      if (trace) System.out.println("\nDiscarding State (clusterFail=" + !result + "): " + nextstate.showStateContext() /*nextstate.showStatePath()*/);
     }
 
     return result;
