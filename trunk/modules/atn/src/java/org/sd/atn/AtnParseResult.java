@@ -194,10 +194,15 @@ public class AtnParseResult {
       if (isValidEndNode(curStateNode)) {
         result.add(curState);
       }
-      else if (curState.popFailed()) {
+      else if (curState.popFailed() && result.size() > 0) {
+        //final AtnState constituentStartState = AtnStateUtil.getConstituentStartState(curState);
+        final int tokenStart = curState.getInputToken().getStartIndex();
+
         // failed pops are deeper, below potentially valid states. When we find one, we need to discount its associated parent match.
         for (AtnState parentState = curState.getParentState(); parentState != null; parentState = parentState.getParentState()) {
-          if (result.remove(parentState)) break; // only nearest parent is invalidated
+          final int parentTokenStart = parentState.getInputToken().getStartIndex();
+          if (parentTokenStart < tokenStart) break;  // only states within constituent are invalidated
+          if (result.remove(parentState)) break;     // only nearest parent is invalidated
         }
       }
     }
@@ -206,7 +211,8 @@ public class AtnParseResult {
   }
 
   private boolean isValidEndNode(Tree<AtnState> stateNode) {
-    return (stateNode.getData() == null) ? false : stateNode.getData().isValidEnd(stopList);
+    final AtnState state = stateNode.getData();
+    return (state == null) ? false : state.isValidEnd(stopList);
   }
 
   /**
