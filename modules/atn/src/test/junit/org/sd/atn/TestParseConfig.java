@@ -315,7 +315,7 @@ public class TestParseConfig extends TestCase {
     public void runTest() {
 
       //parseConfig.setVerbose("ParseConfigTest.3a".equals(name));
-      final ParseOutputCollector output = parseConfig.parse(input, parseSettings);
+      final ParseOutputCollector output = parseConfig.parse(input, parseSettings, null);
 
       if (expectedText != null) {
 

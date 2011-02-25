@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import org.sd.token.CategorizedToken;
 import org.sd.util.tree.Tree;
+import org.sd.xml.DataProperties;
 import org.sd.xml.DomNode;
 import org.sd.xml.XmlLite;
 
@@ -60,7 +61,7 @@ public class IdentityParseInterpreter implements ParseInterpreter {
   /**
    * Get the interpretations for the parse or null.
    */
-  public List<ParseInterpretation> getInterpretations(Parse parse) {
+  public List<ParseInterpretation> getInterpretations(Parse parse, DataProperties overrides) {
     final List<ParseInterpretation> result = new ArrayList<ParseInterpretation>();
     final Tree<XmlLite.Data> interpTree = asInterpTree(parse.getParseTree(), null);
     result.add(new ParseInterpretation(interpTree));

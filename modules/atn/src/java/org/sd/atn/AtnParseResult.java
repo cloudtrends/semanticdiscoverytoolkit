@@ -27,6 +27,7 @@ import java.util.Set;
 import org.sd.token.Token;
 import org.sd.util.InputContext;
 import org.sd.util.tree.Tree;
+import org.sd.xml.DataProperties;
 
 /**
  * Container for the result of a parse that holds ambiguous parses.
@@ -56,6 +57,7 @@ public class AtnParseResult {
   private LinkedList<AtnState> skipStates;
   private List<AtnRule> startRules;
   private int startRuleIndex;
+  private DataProperties overrides;
 
   private List<AtnParse> _parses;
   private int[] _parsedRange;
@@ -82,11 +84,12 @@ public class AtnParseResult {
     return firstToken.getTokenizer().getInputContext();
   }
 
-  AtnParseResult(AtnGrammar grammar, Token firstToken, AtnParseOptions options, Set<Integer> stopList) {
+  AtnParseResult(AtnGrammar grammar, Token firstToken, AtnParseOptions options, Set<Integer> stopList, DataProperties overrides) {
     this.grammar = grammar;
     this.firstToken = firstToken;
     this.options = options;
     this.stopList = stopList;
+    this.overrides = overrides;
 
     this.parse = new Tree<AtnState>(null);
     this.states = new LinkedList<AtnState>();
@@ -95,6 +98,10 @@ public class AtnParseResult {
     this.startRuleIndex = 0;
 
     this._parses = null;
+  }
+
+  public DataProperties getOverrides() {
+    return overrides;
   }
 
   /**

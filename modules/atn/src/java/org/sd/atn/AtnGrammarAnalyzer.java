@@ -165,7 +165,7 @@ public class AtnGrammarAnalyzer {
 
     if (parseRunner != null) {
       final String input = textGenerator == null ? tree.getLeafText() : textGenerator.getText(this, tree);
-      final ParseOutputCollector output = parseRunner.parseInputString(input);
+      final ParseOutputCollector output = parseRunner.parseInputString(input, null);
       result = output.getParses();
     }
 
@@ -576,7 +576,7 @@ public class AtnGrammarAnalyzer {
 
   public Tree<XmlLite.Data> asXmlTree(Tree<String> tree, TextGenerator textGenerator) {
     final Parse parse = getHardwiredParse(tree, textGenerator);
-    final List<ParseInterpretation> interps = identityInterpreter.getInterpretations(parse);
+    final List<ParseInterpretation> interps = identityInterpreter.getInterpretations(parse, null);
     final ParseInterpretation interp = interps.get(0);
     return interp.getInterpTree();
   }

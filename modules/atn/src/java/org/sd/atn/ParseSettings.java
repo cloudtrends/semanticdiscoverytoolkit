@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import org.sd.util.InputContextIterator;
+import org.sd.xml.DataProperties;
 
 /**
  * Container for settings for parsing.
@@ -46,15 +47,15 @@ public abstract class ParseSettings {
     return atnParserFlow;
   }
 
-  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator) {
-    return parse(parseConfig, inputContextIterator, null);
+  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator, DataProperties overrides) {
+    return parse(parseConfig, inputContextIterator, null, overrides);
   }
 
-  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator, ParseOutputCollector output) {
+  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator, ParseOutputCollector output, DataProperties overrides) {
 
     final InputContextIterator reconfiguredInput =  reconfigureInput(inputContextIterator, output);
     if (reconfiguredInput != null) {
-      output = parseConfig.parse(reconfiguredInput, this.compoundParserId, this.atnParserFlow, output);
+      output = parseConfig.parse(reconfiguredInput, this.compoundParserId, this.atnParserFlow, output, overrides);
     }
 
     return output;

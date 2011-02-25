@@ -211,22 +211,22 @@ public class ParseConfig {
   }
 
 
-  public ParseOutputCollector parse(InputContextIterator inputContextIterator, MultiParseSettings settings) {
-    return settings.parse(this, inputContextIterator);
+  public ParseOutputCollector parse(InputContextIterator inputContextIterator, MultiParseSettings settings, DataProperties overrides) {
+    return settings.parse(this, inputContextIterator, overrides);
   }
 
-  public ParseOutputCollector parse(InputContextIterator inputContextIterator, MultiParseSettings settings, ParseOutputCollector output) {
-    return settings.parse(this, inputContextIterator, output);
+  public ParseOutputCollector parse(InputContextIterator inputContextIterator, MultiParseSettings settings, ParseOutputCollector output, DataProperties overrides) {
+    return settings.parse(this, inputContextIterator, output, overrides);
   }
 
-  public ParseOutputCollector parse(InputContextIterator inputContextIterator, String compoundParserId, String[] flow) {
+  public ParseOutputCollector parse(InputContextIterator inputContextIterator, String compoundParserId, String[] flow, DataProperties overrides) {
     // NOTE: flow holds the ordered parser IDs within the identified compound
     //       parser to apply. When null, all parsers are applied in the order
     //       they were defined.
-    return parse(inputContextIterator, compoundParserId, flow, null);
+    return parse(inputContextIterator, compoundParserId, flow, null, overrides);
   }
 
-  public ParseOutputCollector parse(InputContextIterator inputContextIterator, String compoundParserId, String[] flow, ParseOutputCollector output) {
+  public ParseOutputCollector parse(InputContextIterator inputContextIterator, String compoundParserId, String[] flow, ParseOutputCollector output, DataProperties overrides) {
     
     // the stop list holds start positions of tokens that start parses and
     // therefore signal the end of tokens consumable for new parses. If we
@@ -246,7 +246,7 @@ public class ParseConfig {
 
       if (stopList != null) stopList.clear(); // reset for new input
 
-      output = parse(inputContext, compoundParserId, flow, output, stopList, newResults);
+      output = parse(inputContext, compoundParserId, flow, output, stopList, newResults, overrides);
     }
 
     // resolve ambiguities, if possible
@@ -263,14 +263,14 @@ public class ParseConfig {
    * by flow (ids) if non-null) over the given input (if non-null) or the
    * already configured input.
    */
-  public ParseOutputCollector parse(InputContext inputContext, String compoundParserId, String[] flow, ParseOutputCollector output, Set<Integer> stopList, List<AtnParseResult> collector) {
+  public ParseOutputCollector parse(InputContext inputContext, String compoundParserId, String[] flow, ParseOutputCollector output, Set<Integer> stopList, List<AtnParseResult> collector, DataProperties overrides) {
     ParseOutputCollector result = output;
 
     final CompoundParser compoundParser = id2CompoundParser.get(compoundParserId);
 
     if (compoundParser != null) {
       compoundParser.setVerbose(this.getVerbose());
-      result = compoundParser.parse(inputContext, flow, result, stopList, collector);
+      result = compoundParser.parse(inputContext, flow, result, stopList, collector, overrides);
     }
     else {
       if (verbose) {

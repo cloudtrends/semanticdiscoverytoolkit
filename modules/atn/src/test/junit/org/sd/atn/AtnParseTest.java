@@ -66,6 +66,6 @@ public class AtnParseTest {
   }
 
   public static final AtnParseResult parse(AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, boolean seek) {
-    return seek ? parser.seekParse(tokenizer, options, null) : parser.parse(tokenizer, options, null);
+    return seek ? parser.seekParse(tokenizer, options, null, null) : parser.parse(tokenizer, options, null, null);
   }
 }

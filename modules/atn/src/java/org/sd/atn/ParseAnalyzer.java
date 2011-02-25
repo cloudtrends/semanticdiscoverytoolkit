@@ -182,7 +182,7 @@ public class ParseAnalyzer {
 
   public List<ParseInterpretation> getInterps(Tree<String> tree, ParseInterpreter parseInterpreter) {
     final Parse parse = getHardwiredParse(tree);
-    return parseInterpreter.getInterpretations(parse);
+    return parseInterpreter.getInterpretations(parse, null);
   }
 
 

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import org.sd.token.Token;
 import org.sd.token.Tokenizer;
+import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 
 /**
@@ -59,15 +60,15 @@ public class AtnParser {
   /**
    * Parse the from the tokenizer's first token according to the options.
    */
-  public AtnParseResult parse(Tokenizer tokenizer, AtnParseOptions options, Set<Integer> stopList) {
-    return parse(tokenizer.getToken(0), options, stopList);
+  public AtnParseResult parse(Tokenizer tokenizer, AtnParseOptions options, Set<Integer> stopList, DataProperties overrides) {
+    return parse(tokenizer.getToken(0), options, stopList, overrides);
   }
 
   /**
    * Parse starting with the given token and options.
    */
-  public AtnParseResult parse(Token firstToken, AtnParseOptions options, Set<Integer> stopList) {
-    final AtnParseResult result = new AtnParseResult(grammar, firstToken, options, stopList);
+  public AtnParseResult parse(Token firstToken, AtnParseOptions options, Set<Integer> stopList, DataProperties overrides) {
+    final AtnParseResult result = new AtnParseResult(grammar, firstToken, options, stopList, overrides);
 
     // Compute at least the first parse now.
     result.continueParsing();
@@ -84,8 +85,8 @@ public class AtnParser {
    *
    * @returns The first valid full parse or null
    */
-  public AtnParseResult seekParse(Tokenizer tokenizer, AtnParseOptions options, Set<Integer> stopList) {
-    return seekParse(tokenizer.getToken(0), options, stopList);
+  public AtnParseResult seekParse(Tokenizer tokenizer, AtnParseOptions options, Set<Integer> stopList, DataProperties overrides) {
+    return seekParse(tokenizer.getToken(0), options, stopList, overrides);
   }
 
   /**
@@ -97,7 +98,7 @@ public class AtnParser {
    *
    * @returns The first valid full parse or null
    */
-  public AtnParseResult seekParse(Token firstToken, AtnParseOptions options, Set<Integer> stopList) {
+  public AtnParseResult seekParse(Token firstToken, AtnParseOptions options, Set<Integer> stopList, DataProperties overrides) {
     if (firstToken == null) return null;
 
     //NOTE: when seeking, must be able to leave unconsumed text.
@@ -107,14 +108,14 @@ public class AtnParser {
       options.setConsumeAllText(false);
     }
 
-    AtnParseResult result = new AtnParseResult(grammar, firstToken, options, stopList);
+    AtnParseResult result = new AtnParseResult(grammar, firstToken, options, stopList, overrides);
     result.continueParsing();
 
     while (result.getNumParses() == 0) {
       firstToken = firstToken.getTokenizer().getSmallestToken(firstToken.getStartIndex()).getNextToken();
       if (firstToken == null) break;
 
-      result = new AtnParseResult(grammar, firstToken, options, stopList);
+      result = new AtnParseResult(grammar, firstToken, options, stopList, overrides);
       result.continueParsing();
     }
 
@@ -124,18 +125,18 @@ public class AtnParser {
   /**
    * Seek the next parse after the given parse.
    */
-  public AtnParseResult seekNextParse(AtnParse lastParse, AtnParseOptions options, Set<Integer> stopList) {
-    return (lastParse.getNextToken() != null) ? seekParse(lastParse.getNextToken(), options, stopList) : null;
+  public AtnParseResult seekNextParse(AtnParse lastParse, AtnParseOptions options, Set<Integer> stopList, DataProperties overrides) {
+    return (lastParse.getNextToken() != null) ? seekParse(lastParse.getNextToken(), options, stopList, overrides) : null;
   }
 
   /**
    * Seek all (first) parses from the tokenizer's text.
    */
-  public List<AtnParseResult> seekAll(Tokenizer tokenizer, AtnParseOptions options, Set<Integer> stopList) {
+  public List<AtnParseResult> seekAll(Tokenizer tokenizer, AtnParseOptions options, Set<Integer> stopList, DataProperties overrides) {
     final List<AtnParseResult> result = new ArrayList<AtnParseResult>();
 
     AtnParse parse = null;
-    for (AtnParseResult parseResult = seekParse(tokenizer, options, stopList); parseResult != null; parseResult = (parse == null) ? null : seekNextParse(parse, options, stopList)) {
+    for (AtnParseResult parseResult = seekParse(tokenizer, options, stopList, overrides); parseResult != null; parseResult = (parse == null) ? null : seekNextParse(parse, options, stopList, overrides)) {
       int numParses = parseResult.getNumParses();
       if (numParses > 0) {
         int numSelectedParses = 0;

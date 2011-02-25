@@ -31,6 +31,7 @@ import org.sd.token.CategorizedToken;
 import org.sd.token.Feature;
 import org.sd.util.tree.NodePath;
 import org.sd.util.tree.Tree;
+import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.sd.xml.XmlLite;
@@ -57,7 +58,7 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
     Tree<XmlLite.Data> recordNode, Parse parse,
     Tree<String> parseNode, Tree<XmlLite.Data> parentNode,
     String fieldName, RecordTemplate recordTemplate,
-    boolean start);
+    boolean start, DataProperties overrides);
 
   /**
    * Hook on each field interpNode just after creation and before insertion
@@ -70,17 +71,17 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
   protected abstract Tree<XmlLite.Data> interpFieldNodeHook(
     Tree<XmlLite.Data> fieldNode, Parse parse,
     Tree<String> selectedNode, Tree<XmlLite.Data> parentNode,
-    FieldTemplate fieldTemplate);
+    FieldTemplate fieldTemplate, DataProperties overrides);
 
   /**
    * @return true to execute recordTemplate.interpret(parse); otherwise, false.
    */
-  protected abstract boolean foundMatchingTemplateHook(RecordTemplate recordTemplate, Parse parse);
+  protected abstract boolean foundMatchingTemplateHook(RecordTemplate recordTemplate, Parse parse, DataProperties overrides);
 
   /**
    * Hook on a final interpretation.
    */
-  protected abstract ParseInterpretation interpretationHook(ParseInterpretation interp, Parse parse);
+  protected abstract ParseInterpretation interpretationHook(ParseInterpretation interp, Parse parse, DataProperties overrides);
 
 
   private String[] classifications;
@@ -117,15 +118,15 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
   /**
    * Get the interpretations for the parse or null.
    */
-  public List<ParseInterpretation> getInterpretations(Parse parse) {
+  public List<ParseInterpretation> getInterpretations(Parse parse, DataProperties overrides) {
     List<ParseInterpretation> result = null;
 
     for (RecordTemplate topTemplate : topTemplates) {
       if (topTemplate.matches(parse)) {
-        final boolean doInterpret = foundMatchingTemplateHook(topTemplate, parse);
-        ParseInterpretation interp = doInterpret ? topTemplate.interpret(parse) : null;
+        final boolean doInterpret = foundMatchingTemplateHook(topTemplate, parse, overrides);
+        ParseInterpretation interp = doInterpret ? topTemplate.interpret(parse, overrides) : null;
         if (interp != null) {
-          interp = interpretationHook(interp, parse);
+          interp = interpretationHook(interp, parse, overrides);
         }
         if (interp != null) {
           if (result == null) result = new ArrayList<ParseInterpretation>();
@@ -294,11 +295,11 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
       return result;
     }
 
-    ParseInterpretation interpret(Parse parse) {
+    ParseInterpretation interpret(Parse parse, DataProperties overrides) {
       ParseInterpretation result = null;
       
       final Tree<String> parseTree = parse.getParseTree();
-      final Tree<XmlLite.Data> interpTree = interpret(parse, parseTree, null, name);
+      final Tree<XmlLite.Data> interpTree = interpret(parse, parseTree, null, name, overrides);
 
       if (interpTree != null) {
         // add 'rule' attribute to interp (top)
@@ -311,12 +312,13 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
     }
 
     Tree<XmlLite.Data> interpret(Parse parse, Tree<String> parseNode,
-                                 Tree<XmlLite.Data> parentNode, String fieldName) {
+                                 Tree<XmlLite.Data> parentNode, String fieldName,
+                                 DataProperties overrides) {
 
       fieldName = getNameOverride(parse, parseNode, fieldName);
       Tree<XmlLite.Data> result = XmlLite.createTagNode(fieldName);
 
-      controller.interpRecordNodeHook(result, parse, parseNode, parentNode, fieldName, this, true);
+      controller.interpRecordNodeHook(result, parse, parseNode, parentNode, fieldName, this, true, overrides);
       
       for (FieldTemplate fieldTemplate : fieldTemplates) {
         // select node(s) and extract value(s)...
@@ -326,7 +328,7 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
           final StringBuilder builder = fieldTemplate.collapse() ? new StringBuilder() : null;
 
           for (Tree<String> selectedNode : selectedNodes) {
-            final List<Tree<XmlLite.Data>> values = fieldTemplate.extract(parse, selectedNode);
+            final List<Tree<XmlLite.Data>> values = fieldTemplate.extract(parse, selectedNode, overrides);
 
             if (values != null && values.size() > 0) {
               if (builder != null) {  // collapse
@@ -337,7 +339,7 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
               }
               else {
                 for (Tree<XmlLite.Data> value : values) {
-                  value = controller.interpFieldNodeHook(value, parse, selectedNode, result, fieldTemplate);
+                  value = controller.interpFieldNodeHook(value, parse, selectedNode, result, fieldTemplate, overrides);
                   if (value != null) result.addChild(value);
                 }
               }
@@ -347,7 +349,7 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
           if (builder != null) {  // collapse
             Tree<XmlLite.Data> collapsedNode = XmlLite.createTagNode(fieldTemplate.getName());
             collapsedNode.addChild(XmlLite.createTextNode(builder.toString()));
-            collapsedNode = controller.interpFieldNodeHook(collapsedNode, parse, parseNode, result, fieldTemplate);
+            collapsedNode = controller.interpFieldNodeHook(collapsedNode, parse, parseNode, result, fieldTemplate, overrides);
             if (collapsedNode != null) result.addChild(collapsedNode);
           }
         }
@@ -358,7 +360,7 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
           result.getData().asTag().attributes.put("type", id);
         }
         if (result != null) {
-          result = controller.interpRecordNodeHook(result, parse, parseNode, parentNode, fieldName, this, false);
+          result = controller.interpRecordNodeHook(result, parse, parseNode, parentNode, fieldName, this, false, overrides);
         }
         if (result != null && parentNode != null) parentNode.addChild(result);
       }
@@ -493,8 +495,8 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
       return selector.select(parse, parseNode);
     }
 
-    List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode) {
-      return extractor.extract(parse, parseNode);
+    List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode, DataProperties overrides) {
+      return extractor.extract(parse, parseNode, overrides);
     }
 
     String extractString(Parse parse, Tree<String> parseNode) {
@@ -558,7 +560,7 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
   }
 
   private static interface NodeExtractor {
-    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode);
+    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode, DataProperties overries);
     public String extractString(Parse parse, Tree<String> parseNode);
   }
 
@@ -620,12 +622,12 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
       this.recordId = recordId;
     }
 
-    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode) {
+    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode, DataProperties overrides) {
       List<Tree<XmlLite.Data>> result = null;
 
       final RecordTemplate recordTemplate = resources.id2recordTemplate.get(recordId);
       if (recordTemplate != null) {
-        final Tree<XmlLite.Data> interpNode = recordTemplate.interpret(parse, parseNode, null, fieldTemplate.getName());
+        final Tree<XmlLite.Data> interpNode = recordTemplate.interpret(parse, parseNode, null, fieldTemplate.getName(), overrides);
         result = super.cleanup(interpNode, parse, parseNode, false);
       }
 
@@ -646,7 +648,7 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
       this.attribute = attribute;
     }
 
-    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode) {
+    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode, DataProperties overrides) {
       List<Tree<XmlLite.Data>> result = null;
 
       //todo: parameterize featureClass (currently null) if/when needed
@@ -688,7 +690,7 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
       this.subType = extractElement.getAttributeValue("subType", "tree");
     }
 
-    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode) {
+    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode, DataProperties overrides) {
       List<Tree<XmlLite.Data>> result = null;
 
       final List<ParseInterpretation> interps = ParseInterpretationUtil.getInterpretations(parseNode, classification);
@@ -737,7 +739,7 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
       this.delims = extractElement.getAttributeBoolean("delims", false);
     }
 
-    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode) {
+    public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode, DataProperties overrides) {
       return super.cleanup(XmlLite.createTextNode(getText(parseNode)), parse, parseNode, true);
     }
 
