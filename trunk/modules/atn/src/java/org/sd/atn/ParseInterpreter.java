@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.List;
+import org.sd.xml.DataProperties;
 
 /**
  * Interface for getting an interpretatin for a parse if available.
@@ -41,6 +42,6 @@ public interface ParseInterpreter {
   /**
    * Get the interpretations for the parse or null.
    */
-  public List<ParseInterpretation> getInterpretations(Parse parse);
+  public List<ParseInterpretation> getInterpretations(Parse parse, DataProperties overrides);
 
 }

@@ -127,10 +127,10 @@ public class AtnParserWrapper {
     this.minNumTokens = this.parseOptions.getAdjustInputForTokens() ? this.parser.getGrammar().computeMinNumTokens(this.parseOptions) : 1;
   }
 
-  public List<AtnParseResult> seekAll(AtnParseBasedTokenizer tokenizer, Set<Integer> stopList) {
+  public List<AtnParseResult> seekAll(AtnParseBasedTokenizer tokenizer, Set<Integer> stopList, DataProperties overrides) {
     tokenizer.setTokenizerOptions(tokenizerOptions);
 
-    final List<AtnParseResult> parseResults = parser.seekAll(tokenizer, parseOptions, stopList);
+    final List<AtnParseResult> parseResults = parser.seekAll(tokenizer, parseOptions, stopList, overrides);
 
     if (parseSelector != null && parseResults != null && parseResults.size() > 0) {
       for (AtnParseResult parseResult : parseResults) {

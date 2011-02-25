@@ -222,22 +222,26 @@ public class AtnParseRunner {
   }
 
   public ParseOutputCollector buildOutput() throws IOException {
+    return buildOutput(null);
+  }
+
+  public ParseOutputCollector buildOutput(DataProperties overrides) throws IOException {
     ParseOutputCollector output = null;
 
     final String inputString = options.getString("inputString", null);
     if (inputString != null) {
-      output = parseInputString(inputString);
+      output = parseInputString(inputString, overrides);
     }
     else {
       final String inputLines = options.getString("inputLines", null);
       if (inputLines != null) {
-        output = parseLines(new File(inputLines));
+        output = parseLines(new File(inputLines), overrides);
       }
       else {
         final String inputHtml = options.getString("inputHtml", null);
         if (inputHtml != null) {
           final String diffHtml = options.getString("diffHtml", null);
-          output = parseHtml(new File(inputHtml), diffHtml == null ? null : new File(diffHtml));
+          output = parseHtml(new File(inputHtml), diffHtml == null ? null : new File(diffHtml), overrides);
         }
       }
     }
@@ -363,15 +367,15 @@ public class AtnParseRunner {
     return result;
   }
 
-  public ParseOutputCollector parseInputString(String inputString) throws IOException {
+  public ParseOutputCollector parseInputString(String inputString, DataProperties overrides) throws IOException {
     final FileContext fileContext = new FileContext(new String[]{inputString}, WhitespacePolicy.HYPERTRIM);
-    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), InputUpdateStrategy.RESET, null);
+    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), InputUpdateStrategy.RESET, null, overrides);
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputString, false, false, false, null, null, null);
     output.setParseSourceInfo(sourceInfo);
     return output;
   }
 
-  public ParseOutputCollector parseLines(File inputLines) throws IOException {
+  public ParseOutputCollector parseLines(File inputLines, DataProperties overrides) throws IOException {
     final FileContext fileContext = new FileContext(inputLines, WhitespacePolicy.HYPERTRIM);
 
     //todo: parameterize whether to broaden the scope of the iterator
@@ -379,7 +383,7 @@ public class AtnParseRunner {
     //      - if paragraphs, then BROADEN
     final InputUpdateStrategy inputUpdateStrategy = InputUpdateStrategy.RESET;
 
-    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), inputUpdateStrategy, null);
+    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), inputUpdateStrategy, null, overrides);
 
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputLines, false, false);
     output.setParseSourceInfo(sourceInfo);
@@ -387,7 +391,7 @@ public class AtnParseRunner {
     return output;
   }
 
-  public ParseOutputCollector parseHtml(File inputHtml, File diffHtml) throws IOException {
+  public ParseOutputCollector parseHtml(File inputHtml, File diffHtml, DataProperties overrides) throws IOException {
     //todo: parameterize textBlock flag
     final boolean textBlock = false;
 
@@ -397,7 +401,7 @@ public class AtnParseRunner {
     final InputUpdateStrategy inputUpdateStrategy = InputUpdateStrategy.XML;
 
     final DomContextIterator inputContextIterator = DomContextIteratorFactory.getDomContextIterator(inputHtml, diffHtml, true, strategy);
-    final ParseOutputCollector result = parseInput(inputContextIterator, inputUpdateStrategy, null);
+    final ParseOutputCollector result = parseInput(inputContextIterator, inputUpdateStrategy, null, overrides);
 
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputHtml, true, true);
     if (diffHtml != null) sourceInfo.setDiffString(diffHtml.getAbsolutePath());
@@ -406,9 +410,9 @@ public class AtnParseRunner {
     return result;
   }
 
-  public ParseOutputCollector parseDomNode(DomNode domNode, boolean isHtml, ParseOutputCollector priorOutput) {
+  public ParseOutputCollector parseDomNode(DomNode domNode, boolean isHtml, ParseOutputCollector priorOutput, DataProperties overrides) {
     final DomContextIterator inputContextIterator = DomContextIteratorFactory.getDomContextIterator(domNode);
-    final ParseOutputCollector result = parseInput(inputContextIterator, InputUpdateStrategy.XML, priorOutput);
+    final ParseOutputCollector result = parseInput(inputContextIterator, InputUpdateStrategy.XML, priorOutput, overrides);
     if (priorOutput == null) {
       final ParseSourceInfo sourceInfo = new ParseSourceInfo(domNode.getTextContent(), true, isHtml, false, null, null, null);
       result.setParseSourceInfo(sourceInfo);
@@ -416,7 +420,7 @@ public class AtnParseRunner {
     return result;
   }
 
-  protected ParseOutputCollector parseInput(InputContextIterator inputContextIterator, InputUpdateStrategy inputUpdateStrategy, ParseOutputCollector result) {
+  protected ParseOutputCollector parseInput(InputContextIterator inputContextIterator, InputUpdateStrategy inputUpdateStrategy, ParseOutputCollector result, DataProperties overrides) {
 
     boolean didOne = false;
 
@@ -427,7 +431,7 @@ public class AtnParseRunner {
         inputContextIterator = updateInput(inputContextIterator, inputUpdateStrategy, result);
       }
 
-      result = parseConfig.parse(inputContextIterator, parserFlow.getFlowId(), parserFlow.getParserIds(true), result);
+      result = parseConfig.parse(inputContextIterator, parserFlow.getFlowId(), parserFlow.getParserIds(true), result, overrides);
       didOne = true;
     }
 

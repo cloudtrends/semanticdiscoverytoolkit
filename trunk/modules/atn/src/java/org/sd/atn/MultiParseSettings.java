@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.List;
 import org.sd.util.InputContextIterator;
+import org.sd.xml.DataProperties;
 
 /**
  * Container for settings for multi-pass parsing.
@@ -44,13 +45,13 @@ public class MultiParseSettings {
     return parseSettings;
   }
 
-  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator) {
-    return parse(parseConfig, inputContextIterator, null);
+  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator, DataProperties overrides) {
+    return parse(parseConfig, inputContextIterator, null, overrides);
   }
 
-  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator, ParseOutputCollector output) {
+  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator, ParseOutputCollector output, DataProperties overrides) {
     for (ParseSettings parseSettings : this.parseSettings) {
-      output = parseSettings.parse(parseConfig, inputContextIterator, output);
+      output = parseSettings.parse(parseConfig, inputContextIterator, output, overrides);
     }
     return output;
   }

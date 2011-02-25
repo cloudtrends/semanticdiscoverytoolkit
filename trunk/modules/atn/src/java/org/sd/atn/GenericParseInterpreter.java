@@ -27,6 +27,7 @@ import org.sd.token.CategorizedToken;
 import org.sd.token.Feature;
 import org.sd.util.tree.NodePath;
 import org.sd.util.tree.Tree;
+import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.sd.xml.XmlLite;
@@ -76,7 +77,7 @@ public class GenericParseInterpreter implements ParseInterpreter {
   /**
    * Get the interpretations for the parse or null.
    */
-  public List<ParseInterpretation> getInterpretations(Parse parse) {
+  public List<ParseInterpretation> getInterpretations(Parse parse, DataProperties overrides) {
     List<ParseInterpretation> result = null;
 
     final List<Tree<XmlLite.Data>> interpTrees = fields.getInterpretationTrees(parse.getParseTree());

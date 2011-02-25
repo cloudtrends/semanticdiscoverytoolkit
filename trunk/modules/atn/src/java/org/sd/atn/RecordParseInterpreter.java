@@ -31,6 +31,7 @@ import org.sd.token.CategorizedToken;
 import org.sd.token.Feature;
 import org.sd.util.tree.NodePath;
 import org.sd.util.tree.Tree;
+import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.sd.xml.XmlLite;
@@ -55,14 +56,14 @@ public class RecordParseInterpreter extends TemplateParseInterpreter {
   /**
    * @return true to execute recordTemplate.interpret(parse); otherwise, false.
    */
-  protected boolean foundMatchingTemplateHook(RecordTemplate recordTemplate, Parse parse) {
+  protected boolean foundMatchingTemplateHook(RecordTemplate recordTemplate, Parse parse, DataProperties overrides) {
     return true;
   }
 
   /**
    * Hook on a final interpretation.
    */
-  protected ParseInterpretation interpretationHook(ParseInterpretation interp, Parse parse) {
+  protected ParseInterpretation interpretationHook(ParseInterpretation interp, Parse parse, DataProperties overrides) {
     return interp;
   }
 
@@ -79,7 +80,7 @@ public class RecordParseInterpreter extends TemplateParseInterpreter {
   protected Tree<XmlLite.Data> interpRecordNodeHook(Tree<XmlLite.Data> recordNode, Parse parse,
                                                     Tree<String> parseNode, Tree<XmlLite.Data> parentNode,
                                                     String fieldName, RecordTemplate recordTemplate,
-                                                    boolean start) {
+                                                    boolean start, DataProperties overrides) {
     if (trace) trace("record", recordNode, fieldName, start);
 
     return recordNode;
@@ -95,7 +96,7 @@ public class RecordParseInterpreter extends TemplateParseInterpreter {
    */
   protected Tree<XmlLite.Data> interpFieldNodeHook(Tree<XmlLite.Data> fieldNode, Parse parse,
                                                    Tree<String> selectedNode, Tree<XmlLite.Data> parentNode,
-                                                   FieldTemplate fieldTemplate) {
+                                                   FieldTemplate fieldTemplate, DataProperties overrides) {
     if (trace) trace("field", fieldNode, fieldTemplate.getName(), null);
 
     return fieldNode;
