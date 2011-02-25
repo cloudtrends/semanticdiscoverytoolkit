@@ -357,8 +357,15 @@ public class Parse implements Publishable, Serializable {
             final int startPos = cToken.token.getStartIndex() - zeroIndex;
             final int endPos = cToken.token.getEndIndex() - zeroIndex;
 
-            final int adjustment = startPos < offset[0] ? (offset[0] + zeroIndex) : 0;
-            final Token lToken = tokenizer.buildToken(startPos + adjustment, endPos + adjustment);
+            int adjustment = startPos < offset[0] ? (offset[0] + zeroIndex) : 0;
+            Token lToken = tokenizer.buildToken(startPos + adjustment, endPos + adjustment);
+
+            if (lToken == null) {
+              //todo: this is a hack for a special case that fails. find/fix the underlying problem!
+              adjustment = 0;
+              lToken = tokenizer.buildToken(startPos, endPos);
+            }
+
             if (adjustment == 0) offset[0] = startPos;
 
             if (cToken.token.hasFeatures()) {
