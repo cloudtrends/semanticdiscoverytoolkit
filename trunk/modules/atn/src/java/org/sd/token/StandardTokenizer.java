@@ -213,8 +213,8 @@ public class StandardTokenizer implements Tokenizer {
               curBreak = options.getSymbolBreak();
             }
             else {
-              //e.g. punctuation
-              curBreak = Break.NO_BREAK;
+              //e.g. embedded non-symbol punctuation
+              curBreak = options.getEmbeddedPunctuationBreak();
             }
           }
           else if (curChar == '"' || curChar == '(' || curChar == '[' || curChar == '{' || curChar == '<' || curChar == '\'') {
