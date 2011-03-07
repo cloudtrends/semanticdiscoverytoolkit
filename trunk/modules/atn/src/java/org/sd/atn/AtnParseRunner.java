@@ -489,6 +489,7 @@ public class AtnParseRunner {
     // Properties
     //
     //   parseConfig -- (required) path to data properties (config) file (xml)
+    //   supplementalConfig -- (optional) semicolon delimited list of paths to supplemental parse config files
     //   resourcesDir -- (required) path to resources (e.g. "${HOME}/co/ancestry/resources")
     //
     //   inputLines -- path to input file whose lines are to be parsed
@@ -516,6 +517,8 @@ public class AtnParseRunner {
     //   showResults -- (optional, default=true) true to show results on console
     //   briefResults -- (optional, default=true) true to show brief (instead of full) result output on console
     //   numberKeys -- (optional, default=true) true to show numbered group and extraction keys instead of xpaths
+    //
+    //   args -- (optional) path to .properties file containing options
     //
 
     final DataProperties dataProperties = new DataProperties(args);

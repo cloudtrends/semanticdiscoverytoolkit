@@ -19,16 +19,23 @@
 package org.sd.atn;
 
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.sd.token.Normalizer;
 import org.sd.token.StandardNormalizer;
 import org.sd.token.StandardNormalizerOptions;
 import org.sd.token.Token;
+import org.sd.xml.DataProperties;
+import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
+import org.sd.xml.DomUtil;
+import org.sd.xml.XmlFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -39,6 +46,37 @@ import org.w3c.dom.NodeList;
  */
 public class AtnGrammar {
   
+  /**
+   * Given a dom element identifying a grammar, get the identified
+   * grammar element.
+   * <p>
+   * Note that this is either the given element itself (when it has
+   * child nodes defining the grammar) or it is the top node loaded
+   * from the grammar file identified by the grammarIdElt's text.
+   */
+  public static final DomElement getGrammarElement(DomElement grammarIdElt) {
+    DomElement grammarElement = grammarIdElt;
+
+    if (grammarIdElt != null) {
+      if (DomUtil.getFirstChild(grammarIdElt) == null) {
+        final DataProperties dataProperties = grammarElement.getDataProperties();
+        final String grammarFilename = grammarIdElt.getTextContent();
+        final File grammarFile = dataProperties == null ? new File(grammarFilename) : dataProperties.getWorkingFile(grammarFilename, "workingDir");
+
+        try {
+          final DomDocument domDocument = XmlFactory.loadDocument(grammarFile, false, dataProperties);
+          grammarElement = (DomElement)domDocument.getDocumentElement();
+        }
+        catch (IOException e) {
+          throw new IllegalStateException(e);
+        }
+      }
+    }
+
+    return grammarElement;
+  }
+
+
   private StandardNormalizer defaultNormalizer;
   StandardNormalizer getDefaultNormalizer() {
     return defaultNormalizer;
@@ -120,15 +158,28 @@ public class AtnGrammar {
     // default to no normalization
     this.defaultNormalizer = null;
 
-    // load normalizers
-    this.id2Normalizer = loadNormalizers(grammarNode);
+    this.id2Normalizer = new HashMap<String, Normalizer>();
     resourceManager.setId2Normalizer(id2Normalizer);
 
+    this.id2TokenFilter = new HashMap<String, TokenFilter>();
+    this.cat2Classifiers = new HashMap<String, List<AtnStateTokenClassifier>>();
+
+    this.startRules = new ArrayList<AtnRule>();
+
+    this.cat2Rules = new HashMap<String, List<AtnRule>>();
+
+    doSupplement(grammarNode);
+  }
+  
+  private final void doSupplement(DomElement grammarNode) {
+    // load normalizers
+    loadNormalizers(grammarNode);
+
     // load tokenFilters
-    this.id2TokenFilter = loadTokenFilters(grammarNode);
+    loadTokenFilters(grammarNode);
 
     // load classifiers
-    this.cat2Classifiers = loadClassifiers(grammarNode, id2Normalizer);
+    loadClassifiers(grammarNode);
 
     // load rules
     final DomElement rulesNode = (DomElement)grammarNode.selectSingleNode("rules");
@@ -137,8 +188,16 @@ public class AtnGrammar {
       throw new IllegalArgumentException("Grammar must have 'rules'!");
     }
 
-    this.startRules = new ArrayList<AtnRule>();
-    this.cat2Rules = loadRules(rulesNode, startRules);
+    loadRules(rulesNode);
+  }
+
+  /**
+   * Supplement this grammar with additional configuration formatted the same
+   * as an initialization node.
+   */
+  public void supplement(DomNode supplementNode) {
+    final DomElement grammarElement = getGrammarElement((DomElement)supplementNode);
+    doSupplement(grammarElement);
   }
 
   public List<AtnRule> getStartRules(AtnParseOptions parseOptions) {
@@ -255,8 +314,7 @@ public class AtnGrammar {
     return result;
   }
 
-  private Map<String, Normalizer> loadNormalizers(DomNode grammarNode) {
-    final Map<String, Normalizer> result = new HashMap<String, Normalizer>();
+  private void loadNormalizers(DomNode grammarNode) {
 
     NodeList normalizerNodes = grammarNode.selectNodes("normalizer");
     for (int i = 0; i < normalizerNodes.getLength(); ++i) {
@@ -266,32 +324,26 @@ public class AtnGrammar {
       final StandardNormalizer normalizer = new StandardNormalizer(options);
 
       final String normalizerId = normalizerElement.getAttribute("id");
-      result.put(normalizerId, normalizer);
+      this.id2Normalizer.put(normalizerId, normalizer);
 
       if (normalizerElement.getAttributeBoolean("default", false)) {
         defaultNormalizer = normalizer;
       }
     }
-
-    return result;
   }
 
-  private Map<String, TokenFilter> loadTokenFilters(DomNode grammarNode) {
-    final Map<String, TokenFilter> result = new HashMap<String, TokenFilter>();
+  private void loadTokenFilters(DomNode grammarNode) {
 
     final NodeList tokenFilterNodes = grammarNode.selectNodes("tokenFilter");
     for (int i = 0; i < tokenFilterNodes.getLength(); ++i) {
       final DomElement tokenFilterElement = (DomElement)tokenFilterNodes.item(i);
       final TokenFilter tokenFilter = (TokenFilter)resourceManager.getResource(tokenFilterElement);
       final String tokenFilterId = tokenFilterElement.getAttribute("id");
-      result.put(tokenFilterId, tokenFilter);
+      this.id2TokenFilter.put(tokenFilterId, tokenFilter);
     }
-
-    return result;
   }
 
-  private Map<String, List<AtnStateTokenClassifier>> loadClassifiers(DomElement grammarNode, Map<String, Normalizer> id2Normalizer) {
-    Map<String, List<AtnStateTokenClassifier>> result = new HashMap<String, List<AtnStateTokenClassifier>>();
+  private void loadClassifiers(DomNode grammarNode) {
 
     //
     // Classifier elements under the grammar node should have the form:
@@ -323,13 +375,13 @@ public class AtnGrammar {
       for (int i = 0; i < classifierNodes.getLength(); ++i) {
         final DomElement classifierElement = (DomElement)classifierNodes.item(i);
         final AtnStateTokenClassifier classifier =
-          (AtnStateTokenClassifier)resourceManager.getResource(classifierElement, new Object[] { id2Normalizer });
+          (AtnStateTokenClassifier)resourceManager.getResource(classifierElement, new Object[] { this.id2Normalizer });
         final String classifierId = classifierElement.getLocalName();
 
-        List<AtnStateTokenClassifier> classifiers = result.get(classifierId);
+        List<AtnStateTokenClassifier> classifiers = this.cat2Classifiers.get(classifierId);
         if (classifiers == null) {
           classifiers = new ArrayList<AtnStateTokenClassifier>();
-          result.put(classifierId, classifiers);
+          this.cat2Classifiers.put(classifierId, classifiers);
         }
 
         if (classifier != null) {
@@ -340,12 +392,9 @@ public class AtnGrammar {
         }
       }
     }
-
-    return result;
   }
 
-  private Map<String, List<AtnRule>> loadRules(DomElement rulesElement, List<AtnRule> startRules) {
-    final Map<String, List<AtnRule>> result = new HashMap<String, List<AtnRule>>();
+  private void loadRules(DomElement rulesElement) {
 
     final NodeList childNodes = rulesElement.getChildNodes();
     for (int i = 0; i < childNodes.getLength(); ++i) {
@@ -355,17 +404,29 @@ public class AtnGrammar {
       final DomElement ruleElement = (DomElement)curNode;
       final AtnRule rule = new AtnRule(this, ruleElement, resourceManager);
       final String ruleCategory = ruleElement.getLocalName();
+      final boolean override = ruleElement.getAttributeBoolean("override", false);
 
-      List<AtnRule> rules = result.get(ruleCategory);
+      List<AtnRule> rules = this.cat2Rules.get(ruleCategory);
       if (rules == null) {
         rules = new ArrayList<AtnRule>();
-        result.put(ruleCategory, rules);
+        this.cat2Rules.put(ruleCategory, rules);
       }
+      else if (override) {
+        final String id = rule.getRuleId();
+
+        // find and remove the rule being overridden
+        for (Iterator<AtnRule> ruleIter = rules.iterator(); ruleIter.hasNext(); ) {
+          final AtnRule curRule = ruleIter.next();
+          if (id.equals(curRule.getRuleId())) {
+            ruleIter.remove();
+            break;
+          }
+        }
+      }
+
       rules.add(rule);
 
-      if (rule.isStart()) startRules.add(rule);
+      if (rule.isStart()) this.startRules.add(rule);
     }
-
-    return result;
   }
 }

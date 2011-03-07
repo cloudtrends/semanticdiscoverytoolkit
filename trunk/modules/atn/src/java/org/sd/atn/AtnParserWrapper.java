@@ -19,16 +19,11 @@
 package org.sd.atn;
 
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import org.sd.token.StandardTokenizerOptions;
 import org.sd.xml.DataProperties;
-import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
-import org.sd.xml.DomUtil;
-import org.sd.xml.XmlFactory;
 
 /**
  * A container for an ATN Parser with its options and strategies.
@@ -88,24 +83,10 @@ public class AtnParserWrapper {
     }
 
     final DomElement grammarFileElement = (DomElement)parserElement.selectSingleNode("grammar");
-    DomElement grammarElement = grammarFileElement;
+    final DomElement grammarElement = AtnGrammar.getGrammarElement(grammarFileElement);
 
     if (grammarElement == null) {
       throw new IllegalArgumentException("Parser element must have 'grammar' child!");
-    }
-
-    if (DomUtil.getFirstChild(grammarFileElement) == null) {
-      final DataProperties dataProperties = grammarElement.getDataProperties();
-      final String grammarFilename = grammarFileElement.getTextContent();
-      File grammarFile = dataProperties == null ? new File(grammarFilename) : dataProperties.getWorkingFile(grammarFilename, "workingDir");
-
-      try {
-        final DomDocument domDocument = XmlFactory.loadDocument(grammarFile, false, dataProperties);
-        grammarElement = (DomElement)domDocument.getDocumentElement();
-      }
-      catch (IOException e) {
-        throw new IllegalStateException(e);
-      }
     }
 
     this.parser = new AtnParser(grammarElement, resourceManager);

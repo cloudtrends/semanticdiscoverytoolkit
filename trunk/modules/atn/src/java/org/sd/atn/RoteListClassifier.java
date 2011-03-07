@@ -30,6 +30,7 @@ import org.sd.atn.ResourceManager;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
 import org.sd.xml.DomElement;
+import org.sd.xml.DomNode;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -72,6 +73,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     this.term2attributes = new HashMap<String, Map<String, String>>();
     this.caseSensitive = false;
 
+    doSupplement(classifierIdElement);
+  }
+
+  private final void doSupplement(DomNode classifierIdElement) {
     final DomElement termsNode = (DomElement)classifierIdElement.selectSingleNode("terms");
 
     if (termsNode != null) {
@@ -88,6 +93,14 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   public boolean isEmpty() {
     return term2attributes == null || term2attributes.size() == 0;
   }
+
+  /**
+   * Supplement this classifier with the given dom node.
+   */
+  public void supplement(DomNode supplementNode) {
+    doSupplement(supplementNode);
+  }
+
 
   public boolean doClassify(Token token) {
     
