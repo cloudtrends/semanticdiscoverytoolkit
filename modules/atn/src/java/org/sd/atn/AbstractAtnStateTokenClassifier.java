@@ -24,6 +24,7 @@ import org.sd.token.AbstractTokenClassifier;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
 import org.sd.xml.DomElement;
+import org.sd.xml.DomNode;
 
 /**
  * Abstract implementation of the AtnStateTokenClassifier interface.
@@ -71,5 +72,8 @@ public abstract class AbstractAtnStateTokenClassifier extends AbstractTokenClass
    */
   public MatchResult classify(Token token, AtnState atnState) {
     return new MatchResult(super.classify(token), consume);
+  }
+
+  public void supplement(DomNode supplementNode) {
   }
 }

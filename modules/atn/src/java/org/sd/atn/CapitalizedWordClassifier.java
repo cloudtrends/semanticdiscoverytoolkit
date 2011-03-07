@@ -39,6 +39,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
   
   private boolean excludeAllCaps;
   private Set<String> stopWords;
+  private boolean lowerCaseInitial;
 
   public CapitalizedWordClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
     super(classifierIdElement, resourceManager, id2Normalizer);
@@ -46,16 +47,27 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     // ignore any maxWordCount specified by the element and set to 1
     super.setMaxWordCount(1);
 
+    this.lowerCaseInitial = true;
+    this.excludeAllCaps = false;
+    this.stopWords = null;
+
+    doSupplement(classifierIdElement);
+  }
+
+  private final void doSupplement(DomNode classifierIdElement) {
+    // attribute to accept 'lowerCaseInitial' (default=true)
+    this.lowerCaseInitial = classifierIdElement.getAttributeBoolean("lowerCaseInitial", this.lowerCaseInitial);
+
     // iff <excludeAllCaps>true</excludeAllCaps>, then don't treat all caps words as capitalized
     final DomElement eacNode = (DomElement)classifierIdElement.selectSingleNode("excludeAllCaps");
-    this.excludeAllCaps = eacNode != null ? "true".equalsIgnoreCase(eacNode.getTextContent()) : false;
+    this.excludeAllCaps = eacNode != null ? "true".equalsIgnoreCase(eacNode.getTextContent()) : this.excludeAllCaps;
 
     // NOTE: super loads acceptable non-capitalized words  <terms><term>...</term><term>...</term></terms>
 
     // load stopwords if specified
     final DomElement stopwords = (DomElement)classifierIdElement.selectSingleNode("stopwords");
     if (stopwords != null) {
-      this.stopWords = new HashSet<String>();
+      if (this.stopWords == null) this.stopWords = new HashSet<String>();
       final NodeList stopwordNodes = stopwords.getChildNodes();
       if (stopwordNodes != null) {
         for (int nodeNum = 0; nodeNum < stopwordNodes.getLength(); ++nodeNum) {
@@ -73,6 +85,22 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
         }
       }
     }
+  }
+
+  /**
+   * Supplement this classifier with the given dom node.
+   */
+  public void supplement(DomNode supplementNode) {
+    super.supplement(supplementNode);
+    doSupplement(supplementNode);
+  }
+
+  public void setLowerCaseInitial(boolean lowerCaseInitial) {
+    this.lowerCaseInitial = lowerCaseInitial;
+  }
+
+  public boolean getLowerCaseInitial() {
+    return lowerCaseInitial;
   }
 
   public boolean doClassify(Token token) {
@@ -95,7 +123,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
       result = super.doClassify(token);
 
       // accept a single letter followed by a '.', even if not capitalized.
-      if (!result && tokenText.length() == 1) {
+      if (!result && lowerCaseInitial && tokenText.length() == 1) {
         final String postDelim = token.getPostDelim();
         if (postDelim.length() > 0 && postDelim.charAt(0) == '.') {
           result = true;

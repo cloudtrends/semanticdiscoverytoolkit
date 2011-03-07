@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,6 +34,7 @@ import org.sd.util.InputContextIterator;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
+import org.sd.xml.DomNode;
 import org.sd.xml.XmlFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -53,7 +55,22 @@ public class ParseConfig {
 
     final DomDocument domDocument = XmlFactory.loadDocument(parseConfigFile, false, options);
     final DomElement parseElement = (DomElement)domDocument.getDocumentElement();
-    return new ParseConfig(parseElement);
+
+    final ParseConfig result = new ParseConfig(parseElement);
+
+    // add-in optional supplements
+    final String supplementsString = options.getString("supplementalConfig", null);
+    if (supplementsString != null) {
+      final String[] supplements = supplementsString.split("\\s*;\\s*");
+      for (String supplement : supplements) {
+        final File supplementFile = options.getWorkingFile(supplement, "workingDir");
+        final DomDocument supDocument = XmlFactory.loadDocument(supplementFile, false, options);
+        final DomElement supElement = (DomElement)supDocument.getDocumentElement();
+        result.supplement(supElement);
+      }
+    }
+
+    return result;
   }
 
 
@@ -136,6 +153,92 @@ public class ParseConfig {
     resourceManager.close();
   }
 
+
+  /**
+   * Supplement resources according to the given supplement element.
+   */
+  public void supplement(DomElement supplementElement) {
+    //
+    // <supplement>
+    //   <classifier parser="compoundID:parserID" id="classifierID" ...supplemental attributes..>...supplemental elements...</classifier>
+    //   <grammar parser="compoundID:parserID">...supplemental file or elements...</grammar>
+    // </supplement>
+    //
+
+    final NodeList supplementNodes = supplementElement.getChildNodes();
+    for (int nodeNum = 0; nodeNum < supplementNodes.getLength(); ++nodeNum) {
+      final DomNode supplementNode = (DomNode)supplementNodes.item(nodeNum);
+      if (supplementNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
+
+      final String directive = supplementNode.getNodeName().toLowerCase();
+      final String parserId = supplementNode.getAttributeValue("parser");
+
+      boolean supplemented = false;
+
+      final AtnGrammar grammar = getGrammar(parserId);
+      if (grammar != null) {
+
+        // 'classifier' supplement
+        if ("classifier".equals(directive)) {
+          final String classifierId = supplementNode.getAttributeValue("id");
+          final List<AtnStateTokenClassifier> classifiers = grammar.getClassifiers(classifierId);
+          if (classifiers != null) {
+            for (AtnStateTokenClassifier classifier : classifiers) {
+              classifier.supplement(supplementNode);
+              supplemented = true;
+            }
+          }
+        }
+
+        // 'grammar' supplement
+        else if ("grammar".equals(directive)) {
+          grammar.supplement(supplementNode);
+          supplemented = true;
+        }
+      }
+
+      if (!supplemented) {
+        System.err.println(new Date() + " : ***WARNING : ParseConfig unable to supplement " +
+                           directive + " for parserId '" + parserId + "'");
+      }
+    }
+  }
+
+
+  /**
+   * Given an ID of the form "compoundID:parserID", get the identified parser.
+   */
+  public AtnParser getParser(String complexID) {
+    AtnParser result = null;
+
+    if (complexID != null) {
+      final String[] parserIds = complexID.split("\\s*:\\s*");
+      if (parserIds.length == 2) {
+        final String cpID = parserIds[0];
+        final String pID = parserIds[1];
+        final CompoundParser compoundParser = getCompoundParser(cpID);
+        if (compoundParser != null) {
+          final AtnParserWrapper parserWrapper = compoundParser.getParserWrapper(pID);
+          if (parserWrapper != null) {
+            result = parserWrapper.getParser();
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  public AtnGrammar getGrammar(String complexID) {
+    AtnGrammar result = null;
+
+    final AtnParser parser = getParser(complexID);
+    if (parser != null) {
+      result = parser.getGrammar();
+    }
+
+    return result;
+  }
 
   public String[] getCompoundParserIds() {
     if (compoundParserIds == null) {

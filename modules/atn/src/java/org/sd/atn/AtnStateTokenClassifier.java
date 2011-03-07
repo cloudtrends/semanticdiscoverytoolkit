@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import org.sd.token.Token;
+import org.sd.xml.DomNode;
 
 /**
  * Interface for classifying a token in context of its AtnState.
@@ -32,5 +33,10 @@ public interface AtnStateTokenClassifier {
    * Classify the given token in the context of its AtnState.
    */
   public MatchResult classify(Token token, AtnState atnState);
+
+  /**
+   * Supplement this classifier with the given dom node.
+   */
+  public void supplement(DomNode supplementNode);
 
 }
