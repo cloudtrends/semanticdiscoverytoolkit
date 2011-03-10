@@ -162,6 +162,9 @@ public class ParseConfig {
     // <supplement>
     //   <classifier parser="compoundID:parserID" id="classifierID" ...supplemental attributes..>...supplemental elements...</classifier>
     //   <grammar parser="compoundID:parserID">...supplemental file or elements...</grammar>
+    //   <interpreter parser="compoundID:parserID" mode="supplement|override">
+    //      ...
+    //   </interpreter>
     // </supplement>
     //
 
@@ -175,24 +178,44 @@ public class ParseConfig {
 
       boolean supplemented = false;
 
-      final AtnGrammar grammar = getGrammar(parserId);
-      if (grammar != null) {
+      final AtnParserWrapper parserWrapper = getParserWrapper(parserId);
+      if (parserWrapper != null) {
+        final AtnGrammar grammar = parserWrapper.getGrammar();
 
         // 'classifier' supplement
         if ("classifier".equals(directive)) {
-          final String classifierId = supplementNode.getAttributeValue("id");
-          final List<AtnStateTokenClassifier> classifiers = grammar.getClassifiers(classifierId);
-          if (classifiers != null) {
-            for (AtnStateTokenClassifier classifier : classifiers) {
-              classifier.supplement(supplementNode);
-              supplemented = true;
+          if (grammar != null) {
+            final String classifierId = supplementNode.getAttributeValue("id");
+            final List<AtnStateTokenClassifier> classifiers = grammar.getClassifiers(classifierId);
+            if (classifiers != null) {
+              for (AtnStateTokenClassifier classifier : classifiers) {
+                classifier.supplement(supplementNode);
+                supplemented = true;
+              }
             }
           }
         }
 
         // 'grammar' supplement
         else if ("grammar".equals(directive)) {
-          grammar.supplement(supplementNode);
+          if (grammar != null) {
+            grammar.supplement(supplementNode);
+            supplemented = true;
+          }
+        }
+
+        // 'interpreter' supplement
+        else if ("interpreter".equals(directive)) {
+          final String mode = supplementNode.getAttributeValue("mode", "supplement");
+          final AtnParseOptions parseOptions = parserWrapper.getParseOptions();
+
+          if ("supplement".equals(mode)) {
+            parseOptions.supplementParseInterpreter(supplementNode.asDomElement());
+          }
+          else if ("override".equals(mode)) {
+            parseOptions.setParseInterpreter(supplementNode.asDomElement());
+          }
+
           supplemented = true;
         }
       }
@@ -206,10 +229,10 @@ public class ParseConfig {
 
 
   /**
-   * Given an ID of the form "compoundID:parserID", get the identified parser.
+   * Given an ID of the form "compoundID:parserID", get the identified parser wrapper.
    */
-  public AtnParser getParser(String complexID) {
-    AtnParser result = null;
+  public AtnParserWrapper getParserWrapper(String complexID) {
+    AtnParserWrapper result = null;
 
     if (complexID != null) {
       final String[] parserIds = complexID.split("\\s*:\\s*");
@@ -218,23 +241,9 @@ public class ParseConfig {
         final String pID = parserIds[1];
         final CompoundParser compoundParser = getCompoundParser(cpID);
         if (compoundParser != null) {
-          final AtnParserWrapper parserWrapper = compoundParser.getParserWrapper(pID);
-          if (parserWrapper != null) {
-            result = parserWrapper.getParser();
-          }
+          result = compoundParser.getParserWrapper(pID);
         }
       }
-    }
-
-    return result;
-  }
-
-  public AtnGrammar getGrammar(String complexID) {
-    AtnGrammar result = null;
-
-    final AtnParser parser = getParser(complexID);
-    if (parser != null) {
-      result = parser.getGrammar();
     }
 
     return result;

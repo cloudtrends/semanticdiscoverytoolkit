@@ -108,6 +108,19 @@ public class AtnParserWrapper {
     this.minNumTokens = this.parseOptions.getAdjustInputForTokens() ? this.parser.getGrammar().computeMinNumTokens(this.parseOptions) : 1;
   }
 
+  /**
+   * Convenience method to get the parser's grammar.
+   */
+  public AtnGrammar getGrammar() {
+    AtnGrammar result = null;
+
+    if (parser != null) {
+      result = parser.getGrammar();
+    }
+
+    return result;
+  }
+
   public List<AtnParseResult> seekAll(AtnParseBasedTokenizer tokenizer, Set<Integer> stopList, DataProperties overrides) {
     tokenizer.setTokenizerOptions(tokenizerOptions);
 

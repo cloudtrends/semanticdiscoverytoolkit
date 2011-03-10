@@ -93,6 +93,11 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
     this.resources = new InnerResources(resourceManager);
     this.topTemplates = new ArrayList<RecordTemplate>();
 
+    load(domNode, resourceManager);
+  }
+
+  private final void load(DomNode domNode, ResourceManager resourceManager) {
+
     this.trace = domNode.getAttributeBoolean("trace", false);
     if (!this.trace && resourceManager.getOptions().getBoolean("TemplateParseInterpreter.trace", false)) {
       this.trace = true;
@@ -136,6 +141,13 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
     }
 
     return result;
+  }
+
+  /**
+   * Supplement this interpreter according to the given domElement.
+   */
+  public void supplement(DomElement domElement) {
+    load(domElement, resources.resourceManager);
   }
 
   protected InnerResources getInnerResources() {

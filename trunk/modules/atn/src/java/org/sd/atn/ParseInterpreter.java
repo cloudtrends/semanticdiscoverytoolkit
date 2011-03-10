@@ -21,6 +21,7 @@ package org.sd.atn;
 
 import java.util.List;
 import org.sd.xml.DataProperties;
+import org.sd.xml.DomElement;
 
 /**
  * Interface for getting an interpretatin for a parse if available.
@@ -44,4 +45,8 @@ public interface ParseInterpreter {
    */
   public List<ParseInterpretation> getInterpretations(Parse parse, DataProperties overrides);
 
+  /**
+   * Supplement this interpreter according to the given domElement.
+   */
+  public void supplement(DomElement domElement);
 }

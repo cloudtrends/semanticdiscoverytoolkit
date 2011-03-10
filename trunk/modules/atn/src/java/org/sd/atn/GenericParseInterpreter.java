@@ -91,6 +91,13 @@ public class GenericParseInterpreter implements ParseInterpreter {
     return result;
   }
 
+  /**
+   * Supplement this interpreter according to the given domElement.
+   */
+  public void supplement(DomElement domElement) {
+    //todo: implement supplement logic if/when necessary.
+  }
+
 
   private static final String getXmlString(DomNode domNode) {
     String xmlString = null;

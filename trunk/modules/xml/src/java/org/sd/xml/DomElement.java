@@ -48,6 +48,13 @@ public class DomElement extends DomNode implements Element {
   }
 
   /**
+   * Safely, efficiently downcast this node to a DomElement if it is one.
+   */
+  public DomElement asDomElement() {
+    return this;
+  }
+
+  /**
    * Get this element's text content.
    *
    * NOTE: Original whitespace formatting is *NOT* preserved through this
@@ -90,6 +97,12 @@ public class DomElement extends DomNode implements Element {
     final Tree<XmlLite.Data> xmlTree = asTree();
     asString(xmlTree, result, indentLevel, indentSpaces);
     return result;
+  }
+
+  public String toString() {
+    final StringBuilder result = new StringBuilder();
+    asPrettyString(result, 0, 2);
+    return result.toString();
   }
 
   private final void asString(Tree<XmlLite.Data> xmlTree, StringBuilder result, int indentLevel, int indentSpaces) {
