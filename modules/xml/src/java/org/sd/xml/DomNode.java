@@ -69,6 +69,13 @@ public abstract class DomNode implements Node {
     this._domContext = null;
   }
 
+  /**
+   * Safely, efficiently downcast this DomNode to a DomElement if it is one.
+   */
+  public DomElement asDomElement() {
+    return null;
+  }
+
   public void prune() {
     final DomNode parentNode = getParent();
 

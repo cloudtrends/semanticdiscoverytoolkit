@@ -19,9 +19,12 @@
 package org.sd.atn;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.sd.token.Token;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
+import org.w3c.dom.NodeList;
 
 /**
  * A rule test tokens through RoteList- and/or Regex- Classifiers.
@@ -34,6 +37,7 @@ public class TokenTest implements AtnRuleStepTest {
   private RegexClassifier regexClassifier;
   private boolean next;
   private boolean revise;
+  private List<String> classifiers;
 
   public TokenTest(DomNode testNode, ResourceManager resourceManager) {
     this.roteListClassifier = new RoteListClassifier((DomElement)testNode, resourceManager, resourceManager.getId2Normalizer());
@@ -44,6 +48,16 @@ public class TokenTest implements AtnRuleStepTest {
 
     this.next = testNode.getAttributeBoolean("next", false);
     this.revise = testNode.getAttributeBoolean("revise", false);
+
+    final NodeList classifierNodes = testNode.selectNodes("classifier");
+    if (classifierNodes != null) {
+      this.classifiers = new ArrayList<String>();
+      for (int nodeNum = 0; nodeNum < classifierNodes.getLength(); ++nodeNum) {
+        final DomElement classifierElement = (DomElement)classifierNodes.item(nodeNum);
+        final String cat = classifierElement.getAttributeValue("cat");
+        classifiers.add(cat);
+      }
+    }
 
     // under token node, setup allowed and disallowed tokens
     //
@@ -61,6 +75,7 @@ public class TokenTest implements AtnRuleStepTest {
     //   <regexes>
     //     <regex type='...' groupN='...'>...</regex>
     //   </regexes>
+    //   <classifier cat='...'/>
     // </test>
 
   }
@@ -72,13 +87,42 @@ public class TokenTest implements AtnRuleStepTest {
       token = token.getNextToken();
     }
 
-    for (; token != null; token = revise ? token.getRevisedToken() : null) {
+    for (; !result && token != null; token = revise ? token.getRevisedToken() : null) {
       if (!result && roteListClassifier != null) {
         result = roteListClassifier.doClassify(token);
       }
 
       if (!result && regexClassifier != null) {
         result = regexClassifier.doClassify(token);
+      }
+
+      if (!result && classifiers != null) {
+        for (String cat : classifiers) {
+          final AtnGrammar grammar = curState.getRule().getGrammar();
+          final List<AtnStateTokenClassifier> tokenClassifiers = grammar.getClassifiers(cat);
+          if (tokenClassifiers != null) {
+            for (AtnStateTokenClassifier tokenClassifier : tokenClassifiers) {
+              final MatchResult matchResult = tokenClassifier.classify(token, curState);
+              if (matchResult.matched()) {
+                result = true;
+                break;
+              }
+            }
+          }
+          else {
+            // check for literal grammar token match
+            if (!grammar.getCat2Rules().containsKey(cat)) {
+              // use an "identity" classifier for literal grammar tokens
+              result = cat.equals(token.getText());
+            }
+
+            // check for a token feature that matches the category
+            if (!result) {
+              result = token.getFeature(cat, null) != null;
+            }
+          }
+          if (result) break;
+        }
       }
     }
 

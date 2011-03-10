@@ -215,7 +215,7 @@ public class AtnParseOptions {
     this.adjustInputForTokens = options.getBoolean("adjustInputForTokens", false);
 
     final DomElement parseInterpreterNode = (DomElement)options.getDomElement().selectSingleNode("parseInterpreter");
-    this.parseInterpreter = (parseInterpreterNode != null) ? (ParseInterpreter)resourceManager.getResource(parseInterpreterNode) : null;
+    setParseInterpreter(parseInterpreterNode);
 
     final NodeList startNodes = options.getDomElement().selectNodes("start");
     if (startNodes != null) {
@@ -224,6 +224,16 @@ public class AtnParseOptions {
         DomElement startElement = (DomElement)startNodes.item(i);
         this.startRules.add(startElement.getTextContent().trim());
       }
+    }
+  }
+
+  public final void setParseInterpreter(DomElement parseInterpreterNode) {
+    this.parseInterpreter = (parseInterpreterNode != null) ? (ParseInterpreter)resourceManager.getResource(parseInterpreterNode) : null;
+  }
+
+  public void supplementParseInterpreter(DomElement parseInterpreterNode) {
+    if (parseInterpreter != null) {
+      parseInterpreter.supplement(parseInterpreterNode);
     }
   }
 }

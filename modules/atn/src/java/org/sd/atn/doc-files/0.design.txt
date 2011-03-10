@@ -1,0 +1,124 @@
+
+
+// Utility to run input through configured parser(s)
+AtnParseRunner
+  <>-- options:DataProperties
+       -- user injected static configuration properties
+  <>-- parseConfig:ParseConfig
+  <>-- verbose:boolean
+
+  <>-- id2parserFlow:Map<String, ParserFlow>
+  <>-- activeFlowSpec:String
+  <>-- activeFlow:ParserFlow
+
+  #parseInput(input, inputUpdateStrategy, output, overrides):ParseOutputCollector
+    -- ultimately called to parse input through parseConfig.parse
+
+// static configuration of parser(s) w/execution
+ParseConfig
+  <>-- options:DataProperties
+       -- user injected static configuration properties
+  <>-- id2CompoundParser:Map<String, CompoundParser>
+       -- CompoundParser instances mapped by ID
+  <>-- resourceManager:ResourceManager
+  <>-- verbose:boolean
+
+  +parse(input, flow, output, stopList, collector, overrides):ParseOutputCollector
+    -- flow:ParseSettings, MultiParseSettings
+    -- overrides:dataProperties
+    -- calls compoundParser.parse(input, flow, output, stopList, collector, overrides)
+       -- output:ParseOutputCollector collects output cumulatively
+       -- collector:List<AtnParseResult> collects current output
+       -- stopList:Set<Integer> ***TODO: describe what this does
+          -- holds startIndex values for selected parses
+
+// container for a sequence of parsers w/execution
+CompoundParser
+  <>-- id:String
+  <>-- minNumTokens:int
+  <>-- parserWrappers:Map<String, AtnParserWrapper>
+  <>-- parserIds:String[]
+  <>-- verbose:boolean
+
+  +parse(input, flow, output, stopList, collector, overrides)
+    -- calls AtnParserWrapper.seekAll
+
+// container for an AtnParser with its options and strategies
+AtnParserWrapper
+  <>-- id:String
+  <>-- parser:AtnParser
+  <>-- tokenizerOverride:DomElement
+  <>-- tokenizerOptions:StandardTokenizerOptions
+  <>-- parseOptions:AtnParseOptions
+  <>-- parseSelector:AtnParseSelector
+  <>-- ambiguityResolver:AmbiguityResolver
+
+  +seekAll(tokenizer, stopList, overrides):List<AtnParseResult>
+    -- calls AtnParser.seekAll
+    -- calls parseSelector.selectParses(parseResult)
+
+AtnParser
+  <>-- grammar:AtnGrammar
+
+  +seekAll(tokenizer, options, stopList, overrides):List<AtnParseResult>
+    -- calls seekParse, seekNextParse
+
+AtnParseOptions
+  <>-- consumeAllText:boolean
+  <>-- skipTokenLimit:int
+  <>-- firstParseOnly:boolean
+  <>-- adjustInputForTokens:boolean
+  <>-- parseInterpreter:ParseInterpreter
+  <>-- startRules:List<String>
+  <>-- resourceManager:ResourceManager
+
+   -- specific to each simple parser
+   -- injected from AtnParserWrapper when parsing, stored in AtnParseResult
+
+overrides:DataProperties
+   -- injected when parsing from top (AtnParseRunner), stored in AtnParseResult
+   -- ***TODO: should be moved into AtnParseOptions???
+   -- provide overrides for other AtnParseOptions
+
+AtnParseResult
+  <>-- grammar:AtnGrammar
+  <>-- stopList:Set<Integer>
+  <>-- firstToken:Token
+  <>-- options:AtnParseOptions
+  <>-- parse:Tree<AtnState>
+  <>-- states:LinkedList<AtnState>
+  <>-- skipStates:LinkedList<AtnState>
+  <>-- startRules:List<AtnRule>
+  <>-- int:startRuleIndex
+  <>-- overrides:DataProperties
+  <>-- _parses:List<AtnParse>
+  <>-- _parsedRange:int[]
+
+  +generateParses(numParses):int
+  +continueParsing():boolean
+  +getParse(parseNum):AtnParse
+
+AtnParse
+  <>-- _parse:Parse
+  <>-- _parseInterpretations:List<ParseInterpretation>
+  <>-- ...parsed text, tokens, category, ...
+
+  +getParseInterpretations():List<ParseInterpretation>
+    -- invokes parseResult's parseOptions' parseInterpreter
+
+==============================================================================
+
+
+AtnParseRunner <>--- ParseConfig <>--- CompoundParser <>--- AtnParserWrapper <>--- AtnParser
+                 1 1               1 *                  1 *                    1 1
+
+  AtnParserWrapper also has
+  - AtnParseOptions
+  - StandardTokenizerOptions
+  - AtnParseSelector
+  - AmbiguityResolver
+
+  AtnParser generates AtnParseResult instances
+
+ParseOutputCollector <>--- AtnParseResult <>--- AtnParse
+                       1 *                  1 *

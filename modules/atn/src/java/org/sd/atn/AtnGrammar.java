@@ -402,19 +402,22 @@ public class AtnGrammar {
       if (curNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
 
       final DomElement ruleElement = (DomElement)curNode;
+      final boolean remove = ruleElement.getAttributeBoolean("remove", false);
       final AtnRule rule = new AtnRule(this, ruleElement, resourceManager);
       final String ruleCategory = ruleElement.getLocalName();
       final boolean override = ruleElement.getAttributeBoolean("override", false);
 
       List<AtnRule> rules = this.cat2Rules.get(ruleCategory);
       if (rules == null) {
-        rules = new ArrayList<AtnRule>();
-        this.cat2Rules.put(ruleCategory, rules);
+        if (!remove) {
+          rules = new ArrayList<AtnRule>();
+          this.cat2Rules.put(ruleCategory, rules);
+        }
       }
-      else if (override) {
+      else if (override || remove) {
         final String id = rule.getRuleId();
 
-        // find and remove the rule being overridden
+        // find and remove the rule being overridden or removed
         for (Iterator<AtnRule> ruleIter = rules.iterator(); ruleIter.hasNext(); ) {
           final AtnRule curRule = ruleIter.next();
           if (id.equals(curRule.getRuleId())) {
@@ -424,9 +427,10 @@ public class AtnGrammar {
         }
       }
 
-      rules.add(rule);
-
-      if (rule.isStart()) this.startRules.add(rule);
+      if (!remove) {
+        rules.add(rule);
+        if (rule.isStart()) this.startRules.add(rule);
+      }
     }
   }
 }
