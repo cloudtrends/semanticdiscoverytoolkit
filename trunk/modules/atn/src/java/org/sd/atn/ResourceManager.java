@@ -161,10 +161,11 @@ public class ResourceManager {
         resourceName = resourceElement.getAttributeValue("name", null);
       }
 
-      if (result != null && resourceName != null) {
-        name2resource.put(resourceName, result);
-
-        System.out.println(new Date() + ": ResourceManager built/stored '" + resourceName + "' resource.");
+      if (result != null) {
+        if (resourceName != null) {
+          name2resource.put(resourceName, result);
+          System.out.println(new Date() + ": ResourceManager built/stored '" + resourceName + "' resource.");
+        }
       }
     }
 
@@ -257,6 +258,9 @@ public class ResourceManager {
       }
       classname = classnameNode.getTextContent().trim();
       final Class theClass = Class.forName(classname);
+
+      System.out.println(new Date() + ": ResourceManager constructing '" + classname + "' resource.");
+
       result = ReflectUtil.constructInstance(theClass, args);
     }
     catch (ClassNotFoundException e) {

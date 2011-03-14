@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -66,6 +67,8 @@ public class AtnGrammar {
         try {
           final DomDocument domDocument = XmlFactory.loadDocument(grammarFile, false, dataProperties);
           grammarElement = (DomElement)domDocument.getDocumentElement();
+
+          System.out.println(new Date() + ": AtnGrammar file(" + grammarFile + ")");
         }
         catch (IOException e) {
           throw new IllegalStateException(e);

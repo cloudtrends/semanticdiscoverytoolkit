@@ -56,6 +56,7 @@ public class ParseConfig {
     final DomDocument domDocument = XmlFactory.loadDocument(parseConfigFile, false, options);
     final DomElement parseElement = (DomElement)domDocument.getDocumentElement();
 
+    System.out.println(new Date() + ": ParseConfig init(" + parseConfigFile + ")");
     final ParseConfig result = new ParseConfig(parseElement);
 
     // add-in optional supplements
@@ -64,6 +65,7 @@ public class ParseConfig {
       final String[] supplements = supplementsString.split("\\s*;\\s*");
       for (String supplement : supplements) {
         final File supplementFile = options.getWorkingFile(supplement, "workingDir");
+        System.out.println(new Date() + ": ParseConfig supplement(" + supplementFile + ")");
         final DomDocument supDocument = XmlFactory.loadDocument(supplementFile, false, options);
         final DomElement supElement = (DomElement)supDocument.getDocumentElement();
         result.supplement(supElement);
@@ -112,10 +114,12 @@ public class ParseConfig {
 
 
   public ParseConfig(String filename) throws IOException {
+    System.out.println(new Date() + ": ParseConfig init(" + filename + ")");
     init(new DataProperties(new File(filename)));
   }
 
   public ParseConfig(File configFile) throws IOException {
+    System.out.println(new Date() + ": ParseConfig init(" + configFile + ")");
     init(new DataProperties(configFile));
   }
 
