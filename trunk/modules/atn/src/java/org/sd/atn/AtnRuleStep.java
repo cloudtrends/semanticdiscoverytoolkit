@@ -45,7 +45,7 @@ public class AtnRuleStep {
     return label == null ? category : label;
   }
 
-  private String require;
+  private String[] require;
   /**
    * If non-null, this indicates that a rule step only applies if the specified
    * constituent or category has been matched.
@@ -60,11 +60,11 @@ public class AtnRuleStep {
    * parse with this step's category is not redundantly generated when the
    * optional constituent is missing.
    */
-  public String getRequire() {
+  public String[] getRequire() {
     return require;
   }
 
-  private String unless;
+  private String[] unless;
   /**
    * If non-null, this indicates that a rule step only applies if the specified
    * constituent or category has NOT been matched.
@@ -72,7 +72,7 @@ public class AtnRuleStep {
    * This allows for a rule to specify a step that only applies when an
    * optional step has not matched.
    */
-  public String getUnless() {
+  public String[] getUnless() {
     return unless;
   }
 
@@ -131,8 +131,13 @@ public class AtnRuleStep {
     this.rule = rule;
     this.category = stepElement.getLocalName();
     this.label = stepElement.getAttributeValue("label", null);
-    this.require = stepElement.getAttributeValue("require", null);
-    this.unless = stepElement.getAttributeValue("unless", null);
+
+    final String requireString = stepElement.getAttributeValue("require", null);
+    this.require = requireString == null ? null : requireString.split("\\s*,\\s*");
+
+    final String unlessString = stepElement.getAttributeValue("unless", null);
+    this.unless = unlessString == null ? null : unlessString.split("\\s*,\\s*");
+
     this.isOptional = stepElement.getAttributeBoolean("optional", false);
     this.repeats = stepElement.getAttributeBoolean("repeats", false);
     this.isTerminal = stepElement.getAttributeBoolean("terminal", false);
