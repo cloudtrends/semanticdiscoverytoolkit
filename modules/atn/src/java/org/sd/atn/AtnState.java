@@ -437,7 +437,7 @@ public class AtnState {
       // Also, the 'unless' constraint will need to be checked again once
       // we've parsed through the current constituent.
 
-      final String unless = step.getUnless();
+      final String[] unless = step.getUnless();
       if (unless == null || !haveRequired(unless, true)) {
         break;
       }
@@ -454,11 +454,11 @@ public class AtnState {
   private final boolean meetsRequirements() {
 
     final AtnRuleStep step = rule.getStep(stepNum);
-    final String require = step.getRequire();
+    final String[] require = step.getRequire();
     boolean result = (require == null || haveRequired(require, false));
 
     if (result) {
-      final String unless = step.getUnless();
+      final String[] unless = step.getUnless();
       if (unless != null) {
         result = !haveRequired(unless, false);
       }
@@ -468,22 +468,26 @@ public class AtnState {
     return result;
   }
 
-  private final boolean haveRequired(String require, boolean includeThisState) {
+  private final boolean haveRequired(String[] requires, boolean includeThisState) {
     boolean result = false;
 
-    if (includeThisState) {
-      result = AtnStateUtil.matchesCategory(this, require);
-    }
-
-    if (!result) {
-      // haven't verified yet, look back in state history
-      final int[] levelDiff = new int[]{0};
-      final AtnState priorMatch = AtnStateUtil.findPriorMatch(this, require, levelDiff);
-
-      if (priorMatch != null) {
-        // can find match 'down' (pushed), but not up (popped)
-        result = (levelDiff[0] <= 0);
+    for (String require : requires) {
+      if (includeThisState) {
+        result = AtnStateUtil.matchesCategory(this, require);
       }
+
+      if (!result) {
+        // haven't verified yet, look back in state history
+        final int[] levelDiff = new int[]{0};
+        final AtnState priorMatch = AtnStateUtil.findPriorMatch(this, require, levelDiff);
+
+        if (priorMatch != null) {
+          // can find match 'down' (pushed), but not up (popped)
+          result = (levelDiff[0] <= 0);
+        }
+      }
+
+      if (result) break;
     }
 
     return result;

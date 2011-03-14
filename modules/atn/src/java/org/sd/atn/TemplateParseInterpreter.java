@@ -174,11 +174,36 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
       for (int recordNodeNum = 0; recordNodeNum < numRecordNodes; ++recordNodeNum) {
         final DomElement recordNode = (DomElement)recordNodes.item(recordNodeNum);
 
-        final RecordTemplate recordTemplate = new RecordTemplate(recordNode, resources, this);
-        resources.id2recordTemplate.put(recordTemplate.getId(), recordTemplate);
-        if (recordTemplate.isTop()) topTemplates.add(recordTemplate);
+        boolean override = recordNode.getAttributeBoolean("override", true);
+
+        if (!override) {
+          // augment existing record template
+          final RecordTemplate recordTemplate = findRecordTemplate(recordNode);
+          if (recordTemplate != null) {
+            // augment
+            recordTemplate.loadFields(recordNode);
+          }
+          else {
+            // no existing template found, so treat as new/override
+            override = true;
+          }
+        }
+
+        if (override) {
+          // override (or add new) record template
+          final RecordTemplate recordTemplate = new RecordTemplate(recordNode, resources, this);
+          final RecordTemplate displaced = resources.add(recordTemplate);
+          if (displaced != null && displaced.isTop()) topTemplates.remove(displaced);
+          if (recordTemplate.isTop()) topTemplates.add(recordTemplate);
+        }
       }
     }
+  }
+
+  private final RecordTemplate findRecordTemplate(DomElement recordNode) {
+    final String name = recordNode.getAttributeValue("name");
+    final String id = recordNode.getAttributeValue("type", name);
+    return resources.get(id);
   }
 
   protected void trace(String type, Tree<XmlLite.Data> newNode, String templateName, Boolean start) {
@@ -208,6 +233,20 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
     InnerResources(ResourceManager resourceManager) {
       this.resourceManager = resourceManager;
       this.id2recordTemplate = new HashMap<String, RecordTemplate>();
+    }
+
+    /**
+     * Add the record template, returning any template being displaced by the add.
+     */
+    public RecordTemplate add(RecordTemplate recordTemplate) {
+      final String id = recordTemplate.getId();
+      final RecordTemplate result = id2recordTemplate.get(id);
+      id2recordTemplate.put(id, recordTemplate);
+      return result;
+    }
+
+    public RecordTemplate get(String id) {
+      return id2recordTemplate.get(id);
     }
   }
 
@@ -242,6 +281,11 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
 
       this.nameOverride = null;
       this.fieldTemplates = new ArrayList<FieldTemplate>();
+      loadFields(recordNode);
+    }
+
+    final void loadFields(DomElement recordNode) {
+
       final NodeList fieldList = recordNode.selectNodes("field");
       if (fieldList != null) {
         final int numFields = fieldList.getLength();
