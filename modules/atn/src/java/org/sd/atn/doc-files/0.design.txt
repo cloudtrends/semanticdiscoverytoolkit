@@ -106,6 +106,40 @@ AtnParse
   +getParseInterpretations():List<ParseInterpretation>
     -- invokes parseResult's parseOptions' parseInterpreter
 
+AtnGrammar
+  <>-- defaultNormalizer:StandardNormalizer
+  <>-- id2Normalizer:Map<String, Normalizer>
+  <>-- id2TokenFilter:Map<String, TokenFilter>
+  <>-- cat2Classifiers:Map<String, List<AtnStateTokenClassifier>>
+  <>-- cat2Rules:Map<String, List<AtnRule>>
+  <>-- resourceManager:ResourceManager
+
+AtnRule
+  <>-- grammar:AtnGrammar
+  <>-- ruleName:String
+  <>-- ruleId:String
+  <>-- steps:LinkedList<AtnRuleStep>
+  <>-- isStart:boolean
+  <>-- tokenFilterId:String
+  <>-- popSteps:List<AtnRuleStep>
+
+AtnRuleStep
+  <>-- rule:AtnRule
+  <>-- category:String
+  <>-- label:String
+  <>-- require:String[]
+  <>-- unless:String[]
+  <>-- optional:boolean
+  <>-- repeats:boolean
+  <>-- terminal:boolean
+  <>-- postDelim:DelimTest
+  <>-- preDelim:DelimTest
+  <>-- clusterFlag:boolean
+  <>-- test:AtnRuleStepTest
+  <>-- consumeToken:boolean
+  <>-- ignoreToken:boolean
+  <>-- skip:int
+
 ==============================================================================
 
 
