@@ -1,0 +1,39 @@
+
+- AtnParseRunner
+  - loads static resources
+  - constructed with dataProperties
+    - builds ParseConfig instance with dataProperties
+      - loads parseConfigFile
+        - loads resources
+        - builds CompoundParser instances
+          - builds AtnParserWrapper instances
+            - builds AtnParser instances
+              - builds AtnGrammar instance
+                - loads Normalizer instances
+                - loads TokenFilter instances
+                - loads AtnStateTokenClassifier (classifier) instances
+                - loads AtnRule instances
+                  - loads AtnRule step instances
+            - stores tokenizerOptions
+            - stores parseOptions
+            - stores parseSelector
+            - stores ambiguityResolver
+      - loads supplementConfigFiles
+    - activates parse flow according to "parseFlow" option
+      - the parse flow identifies the parsers to be executed with their order of application
+        - there are two tiers of parsers:
+          - a CompoundParser has AtnParsers
+        - All of the input is fed to each of the (active) AtnParsers in a CompoundParser
+          - That is, the full input is scanned for successful parses through each AtnParser
+          - Input is ultimately of the form of an InputContextIterator
+        - Between CompoundParser instances, input tokens that were successfully (atn) parsed are treated as a (compound) classified token.
+          - the original single tokens are still available as token revisions according to the tokenization strategy
+          - the input is updated for the next pass through a CompoundParser's AtnParser instances
+            - input updates are according to the inputUpdateStrategy, affecting the inputContextIterator
+              - inputContextIterator can be
+                - rebuilt (when XML update strategy)
+                - broadened (when BROADEN update strategy)
+                - reset (when RESET update strategy)
+  - used to parse input of various types
+    - ultimately parses a string
+

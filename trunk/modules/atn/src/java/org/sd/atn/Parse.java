@@ -26,6 +26,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.sd.cio.MessageHelper;
@@ -361,25 +362,39 @@ public class Parse implements Publishable, Serializable {
             Token lToken = tokenizer.buildToken(startPos + adjustment, endPos + adjustment);
 
             if (lToken == null) {
+              System.err.println(new Date() +
+                                 ": Warning -- Parse.buildNode cToken.token=" + cToken.token +
+                                 " zeroIndex=" + zeroIndex +
+                                 " startPos=" + startPos +
+                                 " endPos=" + endPos +
+                                 " adjustment=" + adjustment +
+                                 " cToken.input=" + cToken.token.getTokenizer().getText());
+
               //todo: this is a hack for a special case that fails. find/fix the underlying problem!
               adjustment = 0;
               lToken = tokenizer.buildToken(startPos, endPos);
+
+              if (lToken == null) {
+                System.err.println("\tParse.buildNode fallback failed!");
+              }
             }
 
-            if (adjustment == 0) offset[0] = startPos;
+            if (lToken != null) {
+              if (adjustment == 0) offset[0] = startPos;
 
-            if (cToken.token.hasFeatures()) {
-              if (!lToken.hasFeatures()) {
-                lToken.setFeatures(cToken.token.getFeatures());
-              }
-              else {
-                final Features lFeatures = lToken.getFeatures();
-                for (Feature feature : cToken.token.getFeatures().getFeatures()) {
-                  lFeatures.add(feature);
+              if (cToken.token.hasFeatures()) {
+                if (!lToken.hasFeatures()) {
+                  lToken.setFeatures(cToken.token.getFeatures());
+                }
+                else {
+                  final Features lFeatures = lToken.getFeatures();
+                  for (Feature feature : cToken.token.getFeatures().getFeatures()) {
+                    lFeatures.add(feature);
+                  }
                 }
               }
+              newAttributes.put(key, new CategorizedToken(lToken, category));
             }
-            newAttributes.put(key, new CategorizedToken(lToken, category));
           }
         }
         else {
