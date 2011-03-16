@@ -59,6 +59,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   }
 
   private Map<String, Map<String, String>> term2attributes;
+  private Map<String, Map<String, String>> term2attributesLC;
   private boolean caseSensitive;
   private ResourceManager resourceManager;
 
@@ -71,22 +72,25 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     this.resourceManager = resourceManager;
     this.roteListType = classifierIdElement.getLocalName();
     this.term2attributes = new HashMap<String, Map<String, String>>();
+    this.term2attributesLC = new HashMap<String, Map<String, String>>();
     this.caseSensitive = false;
 
     doSupplement(classifierIdElement);
   }
 
   private final void doSupplement(DomNode classifierIdElement) {
+    this.caseSensitive = classifierIdElement.getAttributeBoolean("caseSensitive", this.caseSensitive);
+
     final DomElement termsNode = (DomElement)classifierIdElement.selectSingleNode("terms");
 
     if (termsNode != null) {
-      loadTerms(termsNode, null, term2attributes);
+      loadTerms(termsNode, null, null, term2attributes, term2attributesLC);
     }
 
     final DomElement textfileNode = (DomElement)classifierIdElement.selectSingleNode("textfile");
 
     if (textfileNode != null) {
-      loadTextFile(textfileNode, null, term2attributes);
+      loadTextFile(textfileNode, null, null, term2attributes, term2attributesLC);
     }
   }
 
@@ -106,12 +110,18 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     
     boolean result = false;
 
-    String key = caseSensitive ? token.getText() : token.getText().toLowerCase();
+    Map<String, Map<String, String>> t2a = term2attributes;
+    String key = token.getText();
 
-    if (term2attributes.containsKey(key)) {
+    if (!caseSensitive) {
+      t2a = term2attributesLC;
+      key = key.toLowerCase();
+    }
+
+    if (t2a.containsKey(key)) {
       result = true;
 
-      final Map<String, String> attributes = term2attributes.get(key);
+      final Map<String, String> attributes = t2a.get(key);
 
       if (attributes != null) {
         for (Map.Entry<String, String> kvPair : attributes.entrySet()) {
@@ -126,9 +136,16 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   public Map<String, String> doClassify(String text) {
     Map<String, String> result = null;
 
-    final String key = caseSensitive ? text : text.toLowerCase();
-    if (term2attributes.containsKey(key)) {
-      result = term2attributes.get(key);
+    Map<String, Map<String, String>> t2a = term2attributes;
+    String key = text;
+
+    if (!caseSensitive) {
+      t2a = term2attributesLC;
+      key = key.toLowerCase();
+    }
+
+    if (t2a.containsKey(key)) {
+      result = t2a.get(key);
       if (result == null) {
         result = EMPTY_ATTRIBUTES;
       }
@@ -145,11 +162,18 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     return term2attributes;
   }
 
-  protected final void loadTerms(DomElement termsNode, Set<String> terms, Map<String, Map<String, String>> term2attributes) {
+  protected Map<String, Map<String, String>> getTerm2AttributesLC() {
+    return term2attributesLC;
+  }
+
+  protected final void loadTerms(DomElement termsNode,
+                                 Set<String> terms, Set<String> termsLC,
+                                 Map<String, Map<String, String>> term2attributes,
+                                 Map<String, Map<String, String>> term2attributesLC) {
     if (termsNode == null) return;
 
     // currently caseSensitivity is applied globally
-    this.caseSensitive = termsNode.getAttributeBoolean("caseSensitive", false);
+    this.caseSensitive = termsNode.getAttributeBoolean("caseSensitive", this.caseSensitive);
 
     // get global attributes to apply to each term
     Map<String, String> globalAttributes = null;
@@ -172,14 +196,17 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       if (curNode.getNodeType() != Node.ELEMENT_NODE) continue;
       final DomElement termElement = (DomElement)curNode;
 
-      String termText = termElement.getTextContent();
-      if (!caseSensitive) termText = termText.toLowerCase();
+      final String termText = termElement.getTextContent();
+      final String termTextLC = termText.toLowerCase();
 
       if (terms != null) {
         addTerms(termText, terms);
       }
+      if (termsLC != null) {
+        addTerms(termTextLC, termsLC);
+      }
 
-      if (term2attributes != null) {
+      if (term2attributes != null || term2attributesLC != null) {
         if (termElement.hasAttributes()) {
           termAttributes = termElement.getDomAttributes().getAttributes();
 
@@ -194,15 +221,19 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         }
         else termAttributes = null;
 
-        term2attributes.put(termText, termAttributes);
+        if (term2attributes != null) term2attributes.put(termText, termAttributes);
+        if (term2attributesLC != null) term2attributesLC.put(termTextLC, termAttributes);
       }
     }
   }
 
-  protected final void loadTextFile(DomElement textfileElement, Set<String> terms, Map<String, Map<String, String>> term2attributes) {
+  protected final void loadTextFile(DomElement textfileElement,
+                                    Set<String> terms, Set<String> termsLC,
+                                    Map<String, Map<String, String>> term2attributes,
+                                    Map<String, Map<String, String>> term2attributesLC) {
     if (textfileElement == null) return;
 
-    this.caseSensitive = textfileElement.getAttributeBoolean("caseSensitive", false);
+    this.caseSensitive = textfileElement.getAttributeBoolean("caseSensitive", this.caseSensitive);
     final int minChars = textfileElement.getAttributeInt("minChars", 1);
 
     final File textfile = resourceManager.getWorkingFile(textfileElement);
@@ -215,10 +246,12 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         if (!"".equals(line) && line.charAt(0) == '#') continue;
 
         final String[] lineFields = line.trim().split("\t");
-        final String term = (!caseSensitive) ? lineFields[0].toLowerCase() : lineFields[0];
+        final String term = lineFields[0];
+        final String termLC = lineFields[0].toLowerCase();
         if (term.length() >= minChars) {
           if (terms != null) addTerms(term, terms);
-          if (term2attributes != null) {
+          if (termsLC != null) addTerms(termLC, termsLC);
+          if (term2attributes != null || term2attributesLC != null) {
             Map<String, String> termAttributes = null;
             if (lineFields.length > 1) {
               termAttributes = new HashMap<String, String>();
@@ -229,7 +262,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
                 }
               }
             }
-            term2attributes.put(term, termAttributes);
+            if (term2attributes != null) term2attributes.put(term, termAttributes);
+            if (term2attributesLC != null) term2attributesLC.put(termLC, termAttributes);
           }
         }
       }
