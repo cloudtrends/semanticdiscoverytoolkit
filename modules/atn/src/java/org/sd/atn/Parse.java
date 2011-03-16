@@ -330,13 +330,34 @@ public class Parse implements Publishable, Serializable {
 
 
   private final Tree<String> buildParseTree(Tree<String> parseTree, LiteralTokenizer tokenizer, int zeroIndex, int[] offset) {
-    final Tree<String> result = buildNode(parseTree, tokenizer, zeroIndex, offset);
+    int[] theOffset = offset;
+    int offsetValue = 0;
+
+    // NOTE: when a parseTree has multiple children due to ambiguities, the token offset needs to be repeated
+    final boolean ambiguous = parseTree.hasAttributes() && "true".equals(parseTree.getAttributes().get("ambiguous"));
+    if (ambiguous) {
+      theOffset = new int[]{offset[0]};
+    }
+
+    final Tree<String> result = buildNode(parseTree, tokenizer, zeroIndex, theOffset);
+
+    if (ambiguous) {
+      offsetValue = theOffset[0];
+    }
 
     if (parseTree.hasChildren()) {
       for (Tree<String> child : parseTree.getChildren()) {
-        result.addChild(buildParseTree(child, tokenizer, zeroIndex, offset));
+        if (ambiguous) {
+          theOffset = new int[]{offset[0]};
+        }
+        result.addChild(buildParseTree(child, tokenizer, zeroIndex, theOffset));
       }
     }
+
+    if (ambiguous) {
+      offset[0] = offsetValue;
+    }
+
     return result;
   }
 
