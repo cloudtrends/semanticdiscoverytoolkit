@@ -39,6 +39,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
   
   private boolean excludeAllCaps;
   private Set<String> stopWords;
+  private Set<String> stopWordsLC;
   private boolean lowerCaseInitial;
 
   public CapitalizedWordClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
@@ -50,6 +51,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     this.lowerCaseInitial = true;
     this.excludeAllCaps = false;
     this.stopWords = null;
+    this.stopWordsLC = null;
 
     doSupplement(classifierIdElement);
   }
@@ -68,6 +70,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     final DomElement stopwords = (DomElement)classifierIdElement.selectSingleNode("stopwords");
     if (stopwords != null) {
       if (this.stopWords == null) this.stopWords = new HashSet<String>();
+      if (this.stopWordsLC == null) this.stopWordsLC = new HashSet<String>();
       final NodeList stopwordNodes = stopwords.getChildNodes();
       if (stopwordNodes != null) {
         for (int nodeNum = 0; nodeNum < stopwordNodes.getLength(); ++nodeNum) {
@@ -77,10 +80,10 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
           final String curNodeName = curNode.getNodeName();
           final DomElement curElement = (DomElement)curNode;
           if ("textfile".equals(curNodeName)) {
-            loadTextFile(curElement, stopWords, null);
+            loadTextFile(curElement, this.stopWords, this.stopWordsLC, null, null);
           }
           else if ("terms".equals(curNodeName)) {
-            loadTerms(curElement, stopWords, null);
+            loadTerms(curElement, this.stopWords, this.stopWordsLC, null, null);
           }
         }
       }
@@ -108,9 +111,14 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
 
     final String tokenText = token.getText();
 
-    if (stopWords != null && tokenText.length() > 1 &&
-        stopWords.contains(caseSensitive() ? tokenText : tokenText.toLowerCase())) {
-      return false;
+    if ((stopWords != null || stopWordsLC != null) && tokenText.length() > 1) {
+      final boolean caseSensitive = caseSensitive();
+      if (caseSensitive && stopWords != null && stopWords.contains(tokenText)) {
+        return false;
+      }
+      if (!caseSensitive && stopWordsLC != null && stopWordsLC.contains(tokenText.toLowerCase())) {
+        return false;
+      }
     }
 
     boolean result = Character.isUpperCase(tokenText.codePointAt(0));
