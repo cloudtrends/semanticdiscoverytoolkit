@@ -27,19 +27,24 @@ import org.sd.xml.DomNode;
 import org.w3c.dom.NodeList;
 
 /**
- * A rule test tokens through RoteList- and/or Regex- Classifiers.
+ * A rule to test tokens through RoteList- and/or Regex- Classifiers.
  * <p>
  * @author Spence Koehler
  */
 public class TokenTest implements AtnRuleStepTest {
   
+  private String id;
   private RoteListClassifier roteListClassifier;
   private RegexClassifier regexClassifier;
   private boolean next;
   private boolean revise;
   private List<String> classifiers;
 
+  private static int nextAutoId = 0;
+
   public TokenTest(DomNode testNode, ResourceManager resourceManager) {
+    this.id = testNode.getAttributeValue("id", Integer.toString(nextAutoId++));
+
     this.roteListClassifier = new RoteListClassifier((DomElement)testNode, resourceManager, resourceManager.getId2Normalizer());
     this.regexClassifier = new RegexClassifier((DomElement)testNode, resourceManager, resourceManager.getId2Normalizer());
 
