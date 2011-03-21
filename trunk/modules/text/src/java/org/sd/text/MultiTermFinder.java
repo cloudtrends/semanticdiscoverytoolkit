@@ -273,7 +273,7 @@ public class MultiTermFinder {
       final String[] words = line.split("\\s*,\\s*");
       for (String word : words) {
         if (word.length() > 0) {
-          if (caseSensitive) word = word.toLowerCase();  // normalize
+          if (!caseSensitive) word = word.toLowerCase();  // normalize
           result.add(word);
         }
       }
@@ -281,7 +281,7 @@ public class MultiTermFinder {
     else {
       line = line.trim();
       if (line.length() > 0) {
-        if (caseSensitive) line = line.toLowerCase();  // normalize
+        if (!caseSensitive) line = line.toLowerCase();  // normalize
         result.add(line);
       }
     }

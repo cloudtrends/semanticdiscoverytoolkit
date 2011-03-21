@@ -16,3 +16,35 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
+package org.sd.atn;
+
+
+import org.sd.token.Token;
+import org.sd.xml.DomNode;
+
+/**
+ * A special rule test for parser debugging.
+ * <p>
+ * @author Spence Koehler
+ */
+public class DebugTest implements AtnRuleStepTest {
+  
+  private DomNode testNode;
+  private ResourceManager resourceManager;
+  private boolean result;
+
+  public DebugTest(DomNode testNode, ResourceManager resourceManager) {
+    this.testNode = testNode;
+    this.resourceManager = resourceManager;
+
+    this.result = testNode.getAttributeBoolean("result", true);
+  }
+			
+  public boolean accept(Token token, AtnState curState) {
+    boolean result = this.result;
+
+    final boolean stopHere = true;
+
+    return result;
+  }
+}
