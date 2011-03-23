@@ -83,6 +83,35 @@ public class DataProperties extends BaseDataProperties {
     doAddDataProperties(ddp);
   }
 
+  /** Copy constructor. */
+  public DataProperties(DataProperties other) {
+    this.domDataProperties = copy(other.domDataProperties);
+    this.properties = copy(other.properties);
+    this.remainingArgs = copy(other.remainingArgs);
+  }
+
+  private final LinkedList<DomDataProperties> copy(LinkedList<DomDataProperties> otherDomDataProperties) {
+    //NOTE: currently no deep copy on DomDataProperties
+    return otherDomDataProperties == null ? null : new LinkedList<DomDataProperties>(otherDomDataProperties);
+  }
+
+  private final Properties copy(Properties otherProperties) {
+    return (otherProperties == null) ? null : new Properties(otherProperties);
+  }
+
+  private final String[] copy(String[] otherArgs) {
+    String[] result = null;
+
+    if (otherArgs != null) {
+      result = new String[otherArgs.length];
+      for (int i = 0; i < otherArgs.length; ++i) {
+        result[i] = otherArgs[i];
+      }
+    }
+
+    return result;
+  }
+
   private final void init(String[] args) {
     try {
       this.domDataProperties = new LinkedList<DomDataProperties>();
