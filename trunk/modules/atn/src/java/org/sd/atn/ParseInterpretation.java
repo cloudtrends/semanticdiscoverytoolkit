@@ -55,6 +55,7 @@ public class ParseInterpretation implements Publishable, Serializable {
 
   private transient AtnParse _sourceParse;
   private Parse _parse;
+  private String _inputText;
 
   public ParseInterpretation() {
     init(null);
@@ -108,6 +109,19 @@ public class ParseInterpretation implements Publishable, Serializable {
       _parse = _sourceParse.getParse();
     }
     return _parse;
+  }
+
+  /**
+   * Get the input text that yielded this interpretation (if available).
+   */
+  public String getInputText() {
+    if (_inputText == null) {
+      final Parse parse = getParse();
+      if (parse != null) {
+        _inputText = parse.getParsedText();
+      }
+    }
+    return _inputText;
   }
 
   public Tree<XmlLite.Data> getInterpTree() {
