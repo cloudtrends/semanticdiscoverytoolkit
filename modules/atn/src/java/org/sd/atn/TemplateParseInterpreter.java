@@ -776,9 +776,26 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
       if ("tree".equals(subType)) {
         result = interp.getInterpTree();
       }
-      else if ("toString".equals(subType)) {
-        result = XmlLite.createTagNode(interp.getClassification());
-        result.addChild(XmlLite.createTextNode(interp.toString()));
+      else {
+        final String inputText = interp.getInputText();
+        final String toString = interp.toString();
+
+        if ("toString".equals(subType)) {
+          result = XmlLite.createTagNode(interp.getClassification());
+          result.addChild(XmlLite.createTextNode(toString));
+
+          if (inputText != null && !"".equals(inputText)) {
+            result.getData().asTag().setAttribute("altText", inputText);
+          }
+        }
+        else if ("inputText".equals(subType)) {
+          result = XmlLite.createTagNode(interp.getClassification());
+          result.addChild(XmlLite.createTextNode(inputText));
+
+          if (!"".equals(toString)) {
+            result.getData().asTag().setAttribute("altText", toString);
+          }
+        }
       }
 
       return result;
