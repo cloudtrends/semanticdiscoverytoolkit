@@ -55,6 +55,9 @@ public class Parse implements Publishable, Serializable {
   // rule used to generate the parse
   private String ruleId;
   
+  // text remaining from original input
+  private String remainingText;
+
   private List<CategorizedToken> _cTokens;
 
   private static final long serialVersionUID = 42L;
@@ -80,6 +83,7 @@ public class Parse implements Publishable, Serializable {
     this.tokenizer = new LiteralTokenizer(parsedText);
     this.parseTree = parseTree;
     this.ruleId = ruleId;
+    this.remainingText = null;
     this._cTokens = null;
   }
 
@@ -103,6 +107,8 @@ public class Parse implements Publishable, Serializable {
     this.parseTree = buildParseTree(parse.getParseTree(), tokenizer, zeroIndex, offset);
 
     this.ruleId = parse.getStartRule().getRuleId();
+
+    this.remainingText = parse.getRemainingText();
   }
 
   public LiteralTokenizer getTokenizer() {
@@ -119,6 +125,20 @@ public class Parse implements Publishable, Serializable {
 
   public String getParsedText() {
     return tokenizer.getText();
+  }
+
+  /**
+   * Get the text after the parse if available or null.
+   */
+  public String getRemainingText() {
+    return remainingText;
+  }
+
+  /**
+   * Set the remaining text for this parse.
+   */
+  public void setRemainingText(String remainingText) {
+    this.remainingText = remainingText;
   }
 
   public List<CategorizedToken> getTokens() {
@@ -165,6 +185,7 @@ public class Parse implements Publishable, Serializable {
    */
   public void write(DataOutput dataOutput) throws IOException {
     MessageHelper.writeString(dataOutput, ruleId);
+    MessageHelper.writeString(dataOutput, remainingText);
     MessageHelper.writePublishable(dataOutput, tokenizer);
     writeTree(dataOutput, parseTree);
   }
@@ -263,6 +284,7 @@ public class Parse implements Publishable, Serializable {
    */
   public void read(DataInput dataInput) throws IOException {
     this.ruleId = MessageHelper.readString(dataInput);
+    this.remainingText = MessageHelper.readString(dataInput);
     this.tokenizer = (LiteralTokenizer)MessageHelper.readPublishable(dataInput);
     this.parseTree = readTree(dataInput, tokenizer);
   }
