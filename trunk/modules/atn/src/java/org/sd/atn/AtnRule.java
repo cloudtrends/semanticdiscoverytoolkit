@@ -65,6 +65,11 @@ public class AtnRule {
     return tokenFilterId;
   }
 
+  private int tokenLimit;
+  public int getTokenLimit() {
+    return tokenLimit;
+  }
+
   private List<AtnRuleStep> popSteps;
   List<AtnRuleStep> getPopSteps() {
     return popSteps;
@@ -82,12 +87,13 @@ public class AtnRule {
     this.steps = new LinkedList<AtnRuleStep>();
     this.isStart = ruleElement.getAttributeBoolean("start", false);
     this.tokenFilterId = ruleElement.getAttributeValue("tokenFilter", null);
+    this.tokenLimit = ruleElement.getAttributeInt("tokenLimit", 0);
 
     //
     // RuleElement is of the form:
     //
-    // <ruleName start='' tokenFilter='tokenFilterId' id='ruleId'>
-    //   <ruleStep require='' unless='' optional='' repeats='' terminal='' skip=''>
+    // <ruleName start='' tokenFilter='tokenFilterId' id='ruleId' tokenLimit=''>
+    //   <ruleStep require='' unless='' optional='' repeats='' terminal='' skip='' repeatLimit=''>
     //     <postdelim><disallowall|allowall|disallow|allow /></postdelim>
     //     <predelim><disallowall|allowall|disallow|allow /></predelim>
     //     <test>

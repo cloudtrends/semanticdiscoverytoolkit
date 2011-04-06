@@ -266,6 +266,29 @@ public class AtnState {
     return result;
   }
 
+  boolean reachedTokenLimit() {
+    boolean result = false;
+
+    if (!result) {
+      final AtnRuleStep ruleStep = getRuleStep();
+      final int stepRepeatLimit = ruleStep.getRepeatLimit();
+      if (stepRepeatLimit > 0) {
+        result = getRepeatNum() >= stepRepeatLimit;
+      }
+    }
+
+    if (!result) {
+      final AtnRule rule = getRule();
+      final int ruleTokenLimit = rule.getTokenLimit();
+      if (ruleTokenLimit > 0) {
+        final int constituentTokenCount = AtnStateUtil.countConstituentTokens(this);
+        result = constituentTokenCount >= ruleTokenLimit;
+      }
+    }
+
+    return result;
+  }
+
   /**
    * Get the next state for a repeat of the step if the step could
    * repeat.
@@ -275,7 +298,7 @@ public class AtnState {
 
     if (referenceState == null) referenceState = this;
 
-    if (referenceState.getRuleStep().repeats()) {
+    if (referenceState.getRuleStep().repeats() && !referenceState.reachedTokenLimit()) {
       if (incToken && !getRuleStep().consumeToken()) incToken = false;
 
       final Token nextToken = incToken ? getNextToken(stopList) : this.inputToken;

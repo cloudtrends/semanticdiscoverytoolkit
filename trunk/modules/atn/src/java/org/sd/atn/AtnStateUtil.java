@@ -136,6 +136,21 @@ public class AtnStateUtil {
     return result;
   }
 
+  public static final int countConstituentTokens(AtnState refState) {
+    int result = 0;
+
+    final AtnState refPush = refState.getPushState();
+    for (AtnState curState = refState; curState != null; curState = curState.getParentState()) {
+      if (curState.getMatched()) {
+        ++result;
+      }
+      final AtnState curPush = curState.getPushState();
+      if (curPush == refPush && curPush == curState.getParentState()) break;
+    }
+
+    return result;
+  }
+
   /**
    * Get the first state of the state's constituent.
    */
@@ -158,7 +173,7 @@ public class AtnStateUtil {
     final LinkedList<AtnState> result = new LinkedList<AtnState>();
 
     final AtnState refPush = endState.getPushState();
-    for (AtnState curState = endState; result != null; curState = curState.getParentState()) {
+    for (AtnState curState = endState; curState != null; curState = curState.getParentState()) {
       if (curState.getMatched()) {
         result.add(0, curState);
       }
