@@ -176,6 +176,37 @@ public class MathUtil {
     return result.toString();
   }
 
+  public enum Justification { RIGHT, LEFT, CENTER };
+
+  public static final String pad(String string, int width, Justification justification) {
+    final StringBuilder result = new StringBuilder();
+    result.append(string);
+    pad(result, width, justification);
+    return result.toString();
+  }
+
+  public static final void pad(StringBuilder result, int width, Justification justification) {
+    final int len = result.length();
+    final int space = width - len;
+
+    if (space <= 0) return;
+
+    switch (justification) {
+      case LEFT :
+        for (int i = 0; i < space; ++i) result.append(' ');
+        break;
+      case RIGHT :
+        for (int i = 0; i < space; ++i) result.insert(0, ' ');
+        break;
+      case CENTER :
+        final int half = (space >> 1);
+        for (int i = 0; i < half; ++i) result.insert(0, ' ');
+        final int rem = width - len - half;
+        for (int i = 0; i < rem; ++i) result.append(' ');
+        break;
+    }
+  }
+
   /**
    * Create a right-justified (space padded) string with the given
    * length.

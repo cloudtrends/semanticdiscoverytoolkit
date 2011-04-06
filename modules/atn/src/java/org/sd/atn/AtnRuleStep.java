@@ -86,6 +86,11 @@ public class AtnRuleStep {
     return repeats;
   }
 
+  private int repeatLimit;
+  public int getRepeatLimit() {
+    return repeatLimit;
+  }
+
   private boolean isTerminal;
   public boolean isTerminal() {
     return isTerminal;
@@ -140,6 +145,7 @@ public class AtnRuleStep {
 
     this.isOptional = stepElement.getAttributeBoolean("optional", false);
     this.repeats = stepElement.getAttributeBoolean("repeats", false);
+    this.repeatLimit = stepElement.getAttributeInt("repeatLimit", 0);
     this.isTerminal = stepElement.getAttributeBoolean("terminal", false);
     this.consumeToken = stepElement.getAttributeBoolean("consumeToken", true);
     this.ignoreToken = stepElement.getAttributeBoolean("ignoreToken", false);
