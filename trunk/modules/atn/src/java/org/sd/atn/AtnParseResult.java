@@ -254,6 +254,8 @@ public class AtnParseResult {
         final Token firstToken = getFirstToken(startRule, this.firstToken);
         if (firstToken == null) return false;
 
+        if (startRule.fromFirstTokenOnly() && firstToken.getSequenceNumber() > 0) return false;
+
         states.addLast(new AtnState(firstToken, startRule, 0, parse, options, 0, 0, null));
         ++startRuleIndex;
       }

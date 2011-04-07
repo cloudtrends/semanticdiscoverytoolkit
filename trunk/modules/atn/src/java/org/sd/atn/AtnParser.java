@@ -136,7 +136,9 @@ public class AtnParser {
     final List<AtnParseResult> result = new ArrayList<AtnParseResult>();
 
     AtnParse parse = null;
-    for (AtnParseResult parseResult = seekParse(tokenizer, options, stopList, overrides); parseResult != null; parseResult = (parse == null) ? null : seekNextParse(parse, options, stopList, overrides)) {
+    for (AtnParseResult parseResult = seekParse(tokenizer, options, stopList, overrides);
+         parseResult != null;
+         parseResult = doSeekNextParse(parse, options, stopList, overrides)) {
       int numParses = parseResult.getNumParses();
       if (numParses > 0) {
         int numSelectedParses = 0;
@@ -171,6 +173,19 @@ public class AtnParser {
           result.add(parseResult);
         }
       }
+    }
+
+    return result;
+  }
+
+  /**
+   * Wrapper for calling seekNextParse based on prior parse (success).
+   */
+  private final AtnParseResult doSeekNextParse(AtnParse parse, AtnParseOptions options, Set<Integer> stopList, DataProperties overrides) {
+    AtnParseResult result = null;
+
+    if (parse != null) {
+      result = seekNextParse(parse, options, stopList, overrides);
     }
 
     return result;
