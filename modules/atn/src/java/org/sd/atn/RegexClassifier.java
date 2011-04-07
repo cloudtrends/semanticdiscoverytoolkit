@@ -78,12 +78,34 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
   }
 
 
+  //
+  // <regex
+  //   type='matches/lookingat/find'
+  //   ldelim='true/false'
+  //   rdelim='true/false'
+  //   groupN='classification'>...regular expression...</regex>
+  //
+  //  regex element
+  //
+  //  attributes:
+  //  - type -- "matches" (default), "lookingat", or "find" to specify type of regex match
+  //  - ldelim -- "false" (default), or "true" to specify whether pre-token delims are included (post normalization) in matching
+  //  - rdelim -- "false" (default), or "true" to specify whether post-token delims are included (post normalization) in matching
+  //  - groupN -- where N is a valid group integer for specifying a classification for the matched group
+  //
+  //  text content:
+  //  - regular expression
+  //
+
+
   private enum MatchType { MATCHES, LOOKING_AT, FIND };
 
   private static final class RegexData {
     private Pattern pattern;
     private MatchType matchType;
     private Map<Integer, String> group2attr;
+    private boolean ldelim;
+    private boolean rdelim;
 
     RegexData(DomElement regexElement) {
       final String regex = regexElement.getTextContent();
@@ -92,6 +114,10 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
       // matchType
       final String type = regexElement.getAttributeValue("type", "matches").toLowerCase();
       this.matchType = "lookingat".equals(type) ? MatchType.LOOKING_AT : "find".equals(type) ? MatchType.FIND : MatchType.MATCHES;
+
+      // ldelim, rdelim
+      this.ldelim = regexElement.getAttributeBoolean("ldelim", false);
+      this.rdelim = regexElement.getAttributeBoolean("rdelim", false);
 
       // group2attr
       final Map<String, String> attrs = regexElement.getDomAttributes().getAttributes();
@@ -112,6 +138,18 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
 
     public boolean matches(String text, Token token) {
       boolean result = false;
+
+      if (ldelim || rdelim) {
+        final StringBuilder delimText = new StringBuilder(text);
+        if (ldelim) {
+          delimText.insert(0, token.getPreDelim());
+        }
+        if (rdelim) {
+          delimText.append(token.getPostDelim());
+        }
+        text = delimText.toString();
+      }
+
       final Matcher m = pattern.matcher(text);
 
       switch (matchType) {
