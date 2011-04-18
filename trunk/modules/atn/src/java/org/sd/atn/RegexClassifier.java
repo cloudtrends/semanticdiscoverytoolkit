@@ -64,9 +64,17 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
   }
 
   public boolean doClassify(Token token) {
+    final String text = getNormalizedText(token);
+    return doClassify(text, token);
+  }
+
+  public boolean doClassify(String text) {
+    return doClassify(text, null);
+  }
+
+  private final boolean doClassify(String text, Token token) {
     boolean result = false;
 
-    final String text = getNormalizedText(token);
     for (RegexData regexData : regexes) {
       if (regexData.matches(text, token)) {
         result = true;
@@ -139,7 +147,7 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
     public boolean matches(String text, Token token) {
       boolean result = false;
 
-      if (ldelim || rdelim) {
+      if (token != null && (ldelim || rdelim)) {
         final StringBuilder delimText = new StringBuilder(text);
         if (ldelim) {
           delimText.insert(0, token.getPreDelim());
@@ -168,7 +176,7 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
           final String value = m.group(group);
           if (value != null) {
             final String attr = entry.getValue();
-            token.setFeature(attr, value, this);
+            if (token != null) token.setFeature(attr, value, this);
           }
         }
       }
