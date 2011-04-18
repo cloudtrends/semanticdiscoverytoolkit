@@ -425,6 +425,7 @@ public class AtnGrammar {
           final AtnRule curRule = ruleIter.next();
           if (id.equals(curRule.getRuleId())) {
             ruleIter.remove();
+            startRules.remove(curRule);
             break;
           }
         }

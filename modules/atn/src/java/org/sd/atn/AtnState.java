@@ -763,6 +763,7 @@ public class AtnState {
         result = popState.applyTests();
         
         if (!result) {
+          popState.popFailed = true;
           if (trace) {
             System.out.println("POP tests FAILED\t" + popState.showStateContext() /*popState.showStateTree(true)*/);
           }
@@ -782,7 +783,7 @@ public class AtnState {
             if (popState.getPopCount() != 1) {
               // first pop has popCount 1 and is same as matching token, which will have
               // states added due to the match.
-              popStateNode = popStateNode.addChild(popState);
+              //popStateNode = popStateNode.addChild(popState);
 
               // After the first pop, we need to consider forward states from each pop.
               addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList, true);
@@ -792,7 +793,7 @@ public class AtnState {
           }
         }
 
-        if (!result /*|| !popVerified*/) {
+        if (!result || !popVerified) {
           // back out of popping
           while (states.size() > statesSize) {
             if (trace) System.out.println("Failed pop backup ... removing queued state:\n" + states.getLast().showStateContext() /*states.getLast().showStatePath()*/);
@@ -851,7 +852,7 @@ public class AtnState {
     }
     else {
       if (trace) {
-        System.out.println("POP FAIL\t" + nextStateNode.getData().showStateContext() /*nextStateNode.getData().showStateTree(true)*/);
+        System.out.println("POP FAIL (NotRuleEnd)\t" + nextStateNode.getData().showStateContext() /*nextStateNode.getData().showStateTree(true)*/);
       }
     }
 

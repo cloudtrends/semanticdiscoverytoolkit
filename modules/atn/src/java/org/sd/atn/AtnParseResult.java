@@ -199,7 +199,7 @@ public class AtnParseResult {
       if (curState == null) continue;
 
       if (isValidEndNode(curStateNode)) {
-        result.add(curState);
+        result.add(curState);  // NOTE: we'll remove this later if its pop failed
       }
       else if (curState.popFailed() && result.size() > 0) {
         //final AtnState constituentStartState = AtnStateUtil.getConstituentStartState(curState);

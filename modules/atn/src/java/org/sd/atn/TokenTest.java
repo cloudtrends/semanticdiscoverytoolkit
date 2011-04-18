@@ -27,29 +27,22 @@ import org.sd.xml.DomNode;
 import org.w3c.dom.NodeList;
 
 /**
- * A rule to test tokens through RoteList- and/or Regex- Classifiers.
+ * A rule to test tokens through RoteList-, Regex- and/or Token- Classifiers.
  * <p>
+ * Note that this tests the last single token seen, not for example the full
+ * token text of a constituent that has been matched. For testing against the
+ * full text of a constituent, see TextTest instead.
+ *
  * @author Spence Koehler
  */
-public class TokenTest implements AtnRuleStepTest {
+public class TokenTest extends BaseClassifierTest {
   
-  private String id;
-  private RoteListClassifier roteListClassifier;
-  private RegexClassifier regexClassifier;
   private boolean next;
   private boolean revise;
   private List<String> classifiers;
 
-  private static int nextAutoId = 0;
-
   public TokenTest(DomNode testNode, ResourceManager resourceManager) {
-    this.id = testNode.getAttributeValue("id", Integer.toString(nextAutoId++));
-
-    this.roteListClassifier = new RoteListClassifier((DomElement)testNode, resourceManager, resourceManager.getId2Normalizer());
-    this.regexClassifier = new RegexClassifier((DomElement)testNode, resourceManager, resourceManager.getId2Normalizer());
-
-    if (roteListClassifier.isEmpty()) roteListClassifier = null;
-    if (regexClassifier.isEmpty()) regexClassifier = null;
+    super(testNode, resourceManager);
 
     this.next = testNode.getAttributeBoolean("next", false);
     this.revise = testNode.getAttributeBoolean("revise", false);
