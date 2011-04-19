@@ -783,7 +783,7 @@ public class AtnState {
             if (popState.getPopCount() != 1) {
               // first pop has popCount 1 and is same as matching token, which will have
               // states added due to the match.
-              //popStateNode = popStateNode.addChild(popState);
+              popStateNode = popStateNode.addChild(popState);  //NOTE: this looks redundant, but isn't!
 
               // After the first pop, we need to consider forward states from each pop.
               addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList, true);
