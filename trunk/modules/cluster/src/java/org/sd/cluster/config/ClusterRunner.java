@@ -26,6 +26,8 @@ import org.sd.util.tree.Tree;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Utility to run classes within the cluster.
@@ -146,19 +148,61 @@ public class ClusterRunner {
 
   public ClusterDefinition getClusterDefinition() throws IOException {
     if (_clusterDef == null) {
-      if (useActiveCluster) {
-        _clusterDef = getActiveClusterDefinition();
-      }
+      // check for single port cluster definition based on clusterName of pattern portD+
+      _clusterDef = getSinglePortClusterDefinition();
 
-      if (_clusterDef == null && _properties != null) {
-        _clusterDef = ClusterDefinition.getClusterDefinition(prefix, _properties);
-      }
+      // check for active cluster
+      if (_clusterDef == null) {
+        if (useActiveCluster) {
+          _clusterDef = getActiveClusterDefinition();
+        }
 
-      if (!useActiveCluster && (_clusterDef == null || !_clusterDef.isValid())) {  // fallback to active cluster
-        _clusterDef = getActiveClusterDefinition();
+        // check for property-specified cluster
+        if (_clusterDef == null && _properties != null) {
+          _clusterDef = ClusterDefinition.getClusterDefinition(prefix, _properties);
+        }
+
+        // fallback to active cluster
+        if (!useActiveCluster && (_clusterDef == null || !_clusterDef.isValid())) {
+          _clusterDef = getActiveClusterDefinition();
+        }
       }
     }
     return _clusterDef;
+  }
+
+  public static final Pattern SINGLE_PORT_PATTERN = Pattern.compile("^port(\\d+)$");
+
+  public final ClusterDefinition getSinglePortClusterDefinition() throws IOException {
+    ClusterDefinition result = null;
+
+    String user = null;
+    if (_properties != null) user = _properties.getProperty(ClusterDefinition.CLUSTER_USER_PROPERTY);
+    if (user == null) {
+      user = ExecUtil.getUser();
+      _properties.setProperty(ClusterDefinition.CLUSTER_USER_PROPERTY, user);
+    }
+
+    // check for a "special" 1-node cluster designated by a clusterName of the form "portD+"
+    final String clusterName = _properties.getProperty(ClusterDefinition.CLUSTER_DEFINITION_NAME_PROPERTY);
+    if (clusterName != null) {
+      final Matcher m = SINGLE_PORT_PATTERN.matcher(clusterName);
+      if (m.matches()) {
+
+        // set port override
+        final int port = Integer.parseInt(m.group(1));
+        ConfigUtil.setPortOverride(port, port);
+
+        // set single node config properties
+        _properties.setProperty(ClusterDefinition.CLUSTER_MACHINES_PROPERTY, "localhost");
+        _properties.setProperty(ClusterDefinition.CLUSTER_GROUP_DEFINITION_PROPERTY, "all:node1-1 controller:node1-1 processor:node1-1");
+
+        // create cluster definition
+        result = ClusterDefinition.getClusterDefinition(prefix, _properties);
+      }
+    }
+
+    return result;
   }
 
   public final ClusterDefinition getActiveClusterDefinition() throws IOException {
@@ -178,7 +222,10 @@ public class ClusterRunner {
 
       String user = null;
       if (_properties != null) user = _properties.getProperty(ClusterDefinition.CLUSTER_USER_PROPERTY);
-      if (user == null) user = ExecUtil.getUser();
+      if (user == null) {
+        user = ExecUtil.getUser();
+        _properties.setProperty(ClusterDefinition.CLUSTER_USER_PROPERTY, user);
+      }
 
       result = new ClusterDefinition(user, defName, clusterTree, gateway, machines);
     }
