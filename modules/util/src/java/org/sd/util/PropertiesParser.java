@@ -259,6 +259,8 @@ public class PropertiesParser {
   public static final Properties loadProperties(Properties properties, String name, boolean verbose) throws IOException {
     final Properties result = properties == null ? new Properties() : properties;
 
+    boolean gotResource = false;
+
     final Enumeration<URL> pUrls = ClassLoader.getSystemResources(name);
     if (pUrls != null) {
       while (pUrls.hasMoreElements()) {
@@ -270,6 +272,8 @@ public class PropertiesParser {
           result.load(reader);
           reader.close();
 
+          gotResource = true;
+
           if (verbose) {
             System.out.println(new Date() + ": PropertiesParser loaded '" + pUrl.toString() + "'");
           }
@@ -278,6 +282,10 @@ public class PropertiesParser {
           throw new IOException(e);
         }
       }
+    }
+
+    if (!gotResource) {
+      System.err.println("***WARNING: Couldn't load resource '" + name + "'");
     }
 
     return result;
