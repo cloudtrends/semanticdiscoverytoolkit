@@ -38,17 +38,25 @@ import org.w3c.dom.NodeList;
  */
 public class RegexClassifier extends AbstractAtnStateTokenClassifier {
   
+  public static final String DEFAULT_REGEXES_NODE_NAME = "regexes";
+
+
   private List<RegexData> regexes;
 
   public RegexClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
-    super(classifierIdElement, id2Normalizer);
-    init(classifierIdElement);
+    this(classifierIdElement, resourceManager, id2Normalizer, DEFAULT_REGEXES_NODE_NAME);
   }
 
-  private final void init(DomElement classifierIdElement) {
+  public RegexClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer,
+                         String regexesNodeName) {
+    super(classifierIdElement, id2Normalizer);
+    init(classifierIdElement, regexesNodeName);
+  }
+
+  private final void init(DomElement classifierIdElement, String regexesNodeName) {
     this.regexes = new ArrayList<RegexData>();
 
-    final DomElement regexesNode = (DomElement)classifierIdElement.selectSingleNode("regexes");
+    final DomElement regexesNode = (DomElement)classifierIdElement.selectSingleNode(regexesNodeName);
 
     if (regexesNode != null) {
       final NodeList regexNodes = regexesNode.selectNodes("regex");

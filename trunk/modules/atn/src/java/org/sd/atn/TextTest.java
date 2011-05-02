@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.List;
 import org.sd.token.Token;
+import org.sd.token.Tokenizer;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.NodeList;
@@ -37,8 +38,17 @@ import org.w3c.dom.NodeList;
  */
 public class TextTest extends BaseClassifierTest {
   
+  private RegexClassifier priorRegexClassifier;
+  private RegexClassifier postRegexClassifier;
+  private boolean prevToken;
+
   public TextTest(DomNode testNode, ResourceManager resourceManager) {
     super(testNode, resourceManager);
+
+    this.priorRegexClassifier = new RegexClassifier((DomElement)testNode, resourceManager, resourceManager.getId2Normalizer(),
+                                                    "prior-regexes");
+    this.postRegexClassifier = new RegexClassifier((DomElement)testNode, resourceManager, resourceManager.getId2Normalizer(),
+                                                   "post-regexes");
 
     // under token node, setup allowed and disallowed tokens
     //
@@ -51,9 +61,15 @@ public class TextTest extends BaseClassifierTest {
     //     <term>...</term>
     //     ...
     //   </terms>
-    //   <regexes>
+    //   <regexes>        // applied to text of constituent
     //     <regex type='...' groupN='...'>...</regex>
     //   </regexes>
+    //   <prior-regexes>  // applied to text prior to constituent
+    //     <regex type='...' groupN='...'>...</regex>
+    //   </prior-regexes>
+    //   <post-regexes>   // applied to text after the constituent
+    //     <regex type='...' groupN='...'>...</regex>
+    //   </post-regexes>
     // </test>
 
   }
@@ -62,11 +78,13 @@ public class TextTest extends BaseClassifierTest {
     boolean result = false;
 
     String text = null;
+    Token startToken = token;
 
     if (curState.isPoppedState()) {
       final AtnState startState = AtnStateUtil.getConstituentStartState(curState);
       final String fulltext = token.getTokenizer().getText();
-      text = fulltext.substring(startState.getInputToken().getStartIndex(), token.getEndIndex());
+      startToken = startState.getInputToken();
+      text = fulltext.substring(startToken.getStartIndex(), token.getEndIndex());
     }
     else {
       text = token.getText();
@@ -80,6 +98,22 @@ public class TextTest extends BaseClassifierTest {
     if (!result && regexClassifier != null) {
       result = regexClassifier.doClassify(text);
       if (verbose) System.out.println("TextTest(" + text + ")=" + result);
+    }
+
+    if (result && (!priorRegexClassifier.isEmpty() || !postRegexClassifier.isEmpty())) {
+      final Tokenizer tokenizer = token.getTokenizer();
+
+      if (result && !priorRegexClassifier.isEmpty()) {
+        final String priorText = tokenizer.getPriorText(startToken);
+        result = priorRegexClassifier.doClassify(priorText);
+        if (verbose) System.out.println("TextTest.priorText(" + priorText + ")=" + result);
+      }
+
+      if (result && !postRegexClassifier.isEmpty()) {
+        final String postText = tokenizer.getNextText(token);
+        result = postRegexClassifier.doClassify(postText);
+        if (verbose) System.out.println("TextTest.postText(" + postText + ")=" + result);
+      }
     }
 
     return result;
