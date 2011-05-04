@@ -18,6 +18,7 @@
 */
 package org.sd.util;
 
+import java.util.Date;
 import java.util.Properties;
 
 import javax.mail.Message;
@@ -33,11 +34,24 @@ import javax.mail.internet.MimeMessage;
  * @author Dave Barney, Spence Koehler
  */
 public class EmailUtil {
+
+  public static final String MAIL_SERVER_ENV_KEY = "SMTP";
+  public static final String DEFAULT_MAIL_SERVER = "mailserver";
+
+
   /** Command-line usage */
   public static final String USAGE = "\nUSAGE:\n\tjava " + EmailUtil.class.getName() + " <mail server> <port> <from address> <to address> <subject> <message>\n";
   
+  private static String mailserver = System.getenv(MAIL_SERVER_ENV_KEY);
+  static {
+    if (mailserver == null) mailserver = DEFAULT_MAIL_SERVER;
+    System.out.println(new Date() + ": EmailUtil is using '" + mailserver +
+                       "' as the mail server. Override with '" + MAIL_SERVER_ENV_KEY +
+                       "' environment variable.");
+  }
+
   /**
-   * Send an email through vorta with the following attributes.
+   * Send an email through mailserver with the following attributes.
    * 
    * @param host     Email host
    * @param from     From line in email
@@ -99,8 +113,9 @@ public class EmailUtil {
   }
     
   /**
-   * Send an email through vorta with the following attributes.
-   * This uses "vorta" as the default host and "25" as the default port.
+   * Send an email through mailserver with the following attributes.
+   * This uses environment "SMTP" value or hosts "mailserver" as the
+   * default host and "25" as the default port.
    * 
    * @param from     From line in email
    * @param to       To line in email
@@ -110,7 +125,7 @@ public class EmailUtil {
    * @throws MessagingException 
    */
   public static void sendEmail(String from, String to, String subject, String message, boolean html) throws MessagingException {
-    sendEmail("vorta", "25", from, to, null, null, subject, message, html);
+    sendEmail(mailserver, "25", from, to, null, null, subject, message, html);
   }
   
   public static void main(String[] args) throws MessagingException {

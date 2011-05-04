@@ -379,7 +379,7 @@ public class Admin {
 
   public static final void configureLogSettings(String confDir) {
     //todo: parameterize the source.
-    final String source = ConfigUtil.getClusterRootDir() + "resources/log/default-log-visitor.txt";
+    final String source = confDir + "../resources/log/default-log-visitor.txt";
     final String dest = confDir + ClusterLogVisitor.LOG_SETTINGS_FILENAME;
 
     if (new File(source).exists()) {
