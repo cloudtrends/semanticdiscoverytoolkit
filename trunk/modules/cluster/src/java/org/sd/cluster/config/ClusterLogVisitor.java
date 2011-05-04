@@ -61,7 +61,7 @@ public class ClusterLogVisitor implements LogVisitor {
 // The file format for the log resource is:
 //
 //  @postOfficeNodeGroup|messageTimeout
-//  nodeGroup | logType | notifyFlag | maxLines | notificationAddresses | regexKeys
+//  nodeGroup | logType | notifyFlag | maxLines | notificationAddresses | regexKeys [| fromAddress]
 //  regexKey:regex
 //
 // where,
@@ -236,7 +236,7 @@ public class ClusterLogVisitor implements LogVisitor {
   private final void sendEmailMessage(String from, String emailRecipientString, String subject, String theMessage, boolean isHtml) {
     if (console == null) {
       // if there is no console, then try to send the message directly from this node.
-      // note that if the machine is not properly set up with a tunnel through vorta, this will fail.
+      // note that if the machine is not properly set up with a tunnel through the host "mailserver", this will fail.
       try {
         EmailUtil.sendEmail(from, emailRecipientString, subject, theMessage, isHtml);
       }
@@ -366,6 +366,7 @@ public class ClusterLogVisitor implements LogVisitor {
       setting.setMaxLines(pieces[3]);
       setting.setNotifyAddresses(pieces[4]);
       setting.setPatternKeys(pieces[5]);
+      setting.setEmailFrom((pieces.length > 6) ? pieces[6] : EMAIL_FROM);
     }
   }
 
@@ -375,6 +376,7 @@ public class ClusterLogVisitor implements LogVisitor {
     private int maxLines;
     private String[] notifyAddresses;
     private String[] patternKeys;
+    private String emailFrom;
 
     private Map<String, List<String>> notifications;
     private String logName;
@@ -384,6 +386,7 @@ public class ClusterLogVisitor implements LogVisitor {
       this.maxLines = 0;
       this.notifyAddresses = null;
       this.patternKeys = null;
+      this.emailFrom = null;
       this.notifications = null;
       this.logName = "<unknown>";
     }
@@ -488,6 +491,16 @@ public class ClusterLogVisitor implements LogVisitor {
 
     public String[] getPatternKeys() {
       return patternKeys;
+    }
+
+    public void setEmailFrom(String emailFrom) {
+      if (!"".equals(emailFrom)) {
+        this.emailFrom = emailFrom;
+      }
+    }
+
+    public String getEmailFrom() {
+      return emailFrom;
     }
   }
 }
