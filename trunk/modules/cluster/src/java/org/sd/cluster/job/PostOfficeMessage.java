@@ -21,6 +21,7 @@ package org.sd.cluster.job;
 
 import org.sd.cio.MessageHelper;
 import org.sd.cluster.config.BooleanResponse;
+import org.sd.cluster.io.ConnectionContext;
 import org.sd.cluster.io.Context;
 import org.sd.cluster.io.Message;
 
@@ -124,7 +125,7 @@ public class PostOfficeMessage implements Message {
    *
    * @param serverContext  The context of the server responding to this message.
    */
-  public Message getResponse(Context serverContext) {
+  public Message getResponse(Context serverContext, ConnectionContext connectionContext) {
     return new BooleanResponse(serverContext, !getPostOffice(serverContext).isDisabled());
   }
 
@@ -137,7 +138,7 @@ public class PostOfficeMessage implements Message {
    * @param serverContext  The context of the server on which this message is
    *                       being handled.
    */
-  public void handle(Context serverContext) {
+  public void handle(Context serverContext, ConnectionContext connectionContext) {
     final PostOffice postOffice = getPostOffice(serverContext);
     if (!postOffice.isDisabled()) {
       postOffice.submit(this);

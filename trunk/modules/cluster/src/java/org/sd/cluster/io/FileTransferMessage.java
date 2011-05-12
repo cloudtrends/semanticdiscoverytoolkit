@@ -69,7 +69,7 @@ public class FileTransferMessage extends DirectResponseMessage {
    *
    * @return a FileResponse instance.
    */
-  public Message getResponse(Context serverContext) {
+  public Message getResponse(Context serverContext, ConnectionContext connectionContext) {
     Message result = null;
 
     String filename = filePath == null ? "" : filePath;

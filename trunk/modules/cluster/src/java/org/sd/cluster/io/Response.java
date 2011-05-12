@@ -33,7 +33,7 @@ public abstract class Response implements Message {
    *       after receiving a message. The message as received on the server
    *       is handled in its own thread later.
    */
-  public Message getResponse(Context context) {
+  public Message getResponse(Context context, ConnectionContext connectionContext) {
     // nothing to do.
     return null;
   }
@@ -44,7 +44,7 @@ public abstract class Response implements Message {
    * NOTE: The message received on a server is handled asynchronously through this
    *       method after its response has been sent back to the client.
    */
-  public void handle(Context context) {
+  public void handle(Context context, ConnectionContext connectionContext) {
     // nothing to do.
   }
 }

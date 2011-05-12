@@ -20,6 +20,7 @@ package org.sd.cluster.job;
 
 
 import org.sd.cio.MessageHelper;
+import org.sd.cluster.io.ConnectionContext;
 import org.sd.cluster.io.Context;
 import org.sd.cluster.io.Message;
 import org.sd.cluster.config.ClusterContext;
@@ -78,7 +79,7 @@ public class GetLocalJobIdMessage extends DirectResponseMessage {
     this.description = MessageHelper.readString(dataInput);
   }
 
-  public Message getResponse(Context context) {
+  public Message getResponse(Context context, ConnectionContext connectionContext) {
     final ClusterContext clusterContext = (ClusterContext)context;
     final Config config = clusterContext.getConfig();
     final String myNodeName = config.getNodeName();

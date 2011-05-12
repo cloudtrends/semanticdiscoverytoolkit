@@ -20,6 +20,7 @@ package org.sd.cluster.job;
 
 
 import org.sd.cio.MessageHelper;
+import org.sd.cluster.io.ConnectionContext;
 import org.sd.cluster.io.Context;
 import org.sd.cluster.io.DirectResponseMessage;
 import org.sd.cluster.io.Message;
@@ -131,7 +132,7 @@ public class JobCommandMessage extends DirectResponseMessage {
    *       after receiving a message. The message as received on the server
    *       is handled in its own thread later.
    */
-  public Message getResponse(Context context) {
+  public Message getResponse(Context context, ConnectionContext connectionContext) {
     final ClusterContext clusterContext = (ClusterContext)context;
     return clusterContext.getJobManager().handleJobCommand(context, jobCommand, localJobId, payload, null);
   }

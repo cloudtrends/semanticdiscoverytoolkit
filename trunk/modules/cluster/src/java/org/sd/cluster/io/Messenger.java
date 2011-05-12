@@ -75,7 +75,7 @@ public class Messenger {
     return response;
   }
 
-  public synchronized Message receiveMessage(Context serverContext) throws IOException {
+  public synchronized Message receiveMessage(Context serverContext, ConnectionContext connectionContext) throws IOException {
     Message message = null;
     final long starttime = System.currentTimeMillis();
 
@@ -85,7 +85,7 @@ public class Messenger {
     this.receiveTime = postReceiveTime - starttime;
 
     // send a response through dataOutput
-    Message response = message.getResponse(serverContext);
+    Message response = message.getResponse(serverContext, connectionContext);
     if (response == null) response = new NullMessage();
     final long postResponseGenTime = System.currentTimeMillis();
     this.responseGenTime = postResponseGenTime - postReceiveTime;

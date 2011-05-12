@@ -61,7 +61,7 @@ public abstract class DirectResponseMessage implements Message {
    * NOTE: The message received on a server is handled asynchronously through this
    *       method after its response has been sent back to the client.
    */
-  public void handle(Context context) {
+  public void handle(Context context, ConnectionContext connectionContext) {
     // nothing to do.
   }
 }

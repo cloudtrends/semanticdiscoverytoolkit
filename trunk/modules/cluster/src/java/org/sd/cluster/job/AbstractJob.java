@@ -25,6 +25,7 @@ import org.sd.cluster.config.ClusterDefinition;
 import org.sd.cluster.config.Config;
 import org.sd.cluster.config.Console;
 import org.sd.cluster.config.StringResponse;
+import org.sd.cluster.io.ConnectionContext;
 import org.sd.cluster.io.Context;
 import org.sd.cluster.io.Message;
 import org.sd.io.Publishable;
@@ -164,7 +165,7 @@ public abstract class AbstractJob implements Job {
    *       after receiving a message. The message as received on the server
    *       is handled in its own thread later.
    */
-  public Message getResponse(Context context) {
+  public Message getResponse(Context context, ConnectionContext connectionContext) {
     final ClusterContext clusterContext = (ClusterContext)context;
     final Config config = clusterContext.getConfig();
     final String nodeName = config.getNodeName();
@@ -238,7 +239,7 @@ public abstract class AbstractJob implements Job {
   protected void postHandleHook(Context context) {
   }
 
-  public final void handle(Context context) {
+  public final void handle(Context context, ConnectionContext connectionContext) {
     if (canHandle()) {
       if (preHandleHook(context)) {
         final ClusterContext clusterContext = getClusterContext();

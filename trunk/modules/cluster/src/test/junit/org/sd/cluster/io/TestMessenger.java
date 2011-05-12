@@ -138,12 +138,12 @@ public class TestMessenger extends BaseTestCase {
       return 1 + 1 + 4 + 8 + s.getBytes().length + serializable.getBytes().length;
     }
 
-    public Message getResponse(Context context) {
+    public Message getResponse(Context context, ConnectionContext connectionContext) {
       responded = true;
       return this;
     }
 
-    public void handle(Context context) {
+    public void handle(Context context, ConnectionContext connectionContext) {
       handled = true;
     }
 
