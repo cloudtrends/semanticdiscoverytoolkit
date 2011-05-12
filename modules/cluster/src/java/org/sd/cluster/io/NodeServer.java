@@ -66,7 +66,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private final Context context;
   private int serverId;
   private String nodeName;
-  private LinkedBlockingQueue<Message> messageQueue;
+  private LinkedBlockingQueue<MessageBundle> messageQueue;
   private ExecutorService serverThread;         // waits for socket connections
   private ExecutorService socketPool;           // performs socket I/O
   private ExecutorService messageQueueThread;   // polls message queue for messages
@@ -117,7 +117,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     this.handleTimeStats = new StatsAccumulator("HandleTimeStats");
 
     // initialize stable queues
-    this.messageQueue = new LinkedBlockingQueue<Message>();
+    this.messageQueue = new LinkedBlockingQueue<MessageBundle>();
     this.serverThread
       = Executors.newSingleThreadExecutor(
         new ThreadFactory() {
@@ -374,8 +374,8 @@ public class NodeServer extends Thread implements NodeServerMXBean {
           public void run() {
             while (stayAlive.get()) {
               if (handling.get()) {
-                final Message message = getNextMessage(500);
-                if (message != null) handleMessage(message);
+                final MessageBundle messageBundle = getNextMessageBundle(500);
+                if (messageBundle != null) handleMessageBundle(messageBundle);
               }
               else {
                 try {
@@ -445,8 +445,8 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     this.endtime = System.currentTimeMillis();
   }
 
-  private Message getNextMessage(int timeout) {
-    Message result = null;
+  private MessageBundle getNextMessageBundle(int timeout) {
+    MessageBundle result = null;
 
     long starttime = System.currentTimeMillis();
     int numRetries = 100;
@@ -475,7 +475,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     }
   }
 
-  private void handleMessage(final Message message) {
+  private void handleMessageBundle(final MessageBundle messageBundle) {
     if (stayAlive.get()) {
       boolean handled = false;
       int tryCount = 0;
@@ -485,7 +485,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
             messageHandlerPool.execute(new Runnable() {
                 public void run() {
                   final long starttime = System.currentTimeMillis();
-                  message.handle(context);
+                  messageBundle.message.handle(context, messageBundle.connectionContext);
                   addHandledStat(System.currentTimeMillis() - starttime);
                 }
               });
@@ -503,12 +503,17 @@ public class NodeServer extends Thread implements NodeServerMXBean {
         }
       }
       if (!handled) {
-        throw new IllegalStateException("Couldn't handle message '" + message + "'! " + tryCount + " failures.");
+        final String msgstr =
+          (messageBundle == null || messageBundle.message == null) ? "null" :
+          messageBundle.message.toString();
+
+        throw new IllegalStateException("Couldn't handle message '" +
+                                        msgstr + "'! " + tryCount + " failures.");
       }
     }
   }
 
-  private class SocketListener implements Runnable {
+  private final class SocketListener implements Runnable {
     private ServerSocket serverSocket;
 
     public SocketListener(ServerSocket serverSocket) {
@@ -570,7 +575,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     }
   }
 
-  private class SocketHandler implements Runnable {
+  private final class SocketHandler implements Runnable {
     private Socket socket;
 
     public SocketHandler(Socket socket) {
@@ -586,8 +591,9 @@ public class NodeServer extends Thread implements NodeServerMXBean {
         final DataInputStream dataIn = socketIO.getDataInput();
         if (dataOut != null && dataIn != null) {
           // get message, send response, put message into message queue
+          final ConnectionContext connectionContext = new ConnectionContext(socket.getRemoteSocketAddress());
           final Messenger messenger = new Messenger(dataOut, dataIn);
-          final Message message = messenger.receiveMessage(context);  // does both receive and response
+          final Message message = messenger.receiveMessage(context, connectionContext);  // does both receive and response
 
           // tally stats
           addStats(messenger.getReceiveTime(), messenger.getResponseGenTime(), messenger.getSendTime());
@@ -595,7 +601,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
           //todo: split up receiving message and sending response so that if the message
           //      queue is full we can report that in the response to the client.
           //todo: set an upper-limit queue size and use messageQueue.offer instead of add.
-          messageQueue.add(message);
+          messageQueue.add(new MessageBundle(message, connectionContext));
         }
       }
       catch (IOException e) {
@@ -615,6 +621,16 @@ public class NodeServer extends Thread implements NodeServerMXBean {
           e.printStackTrace(System.err);
         }
       }
+    }
+  }
+
+  private final class MessageBundle {
+    public final Message message;
+    public final ConnectionContext connectionContext;
+
+    public MessageBundle(Message message, ConnectionContext connectionContext) {
+      this.message = message;
+      this.connectionContext = connectionContext;
     }
   }
 }

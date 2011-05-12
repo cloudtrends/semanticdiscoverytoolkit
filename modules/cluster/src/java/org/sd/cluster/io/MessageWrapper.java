@@ -74,8 +74,8 @@ public class MessageWrapper implements Message {
    *
    * @param serverContext  The context of the server responding to this message.
    */
-  public Message getResponse(Context serverContext) {
-    return wrappedMessage == null ? null : wrappedMessage.getResponse(serverContext);
+  public Message getResponse(Context serverContext, ConnectionContext connectionContext) {
+    return wrappedMessage == null ? null : wrappedMessage.getResponse(serverContext, connectionContext);
   }
 
   /**
@@ -87,8 +87,8 @@ public class MessageWrapper implements Message {
    * @param serverContext  The context of the server on which this message is
    *                       being handled.
    */
-  public void handle(Context serverContext) {
-    if (wrappedMessage != null) wrappedMessage.handle(serverContext);
+  public void handle(Context serverContext, ConnectionContext connectionContext) {
+    if (wrappedMessage != null) wrappedMessage.handle(serverContext, connectionContext);
   }
 
   /**

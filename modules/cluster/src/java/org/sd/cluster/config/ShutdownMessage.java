@@ -19,6 +19,7 @@
 package org.sd.cluster.config;
 
 
+import org.sd.cluster.io.ConnectionContext;
 import org.sd.cluster.io.Context;
 import org.sd.cluster.io.DirectResponseMessage;
 import org.sd.cluster.io.Message;
@@ -55,7 +56,7 @@ public class ShutdownMessage extends DirectResponseMessage {
    *       after receiving a message. The message as received on the server
    *       is handled in its own thread later.
    */
-  public Message getResponse(Context context) {
+  public Message getResponse(Context context, ConnectionContext connectionContext) {
     new ClusterNodeStopper(context, countdown).start();
     return new StringResponse(context, "shutting down.");
   }

@@ -1,5 +1,5 @@
 /*
-    Copyright 2009 Semantic Discovery, Inc. (www.semanticdiscovery.com)
+    Copyright 2011 Semantic Discovery, Inc. (www.semanticdiscovery.com)
 
     This file is part of the Semantic Discovery Toolkit.
 
@@ -16,32 +16,25 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.sd.cluster.config;
+package org.sd.cluster.io;
 
 
-import org.sd.cluster.io.ConnectionContext;
-import org.sd.cluster.io.Context;
-import org.sd.cluster.io.DirectResponseMessage;
-import org.sd.cluster.io.Message;
+import java.net.SocketAddress;
 
 /**
- * A message to determine whether a cluster node is up.
+ * Context for a message's (socket) connection.
  * <p>
  * @author Spence Koehler
  */
-public class Ping extends DirectResponseMessage {
+public class ConnectionContext {
+  
+  private SocketAddress remoteAddress;
 
-  public Ping() {
+  public ConnectionContext(SocketAddress remoteAddress) {
+    this.remoteAddress = remoteAddress;
   }
 
-  /**
-   * Get this message's response to be returned by the server to the client.
-   * <p>
-   * NOTE: this response is returned synchronously from a server to the client
-   *       after receiving a message. The message as received on the server
-   *       is handled in its own thread later.
-   */
-  public Message getResponse(Context context, ConnectionContext connectionContext) {
-    return new StringResponse(context, "is up.");
+  public SocketAddress getRemoteAddress() {
+    return remoteAddress;
   }
 }

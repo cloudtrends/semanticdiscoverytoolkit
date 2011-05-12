@@ -42,11 +42,11 @@ public class MessageTimingTest {
     public SimpleMessage() {
     }
 
-    public Message getResponse(Context serverContext) {
+    public Message getResponse(Context serverContext, ConnectionContext connectionContext) {
       return new BooleanResponse(serverContext, true);
     }
 
-    public void handle(Context serverContext) {
+    public void handle(Context serverContext, ConnectionContext connectionContext) {
     }
 
     public void write(DataOutput dataOutput) throws IOException {
