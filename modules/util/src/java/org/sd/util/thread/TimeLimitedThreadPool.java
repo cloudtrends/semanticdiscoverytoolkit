@@ -66,11 +66,11 @@ public class TimeLimitedThreadPool<T> {
     workerPool.shutdownNow();
   }
 
-  public ExecutionInfo<T> execute(Collection<Callable<T>> callables, long timeLimit) {
+  public ExecutionInfo<T> execute(Collection<? extends Callable<T>> callables, long timeLimit) {
     return execute(callables, timeLimit, false);
   }
 
-  public ExecutionInfo<T> execute(Collection<Callable<T>> callables, long timeLimit, boolean takeInsteadOfPoll) {
+  public ExecutionInfo<T> execute(Collection<? extends Callable<T>> callables, long timeLimit, boolean takeInsteadOfPoll) {
     final int num = callables.size();
     final boolean[] gotFuture = new boolean[num];
     final ExecutionInfo<T> result = new ExecutionInfo<T>(timeLimit, num);
