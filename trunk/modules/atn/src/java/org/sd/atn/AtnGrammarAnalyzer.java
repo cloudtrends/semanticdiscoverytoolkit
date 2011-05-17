@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.atn.ResourceManager;
 import org.sd.util.DotWrapper;
 import org.sd.util.GeneralUtil;
@@ -160,12 +161,13 @@ public class AtnGrammarAnalyzer {
     return new Parse(ruleId, tree, parsedText);
   }
 
-  public List<Parse> generateParses(AtnParseRunner parseRunner, Tree<String> tree, TextGenerator textGenerator) throws IOException {
+  public List<Parse> generateParses(AtnParseRunner parseRunner, Tree<String> tree,
+                                    TextGenerator textGenerator, AtomicBoolean die) throws IOException {
     List<Parse> result = null;
 
     if (parseRunner != null) {
       final String input = textGenerator == null ? tree.getLeafText() : textGenerator.getText(this, tree);
-      final ParseOutputCollector output = parseRunner.parseInputString(input, null);
+      final ParseOutputCollector output = parseRunner.parseInputString(input, null, die);
       result = output.getParses();
     }
 

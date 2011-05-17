@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.token.Token;
 import org.sd.util.InputContext;
 import org.sd.util.tree.Tree;
@@ -38,6 +39,7 @@ public class AtnParseResult {
   
   private AtnGrammar grammar;
   private Set<Integer> stopList;
+  private AtomicBoolean die;
 
   private Token firstToken;
   public Token getFirstToken() {
@@ -84,11 +86,13 @@ public class AtnParseResult {
     return firstToken.getTokenizer().getInputContext();
   }
 
-  AtnParseResult(AtnGrammar grammar, Token firstToken, AtnParseOptions options, Set<Integer> stopList, DataProperties overrides) {
+  AtnParseResult(AtnGrammar grammar, Token firstToken, AtnParseOptions options,
+                 Set<Integer> stopList, DataProperties overrides, AtomicBoolean die) {
     this.grammar = grammar;
     this.firstToken = firstToken;
     this.options = options;
     this.stopList = stopList;
+    this.die = die;
     this.overrides = overrides;
 
     this.parse = new Tree<AtnState>(null);
@@ -248,7 +252,7 @@ public class AtnParseResult {
   public boolean continueParsing() {
     boolean success = false;
 
-    while (startRuleIndex < startRules.size() || (states.size() + skipStates.size() > 0)) {
+    while ((startRuleIndex < startRules.size() || (states.size() + skipStates.size() > 0)) && (die == null || !die.get())) {
       if (states.size() + skipStates.size() == 0) {
         final AtnRule startRule = startRules.get(startRuleIndex);
         final Token firstToken = getFirstToken(startRule, this.firstToken);
@@ -261,7 +265,7 @@ public class AtnParseResult {
       }
 
       final AtnState state = states.size() > 0 ? states.getFirst() : skipStates.getFirst();
-      success = AtnState.matchTokenToRule(grammar, states, skipStates, stopList);
+      success = AtnState.matchTokenToRule(grammar, states, skipStates, stopList, die);
       // if (!success) System.out.println(AtnStateUtil.showStateTree(state.parentStateNode))
 
       if (success && options.getFirstParseOnly()) {

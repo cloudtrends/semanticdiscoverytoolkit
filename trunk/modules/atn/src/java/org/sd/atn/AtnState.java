@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Token;
 import org.sd.util.tree.Tree;
@@ -1203,10 +1204,10 @@ public class AtnState {
     return result;
   }
 
-  static boolean matchTokenToRule(AtnGrammar grammar, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, Set<Integer> stopList) {
+  static boolean matchTokenToRule(AtnGrammar grammar, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, Set<Integer> stopList, AtomicBoolean die) {
     boolean result = false;
 
-    while ((states.size() + skipStates.size() > 0) && !result) {
+    while ((states.size() + skipStates.size() > 0) && !result && (die == null || !die.get())) {
       final AtnState curstate = states.size() > 0 ? states.removeFirst() : skipStates.removeFirst();
 
       boolean success = false;

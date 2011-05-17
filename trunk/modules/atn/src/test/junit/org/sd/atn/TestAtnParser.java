@@ -1462,7 +1462,7 @@ public class TestAtnParser extends TestCase {
     }
 
     public void runTest() {
-      final AtnParseResult parseResult = seek ? parser.seekParse(tokenizer, options, stopList, null) : parser.parse(tokenizer, options, stopList, null);
+      final AtnParseResult parseResult = seek ? parser.seekParse(tokenizer, options, stopList, null, null) : parser.parse(tokenizer, options, stopList, null, null);
 
 
       if (expectedTreeStrings == null) {
