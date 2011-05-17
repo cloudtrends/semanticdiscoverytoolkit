@@ -32,15 +32,21 @@ public class TimeLimitedThread {
   private boolean interrupted;
   private long totalRunTime;
   private Throwable error;
+  private int checkInterval;
 
   /**
    * Initialize with the given runnable, but don't run it yet.
    */
   public TimeLimitedThread(Killable r) {
+    this(r, 1000);
+  }
+
+  public TimeLimitedThread(Killable r, int checkInterval) {
     this.runnerThread = new RunnerThread(r);
     this.interrupted = false;
     this.totalRunTime = 0L;
     this.error = null;
+    this.checkInterval = checkInterval;
   }
 
   /**
@@ -65,9 +71,9 @@ public class TimeLimitedThread {
         result = false;
       }
       else {
-        long remainingTime = timeLimit > 0 ? timeLimit - runTime : 1000;
+        final long remainingTime = timeLimit > 0 ? timeLimit - runTime : checkInterval;
         try {
-          Thread.sleep(Math.min(1000, remainingTime));
+          Thread.sleep(Math.min(checkInterval, remainingTime));
         }
         catch (InterruptedException e) {
           break;
