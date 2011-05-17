@@ -19,6 +19,7 @@
 package org.sd.atn;
 
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.util.InputContextIterator;
 import org.sd.xml.DataProperties;
 
@@ -47,15 +48,18 @@ public abstract class ParseSettings {
     return atnParserFlow;
   }
 
-  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator, DataProperties overrides) {
-    return parse(parseConfig, inputContextIterator, null, overrides);
+  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator,
+                                    DataProperties overrides, AtomicBoolean die) {
+    return parse(parseConfig, inputContextIterator, null, overrides, die);
   }
 
-  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator, ParseOutputCollector output, DataProperties overrides) {
+  public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator,
+                                    ParseOutputCollector output, DataProperties overrides,
+                                    AtomicBoolean die) {
 
     final InputContextIterator reconfiguredInput =  reconfigureInput(inputContextIterator, output);
     if (reconfiguredInput != null) {
-      output = parseConfig.parse(reconfiguredInput, this.compoundParserId, this.atnParserFlow, output, overrides);
+      output = parseConfig.parse(reconfiguredInput, this.compoundParserId, this.atnParserFlow, output, overrides, die);
     }
 
     return output;

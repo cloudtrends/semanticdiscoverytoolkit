@@ -28,6 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.io.IOException;
 import org.sd.io.FileUtil;
 import org.sd.util.ExecUtil;
@@ -213,35 +214,35 @@ public class AtnParseRunner {
     parseConfig.close();
   }
 
-  public void run() throws IOException {
-    final ParseOutputCollector output = buildOutput();
+  public void run(AtomicBoolean die) throws IOException {
+    final ParseOutputCollector output = buildOutput(die);
     if (output != null) {
       final ExtractionGroups extractionGroups = new ExtractionGroups(output);
       handleOutput(output, extractionGroups);
     }
   }
 
-  public ParseOutputCollector buildOutput() throws IOException {
-    return buildOutput(null);
+  public ParseOutputCollector buildOutput(AtomicBoolean die) throws IOException {
+    return buildOutput(null, die);
   }
 
-  public ParseOutputCollector buildOutput(DataProperties overrides) throws IOException {
+  public ParseOutputCollector buildOutput(DataProperties overrides, AtomicBoolean die) throws IOException {
     ParseOutputCollector output = null;
 
     final String inputString = options.getString("inputString", null);
     if (inputString != null) {
-      output = parseInputString(inputString, overrides);
+      output = parseInputString(inputString, overrides, die);
     }
     else {
       final String inputLines = options.getString("inputLines", null);
       if (inputLines != null) {
-        output = parseLines(new File(inputLines), overrides);
+        output = parseLines(new File(inputLines), overrides, die);
       }
       else {
         final String inputHtml = options.getString("inputHtml", null);
         if (inputHtml != null) {
           final String diffHtml = options.getString("diffHtml", null);
-          output = parseHtml(new File(inputHtml), diffHtml == null ? null : new File(diffHtml), overrides);
+          output = parseHtml(new File(inputHtml), diffHtml == null ? null : new File(diffHtml), overrides, die);
         }
       }
     }
@@ -367,15 +368,15 @@ public class AtnParseRunner {
     return result;
   }
 
-  public ParseOutputCollector parseInputString(String inputString, DataProperties overrides) throws IOException {
+  public ParseOutputCollector parseInputString(String inputString, DataProperties overrides, AtomicBoolean die) throws IOException {
     final FileContext fileContext = new FileContext(new String[]{inputString}, WhitespacePolicy.HYPERTRIM);
-    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), InputUpdateStrategy.RESET, null, overrides);
+    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), InputUpdateStrategy.RESET, null, overrides, die);
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputString, false, false, false, null, null, null);
     output.setParseSourceInfo(sourceInfo);
     return output;
   }
 
-  public ParseOutputCollector parseLines(File inputLines, DataProperties overrides) throws IOException {
+  public ParseOutputCollector parseLines(File inputLines, DataProperties overrides, AtomicBoolean die) throws IOException {
     final FileContext fileContext = new FileContext(inputLines, WhitespacePolicy.HYPERTRIM);
 
     //todo: parameterize whether to broaden the scope of the iterator
@@ -383,7 +384,7 @@ public class AtnParseRunner {
     //      - if paragraphs, then BROADEN
     final InputUpdateStrategy inputUpdateStrategy = InputUpdateStrategy.RESET;
 
-    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), inputUpdateStrategy, null, overrides);
+    final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), inputUpdateStrategy, null, overrides, die);
 
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputLines, false, false);
     output.setParseSourceInfo(sourceInfo);
@@ -391,7 +392,8 @@ public class AtnParseRunner {
     return output;
   }
 
-  public ParseOutputCollector parseHtml(File inputHtml, File diffHtml, DataProperties overrides) throws IOException {
+  public ParseOutputCollector parseHtml(File inputHtml, File diffHtml,
+                                        DataProperties overrides, AtomicBoolean die) throws IOException {
     //todo: parameterize textBlock flag
     final boolean textBlock = false;
 
@@ -401,7 +403,7 @@ public class AtnParseRunner {
     final InputUpdateStrategy inputUpdateStrategy = InputUpdateStrategy.XML;
 
     final DomContextIterator inputContextIterator = DomContextIteratorFactory.getDomContextIterator(inputHtml, diffHtml, true, strategy);
-    final ParseOutputCollector result = parseInput(inputContextIterator, inputUpdateStrategy, null, overrides);
+    final ParseOutputCollector result = parseInput(inputContextIterator, inputUpdateStrategy, null, overrides, die);
 
     final ParseSourceInfo sourceInfo = new ParseSourceInfo(inputHtml, true, true);
     if (diffHtml != null) sourceInfo.setDiffString(diffHtml.getAbsolutePath());
@@ -410,9 +412,10 @@ public class AtnParseRunner {
     return result;
   }
 
-  public ParseOutputCollector parseDomNode(DomNode domNode, boolean isHtml, ParseOutputCollector priorOutput, DataProperties overrides) {
+  public ParseOutputCollector parseDomNode(DomNode domNode, boolean isHtml, ParseOutputCollector priorOutput,
+                                           DataProperties overrides, AtomicBoolean die) {
     final DomContextIterator inputContextIterator = DomContextIteratorFactory.getDomContextIterator(domNode);
-    final ParseOutputCollector result = parseInput(inputContextIterator, InputUpdateStrategy.XML, priorOutput, overrides);
+    final ParseOutputCollector result = parseInput(inputContextIterator, InputUpdateStrategy.XML, priorOutput, overrides, die);
     if (priorOutput == null) {
       final ParseSourceInfo sourceInfo = new ParseSourceInfo(domNode.getTextContent(), true, isHtml, false, null, null, null);
       result.setParseSourceInfo(sourceInfo);
@@ -420,7 +423,9 @@ public class AtnParseRunner {
     return result;
   }
 
-  protected ParseOutputCollector parseInput(InputContextIterator inputContextIterator, InputUpdateStrategy inputUpdateStrategy, ParseOutputCollector result, DataProperties overrides) {
+  protected ParseOutputCollector parseInput(InputContextIterator inputContextIterator,
+                                            InputUpdateStrategy inputUpdateStrategy, ParseOutputCollector result,
+                                            DataProperties overrides, AtomicBoolean die) {
 
     boolean didOne = false;
 
@@ -431,7 +436,7 @@ public class AtnParseRunner {
         inputContextIterator = updateInput(inputContextIterator, inputUpdateStrategy, result);
       }
 
-      result = parseConfig.parse(inputContextIterator, parserFlow.getFlowId(), parserFlow.getParserIds(true), result, overrides);
+      result = parseConfig.parse(inputContextIterator, parserFlow.getFlowId(), parserFlow.getParserIds(true), result, overrides, die);
       didOne = true;
     }
 
@@ -527,7 +532,7 @@ public class AtnParseRunner {
 
     final AtnParseRunner runner = new AtnParseRunner(dataProperties);
     try {
-      runner.run();
+      runner.run(new AtomicBoolean(false));
     }
     finally {
       runner.close();

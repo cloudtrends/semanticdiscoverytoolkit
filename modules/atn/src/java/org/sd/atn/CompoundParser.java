@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.token.StandardTokenizerOptions;
 import org.sd.token.Tokenizer;
 import org.sd.util.InputContext;
@@ -180,16 +181,18 @@ public class CompoundParser {
   }
 
 
-  public ParseOutputCollector parse(InputContext input, String[] flow) {
-    return parse(input, flow, null, null, null, null);
+  public ParseOutputCollector parse(InputContext input, String[] flow, AtomicBoolean die) {
+    return parse(input, flow, null, null, null, null, die);
   }
 
-  public ParseOutputCollector parse(InputContext input, String[] flow, ParseOutputCollector output, Set<Integer> stopList, List<AtnParseResult> collector, DataProperties overrides) {
+  public ParseOutputCollector parse(InputContext input, String[] flow, ParseOutputCollector output,
+                                    Set<Integer> stopList, List<AtnParseResult> collector,
+                                    DataProperties overrides, AtomicBoolean die) {
     final ParseOutputCollector theOutput = output == null ? new ParseOutputCollector(outputNode) : output;
 
     //NOTE: stopList holds indexes for starts of tokens that have been consumed by other parses
 
-    collectOutput(input, flow, theOutput, stopList, collector, overrides);
+    collectOutput(input, flow, theOutput, stopList, collector, overrides, die);
 
     return theOutput;
   }
@@ -209,7 +212,9 @@ public class CompoundParser {
     return result;
   }
 
-  private void collectOutput(InputContext input, String[] flow, ParseOutputCollector output, Set<Integer> stopList, List<AtnParseResult> collector, DataProperties overrides) {
+  private void collectOutput(InputContext input, String[] flow, ParseOutputCollector output,
+                             Set<Integer> stopList, List<AtnParseResult> collector,
+                             DataProperties overrides, AtomicBoolean die) {
     if (verbose) System.out.print("\nParsing '" + input.getText() + "'...");
 
     if (flow == null) {
@@ -229,7 +234,7 @@ public class CompoundParser {
       currentTokenizer = getCurrentTokenizer(currentTokenizer, output, input, parserWrapper);
 
       // generate initial parse results
-      final List<AtnParseResult> parseResults = parserWrapper.seekAll(currentTokenizer, stopList, overrides);
+      final List<AtnParseResult> parseResults = parserWrapper.seekAll(currentTokenizer, stopList, overrides, die);
 
       if (parseResults.size() > 0) {
         if (verbose && !gotResults) {

@@ -21,6 +21,7 @@ package org.sd.atn;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.token.StandardTokenizerOptions;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
@@ -121,10 +122,11 @@ public class AtnParserWrapper {
     return result;
   }
 
-  public List<AtnParseResult> seekAll(AtnParseBasedTokenizer tokenizer, Set<Integer> stopList, DataProperties overrides) {
+  public List<AtnParseResult> seekAll(AtnParseBasedTokenizer tokenizer, Set<Integer> stopList,
+                                      DataProperties overrides, AtomicBoolean die) {
     tokenizer.setTokenizerOptions(tokenizerOptions);
 
-    final List<AtnParseResult> parseResults = parser.seekAll(tokenizer, parseOptions, stopList, overrides);
+    final List<AtnParseResult> parseResults = parser.seekAll(tokenizer, parseOptions, stopList, overrides, die);
 
     if (parseSelector != null && parseResults != null && parseResults.size() > 0) {
       for (AtnParseResult parseResult : parseResults) {

@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DataProperties;
 
@@ -122,8 +123,8 @@ public class ParseAnalyzer {
     return grammarAnalyzer.getHardwiredParse(tree, textGenerator);
   }
 
-  public List<Parse> generateParses(Tree<String> tree) throws IOException {
-    return grammarAnalyzer.generateParses(parseRunner, tree, textGenerator);
+  public List<Parse> generateParses(Tree<String> tree, AtomicBoolean die) throws IOException {
+    return grammarAnalyzer.generateParses(parseRunner, tree, textGenerator, die);
   }
 
   public Map<String, List<Tree<String>>> buildTrees() {
