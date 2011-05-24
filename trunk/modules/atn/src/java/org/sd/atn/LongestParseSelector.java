@@ -37,13 +37,19 @@ import org.sd.xml.DomNode;
 public class LongestParseSelector implements AtnParseSelector {
   
   private boolean simplest;
+  private boolean onlyfirst;
 
   /**
    * Attribute 'simplest' (default 'true') accepts only longest parses with
    * the fewest number of nodes in their parse tree.
+   * <p>
+   * Attribute 'onlyfirst' (default 'false') accepts only the first (longest/
+   * simplest) parse.
    */
   public LongestParseSelector(DomNode domNode, ResourceManager resourceManager) {
-    this.simplest = ((DomElement)domNode).getAttributeBoolean("simplest", true);
+    final DomElement domElement = (DomElement)domNode;
+    this.simplest = domElement.getAttributeBoolean("simplest", true);
+    this.onlyfirst = domElement.getAttributeBoolean("onlyfirst", false);
   }
 
   public List<AtnParse> selectParses(AtnParseResult parseResult) {
@@ -85,6 +91,11 @@ public class LongestParseSelector implements AtnParseSelector {
 
       if (select && isDuplicate(parse, result)) {
         note = "Is duplicate";
+        select = false;
+      }
+
+      if (onlyfirst && select && result.size() > 0) {
+        note = "Isn't first";
         select = false;
       }
 
