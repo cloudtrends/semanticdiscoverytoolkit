@@ -170,6 +170,7 @@ public class ParseConfig {
     //   <interpreter parser="compoundID:parserID" mode="supplement|override">
     //      ...
     //   </interpreter>
+    //   <parseSelector parser="compoundID:parserID" ...override attributes...>...override elements...</parseSelector>
     // </supplement>
     //
 
@@ -222,6 +223,12 @@ public class ParseConfig {
           }
 
           supplemented = true;
+        }
+
+        // parseSelector override
+        else if ("parseselector".equals(directive)) {
+          final AtnParseSelector parseSelectorOverride = (AtnParseSelector)resourceManager.getResource((DomElement)supplementNode);
+          parserWrapper.setParseSelector(parseSelectorOverride);
         }
       }
 

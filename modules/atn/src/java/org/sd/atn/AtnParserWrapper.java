@@ -62,6 +62,9 @@ public class AtnParserWrapper {
   public AtnParseSelector getParseSelector() {
     return parseSelector;
   }
+  public void setParseSelector(AtnParseSelector parseSelector) {
+    this.parseSelector = parseSelector;
+  }
 
   private AmbiguityResolver ambiguityResolver;
   public AmbiguityResolver getAmbiguityResolver() {
