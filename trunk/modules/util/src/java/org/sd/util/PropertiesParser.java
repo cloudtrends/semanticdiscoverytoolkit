@@ -99,6 +99,7 @@ public class PropertiesParser {
     this();
 
     parseArgs(args);
+
     if (getenv) getEnvironmentVars();
   }
 
@@ -154,14 +155,23 @@ public class PropertiesParser {
   }
 
   private final void loadFileProperties(Properties fileProperties, String arg) throws IOException {
-    if (isAbsolute(arg)) {
-      // use absolute path specified by arg
-      final File file = FileUtil.getFile(arg);
+    File file = FileUtil.getFile(arg);
+
+    if (file != null && file.exists()) {
+      // use path specified by arg
       doLoad(fileProperties, file, arg);
     }
     else {
-      // search classpath for "x.properties"
-      loadProperties(this.properties, arg, false/*verbose*/);
+      file = new File(new File(System.getProperty("user.dir")), arg);
+
+      if (file != null && file.exists()) {
+        // use path under user.dir to arg
+        doLoad(fileProperties, file, arg);
+      }
+      else {
+        // search classpath for "x.properties"
+        loadProperties(this.properties, arg, false/*verbose*/);
+      }
     }
   }
 
@@ -285,7 +295,9 @@ public class PropertiesParser {
     }
 
     if (!gotResource) {
-      System.err.println("***WARNING: Couldn't load resource '" + name + "'");
+      System.err.println("***WARNING: Couldn't load resource '" + name + "' (user.dir=" +
+                         System.getProperty("user.dir") + ")");
+      new Exception("Lost Resource").printStackTrace(System.err);
     }
 
     return result;

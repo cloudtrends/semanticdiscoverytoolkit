@@ -215,7 +215,7 @@ public class CompoundParser {
   private void collectOutput(InputContext input, String[] flow, ParseOutputCollector output,
                              Set<Integer> stopList, List<AtnParseResult> collector,
                              DataProperties overrides, AtomicBoolean die) {
-    if (verbose) System.out.print("\nParsing '" + input.getText() + "'...");
+    if (verbose) System.out.print("\nCompoundParser '" + id + "' parsing '" + input.getText() + "'...");
 
     if (flow == null) {
       flow = parserWrappers.keySet().toArray(new String[parserWrappers.size()]);
