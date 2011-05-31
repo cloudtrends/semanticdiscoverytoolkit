@@ -229,6 +229,7 @@ public class ParseConfig {
         else if ("parseselector".equals(directive)) {
           final AtnParseSelector parseSelectorOverride = (AtnParseSelector)resourceManager.getResource((DomElement)supplementNode);
           parserWrapper.setParseSelector(parseSelectorOverride);
+          supplemented = true;
         }
       }
 
