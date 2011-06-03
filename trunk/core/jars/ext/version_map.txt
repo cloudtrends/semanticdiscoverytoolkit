@@ -8,3 +8,4 @@ weka.jar:weka-3-6-0.jar
 xalan.jar:xalan-j_2_7_1.jar
 xercesImpl.jar:xercesImpl_2_7_1.jar
 xml-apis.jar:xml-apis_2_7_1.jar
+protobuf.jar:protobuf-2.4.1.jar

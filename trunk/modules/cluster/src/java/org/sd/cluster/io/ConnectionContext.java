@@ -19,7 +19,10 @@
 package org.sd.cluster.io;
 
 
+import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Context for a message's (socket) connection.
@@ -28,13 +31,67 @@ import java.net.SocketAddress;
  */
 public class ConnectionContext {
   
-  private SocketAddress remoteAddress;
+  private Socket socket;
+  private final AtomicInteger monitorID = new AtomicInteger(0);
 
-  public ConnectionContext(SocketAddress remoteAddress) {
-    this.remoteAddress = remoteAddress;
+  public ConnectionContext(Socket socket) {
+    this.socket = socket;
+  }
+
+  public Socket getSocket() {
+    return socket;
+  }
+
+  public boolean isConnected() {
+    return socket.isConnected();
   }
 
   public SocketAddress getRemoteAddress() {
-    return remoteAddress;
+    return socket.getRemoteSocketAddress();
+  }
+
+  /**
+   * Add a monitor with the given boolean on this instance's socket.
+   * <p>
+   * The monitor will check the socket connection, setting "die" to true
+   * when the connection closes. The monitor will end when "die" is true
+   * regardless of whether the connection closed. The monitor does *not*
+   * affect the state of the connection.
+   *
+   * @param die  Monitor variable that is set to true when the connection
+   *             is closed or that aborts the monitor when set to true.
+   * @param checkInterval  The number of millis to sleep between checking
+   *                       the socket connection.
+   */
+  public void addConnectionMonitor(AtomicBoolean die, long checkInterval) {
+    new ConnectionMonitor(die, checkInterval).start();
+  }
+
+
+  private final class ConnectionMonitor extends Thread {
+
+    private AtomicBoolean die;
+    private long checkInterval;
+    
+    public ConnectionMonitor(AtomicBoolean die, long checkInterval) {
+      super("Monitor-" + monitorID.getAndIncrement() + "-" + getRemoteAddress().toString());
+      this.die = die;
+    }
+
+    public void run() {
+      while (!die.get()) {
+        if (!isConnected()) {
+          die.set(true);
+          break;
+        }
+        try {
+          sleep(checkInterval);
+        }
+        catch (InterruptedException e) {
+          // stop monitoring
+          break;
+        }
+      }
+    }
   }
 }

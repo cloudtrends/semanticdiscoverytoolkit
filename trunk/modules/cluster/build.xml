@@ -7,4 +7,11 @@
   <property name="env.CORE_ROOT" value="../../core"/>
   <import file="${env.CORE_ROOT}/antscripts/common.xml"/>
 
+  <uptodate property="protolog-uptodate"
+            srcfile="src/protobuf/conf/protolog-protos.proto"
+            targetfile="src/java/org/sd/cluster/protolog/codegen/ProtoLogProtos.java" />
+
+  <target name="pre-compile">
+    <exec executable="protogen" dir="src/protobuf/bin" />
+  </target>
 </project>

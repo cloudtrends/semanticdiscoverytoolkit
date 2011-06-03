@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# Script to generate protolog classes.
+#
+# Usage: ./protogen
+#
+# NOTE: This requires/assumes protobuf is installed and available in the current
+#       path.  See http://code.google.com/p/protobuf/
+#
+#
+
+SRC_DIR=../conf;
+DST_DIR=../../java
+
+protoc -I=$SRC_DIR --java_out=$DST_DIR ../conf/protolog-protos.proto

@@ -277,7 +277,11 @@
     <delete dir="${bldoutdir}"/>
   </target>
 
-  <target name="compile-source" unless="compile.skip" depends="depcp" description="Compile source code">
+  <target name="pre-compile">
+    <!-- placeholder for dependent builds that need pre-compile targets (like code generation). -->
+  </target>
+
+  <target name="compile-source" unless="compile.skip" depends="depcp,pre-compile" description="Compile source code">
     <mkdir dir="${classoutdir}"/>
     <depend srcdir="${srcdir}" destdir="${classoutdir}" cache="${bldoutdir}/depcache">
       <include name="**/*.java"/>
