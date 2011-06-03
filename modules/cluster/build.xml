@@ -11,7 +11,7 @@
             srcfile="src/protobuf/conf/protolog-protos.proto"
             targetfile="src/java/org/sd/cluster/protolog/codegen/ProtoLogProtos.java" />
 
-  <target name="pre-compile">
+  <target name="pre-compile" unless="protolog-uptodate">
     <exec executable="protogen" dir="src/protobuf/bin" />
   </target>
 </project>
