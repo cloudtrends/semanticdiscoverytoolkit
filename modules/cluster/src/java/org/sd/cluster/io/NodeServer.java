@@ -591,7 +591,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
         final DataInputStream dataIn = socketIO.getDataInput();
         if (dataOut != null && dataIn != null) {
           // get message, send response, put message into message queue
-          final ConnectionContext connectionContext = new ConnectionContext(socket.getRemoteSocketAddress());
+          final ConnectionContext connectionContext = new ConnectionContext(socket);
           final Messenger messenger = new Messenger(dataOut, dataIn);
           final Message message = messenger.receiveMessage(context, connectionContext);  // does both receive and response
 

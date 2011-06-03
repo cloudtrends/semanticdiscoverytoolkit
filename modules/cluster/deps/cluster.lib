@@ -1,4 +1,5 @@
 runtime:commons-cli.jar
 runtime:commons-lang.jar
 runtime:mail.jar
+runtime:protobuf.jar
 testonly:junit.jar

@@ -86,6 +86,16 @@ public class TimeLimitedThread {
     return result;
   }
 
+  public RunnerThread getRunnerThread() {
+    return runnerThread;
+  }
+
+  public void kill() {
+    if (runnerThread != null && runnerThread.isRunning()) {
+      runnerThread.kill();
+    }
+  }
+
   private final void setError(Throwable t) {
     this.error = t;
   }
@@ -105,27 +115,81 @@ public class TimeLimitedThread {
   private class RunnerThread extends Thread {
     private Killable r;
     private AtomicBoolean running = new AtomicBoolean(true);
+    private long startTime;
+    private long endTime;
+    private boolean killed;
 
     public RunnerThread(Killable r) {
       this.r = r;
+
+      this.startTime = 0L;
+      this.endTime = 0L;
+      this.killed = false;
     }
 
     public void kill() {
       r.die();
+
+      this.endTime = System.currentTimeMillis();
+      this.killed = true;
     }
 
     public void run() {
       try {
+        this.startTime = System.currentTimeMillis();
         r.run();
       }
       catch (Throwable t) {
         setError(t);
       }
       running.set(false);
+      this.endTime = System.currentTimeMillis();
     }
 
+    /**
+     * Determine whether this thread is running.
+     * <p>
+     * This method returns true if the thread has not finished or been killed,
+     * even if its 'run' method has not been invoked yet.
+     */
     public boolean isRunning() {
-      return running.get();
+      return running.get() && !killed;
+    }
+
+    /**
+     * Get the time at which this thread began actually running, or 0 if not
+     * yet started.
+     */
+    public long getStartTime() {
+      return startTime;
+    }
+
+    /**
+     * Get the time at which this thread stopped running, or 0 if not yet ended.
+     */
+    public long getEndTime() {
+      return endTime;
+    }
+
+    /**
+     * Determine whether this thread was killed.
+     */
+    public boolean wasKilled() {
+      return killed;
+    }
+
+    /**
+     * Determine whether this thread has been started.
+     */
+    public boolean wasStarted() {
+      return this.startTime > 0;
+    }
+
+    /**
+     * Determine whether this thread has ended.
+     */
+    public boolean wasEnded() {
+      return this.endTime > 0;
     }
   }
 }

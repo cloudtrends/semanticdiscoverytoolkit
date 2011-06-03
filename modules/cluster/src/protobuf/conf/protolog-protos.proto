@@ -1,0 +1,33 @@
+package org.sd.cluster.protolog.codegen;
+
+option java_package = "org.sd.cluster.protolog.codegen";
+option java_outer_classname = "ProtoLogProtos";
+
+// container for an (optionally typed, possibly multivalued) attribute
+message Attribute {
+  optional string type = 1;
+  repeated string stringData = 2;
+  repeated int32 intData = 3 [packed=true];
+  repeated int64 longData = 4 [packed=true];
+  repeated bool boolData = 5;
+  repeated bytes bytesData = 6;
+}
+
+// container for a log header message
+message LogHeader {
+  required int64 startTime = 1;
+  optional string clusterdef = 2;
+  optional int32 jvmNum = 3;
+  optional string user = 4;
+  optional string machine = 5;
+  optional string ip = 6;
+  optional string logID = 7;
+
+  repeated Attribute attribute=8;
+}
+
+// container for a log entry
+message GenericLogEntry {
+  required int64 timestamp = 1;
+  repeated Attribute attribute = 2;
+}
