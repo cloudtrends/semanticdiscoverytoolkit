@@ -20,6 +20,7 @@ package org.sd.util.cmd;
 
 
 import org.sd.io.FileUtil;
+import org.sd.util.PropertiesParser;
 import org.sd.util.ReflectUtil;
 
 import java.io.BufferedReader;
@@ -30,6 +31,7 @@ import java.io.PrintStream;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,27 +51,32 @@ public class CommandInterpreter {
   private static final Pattern COMMAND_PATTERN = Pattern.compile("^\\s*(\\w+)\\s*(.*)$");
   private static final Pattern WORD_PATTERN = Pattern.compile("^\\s*(\\w+)\\s*$");
 
-  public CommandInterpreter(String commandsClass, String initFile) {
+  //for junit testing and initialization
+  CommandInterpreter() {
     // init default vars
     this.vars = new LinkedHashMap<String, String>();
     vars.put("prompt", "cmd> ");
-    if (initFile != null) vars.put("initFile", initFile);
+    this.commands = null;
+  }
 
+  public CommandInterpreter(String commandsClass, String initFile) {
+    this();
+    if (initFile != null) vars.put("initFile", initFile);
     // create commands instance
     this.commands = (Commands)ReflectUtil.buildInstance(commandsClass);
   }
 
-  public CommandInterpreter(Commands commands, String initFile) {
-    this.vars = new LinkedHashMap<String, String>();
-    vars.put("prompt", "cmd> ");
+  public CommandInterpreter(String commandsClass, String initFile, Properties properties) {
+    this();
     if (initFile != null) vars.put("initFile", initFile);
-    this.commands = commands;
+    // create commands instance
+    this.commands = (Commands)ReflectUtil.buildInstance(commandsClass, properties);
   }
 
-  //for junit testing
-  CommandInterpreter() {
-    this.vars = new LinkedHashMap<String, String>();
-    this.commands = null;
+  public CommandInterpreter(Commands commands, String initFile) {
+    this();
+    if (initFile != null) vars.put("initFile", initFile);
+    this.commands = commands;
   }
 
   public void setCommands(Commands commands) {
@@ -222,8 +229,10 @@ public class CommandInterpreter {
 
   public static void main(String[] args) throws IOException {
     //todo: parse args: override commands class, initFile, prompt, etc.
+    final PropertiesParser pp = new PropertiesParser(args);
+    final Properties properties = pp.getProperties();
 
-    final CommandInterpreter interp = new CommandInterpreter("org.sd.util.cmd.Foo", null);
+    final CommandInterpreter interp = new CommandInterpreter("org.sd.util.cmd.Foo", null, properties);
     interp.init();
     interp.start();
   }

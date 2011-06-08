@@ -213,6 +213,11 @@ public class XmlStringBuilder {
         ended = true;
         result = xml.toString();
       }
+      else if (rootTag != null && !"".equals(rootTag)) {
+        initXml(rootTag);
+        ended = true;
+        result = xml.toString();
+      }
       // else result is null
     }
     else {
