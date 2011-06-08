@@ -226,7 +226,7 @@ public class NodeClient extends Thread {
   private Message[] waitForResponses(final LinkedBlockingQueue<Message> responseQueue, final int numWaitingFor, final int timeout, final int timeLimit) {
     Message[] result = null;
 
-    final AtomicInteger nextResultIndex = new AtomicInteger(0);
+//    final AtomicInteger nextResultIndex = new AtomicInteger(0);
 
     // start the response queue listener
     try {
@@ -234,11 +234,18 @@ public class NodeClient extends Thread {
         = responseQueueThread.submit(new Callable<Message[]>() {
           public Message[] call() {
             final Message[] responses = new Message[numWaitingFor];
+            int nextResultIndex = 0;
             final long startTime = System.currentTimeMillis();
-            while ((nextResultIndex.get() < numWaitingFor) && ((System.currentTimeMillis() - startTime) < timeLimit)) {
+            long curTime = 0L;
+            while (nextResultIndex < numWaitingFor) {
               final Message response = getNextResponse(responseQueue, timeout);
               if (response != null) {
-                responses[nextResultIndex.getAndIncrement()] = response;
+                responses[nextResultIndex++] = response;
+              }
+              curTime = System.currentTimeMillis();
+              if ((curTime - startTime) >= timeLimit) {
+                System.out.println("NodeClient ran out of time! (start=" + startTime + ", cur=" + curTime + ", delta=" + (curTime - startTime) + ", timeLimit=" + timeLimit + ", timeout=" + timeout + ", numWaitingFor=" + numWaitingFor + ", nextResultIndex=" + nextResultIndex);
+                break;
               }
             }
             return responses;

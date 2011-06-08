@@ -24,6 +24,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import org.sd.io.DataHelper;
 import org.sd.xml.DomElement;
+import org.sd.xml.XmlStringBuilder;
 import org.sd.xml.XmlFactory;
 
 /**
@@ -80,6 +81,13 @@ public abstract class XmlMessage implements Message {
       }
     }
     return _xmlElement;
+  }
+
+  /**
+   * Get this instance's xml data as an XmlStringBuilder.
+   */
+  public XmlStringBuilder getXmlStringBuilder() {
+    return new XmlStringBuilder().setXmlString(getXmlDataString());
   }
 
   /**

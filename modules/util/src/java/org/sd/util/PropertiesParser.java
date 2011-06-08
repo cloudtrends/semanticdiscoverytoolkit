@@ -80,7 +80,14 @@ public class PropertiesParser {
    * Construct with default properties.
    */
   public PropertiesParser() {
-    this.properties = new Properties();
+    this((Properties)null);
+  }
+
+  /**
+   * Construct with the given base properties.
+   */
+  public PropertiesParser(Properties base) {
+    this.properties = (base == null) ? new Properties() : new Properties(base);
     this.args = new String[0];
     this.context = null;
   }
@@ -89,14 +96,25 @@ public class PropertiesParser {
    * Construct with the given args.
    */
   public PropertiesParser(String[] args) throws IOException {
-    this(args, false);
+    this(null, args, false);
+  }
+
+  /**
+   * Construct with the given args using the given base properties.
+   */
+  public PropertiesParser(Properties base, String[] args)  throws IOException {
+    this(base, args, false);
   }
 
   /**
    * Construct with the given args, optionally including environment vars.
    */
   public PropertiesParser(String[] args, boolean getenv) throws IOException {
-    this();
+    this(null, args, getenv);
+  }
+
+  public PropertiesParser(Properties base, String[] args, boolean getenv) throws IOException {
+    this(base);
 
     parseArgs(args);
 

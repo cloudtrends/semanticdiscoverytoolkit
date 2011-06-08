@@ -19,6 +19,7 @@
 package org.sd.cluster.io;
 
 
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,7 +48,13 @@ public class ConnectionContext {
   }
 
   public SocketAddress getRemoteAddress() {
+    //NOTE: SocketAddress.toString is of form "0:0:0:0:0:0:0:1:44945" (includes connecting port)
     return socket.getRemoteSocketAddress();
+  }
+
+  public InetAddress getInetAddress() {
+    //NOTE: InetAddress.toString is of form "0:0:0:0:0:0:0:1" (doesn't include connecting port)
+    return socket.getInetAddress();
   }
 
   /**

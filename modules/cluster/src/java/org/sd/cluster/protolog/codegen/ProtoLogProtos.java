@@ -2705,6 +2705,1581 @@ public final class ProtoLogProtos {
     // @@protoc_insertion_point(class_scope:org.sd.cluster.protolog.codegen.GenericLogEntry)
   }
   
+  public interface EventIdOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required uint64 id = 1;
+    boolean hasId();
+    long getId();
+    
+    // optional string who = 2;
+    boolean hasWho();
+    String getWho();
+    
+    // optional string what = 3;
+    boolean hasWhat();
+    String getWhat();
+  }
+  public static final class EventId extends
+      com.google.protobuf.GeneratedMessage
+      implements EventIdOrBuilder {
+    // Use EventId.newBuilder() to construct.
+    private EventId(Builder builder) {
+      super(builder);
+    }
+    private EventId(boolean noInit) {}
+    
+    private static final EventId defaultInstance;
+    public static EventId getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public EventId getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.sd.cluster.protolog.codegen.ProtoLogProtos.internal_static_org_sd_cluster_protolog_codegen_EventId_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.sd.cluster.protolog.codegen.ProtoLogProtos.internal_static_org_sd_cluster_protolog_codegen_EventId_fieldAccessorTable;
+    }
+    
+    private int bitField0_;
+    // required uint64 id = 1;
+    public static final int ID_FIELD_NUMBER = 1;
+    private long id_;
+    public boolean hasId() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public long getId() {
+      return id_;
+    }
+    
+    // optional string who = 2;
+    public static final int WHO_FIELD_NUMBER = 2;
+    private java.lang.Object who_;
+    public boolean hasWho() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public String getWho() {
+      java.lang.Object ref = who_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          who_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getWhoBytes() {
+      java.lang.Object ref = who_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        who_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
+    // optional string what = 3;
+    public static final int WHAT_FIELD_NUMBER = 3;
+    private java.lang.Object what_;
+    public boolean hasWhat() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public String getWhat() {
+      java.lang.Object ref = what_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          what_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getWhatBytes() {
+      java.lang.Object ref = what_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        what_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
+    private void initFields() {
+      id_ = 0L;
+      who_ = "";
+      what_ = "";
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeUInt64(1, id_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeBytes(2, getWhoBytes());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, getWhatBytes());
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt64Size(1, id_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(2, getWhoBytes());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(3, getWhatBytes());
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+    
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements org.sd.cluster.protolog.codegen.ProtoLogProtos.EventIdOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.sd.cluster.protolog.codegen.ProtoLogProtos.internal_static_org_sd_cluster_protolog_codegen_EventId_descriptor;
+      }
+      
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.sd.cluster.protolog.codegen.ProtoLogProtos.internal_static_org_sd_cluster_protolog_codegen_EventId_fieldAccessorTable;
+      }
+      
+      // Construct using org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+      
+      public Builder clear() {
+        super.clear();
+        id_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        who_ = "";
+        bitField0_ = (bitField0_ & ~0x00000002);
+        what_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.getDescriptor();
+      }
+      
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId getDefaultInstanceForType() {
+        return org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.getDefaultInstance();
+      }
+      
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId build() {
+        org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+      
+      private org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return result;
+      }
+      
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId buildPartial() {
+        org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId result = new org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.id_ = id_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.who_ = who_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.what_ = what_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId) {
+          return mergeFrom((org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId other) {
+        if (other == org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.getDefaultInstance()) return this;
+        if (other.hasId()) {
+          setId(other.getId());
+        }
+        if (other.hasWho()) {
+          setWho(other.getWho());
+        }
+        if (other.hasWhat()) {
+          setWhat(other.getWhat());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public final boolean isInitialized() {
+        if (!hasId()) {
+          
+          return false;
+        }
+        return true;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              onChanged();
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                onChanged();
+                return this;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              id_ = input.readUInt64();
+              break;
+            }
+            case 18: {
+              bitField0_ |= 0x00000002;
+              who_ = input.readBytes();
+              break;
+            }
+            case 26: {
+              bitField0_ |= 0x00000004;
+              what_ = input.readBytes();
+              break;
+            }
+          }
+        }
+      }
+      
+      private int bitField0_;
+      
+      // required uint64 id = 1;
+      private long id_ ;
+      public boolean hasId() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      public long getId() {
+        return id_;
+      }
+      public Builder setId(long value) {
+        bitField0_ |= 0x00000001;
+        id_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearId() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        id_ = 0L;
+        onChanged();
+        return this;
+      }
+      
+      // optional string who = 2;
+      private java.lang.Object who_ = "";
+      public boolean hasWho() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public String getWho() {
+        java.lang.Object ref = who_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          who_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setWho(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+        who_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearWho() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        who_ = getDefaultInstance().getWho();
+        onChanged();
+        return this;
+      }
+      void setWho(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000002;
+        who_ = value;
+        onChanged();
+      }
+      
+      // optional string what = 3;
+      private java.lang.Object what_ = "";
+      public boolean hasWhat() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      public String getWhat() {
+        java.lang.Object ref = what_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          what_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setWhat(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        what_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearWhat() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        what_ = getDefaultInstance().getWhat();
+        onChanged();
+        return this;
+      }
+      void setWhat(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000004;
+        what_ = value;
+        onChanged();
+      }
+      
+      // @@protoc_insertion_point(builder_scope:org.sd.cluster.protolog.codegen.EventId)
+    }
+    
+    static {
+      defaultInstance = new EventId(true);
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:org.sd.cluster.protolog.codegen.EventId)
+  }
+  
+  public interface EventEntryOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required int64 timestamp = 1;
+    boolean hasTimestamp();
+    long getTimestamp();
+    
+    // required .org.sd.cluster.protolog.codegen.EventId id = 2;
+    boolean hasId();
+    org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId getId();
+    org.sd.cluster.protolog.codegen.ProtoLogProtos.EventIdOrBuilder getIdOrBuilder();
+    
+    // required .org.sd.cluster.protolog.codegen.EventEntry.EventType type = 3;
+    boolean hasType();
+    org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType getType();
+    
+    // repeated .org.sd.cluster.protolog.codegen.Attribute attribute = 4;
+    java.util.List<org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute> 
+        getAttributeList();
+    org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute getAttribute(int index);
+    int getAttributeCount();
+    java.util.List<? extends org.sd.cluster.protolog.codegen.ProtoLogProtos.AttributeOrBuilder> 
+        getAttributeOrBuilderList();
+    org.sd.cluster.protolog.codegen.ProtoLogProtos.AttributeOrBuilder getAttributeOrBuilder(
+        int index);
+    
+    // repeated string message = 5;
+    java.util.List<String> getMessageList();
+    int getMessageCount();
+    String getMessage(int index);
+  }
+  public static final class EventEntry extends
+      com.google.protobuf.GeneratedMessage
+      implements EventEntryOrBuilder {
+    // Use EventEntry.newBuilder() to construct.
+    private EventEntry(Builder builder) {
+      super(builder);
+    }
+    private EventEntry(boolean noInit) {}
+    
+    private static final EventEntry defaultInstance;
+    public static EventEntry getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public EventEntry getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.sd.cluster.protolog.codegen.ProtoLogProtos.internal_static_org_sd_cluster_protolog_codegen_EventEntry_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.sd.cluster.protolog.codegen.ProtoLogProtos.internal_static_org_sd_cluster_protolog_codegen_EventEntry_fieldAccessorTable;
+    }
+    
+    public enum EventType
+        implements com.google.protobuf.ProtocolMessageEnum {
+      START(0, 0),
+      SUCCEED(1, 1),
+      ERROR(2, 2),
+      KILL(3, 3),
+      TIMEOUT(4, 4),
+      ;
+      
+      public static final int START_VALUE = 0;
+      public static final int SUCCEED_VALUE = 1;
+      public static final int ERROR_VALUE = 2;
+      public static final int KILL_VALUE = 3;
+      public static final int TIMEOUT_VALUE = 4;
+      
+      
+      public final int getNumber() { return value; }
+      
+      public static EventType valueOf(int value) {
+        switch (value) {
+          case 0: return START;
+          case 1: return SUCCEED;
+          case 2: return ERROR;
+          case 3: return KILL;
+          case 4: return TIMEOUT;
+          default: return null;
+        }
+      }
+      
+      public static com.google.protobuf.Internal.EnumLiteMap<EventType>
+          internalGetValueMap() {
+        return internalValueMap;
+      }
+      private static com.google.protobuf.Internal.EnumLiteMap<EventType>
+          internalValueMap =
+            new com.google.protobuf.Internal.EnumLiteMap<EventType>() {
+              public EventType findValueByNumber(int number) {
+                return EventType.valueOf(number);
+              }
+            };
+      
+      public final com.google.protobuf.Descriptors.EnumValueDescriptor
+          getValueDescriptor() {
+        return getDescriptor().getValues().get(index);
+      }
+      public final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptorForType() {
+        return getDescriptor();
+      }
+      public static final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptor() {
+        return org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.getDescriptor().getEnumTypes().get(0);
+      }
+      
+      private static final EventType[] VALUES = {
+        START, SUCCEED, ERROR, KILL, TIMEOUT, 
+      };
+      
+      public static EventType valueOf(
+          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+        if (desc.getType() != getDescriptor()) {
+          throw new java.lang.IllegalArgumentException(
+            "EnumValueDescriptor is not for this type.");
+        }
+        return VALUES[desc.getIndex()];
+      }
+      
+      private final int index;
+      private final int value;
+      
+      private EventType(int index, int value) {
+        this.index = index;
+        this.value = value;
+      }
+      
+      // @@protoc_insertion_point(enum_scope:org.sd.cluster.protolog.codegen.EventEntry.EventType)
+    }
+    
+    private int bitField0_;
+    // required int64 timestamp = 1;
+    public static final int TIMESTAMP_FIELD_NUMBER = 1;
+    private long timestamp_;
+    public boolean hasTimestamp() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public long getTimestamp() {
+      return timestamp_;
+    }
+    
+    // required .org.sd.cluster.protolog.codegen.EventId id = 2;
+    public static final int ID_FIELD_NUMBER = 2;
+    private org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId id_;
+    public boolean hasId() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId getId() {
+      return id_;
+    }
+    public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventIdOrBuilder getIdOrBuilder() {
+      return id_;
+    }
+    
+    // required .org.sd.cluster.protolog.codegen.EventEntry.EventType type = 3;
+    public static final int TYPE_FIELD_NUMBER = 3;
+    private org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType type_;
+    public boolean hasType() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType getType() {
+      return type_;
+    }
+    
+    // repeated .org.sd.cluster.protolog.codegen.Attribute attribute = 4;
+    public static final int ATTRIBUTE_FIELD_NUMBER = 4;
+    private java.util.List<org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute> attribute_;
+    public java.util.List<org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute> getAttributeList() {
+      return attribute_;
+    }
+    public java.util.List<? extends org.sd.cluster.protolog.codegen.ProtoLogProtos.AttributeOrBuilder> 
+        getAttributeOrBuilderList() {
+      return attribute_;
+    }
+    public int getAttributeCount() {
+      return attribute_.size();
+    }
+    public org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute getAttribute(int index) {
+      return attribute_.get(index);
+    }
+    public org.sd.cluster.protolog.codegen.ProtoLogProtos.AttributeOrBuilder getAttributeOrBuilder(
+        int index) {
+      return attribute_.get(index);
+    }
+    
+    // repeated string message = 5;
+    public static final int MESSAGE_FIELD_NUMBER = 5;
+    private com.google.protobuf.LazyStringList message_;
+    public java.util.List<String>
+        getMessageList() {
+      return message_;
+    }
+    public int getMessageCount() {
+      return message_.size();
+    }
+    public String getMessage(int index) {
+      return message_.get(index);
+    }
+    
+    private void initFields() {
+      timestamp_ = 0L;
+      id_ = org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.getDefaultInstance();
+      type_ = org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType.START;
+      attribute_ = java.util.Collections.emptyList();
+      message_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasTimestamp()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasType()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!getId().isInitialized()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeInt64(1, timestamp_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeMessage(2, id_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeEnum(3, type_.getNumber());
+      }
+      for (int i = 0; i < attribute_.size(); i++) {
+        output.writeMessage(4, attribute_.get(i));
+      }
+      for (int i = 0; i < message_.size(); i++) {
+        output.writeBytes(5, message_.getByteString(i));
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(1, timestamp_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(2, id_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeEnumSize(3, type_.getNumber());
+      }
+      for (int i = 0; i < attribute_.size(); i++) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(4, attribute_.get(i));
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < message_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(message_.getByteString(i));
+        }
+        size += dataSize;
+        size += 1 * getMessageList().size();
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+    
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntryOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.sd.cluster.protolog.codegen.ProtoLogProtos.internal_static_org_sd_cluster_protolog_codegen_EventEntry_descriptor;
+      }
+      
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.sd.cluster.protolog.codegen.ProtoLogProtos.internal_static_org_sd_cluster_protolog_codegen_EventEntry_fieldAccessorTable;
+      }
+      
+      // Construct using org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getIdFieldBuilder();
+          getAttributeFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+      
+      public Builder clear() {
+        super.clear();
+        timestamp_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        if (idBuilder_ == null) {
+          id_ = org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.getDefaultInstance();
+        } else {
+          idBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        type_ = org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType.START;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        if (attributeBuilder_ == null) {
+          attribute_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000008);
+        } else {
+          attributeBuilder_.clear();
+        }
+        message_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000010);
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.getDescriptor();
+      }
+      
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry getDefaultInstanceForType() {
+        return org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.getDefaultInstance();
+      }
+      
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry build() {
+        org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+      
+      private org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return result;
+      }
+      
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry buildPartial() {
+        org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry result = new org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.timestamp_ = timestamp_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        if (idBuilder_ == null) {
+          result.id_ = id_;
+        } else {
+          result.id_ = idBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.type_ = type_;
+        if (attributeBuilder_ == null) {
+          if (((bitField0_ & 0x00000008) == 0x00000008)) {
+            attribute_ = java.util.Collections.unmodifiableList(attribute_);
+            bitField0_ = (bitField0_ & ~0x00000008);
+          }
+          result.attribute_ = attribute_;
+        } else {
+          result.attribute_ = attributeBuilder_.build();
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          message_ = new com.google.protobuf.UnmodifiableLazyStringList(
+              message_);
+          bitField0_ = (bitField0_ & ~0x00000010);
+        }
+        result.message_ = message_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry) {
+          return mergeFrom((org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry other) {
+        if (other == org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.getDefaultInstance()) return this;
+        if (other.hasTimestamp()) {
+          setTimestamp(other.getTimestamp());
+        }
+        if (other.hasId()) {
+          mergeId(other.getId());
+        }
+        if (other.hasType()) {
+          setType(other.getType());
+        }
+        if (attributeBuilder_ == null) {
+          if (!other.attribute_.isEmpty()) {
+            if (attribute_.isEmpty()) {
+              attribute_ = other.attribute_;
+              bitField0_ = (bitField0_ & ~0x00000008);
+            } else {
+              ensureAttributeIsMutable();
+              attribute_.addAll(other.attribute_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.attribute_.isEmpty()) {
+            if (attributeBuilder_.isEmpty()) {
+              attributeBuilder_.dispose();
+              attributeBuilder_ = null;
+              attribute_ = other.attribute_;
+              bitField0_ = (bitField0_ & ~0x00000008);
+              attributeBuilder_ = 
+                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getAttributeFieldBuilder() : null;
+            } else {
+              attributeBuilder_.addAllMessages(other.attribute_);
+            }
+          }
+        }
+        if (!other.message_.isEmpty()) {
+          if (message_.isEmpty()) {
+            message_ = other.message_;
+            bitField0_ = (bitField0_ & ~0x00000010);
+          } else {
+            ensureMessageIsMutable();
+            message_.addAll(other.message_);
+          }
+          onChanged();
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public final boolean isInitialized() {
+        if (!hasTimestamp()) {
+          
+          return false;
+        }
+        if (!hasId()) {
+          
+          return false;
+        }
+        if (!hasType()) {
+          
+          return false;
+        }
+        if (!getId().isInitialized()) {
+          
+          return false;
+        }
+        return true;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              onChanged();
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                onChanged();
+                return this;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              timestamp_ = input.readInt64();
+              break;
+            }
+            case 18: {
+              org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.Builder subBuilder = org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.newBuilder();
+              if (hasId()) {
+                subBuilder.mergeFrom(getId());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setId(subBuilder.buildPartial());
+              break;
+            }
+            case 24: {
+              int rawValue = input.readEnum();
+              org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType value = org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType.valueOf(rawValue);
+              if (value == null) {
+                unknownFields.mergeVarintField(3, rawValue);
+              } else {
+                bitField0_ |= 0x00000004;
+                type_ = value;
+              }
+              break;
+            }
+            case 34: {
+              org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder subBuilder = org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.newBuilder();
+              input.readMessage(subBuilder, extensionRegistry);
+              addAttribute(subBuilder.buildPartial());
+              break;
+            }
+            case 42: {
+              ensureMessageIsMutable();
+              message_.add(input.readBytes());
+              break;
+            }
+          }
+        }
+      }
+      
+      private int bitField0_;
+      
+      // required int64 timestamp = 1;
+      private long timestamp_ ;
+      public boolean hasTimestamp() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      public long getTimestamp() {
+        return timestamp_;
+      }
+      public Builder setTimestamp(long value) {
+        bitField0_ |= 0x00000001;
+        timestamp_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearTimestamp() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        timestamp_ = 0L;
+        onChanged();
+        return this;
+      }
+      
+      // required .org.sd.cluster.protolog.codegen.EventId id = 2;
+      private org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId id_ = org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId, org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.Builder, org.sd.cluster.protolog.codegen.ProtoLogProtos.EventIdOrBuilder> idBuilder_;
+      public boolean hasId() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId getId() {
+        if (idBuilder_ == null) {
+          return id_;
+        } else {
+          return idBuilder_.getMessage();
+        }
+      }
+      public Builder setId(org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId value) {
+        if (idBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          id_ = value;
+          onChanged();
+        } else {
+          idBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      public Builder setId(
+          org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.Builder builderForValue) {
+        if (idBuilder_ == null) {
+          id_ = builderForValue.build();
+          onChanged();
+        } else {
+          idBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      public Builder mergeId(org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId value) {
+        if (idBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+              id_ != org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.getDefaultInstance()) {
+            id_ =
+              org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.newBuilder(id_).mergeFrom(value).buildPartial();
+          } else {
+            id_ = value;
+          }
+          onChanged();
+        } else {
+          idBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      public Builder clearId() {
+        if (idBuilder_ == null) {
+          id_ = org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.getDefaultInstance();
+          onChanged();
+        } else {
+          idBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.Builder getIdBuilder() {
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return getIdFieldBuilder().getBuilder();
+      }
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventIdOrBuilder getIdOrBuilder() {
+        if (idBuilder_ != null) {
+          return idBuilder_.getMessageOrBuilder();
+        } else {
+          return id_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId, org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.Builder, org.sd.cluster.protolog.codegen.ProtoLogProtos.EventIdOrBuilder> 
+          getIdFieldBuilder() {
+        if (idBuilder_ == null) {
+          idBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId, org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.Builder, org.sd.cluster.protolog.codegen.ProtoLogProtos.EventIdOrBuilder>(
+                  id_,
+                  getParentForChildren(),
+                  isClean());
+          id_ = null;
+        }
+        return idBuilder_;
+      }
+      
+      // required .org.sd.cluster.protolog.codegen.EventEntry.EventType type = 3;
+      private org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType type_ = org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType.START;
+      public boolean hasType() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType getType() {
+        return type_;
+      }
+      public Builder setType(org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
+        type_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearType() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        type_ = org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.EventType.START;
+        onChanged();
+        return this;
+      }
+      
+      // repeated .org.sd.cluster.protolog.codegen.Attribute attribute = 4;
+      private java.util.List<org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute> attribute_ =
+        java.util.Collections.emptyList();
+      private void ensureAttributeIsMutable() {
+        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
+          attribute_ = new java.util.ArrayList<org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute>(attribute_);
+          bitField0_ |= 0x00000008;
+         }
+      }
+      
+      private com.google.protobuf.RepeatedFieldBuilder<
+          org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute, org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder, org.sd.cluster.protolog.codegen.ProtoLogProtos.AttributeOrBuilder> attributeBuilder_;
+      
+      public java.util.List<org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute> getAttributeList() {
+        if (attributeBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(attribute_);
+        } else {
+          return attributeBuilder_.getMessageList();
+        }
+      }
+      public int getAttributeCount() {
+        if (attributeBuilder_ == null) {
+          return attribute_.size();
+        } else {
+          return attributeBuilder_.getCount();
+        }
+      }
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute getAttribute(int index) {
+        if (attributeBuilder_ == null) {
+          return attribute_.get(index);
+        } else {
+          return attributeBuilder_.getMessage(index);
+        }
+      }
+      public Builder setAttribute(
+          int index, org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute value) {
+        if (attributeBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureAttributeIsMutable();
+          attribute_.set(index, value);
+          onChanged();
+        } else {
+          attributeBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      public Builder setAttribute(
+          int index, org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder builderForValue) {
+        if (attributeBuilder_ == null) {
+          ensureAttributeIsMutable();
+          attribute_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          attributeBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      public Builder addAttribute(org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute value) {
+        if (attributeBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureAttributeIsMutable();
+          attribute_.add(value);
+          onChanged();
+        } else {
+          attributeBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      public Builder addAttribute(
+          int index, org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute value) {
+        if (attributeBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureAttributeIsMutable();
+          attribute_.add(index, value);
+          onChanged();
+        } else {
+          attributeBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      public Builder addAttribute(
+          org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder builderForValue) {
+        if (attributeBuilder_ == null) {
+          ensureAttributeIsMutable();
+          attribute_.add(builderForValue.build());
+          onChanged();
+        } else {
+          attributeBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      public Builder addAttribute(
+          int index, org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder builderForValue) {
+        if (attributeBuilder_ == null) {
+          ensureAttributeIsMutable();
+          attribute_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          attributeBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      public Builder addAllAttribute(
+          java.lang.Iterable<? extends org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute> values) {
+        if (attributeBuilder_ == null) {
+          ensureAttributeIsMutable();
+          super.addAll(values, attribute_);
+          onChanged();
+        } else {
+          attributeBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      public Builder clearAttribute() {
+        if (attributeBuilder_ == null) {
+          attribute_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000008);
+          onChanged();
+        } else {
+          attributeBuilder_.clear();
+        }
+        return this;
+      }
+      public Builder removeAttribute(int index) {
+        if (attributeBuilder_ == null) {
+          ensureAttributeIsMutable();
+          attribute_.remove(index);
+          onChanged();
+        } else {
+          attributeBuilder_.remove(index);
+        }
+        return this;
+      }
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder getAttributeBuilder(
+          int index) {
+        return getAttributeFieldBuilder().getBuilder(index);
+      }
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.AttributeOrBuilder getAttributeOrBuilder(
+          int index) {
+        if (attributeBuilder_ == null) {
+          return attribute_.get(index);  } else {
+          return attributeBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      public java.util.List<? extends org.sd.cluster.protolog.codegen.ProtoLogProtos.AttributeOrBuilder> 
+           getAttributeOrBuilderList() {
+        if (attributeBuilder_ != null) {
+          return attributeBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(attribute_);
+        }
+      }
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder addAttributeBuilder() {
+        return getAttributeFieldBuilder().addBuilder(
+            org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.getDefaultInstance());
+      }
+      public org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder addAttributeBuilder(
+          int index) {
+        return getAttributeFieldBuilder().addBuilder(
+            index, org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.getDefaultInstance());
+      }
+      public java.util.List<org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder> 
+           getAttributeBuilderList() {
+        return getAttributeFieldBuilder().getBuilderList();
+      }
+      private com.google.protobuf.RepeatedFieldBuilder<
+          org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute, org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder, org.sd.cluster.protolog.codegen.ProtoLogProtos.AttributeOrBuilder> 
+          getAttributeFieldBuilder() {
+        if (attributeBuilder_ == null) {
+          attributeBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+              org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute, org.sd.cluster.protolog.codegen.ProtoLogProtos.Attribute.Builder, org.sd.cluster.protolog.codegen.ProtoLogProtos.AttributeOrBuilder>(
+                  attribute_,
+                  ((bitField0_ & 0x00000008) == 0x00000008),
+                  getParentForChildren(),
+                  isClean());
+          attribute_ = null;
+        }
+        return attributeBuilder_;
+      }
+      
+      // repeated string message = 5;
+      private com.google.protobuf.LazyStringList message_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      private void ensureMessageIsMutable() {
+        if (!((bitField0_ & 0x00000010) == 0x00000010)) {
+          message_ = new com.google.protobuf.LazyStringArrayList(message_);
+          bitField0_ |= 0x00000010;
+         }
+      }
+      public java.util.List<String>
+          getMessageList() {
+        return java.util.Collections.unmodifiableList(message_);
+      }
+      public int getMessageCount() {
+        return message_.size();
+      }
+      public String getMessage(int index) {
+        return message_.get(index);
+      }
+      public Builder setMessage(
+          int index, String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureMessageIsMutable();
+        message_.set(index, value);
+        onChanged();
+        return this;
+      }
+      public Builder addMessage(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureMessageIsMutable();
+        message_.add(value);
+        onChanged();
+        return this;
+      }
+      public Builder addAllMessage(
+          java.lang.Iterable<String> values) {
+        ensureMessageIsMutable();
+        super.addAll(values, message_);
+        onChanged();
+        return this;
+      }
+      public Builder clearMessage() {
+        message_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000010);
+        onChanged();
+        return this;
+      }
+      void addMessage(com.google.protobuf.ByteString value) {
+        ensureMessageIsMutable();
+        message_.add(value);
+        onChanged();
+      }
+      
+      // @@protoc_insertion_point(builder_scope:org.sd.cluster.protolog.codegen.EventEntry)
+    }
+    
+    static {
+      defaultInstance = new EventEntry(true);
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:org.sd.cluster.protolog.codegen.EventEntry)
+  }
+  
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_org_sd_cluster_protolog_codegen_Attribute_descriptor;
   private static
@@ -2720,6 +4295,16 @@ public final class ProtoLogProtos {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_org_sd_cluster_protolog_codegen_GenericLogEntry_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_sd_cluster_protolog_codegen_EventId_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_org_sd_cluster_protolog_codegen_EventId_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_sd_cluster_protolog_codegen_EventEntry_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_org_sd_cluster_protolog_codegen_EventEntry_fieldAccessorTable;
   
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -2740,9 +4325,18 @@ public final class ProtoLogProtos {
       "ute\030\010 \003(\0132*.org.sd.cluster.protolog.code" +
       "gen.Attribute\"c\n\017GenericLogEntry\022\021\n\ttime",
       "stamp\030\001 \002(\003\022=\n\tattribute\030\002 \003(\0132*.org.sd." +
-      "cluster.protolog.codegen.AttributeB1\n\037or" +
-      "g.sd.cluster.protolog.codegenB\016ProtoLogP" +
-      "rotos"
+      "cluster.protolog.codegen.Attribute\"0\n\007Ev" +
+      "entId\022\n\n\002id\030\001 \002(\004\022\013\n\003who\030\002 \001(\t\022\014\n\004what\030\003" +
+      " \001(\t\"\261\002\n\nEventEntry\022\021\n\ttimestamp\030\001 \002(\003\0224" +
+      "\n\002id\030\002 \002(\0132(.org.sd.cluster.protolog.cod" +
+      "egen.EventId\022C\n\004type\030\003 \002(\01625.org.sd.clus" +
+      "ter.protolog.codegen.EventEntry.EventTyp" +
+      "e\022=\n\tattribute\030\004 \003(\0132*.org.sd.cluster.pr" +
+      "otolog.codegen.Attribute\022\017\n\007message\030\005 \003(" +
+      "\t\"E\n\tEventType\022\t\n\005START\020\000\022\013\n\007SUCCEED\020\001\022\t",
+      "\n\005ERROR\020\002\022\010\n\004KILL\020\003\022\013\n\007TIMEOUT\020\004B1\n\037org." +
+      "sd.cluster.protolog.codegenB\016ProtoLogPro" +
+      "tos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -2773,6 +4367,22 @@ public final class ProtoLogProtos {
               new java.lang.String[] { "Timestamp", "Attribute", },
               org.sd.cluster.protolog.codegen.ProtoLogProtos.GenericLogEntry.class,
               org.sd.cluster.protolog.codegen.ProtoLogProtos.GenericLogEntry.Builder.class);
+          internal_static_org_sd_cluster_protolog_codegen_EventId_descriptor =
+            getDescriptor().getMessageTypes().get(3);
+          internal_static_org_sd_cluster_protolog_codegen_EventId_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_org_sd_cluster_protolog_codegen_EventId_descriptor,
+              new java.lang.String[] { "Id", "Who", "What", },
+              org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.class,
+              org.sd.cluster.protolog.codegen.ProtoLogProtos.EventId.Builder.class);
+          internal_static_org_sd_cluster_protolog_codegen_EventEntry_descriptor =
+            getDescriptor().getMessageTypes().get(4);
+          internal_static_org_sd_cluster_protolog_codegen_EventEntry_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_org_sd_cluster_protolog_codegen_EventEntry_descriptor,
+              new java.lang.String[] { "Timestamp", "Id", "Type", "Attribute", "Message", },
+              org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.class,
+              org.sd.cluster.protolog.codegen.ProtoLogProtos.EventEntry.Builder.class);
           return null;
         }
       };
