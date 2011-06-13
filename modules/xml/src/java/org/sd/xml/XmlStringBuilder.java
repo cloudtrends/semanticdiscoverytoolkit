@@ -72,7 +72,7 @@ public class XmlStringBuilder {
    * All later adds will fail and return null until this instances is reset.
    */
   public XmlStringBuilder setXmlString(String xmlString) {
-    initXml(null);
+    initXml(null, false);
     xml.append(xmlString);
     this.ended = true;
     return this;
@@ -84,7 +84,7 @@ public class XmlStringBuilder {
    * All later adds will fail and return null until this instances is reset.
    */
   public XmlStringBuilder setXmlElement(DomElement xmlElement) {
-    initXml(null);
+    initXml(null, false);
     addElement(xmlElement);
     this._xmlElement = xmlElement;
     this.ended = true;
@@ -106,7 +106,7 @@ public class XmlStringBuilder {
    */
   public XmlStringBuilder addElement(DomElement element) {
     if (ended || element == null) return null;
-    if (xml == null) initXml(rootTag);
+    if (xml == null) initXml(rootTag, false);
     element.asFlatString(xml);
     _xmlElement = null;
     return this;
@@ -120,7 +120,7 @@ public class XmlStringBuilder {
    */
   public XmlStringBuilder addXml(String xmlString) {
     if (ended || xmlString == null) return null;
-    if (xml == null) initXml(rootTag);
+    if (xml == null) initXml(rootTag, false);
     xml.append(xmlString);
     _xmlElement = null;
     return this;
@@ -214,7 +214,7 @@ public class XmlStringBuilder {
         result = xml.toString();
       }
       else if (rootTag != null && !"".equals(rootTag)) {
-        initXml(rootTag);
+        initXml(rootTag, true);
         ended = true;
         result = xml.toString();
       }
@@ -243,7 +243,7 @@ public class XmlStringBuilder {
     return (spPos >= 0) ? tagString.substring(0, spPos) : tagString;
   }
 
-  private final void initXml(String rootTag) {
+  private final void initXml(String rootTag, boolean isEnd) {
     if (xml == null) {
       xml = new StringBuilder();
     }
@@ -253,7 +253,9 @@ public class XmlStringBuilder {
     this.ended = false;
     this._xmlElement = null;
     if (rootTag != null) {
-      xml.append('<').append(rootTag).append('>');
+      xml.append('<').append(rootTag);
+      if (isEnd) xml.append("/>");
+      else xml.append('>');
     }
   }
 }

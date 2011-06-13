@@ -226,6 +226,21 @@ public class DomElement extends DomNode implements Element {
     return result == null ? defaultValue : Integer.parseInt(result);
   }
 
+  public long getAttributeLong(String attributeName) {
+    final String result = getAttributeValue(attributeName, null);
+
+    if (result == null) {
+      throw new IllegalArgumentException("Element '" + getLocalName() + "' is missing required attribute '" + attributeName + "'!");
+    }
+
+    return Long.parseLong(result);
+  }
+
+  public long getAttributeLong(String attributeName, long defaultValue) {
+    final String result = getAttributeValue(attributeName, null);
+    return result == null ? defaultValue : Long.parseLong(result);
+  }
+
   public boolean isAncestor(DomNode descendant, boolean selfIsAncestor) {
     return this.asTree().isAncestor(descendant.asTree(), selfIsAncestor);
   }
