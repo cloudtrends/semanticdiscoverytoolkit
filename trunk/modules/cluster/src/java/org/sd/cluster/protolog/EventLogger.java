@@ -37,11 +37,20 @@ public abstract class EventLogger {
    * eventID info and type on which to optionally set a message and/or
    * attributes.
    */
-  public final EventEntry.Builder createEventEntry(long eventId, String who, String what, EventEntry.EventType eventType) {
+  public static final EventEntry.Builder createEventEntry(long eventId, String who, String what, EventEntry.EventType eventType) {
+    return createEventEntry(eventId, System.currentTimeMillis(), who, what, eventType);
+  }
+
+  /**
+   * Create an EventEntry.Builder with the given timestamp and the given
+   * eventID info and type on which to optionally set a message and/or
+   * attributes.
+   */
+  public static final EventEntry.Builder createEventEntry(long eventId, long timestamp, String who, String what, EventEntry.EventType eventType) {
     final EventEntry.Builder result = EventEntry.newBuilder();
 
-    // Set the timestamp (now)
-    result.setTimestamp(System.currentTimeMillis());
+    // Set the timestamp
+    result.setTimestamp(timestamp);
 
     // Set the eventID
     final EventId.Builder eventIdBuilder = EventId.newBuilder();
