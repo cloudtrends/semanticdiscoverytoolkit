@@ -508,7 +508,14 @@ public class ExtractionContainer extends PersistablePublishable implements Compa
       this.startPos = parse.getStartIndex();
       this.endPos = parse.getEndIndex();
       this.length = parse.getFullTextLength();
-      this.extraction = parse.getExtraction();
+      this.extraction = null;
+      try {
+        this.extraction = parse.getExtraction();
+      }
+      catch (Exception e) {
+        System.err.println("***NOTE: Unable to build 'Extraction' instance for parse");
+        e.printStackTrace(System.err);
+      }
       this.parseTree = parse.getParseTree();
       this.interpretations = interpretations;
       this.parseNum = parse.getParseNum();

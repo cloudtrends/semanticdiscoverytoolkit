@@ -194,9 +194,36 @@ public class ParseConfig {
             final String classifierId = supplementNode.getAttributeValue("id");
             final List<AtnStateTokenClassifier> classifiers = grammar.getClassifiers(classifierId);
             if (classifiers != null) {
-              for (AtnStateTokenClassifier classifier : classifiers) {
-                classifier.supplement(supplementNode);
-                supplemented = true;
+              final String mode = supplementNode.getAttributeValue("mode", "supplement");
+
+              if ("supplement".equals(mode)) {
+                for (AtnStateTokenClassifier classifier : classifiers) {
+                  classifier.supplement(supplementNode);
+                  supplemented = true;
+                }
+              }
+              else if ("override".equals(mode)) {
+                final DomElement classifierNode = (DomElement)supplementNode.selectSingleNode(classifierId);
+                if (classifierNode != null) {
+                  final AtnStateTokenClassifier classifier =
+                    (AtnStateTokenClassifier)resourceManager.getResource(classifierNode,
+                                                                         new Object[] { grammar.getId2Normalizer() });
+                  if (classifier != null) {
+                    supplemented = true;
+                    classifiers.clear();
+                    classifiers.add(classifier);
+                  }
+                }
+                else {
+                  System.err.println(new Date() + " : ***WARNING : ParseConfig missing required '" +
+                                     classifierId + "' node for supplement for classifier override, parserId '" +
+                                     parserId + "'");
+                }
+              }
+              else {
+                System.err.println(new Date() + " : ***WARNING : ParseConfig unknown mode '" +
+                                   mode + "' for classifier '" + classifierId + "' supplement " +
+                                   " for parserId '" + parserId + "'");
               }
             }
           }
