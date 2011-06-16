@@ -43,6 +43,8 @@ import org.w3c.dom.NodeList;
  */
 public class AtnParseBasedTokenizer extends StandardTokenizer {
   
+  public static final String SOURCE_PARSE = "_sourceParse";
+
   private Map<Integer, TokenInfoContainer> pos2tokenInfoContainer;
 
   public AtnParseBasedTokenizer(InputContext inputContext, StandardTokenizerOptions tokenizerOptions) {
@@ -272,9 +274,15 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
             //        have a parse or not.)
             token.setFeature(tokenInfo.getCategory(), new Boolean(true), this);
 
-            if (tokenInfo.getParse() != null) {
+            final AtnParse atnParse = tokenInfo.getParse();
 
-              final AtnParse atnParse = tokenInfo.getParse();
+            if (atnParse != null) {
+
+              // Add the Parse as a (_sourceParse) feature on the token
+              final Parse sourceParse = atnParse.getParse();
+              if (sourceParse != null) {
+                token.setFeature(AtnParseBasedTokenizer.SOURCE_PARSE, sourceParse, this);
+              }
 
               // Add the interpretation classifications as token features
               final List<ParseInterpretation> interpretations = atnParse.getParseInterpretations();

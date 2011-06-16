@@ -183,6 +183,10 @@ public class BracketPopTest implements AtnRuleStepTest {
       }
     }
 
+    if (result == null) {
+      throw new IllegalArgumentException("Malformed 'brackets' under node: " + grammarNode.toString());
+    }
+
     return result;
   }
 

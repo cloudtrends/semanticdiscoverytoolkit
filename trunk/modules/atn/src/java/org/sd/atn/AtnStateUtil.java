@@ -325,12 +325,35 @@ public class AtnStateUtil {
             if (result == null) result = new ArrayList<Tree<String>>();
             final Tree<String> deepParseTree = atnParse.getParse().getParseTree();
             result.add(deepParseTree);
+
+            reconcileDeepTokens(token, deepParseTree);
           }
         }
       }
     }
 
     return result;
+  }
+
+  /**
+   * Update deep cached tokens (narrower) in relation to the base (broader).
+   */
+  private static final void reconcileDeepTokens(Token baseToken, Tree<String> deepParseTree) {
+    if (deepParseTree.hasAttributes()) {
+      final CategorizedToken cToken = (CategorizedToken)deepParseTree.getAttributes().get(AtnStateUtil.TOKEN_KEY);
+      if (cToken != null && cToken.token.getTokenizer() != baseToken.getTokenizer()) {
+        final int baseStart = baseToken.getStartIndex();
+        final int startIndex = baseStart + cToken.token.getStartIndex();
+        final int endIndex = baseStart + cToken.token.getEndIndex();
+        final Token reconciledToken = baseToken.getTokenizer().buildToken(startIndex, endIndex);
+        deepParseTree.getAttributes().put(AtnStateUtil.TOKEN_KEY, new CategorizedToken(reconciledToken, cToken.category));
+      }
+    }
+    if (deepParseTree.hasChildren()) {
+      for (Tree<String> deepChild : deepParseTree.getChildren()) {
+        reconcileDeepTokens(baseToken, deepChild);
+      }
+    }
   }
 
   /**

@@ -38,8 +38,6 @@ import org.w3c.dom.NodeList;
 public class CapitalizedWordClassifier extends RoteListClassifier {
   
   private boolean excludeAllCaps;
-  private Set<String> stopWords;
-  private Set<String> stopWordsLC;
   private boolean lowerCaseInitial;
 
   public CapitalizedWordClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
@@ -50,13 +48,11 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
 
     this.lowerCaseInitial = true;
     this.excludeAllCaps = false;
-    this.stopWords = null;
-    this.stopWordsLC = null;
 
-    doSupplement(classifierIdElement);
+    doMySupplement(classifierIdElement);
   }
 
-  private final void doSupplement(DomNode classifierIdElement) {
+  private final void doMySupplement(DomNode classifierIdElement) {
     // attribute to accept 'lowerCaseInitial' (default=true)
     this.lowerCaseInitial = classifierIdElement.getAttributeBoolean("lowerCaseInitial", this.lowerCaseInitial);
 
@@ -64,30 +60,8 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     final DomElement eacNode = (DomElement)classifierIdElement.selectSingleNode("excludeAllCaps");
     this.excludeAllCaps = eacNode != null ? "true".equalsIgnoreCase(eacNode.getTextContent()) : this.excludeAllCaps;
 
-    // NOTE: super loads acceptable non-capitalized words  <terms><term>...</term><term>...</term></terms>
-
-    // load stopwords if specified
-    final DomElement stopwords = (DomElement)classifierIdElement.selectSingleNode("stopwords");
-    if (stopwords != null) {
-      if (this.stopWords == null) this.stopWords = new HashSet<String>();
-      if (this.stopWordsLC == null) this.stopWordsLC = new HashSet<String>();
-      final NodeList stopwordNodes = stopwords.getChildNodes();
-      if (stopwordNodes != null) {
-        for (int nodeNum = 0; nodeNum < stopwordNodes.getLength(); ++nodeNum) {
-          final DomNode curNode = (DomNode)stopwordNodes.item(nodeNum);
-          if (curNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
-
-          final String curNodeName = curNode.getNodeName();
-          final DomElement curElement = (DomElement)curNode;
-          if ("textfile".equals(curNodeName)) {
-            loadTextFile(curElement, this.stopWords, this.stopWordsLC, null, null);
-          }
-          else if ("terms".equals(curNodeName)) {
-            loadTerms(curElement, this.stopWords, this.stopWordsLC, null, null);
-          }
-        }
-      }
-    }
+    // NOTE: super loads acceptable non-capitalized words and stopwords
+    super.doSupplement(classifierIdElement);
   }
 
   /**
@@ -95,7 +69,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
    */
   public void supplement(DomNode supplementNode) {
     super.supplement(supplementNode);
-    doSupplement(supplementNode);
+    doMySupplement(supplementNode);
   }
 
   public void setLowerCaseInitial(boolean lowerCaseInitial) {
@@ -110,28 +84,26 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     if (token.getWordCount() > 1) return false;  // just take one word at a time
 
     final String tokenText = token.getText();
+    final int len = tokenText.length();
 
-    if ((stopWords != null || stopWordsLC != null) && tokenText.length() > 1) {
-      final boolean caseSensitive = caseSensitive();
-      if (caseSensitive && stopWords != null && stopWords.contains(tokenText)) {
-        return false;
+    // check lookups first so attributes get added
+    final boolean isStopword = len > 1 ? super.doClassifyStopword(token) : false;
+
+    if (isStopword) return false;
+
+    boolean result = super.doClassifyTerm(token);
+
+    if (!result) {
+      result = Character.isUpperCase(tokenText.codePointAt(0));
+
+      if (result && excludeAllCaps && StringUtil.allCaps(tokenText)) {
+        result = false;
       }
-      if (!caseSensitive && stopWordsLC != null && stopWordsLC.contains(tokenText.toLowerCase())) {
-        return false;
-      }
-    }
-
-    boolean result = Character.isUpperCase(tokenText.codePointAt(0));
-
-    if (result && excludeAllCaps && StringUtil.allCaps(tokenText)) {
-      result = false;
     }
 
     if (!result) {
-      result = super.doClassify(token);
-
       // accept a single letter followed by a '.', even if not capitalized.
-      if (!result && lowerCaseInitial && tokenText.length() == 1) {
+      if (!result && lowerCaseInitial && len == 1) {
         final String postDelim = token.getPostDelim();
         if (postDelim.length() > 0 && postDelim.charAt(0) == '.') {
           result = true;
