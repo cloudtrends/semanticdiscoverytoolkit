@@ -635,7 +635,7 @@ public class ClusterDefinition {
       if (machines != null && nameNum.name.startsWith("node")) {
         final int index = Integer.parseInt(nameNum.name.substring(4)) - 1;
         String machine = machines[index];
-        if ("localhost".equals(machine)) machine = curMachine;
+        if (ExecUtil.isMyAddress(machine)) machine = curMachine;
         machineNode.setData(new NameNum(machine, nameNum.getNumAsId()));
       }
     }
@@ -922,7 +922,7 @@ public class ClusterDefinition {
         final NameNum nameNum = groupNode.getData();
 
         String name = nameNum.name;
-        if ("localhost".equals(name)) name = ExecUtil.getMachineName();
+        if (ExecUtil.isMyAddress(name)) name = ExecUtil.getMachineName(); // normalize
 
         if (nameNum.getNumAsId() == jvmNum && name.equals(machineName)) {
           if (result == null) result = new HashSet<String>();

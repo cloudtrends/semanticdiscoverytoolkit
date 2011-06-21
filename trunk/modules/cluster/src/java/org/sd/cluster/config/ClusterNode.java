@@ -413,6 +413,7 @@ public class ClusterNode implements ClusterContext {
     try {
       System.out.println("Starting " + config.getName() + "...");
       System.out.println("..." + config.getName() + " is listening on port " + config.getServerPort());
+      System.out.println("...node's group membership: " + clusterNode.getNodeGroups());
 
       // Register MXBeans if possible
       MBeanServer mbs = null;

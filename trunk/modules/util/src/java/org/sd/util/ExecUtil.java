@@ -26,6 +26,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Date;
 
 /**
@@ -69,6 +73,31 @@ public class ExecUtil {
         }
         System.setProperty("machine.name", result);
       }
+    }
+
+    return result;
+  }
+
+  /**
+   * Determine whether the host name (or ip address) identifies the current
+   * machine.
+   */
+  public static boolean isMyAddress(String host) {
+    boolean result = false;
+
+    try {
+      final InetAddress addr = InetAddress.getByName(host);
+      result = addr.isAnyLocalAddress() || addr.isLoopbackAddress();
+
+      if (!result) {
+        result = NetworkInterface.getByInetAddress(addr) != null;
+      }
+    }
+    catch (UnknownHostException uhe) {
+      // result is false
+    }
+    catch (SocketException se) {
+      // result is false
     }
 
     return result;
