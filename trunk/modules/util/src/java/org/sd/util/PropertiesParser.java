@@ -99,6 +99,10 @@ public class PropertiesParser {
     this(null, args, false);
   }
 
+  public PropertiesParser(String[] args, String workingDir, boolean getenv) throws IOException {
+    this(null, args, workingDir, getenv);
+  }
+
   /**
    * Construct with the given args using the given base properties.
    */
@@ -114,9 +118,13 @@ public class PropertiesParser {
   }
 
   public PropertiesParser(Properties base, String[] args, boolean getenv) throws IOException {
+    this(base, args, null, getenv);
+  }
+
+  public PropertiesParser(Properties base, String[] args, String workingDir, boolean getenv) throws IOException {
     this(base);
 
-    parseArgs(args);
+    parseArgs(args, workingDir);
 
     if (getenv) getEnvironmentVars();
   }
@@ -130,15 +138,15 @@ public class PropertiesParser {
    * <li>any argument of the form "property=value"</li>
    * </ul>
    */
-  private final void parseArgs(String[] args) throws IOException {
+  private final void parseArgs(String[] args, String workingDir) throws IOException {
     final List<String> remainingArgs = new ArrayList<String>();
 
     for (String arg : args) {
       if (arg.endsWith(".default.properties")) {
-        loadDefaultProperties(this.properties, arg);
+        loadDefaultProperties(this.properties, arg, workingDir);
       }
       else if (arg.endsWith(".properties")) {
-        loadFileProperties(this.properties, arg);
+        loadFileProperties(this.properties, arg, workingDir);
       }
       else if (arg.indexOf('=') > 0) {
         setProperty(this.properties, arg);
@@ -151,29 +159,35 @@ public class PropertiesParser {
     this.args = remainingArgs.toArray(new String[remainingArgs.size()]);
   }
 
-  private final void loadDefaultProperties(Properties defaultProperties, String arg) throws IOException {
-    String path = null;
+  private final void loadDefaultProperties(Properties defaultProperties, String arg, String workingDir) throws IOException {
+    File path = null;
 
     if (isAbsolute(arg)) {
       // use path specified with arg; still remove ".default" from "x.default.properties"
-      path = arg.replaceFirst(".default.properties", ".properties");
+      final String filename = arg.replaceFirst(".default.properties", ".properties");
+      path = workingDir == null ? new File(filename) : new File(workingDir, filename);
     }
     else {
       // use default path: "/home/$USER/cluster/resources/properties/x.properties" given "x.default.properties"
-      path = getDefaultPropertiesDir() + arg.replaceFirst(".default.properties", ".properties");
+      final String filename = arg.replaceFirst(".default.properties", ".properties");
+      if (workingDir != null) {
+        path = new File(workingDir, filename);
+      }
+      else {
+        path = FileUtil.getFile(filename);
+      }
     }
 
-    final File file = FileUtil.getFile(path);
-    if (file == null) {
-      throw new IllegalArgumentException("Can't decode default.properties arg '" + arg + "'!");
+    if (path == null) {
+      throw new IllegalArgumentException("Can't decode default.properties arg '" + arg + "'! (workingDir=" + workingDir + ")");
     }
     else {
-      doLoad(defaultProperties, file, arg);
+      doLoad(defaultProperties, path, arg);
     }
   }
 
-  private final void loadFileProperties(Properties fileProperties, String arg) throws IOException {
-    File file = FileUtil.getFile(arg);
+  private final void loadFileProperties(Properties fileProperties, String arg, String workingDir) throws IOException {
+    File file = (workingDir == null) ? FileUtil.getFile(arg) : new File(workingDir, arg);
 
     if (file != null && file.exists()) {
       // use path specified by arg

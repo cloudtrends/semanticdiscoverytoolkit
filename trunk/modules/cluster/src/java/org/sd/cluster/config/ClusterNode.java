@@ -207,6 +207,13 @@ public class ClusterNode implements ClusterContext {
   }
 
   /**
+   * Determine whether the group exists in the active cluster definition.
+   */
+  public boolean groupExists(String group) {
+    return clusterDef.hasGroup(group);
+  }
+
+  /**
    * Determine whether there are any designated groups for this node.
    */
   public boolean hasGroups() {
