@@ -41,6 +41,8 @@ import java.util.Map;
 public class UsersCsv {
 
   public static final String USERS_CSV_RESOURCE = "users.csv";
+  public static final String MODULE_RESOURCE_PATH = "../resources/";
+  public static final String CLASS_RESOURCE_PATH = "resources/";
 
   private static final UsersCsv INSTANCE = new UsersCsv();
 
@@ -162,10 +164,22 @@ public class UsersCsv {
       }
     }
 
+    // fallback to module users csv resource
+    if (result == null) {
+      result = FileUtil.getInputStream(MODULE_RESOURCE_PATH + USERS_CSV_RESOURCE);
+      if (result != null) {
+        System.out.println(new Date() + ": Loading UsersCsv (using module resource) from '" +
+                           MODULE_RESOURCE_PATH + USERS_CSV_RESOURCE + "'");
+      }
+    }
+
     // fallback to default users csv resource
     if (result == null) {
-      System.out.println(new Date() + ": Loading UsersCsv (using default resource) from 'resources/" + USERS_CSV_RESOURCE + "'");
       result = FileUtil.getInputStream(this.getClass(), "resources/" + USERS_CSV_RESOURCE);
+      if (result != null) {
+        System.out.println(new Date() + ": Loading UsersCsv (using default resource) from '" +
+                           CLASS_RESOURCE_PATH + USERS_CSV_RESOURCE + "'");
+      }
     }
 
     return result;

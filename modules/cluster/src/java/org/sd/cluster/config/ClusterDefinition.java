@@ -41,11 +41,13 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Class to encapsulate a cluster definition.
@@ -62,9 +64,14 @@ public class ClusterDefinition {
   public static final String CLUSTERS_DIR_PROPERTY = "clustersDir";
 
   /**
+   * Default location of 'clusters' from module (relative to "bin").
+   */
+  public static final String MODULE_CLUSTER_DEFINITIONS_PATH = "../resources/clusters/";
+
+  /**
    * Default location of 'clusters' from Config.class.
    */
-  public static final String CLUSTER_DEFINITIONS_PATH = "resources/clusters/";
+  public static final String CLASS_CLUSTER_DEFINITIONS_PATH = "resources/clusters/";
 
   public static final String ALL_NODES_GROUP = "_ALL_";
 
@@ -342,9 +349,12 @@ public class ClusterDefinition {
       }
     }
 
-    // look in the default area
+    // look in the default area(s)
     if (result == null) {
-      result = FileUtil.getInputStream(ClusterDefinition.class, CLUSTER_DEFINITIONS_PATH + defName + ext);
+      result = FileUtil.getInputStream(MODULE_CLUSTER_DEFINITIONS_PATH + defName + ext);
+    }
+    if (result == null) {
+      result = FileUtil.getInputStream(ClusterDefinition.class, CLASS_CLUSTER_DEFINITIONS_PATH + defName + ext);
     }
 
     if (result == null) {
@@ -508,7 +518,10 @@ public class ClusterDefinition {
 
     if (defName != null) {
       if (!defName.endsWith(".def")) defName += ".def";
-      final InputStream in = FileUtil.getInputStream(this.getClass(), CLUSTER_DEFINITIONS_PATH + defName);
+      InputStream in = FileUtil.getInputStream(this.getClass(), MODULE_CLUSTER_DEFINITIONS_PATH + defName);
+      if (in == null) {
+        in = FileUtil.getInputStream(this.getClass(), CLASS_CLUSTER_DEFINITIONS_PATH + defName);
+      }
       if (in != null) {
         result = doRead(in);
         in.close();
@@ -611,6 +624,8 @@ public class ClusterDefinition {
   private final void fixMachineTree(Tree<NameNum> machineTree, String gateway, String[] machines) {
     final Iterator<Tree<NameNum>> iter = machineTree.iterator(Tree.Traversal.BREADTH_FIRST);
 
+    final String curMachine = ExecUtil.getMachineName();
+
     while (iter.hasNext()) {
       final Tree<NameNum> machineNode = iter.next();
       final NameNum nameNum = machineNode.getData();
@@ -619,7 +634,9 @@ public class ClusterDefinition {
       }
       if (machines != null && nameNum.name.startsWith("node")) {
         final int index = Integer.parseInt(nameNum.name.substring(4)) - 1;
-        machineNode.setData(new NameNum(machines[index], nameNum.getNumAsId()));
+        String machine = machines[index];
+        if ("localhost".equals(machine)) machine = curMachine;
+        machineNode.setData(new NameNum(machine, nameNum.getNumAsId()));
       }
     }
   }
@@ -882,6 +899,37 @@ public class ClusterDefinition {
     }
     else {
       result.add(groupName);
+    }
+
+    return result;
+  }
+
+  /**
+   * Determine the groups for the node with the given machineName and jvmNum
+   *
+   * @return the groups for the node or null.
+   */
+  public Set<String> getGroups(String machineName, int jvmNum) {
+    Set<String> result = null;
+
+    // 
+    for (Map.Entry<String, Tree<NameNum>> entry : group2node.entrySet()) {
+      final String groupName = entry.getKey();
+      final Tree<NameNum> groupRoot = entry.getValue();
+
+      for (Iterator<Tree<NameNum>> it = groupRoot.getChildren().iterator(); it.hasNext(); ) {
+        final Tree<NameNum> groupNode = it.next();
+        final NameNum nameNum = groupNode.getData();
+
+        String name = nameNum.name;
+        if ("localhost".equals(name)) name = ExecUtil.getMachineName();
+
+        if (nameNum.getNumAsId() == jvmNum && name.equals(machineName)) {
+          if (result == null) result = new HashSet<String>();
+          result.add(groupName);
+          break;
+        }
+      }      
     }
 
     return result;
