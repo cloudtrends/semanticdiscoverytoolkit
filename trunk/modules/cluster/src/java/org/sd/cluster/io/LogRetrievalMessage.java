@@ -111,9 +111,9 @@ public class LogRetrievalMessage extends XmlMessage {
 
       final DomElement requestElement = getXmlElement();
       final String controllerGroup = requestElement.getAttributeValue("controllerGroup", null);
+      final String workerGroup = requestElement.getAttributeValue("workerGroup", ClusterDefinition.ALL_NODES_GROUP);
 
-      if (controllerGroup != null && clusterContext.hasGroup(controllerGroup)) {
-        final String workerGroup = requestElement.getAttributeValue("workerGroup", ClusterDefinition.ALL_NODES_GROUP);
+      if (controllerGroup != null && clusterContext.hasGroup(controllerGroup) && clusterContext.hasGroup(workerGroup)) {
         final int timeout = requestElement.getAttributeInt("groupTimeout", 30000);
         processControllerRequest(xml, clusterContext, workerGroup, timeout);
       }
