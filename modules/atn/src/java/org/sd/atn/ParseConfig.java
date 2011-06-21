@@ -50,8 +50,14 @@ public class ParseConfig {
   public static ParseConfig buildInstance(DataProperties options) throws IOException {
     final File parseConfigFile = options.getFile("parseConfig", "workingDir");
 
-    if (parseConfigFile == null) {
-      throw new IllegalStateException("Must define 'parseConfig'!");
+    if (parseConfigFile != null) {
+      System.out.println(new Date() + ": ParseConfig loading '" +
+                         parseConfigFile.getAbsolutePath() +
+                         "' (exists=" + parseConfigFile.exists() + ")");
+    }
+
+    if (parseConfigFile == null || !parseConfigFile.exists()) {
+      throw new IllegalStateException("Must define 'parseConfig'! (" + parseConfigFile + ")");
     }
 
     final DomDocument domDocument = XmlFactory.loadDocument(parseConfigFile, false, options);

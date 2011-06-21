@@ -41,7 +41,7 @@ public class DataProperties extends BaseDataProperties {
    * Construct containing only environment variables.
    */
   public DataProperties() {
-    init(new String[]{});
+    init(new String[]{}, null);
   }
 
   /**
@@ -56,7 +56,11 @@ public class DataProperties extends BaseDataProperties {
    *  - Later specified properties trump formerly specified properties.
    */
   public DataProperties(String[] args) {
-    init(args);
+    init(args, null);
+  }
+
+  public DataProperties(String[] args, String workingDir) {
+    init(args, workingDir);
   }
 
   public DataProperties(Properties properties) {
@@ -65,7 +69,7 @@ public class DataProperties extends BaseDataProperties {
   }
 
   public DataProperties(DomElement domElement) {
-    init(new String[]{});
+    init(new String[]{}, null);
 
     final DomDataProperties ddp = new DomDataProperties(domElement);
     doAddDataProperties(ddp);
@@ -77,7 +81,7 @@ public class DataProperties extends BaseDataProperties {
   }
 
   public DataProperties(File xmlFile) throws IOException {
-    init(new String[]{});
+    init(new String[]{}, null);
 
     final DomDataProperties ddp = new DomDataProperties(xmlFile);
     doAddDataProperties(ddp);
@@ -112,17 +116,19 @@ public class DataProperties extends BaseDataProperties {
     return result;
   }
 
-  private final void init(String[] args) {
+  private final void init(String[] args, String workingDir) {
     try {
       this.domDataProperties = new LinkedList<DomDataProperties>();
 
-      final PropertiesParser pp = new PropertiesParser(args, true);
+      final PropertiesParser pp = new PropertiesParser(args, workingDir, true);
       this.properties = pp.getProperties();
       this.remainingArgs = pp.getArgs();
 
+      final File base = (workingDir == null) ? new File(".") : new File(workingDir);
+
       for (String arg : pp.getArgs()) {
         if (arg.endsWith(".xml")) {
-          final DomDataProperties ddp = new DomDataProperties(new File(arg));
+          final DomDataProperties ddp = new DomDataProperties(new File(base, arg));
           doAddDataProperties(ddp);
         }
       }
