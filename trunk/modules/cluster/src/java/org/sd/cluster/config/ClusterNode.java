@@ -34,6 +34,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -53,6 +54,8 @@ public class ClusterNode implements ClusterContext {
   private NodeServer listener;
   private NodeClient client;
   private MBeanServer mbs;
+
+  private Set<String> _nodeGroups;
 
 
   // this node's logs for monitoring purposes.
@@ -75,6 +78,7 @@ public class ClusterNode implements ClusterContext {
   private ClusterNode(ClusterDefinition clusterDef, int jvmNumHint) throws UnknownHostException, IOException {
     this.jvmNumHint = jvmNumHint;
     this.clusterDef = clusterDef;
+    this._nodeGroups = null;
 
     if (!this.clusterDef.isValid()) {
       throw new IllegalStateException("Invalid cluster definition '" + clusterDef.getDefinitionName() + "'!");
@@ -177,6 +181,37 @@ public class ClusterNode implements ClusterContext {
 
   public ClusterDefinition getClusterDefinition() {
     return clusterDef;
+  }
+
+  /**
+   * Get the (possibly null) designated groups for this node.
+   */
+  public Set<String> getNodeGroups() {
+    if (_nodeGroups == null) {
+      if (config != null && clusterDef != null) {
+        _nodeGroups = clusterDef.getGroups(config.getMachineName(), config.getJvmNum());
+      }
+    }
+    return _nodeGroups;
+  }
+
+  /**
+   * Determine whether this node is a designated member of the given group.
+   * <p>
+   * NOTE: If no groups are defined, then this node is *NOT* considered a
+   * member of any group (for a false result).
+   */
+  public boolean hasGroup(String group) {
+    final Set<String> nodeGroups = getNodeGroups();
+    return nodeGroups == null ? false : nodeGroups.contains(group);
+  }
+
+  /**
+   * Determine whether there are any designated groups for this node.
+   */
+  public boolean hasGroups() {
+    final Set<String> nodeGroups = getNodeGroups();
+    return nodeGroups != null && nodeGroups.size() > 0;
   }
 
   public JobManager getJobManager() {

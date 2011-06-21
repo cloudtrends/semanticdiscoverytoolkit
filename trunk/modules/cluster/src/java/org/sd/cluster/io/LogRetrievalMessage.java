@@ -20,6 +20,7 @@ package org.sd.cluster.io;
 
 
 import java.io.IOException;
+import org.sd.cluster.config.ClusterDefinition;
 import org.sd.cluster.config.ClusterNode;
 import org.sd.cluster.util.LogManager;
 import org.sd.io.FileUtil;
@@ -36,7 +37,7 @@ public class LogRetrievalMessage extends XmlMessage {
   public enum Select { BOTH, ERR, OUT };
 
   //
-  // <request select='both|err|out'/>
+  // <request select='both|err|out' controllerGroup='' workerGroup='' groupTimeout='' />
   // <response>
   //   <log file='' node='' starttime='' curtime='' [readError='true']>
   //     ...log text or readError details...
@@ -55,7 +56,7 @@ public class LogRetrievalMessage extends XmlMessage {
   /**
    * Factory method for creating an instance.
    */
-  public static final LogRetrievalMessage makeInstance(Select select) {
+  public static final LogRetrievalMessage makeInstance(Select select, String controllerGroup, String workerGroup, Integer groupTimeout) {
     if (select == null) select = Select.BOTH;
 
     final StringBuilder xml = new StringBuilder();
@@ -63,7 +64,21 @@ public class LogRetrievalMessage extends XmlMessage {
     xml.
       append("<request select='").
       append(select.name()).
-      append("'/>");
+      append("'");
+
+    if (controllerGroup != null) {
+      xml.append(" controllerGroup='").append(controllerGroup).append("'");
+    }
+
+    if (workerGroup != null) {
+      xml.append(" workerGroup='").append(workerGroup).append("'");
+    }
+
+    if (groupTimeout != null) {
+      xml.append(" groupTimeout='").append(groupTimeout).append("'");
+    }
+
+    xml.append("/>");
 
     return new LogRetrievalMessage(xml.toString());
   }
@@ -87,14 +102,36 @@ public class LogRetrievalMessage extends XmlMessage {
   }
 
   public Message getResponse(Context serverContext, ConnectionContext connectionContext) {
+
     final XmlStringBuilder xml = new XmlStringBuilder("response");
     final Message result = new XmlResponse(xml);
 
+    if (serverContext instanceof ClusterNode) {
+      final ClusterNode clusterContext = (ClusterNode)serverContext;
+
+      final DomElement requestElement = getXmlElement();
+      final String controllerGroup = requestElement.getAttributeValue("controllerGroup", null);
+
+      if (controllerGroup != null && clusterContext.hasGroup(controllerGroup)) {
+        final String workerGroup = requestElement.getAttributeValue("workerGroup", ClusterDefinition.ALL_NODES_GROUP);
+        final int timeout = requestElement.getAttributeInt("groupTimeout", 30000);
+        processControllerRequest(xml, clusterContext, workerGroup, timeout);
+      }
+      else {  // assume worker group
+        processWorkRequest(xml, clusterContext);
+      }
+    }
+
+    return result;
+  }
+
+  private void processControllerRequest(XmlStringBuilder xml, ClusterNode clusterNode, String workerGroup, int timeout) {
+  }
+
+  private void processWorkRequest(XmlStringBuilder xml, ClusterNode clusterNode) {
     final DomElement requestElement = getXmlElement();
 
     final Select select = Select.valueOf(requestElement.getAttributeValue("select", "SELECT"));
-
-    final ClusterNode clusterNode = (ClusterNode)serverContext;
 
     final LogManager.LogInfo errorLog = clusterNode.getErrorLog();
     final LogManager.LogInfo outputLog = clusterNode.getOutputLog();
@@ -112,8 +149,6 @@ public class LogRetrievalMessage extends XmlMessage {
         populateResponseXml(xml, outputLog, nodeName);
         break;
     }
-
-    return result;
   }
 
   private final void populateResponseXml(XmlStringBuilder xml, LogManager.LogInfo log, String nodeName) {

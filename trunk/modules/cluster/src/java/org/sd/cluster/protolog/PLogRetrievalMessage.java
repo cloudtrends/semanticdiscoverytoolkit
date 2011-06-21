@@ -21,8 +21,13 @@ package org.sd.cluster.protolog;
 
 import com.google.protobuf.Message;
 import java.io.File;
+import java.util.Date;
+import org.sd.cluster.config.ClusterDefinition;
+import org.sd.cluster.config.ClusterException;
 import org.sd.cluster.config.ClusterNode;
 import org.sd.cluster.config.Config;
+import org.sd.cluster.config.Console;
+import org.sd.cluster.config.XmlResponseUtil;
 import org.sd.cluster.io.ConnectionContext;
 import org.sd.cluster.io.Context;
 import org.sd.cluster.io.XmlMessage;
@@ -38,10 +43,12 @@ import org.sd.xml.XmlStringBuilder;
  */
 public class PLogRetrievalMessage extends XmlMessage {
 
-  public static final PLogRetrievalMessage makeInstance(String jobIdString, String dataDirName, long minTime, long maxTime) {
+  public static final PLogRetrievalMessage makeInstance(String jobIdString, String dataDirName, long minTime, long maxTime,
+                                                        String controllerGroup, String workerGroup, Integer groupTimeout) {
     final StringBuilder xml = new StringBuilder();
 
-    // <request jobIdString='' dataDirName='' minTime='' maxTime='' />
+    // <request jobIdString='' dataDirName='' minTime='' maxTime=''
+    //          controllerGroup='' workerGroup='' groupTimeout='' />
 
     //todo: add parameters (e.g. for custom streamer, maxMessageBytes, filename constraints, etc.)
     xml.
@@ -57,6 +64,18 @@ public class PLogRetrievalMessage extends XmlMessage {
 
     if (maxTime > 0L) {
       xml.append(" maxTime='").append(maxTime).append("'");
+    }
+
+    if (controllerGroup != null) {
+      xml.append(" controllerGroup='").append(controllerGroup).append("'");
+    }
+
+    if (workerGroup != null) {
+      xml.append(" workerGroup='").append(workerGroup).append("'");
+    }
+
+    if (groupTimeout != null) {
+      xml.append(" groupTimeout='").append(groupTimeout).append("'");
     }
 
     xml.append("/>");
@@ -83,8 +102,41 @@ public class PLogRetrievalMessage extends XmlMessage {
   }
 
   public org.sd.cluster.io.Message getResponse(Context serverContext, ConnectionContext connectionContext) {
+
     final XmlStringBuilder xml = new XmlStringBuilder("response");
     final org.sd.cluster.io.Message result = new XmlResponse(xml);
+
+    if (serverContext instanceof ClusterNode) {
+      final ClusterNode clusterContext = (ClusterNode)serverContext;
+
+      final DomElement requestElement = getXmlElement();
+      final String controllerGroup = requestElement.getAttributeValue("controllerGroup", null);
+
+      if (controllerGroup != null && clusterContext.hasGroup(controllerGroup)) {
+        final String workerGroup = requestElement.getAttributeValue("workerGroup", ClusterDefinition.ALL_NODES_GROUP);
+        final int timeout = requestElement.getAttributeInt("groupTimeout", 30000);
+        processControllerRequest(xml, clusterContext, workerGroup, timeout);
+      }
+      else {  // assume worker group
+        processWorkRequest(xml, clusterContext);
+      }
+    }
+
+    return result;
+  }
+
+  private final void processControllerRequest(XmlStringBuilder xml, ClusterNode clusterNode, String workerGroup, int timeout) {
+    final Console console = clusterNode.getJobManager().getConsole();
+    try {
+      XmlResponseUtil.consolidateResponses(xml, console, this, workerGroup, timeout, false);
+    }
+    catch (ClusterException e) {
+      System.err.println(new Date() + ": PLogRetrievalMessage distributed query failed!");
+      e.printStackTrace(System.err);
+    }
+  }
+
+  private final void processWorkRequest(XmlStringBuilder xml, ClusterNode clusterNode) {
 
     final DomElement requestElement = getXmlElement();
 
@@ -94,7 +146,6 @@ public class PLogRetrievalMessage extends XmlMessage {
     final long minTime = requestElement.getAttributeLong("minTime", 0L);
     final long maxTime = requestElement.getAttributeLong("maxTime", 0L);
 
-    final ClusterNode clusterNode = (ClusterNode)serverContext;
     final Config config = clusterNode.getConfig();
     final File plogdir = new File(config.getOutputDataPath(jobIdString, dataDirName));
 
@@ -124,7 +175,5 @@ public class PLogRetrievalMessage extends XmlMessage {
         if (iter != null) iter.close();
       }
     }
-
-    return result;
   }
 }

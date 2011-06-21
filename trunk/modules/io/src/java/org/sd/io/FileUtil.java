@@ -499,7 +499,7 @@ public class FileUtil {
    * filename's extension is ".gz".
    */
   public static InputStream getInputStream(File file) throws IOException {
-    return getInputStream(file.toURI().toURL());
+    return (file != null && file.exists()) ? getInputStream(file.toURI().toURL()) : null;
   }
 
   /**
