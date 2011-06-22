@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# Locally start N cluster nodes.
+#
+# arg1: (optional, default=1) number of nodes to start
+#
+
+CURNUM="$1";
+test -z "$CURNUM" && CURNUM="1";
+MAXNUM="$CURNUM";
+MYNAME=`uname -n`;
+
+echo "($MYNAME) starting $MAXNUM nodes";
+
+while test $CURNUM -gt 0; do
+  UIDNUM=$(($MAXNUM - $CURNUM));
+
+  echo "($MYNAME) starting #$UIDNUM (local)"
+  ./startClusterNode $UIDNUM;
+  CURNUM=$(($CURNUM - 1));
+done
