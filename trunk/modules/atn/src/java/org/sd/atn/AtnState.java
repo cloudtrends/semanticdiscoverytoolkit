@@ -767,6 +767,7 @@ public class AtnState {
           popState.popFailed = true;
           if (trace) {
             System.out.println("POP tests FAILED\t" + popState.showStateContext() /*popState.showStateTree(true)*/);
+            popState.applyTests();  // NOTE: this is here for debug stepping when tests fail unexpectedly
           }
         }
         else {
