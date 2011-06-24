@@ -513,8 +513,9 @@ public class ExtractionContainer extends PersistablePublishable implements Compa
         this.extraction = parse.getExtraction();
       }
       catch (Exception e) {
-        System.err.println("***NOTE: Unable to build 'Extraction' instance for parse");
-        e.printStackTrace(System.err);
+        System.err.println("***NOTE: Unable to build 'Extraction' instance for parse. (ExtractionContainer)\n\t" +
+                           e.toString());
+        //e.printStackTrace(System.err);
       }
       this.parseTree = parse.getParseTree();
       this.interpretations = interpretations;
