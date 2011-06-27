@@ -22,6 +22,8 @@ package org.sd.cluster.io;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import org.sd.io.DataHelper;
 import org.sd.xml.DomElement;
 import org.sd.xml.XmlStringBuilder;
@@ -38,6 +40,8 @@ public abstract class XmlMessage implements Message {
   private DomElement _xmlElement;
   private IOException _error;
 
+  private Map<String, String> attributes;
+
   public XmlMessage() {
   }
 
@@ -47,6 +51,7 @@ public abstract class XmlMessage implements Message {
   public XmlMessage(String xmlDataString) {
     this.xmlDataString = xmlDataString;
     this._xmlElement = null;
+    this.attributes = null;
   }
 
   /**
@@ -55,6 +60,93 @@ public abstract class XmlMessage implements Message {
   public XmlMessage(DomElement xmlElement) {
     this.xmlDataString = null;
     this._xmlElement = xmlElement;
+  }
+
+  /**
+   * Determine whether this message has any extra attributes.
+   */
+  public boolean hasAttributes() {
+    return attributes != null && attributes.size() > 0;
+  }
+
+  /**
+   * Set an extra attribute in this message.
+   */
+  public void setAttribute(String att, String val) {
+    if (attributes == null) attributes = new HashMap<String, String>();
+    attributes.put(att, val);
+  }
+
+  /**
+   * Get the extra attribute's value or null.
+   */
+  public String getAttribute(String att) {
+    return attributes == null ? null : attributes.get(att);
+  }
+
+  /**
+   * Get the message attribute's value or null.
+   * <p>
+   * This is defined as the attribute's value, overridable by the top xml
+   * element's attribute.
+   */
+  public String getMessageAttribute(String att) {
+    return getMessageAttribute(att, null);
+  }
+
+  /**
+   * Get the message attribute's value or the given default value.
+   * <p>
+   * This is defined as the attribute's value, overridable by the top xml
+   * element's attribute.
+   */
+  public String getMessageAttribute(String att, String defaultValue) {
+    String result = null;
+
+    final DomElement xmlElement = getXmlElement();
+
+    if (xmlElement != null) {
+      result = xmlElement.getAttributeValue(att, null);
+    }
+
+    if (result == null) {
+      result = getAttribute(att);
+    }
+
+    return result == null ? defaultValue : result;
+  }
+
+  public int getMessageAttributeInt(String att, int defaultValue) {
+    int result = defaultValue;
+
+    final String str = getMessageAttribute(att);
+    if (str != null) {
+      result = Integer.parseInt(str);
+    }
+
+    return result;
+  }
+
+  public long getMessageAttributeLong(String att, long defaultValue) {
+    long result = defaultValue;
+
+    final String str = getMessageAttribute(att);
+    if (str != null) {
+      result = Long.parseLong(str);
+    }
+
+    return result;
+  }
+
+  public boolean getMessageAttributeBoolean(String att, boolean defaultValue) {
+    boolean result = defaultValue;
+
+    final String str = getMessageAttribute(att);
+    if (str != null) {
+      result = "true".equalsIgnoreCase(str);
+    }
+
+    return result;
   }
 
   /**
@@ -103,9 +195,28 @@ public abstract class XmlMessage implements Message {
 
   public void write(DataOutput dataOutput) throws IOException {
     DataHelper.writeString(dataOutput, getXmlDataString());
+
+    if (attributes == null) dataOutput.writeInt(0);
+    else {
+      dataOutput.writeInt(attributes.size());
+      for (Map.Entry<String, String> attrEntry : attributes.entrySet()) {
+        DataHelper.writeString(dataOutput, attrEntry.getKey());
+        DataHelper.writeString(dataOutput, attrEntry.getValue());
+      }
+    }
   }
 
   public void read(DataInput dataInput) throws IOException {
     this.xmlDataString = DataHelper.readString(dataInput);
+
+    final int numAttrs = dataInput.readInt();
+    if (numAttrs > 0) {
+      this.attributes = new HashMap<String, String>();
+      for (int attrNum = 0; attrNum < numAttrs; ++attrNum) {
+        final String key = DataHelper.readString(dataInput);
+        final String val = DataHelper.readString(dataInput);
+        attributes.put(key, val);
+      }
+    }
   }
 }
