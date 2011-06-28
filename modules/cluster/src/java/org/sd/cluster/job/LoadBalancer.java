@@ -49,7 +49,6 @@ public class LoadBalancer {
 
   private int singleInitTimeout;
   private int singleNormalTimeout;
-  private int totalFailTimeout;
 
   private int cycleLimit;
   private int countdownStart;
@@ -110,7 +109,6 @@ public class LoadBalancer {
 
     this.singleInitTimeout = singleInitTimeout;
     this.singleNormalTimeout = singleNormalTimeout;
-    this.totalFailTimeout = singleInitTimeout * (numGroupNodes + 1);
     this.cycleLimit = cycleLimit;
     this.countdownStart = cycleLimit * numGroupNodes;
   }
@@ -125,16 +123,30 @@ public class LoadBalancer {
     return this.verbose;
   }
 
-  public Response sendMessageToNode(Message message) {
-    Response result = null;
+  public List<String> getGroupNodes() {
+    return groupNodes;
+  }
 
+  public ConcurrentLinkedQueue<NodeInfo> getNodeInfos() {
+    return nodeInfos;
+  }
+
+  public Response sendMessageToNode(Message message) {
+    return sendMessageToNode(message, singleInitTimeout, singleNormalTimeout);
+  }
+
+  public Response sendMessageToNode(Message message, int singleInitTimeout, int singleNormalTimeout) {
+    Response result = null;
     NodeInfo nextNode = null;
+    final int totalFailTimeout = singleInitTimeout * (numGroupNodes + 1);
 
     // Start the clock
     final long starttime = System.currentTimeMillis();
     int loopCountdown = countdownStart;
 
     while (result == null && (System.currentTimeMillis() - starttime) < totalFailTimeout && loopCountdown > 0) {
+      nextNode = null; // reset
+
       // Grab the next node, waiting until one is available
       for (; nextNode == null && (System.currentTimeMillis() - starttime) < totalFailTimeout; nextNode = nodeInfos.poll());
 
@@ -217,7 +229,7 @@ public class LoadBalancer {
 
   private enum NodeStatus { UP, DOWN, INITIALIZING, UNKNOWN };
 
-  private static final class NodeInfo {
+  public static final class NodeInfo {
     private String nodeName;
     private AtomicReference<NodeStatus> status;
 

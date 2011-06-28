@@ -200,6 +200,18 @@ public class TestSentenceIterator extends TestCase {
            });
   }
 
+  public void testLeadingEllipsis() {
+    doTest(new SentenceIterator(". . . LLOYD E. CRANDALL, Manager", true),
+           new String[] {
+             ". . .",
+             "LLOYD E. CRANDALL, Manager",
+           },
+           new int[][] {
+             {0, 6},
+             {6, 32},
+           });
+  }
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestSentenceIterator.class);

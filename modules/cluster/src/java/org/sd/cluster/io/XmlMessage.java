@@ -21,6 +21,7 @@ package org.sd.cluster.io;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -209,14 +210,20 @@ public abstract class XmlMessage implements Message {
   public void read(DataInput dataInput) throws IOException {
     this.xmlDataString = DataHelper.readString(dataInput);
 
-    final int numAttrs = dataInput.readInt();
-    if (numAttrs > 0) {
-      this.attributes = new HashMap<String, String>();
-      for (int attrNum = 0; attrNum < numAttrs; ++attrNum) {
-        final String key = DataHelper.readString(dataInput);
-        final String val = DataHelper.readString(dataInput);
-        attributes.put(key, val);
+    try {
+      final int numAttrs = dataInput.readInt();
+      if (numAttrs > 0) {
+        this.attributes = new HashMap<String, String>();
+        for (int attrNum = 0; attrNum < numAttrs; ++attrNum) {
+          final String key = DataHelper.readString(dataInput);
+          final String val = DataHelper.readString(dataInput);
+          attributes.put(key, val);
+        }
       }
+    }
+    catch (EOFException e) {
+      // this happens with "old" XmlMessage clients that don't write attributes,
+      // so there are no attributes and "eating" this exception is appropriate.
     }
   }
 }
