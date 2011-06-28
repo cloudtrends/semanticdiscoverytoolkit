@@ -93,17 +93,19 @@ public class SentenceIterator extends BaseTextIterator {
         if (Character.isLetterOrDigit(curC)) break;
       }
 
-      // scan backwards to whitespace
-      int lastWordStart = end;
+      if (end > 0) {
+        // scan backwards to whitespace
+        int lastWordStart = end;
 
-      for (; lastWordStart > start; --lastWordStart) {
-        final char curC = text.charAt(lastWordStart - 1);
-        if (Character.isWhitespace(curC)) break;
-      }
+        for (; lastWordStart > start; --lastWordStart) {
+          final char curC = text.charAt(lastWordStart - 1);
+          if (Character.isWhitespace(curC)) break;
+        }
 
-      // reject capitalized abbreviations as a sentence boundary
-      if (Character.isUpperCase(text.charAt(lastWordStart)) && StringUtil.isLikelyAbbreviation(text.substring(lastWordStart, end))) {
-        result = false;
+        // reject capitalized abbreviations as a sentence boundary
+        if (Character.isUpperCase(text.charAt(lastWordStart)) && StringUtil.isLikelyAbbreviation(text.substring(lastWordStart, end))) {
+          result = false;
+        }
       }
     }
 
