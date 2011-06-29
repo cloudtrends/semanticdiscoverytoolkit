@@ -174,10 +174,37 @@ public class LoadBalancer {
           }
           // else, ignore and loop
           break;
+
+        case FAIL :
+          break;  // skip failed nodes
       }
     }
 
     return result;
+  }
+
+  public String toString() {
+    final StringBuilder result = new StringBuilder();
+
+    result.
+      append("LoadBalancer(n=").
+      append(numGroupNodes).
+      append(",q=").
+      append(queryCount.get()).
+      append(",it=").
+      append(singleInitTimeout).
+      append(",nt=").
+      append(singleNormalTimeout).
+      append(",cl=").
+      append(cycleLimit).
+      append(")=");
+
+    for (int nodeNum = 0; nodeNum < numGroupNodes; ++nodeNum) {
+      if (nodeNum > 0) result.append(", ");
+      result.append('[').append(nodeNum).append(']').append(nodeInfos[nodeNum]);
+    }
+
+    return result.toString();
   }
 
   private final Response doSendMessage(NodeInfo nodeInfo, Message message, NodeStatus expectedStatus, int timeout) {
@@ -214,15 +241,19 @@ public class LoadBalancer {
   }
 
 
-  private enum NodeStatus { UP, DOWN, INITIALIZING, UNKNOWN };
+  private enum NodeStatus { UP, DOWN, INITIALIZING, UNKNOWN, FAIL };
 
   public static final class NodeInfo {
     private String nodeName;
     private AtomicReference<NodeStatus> status;
+    private int downCount;
+    private AtomicLong useCount;
 
     public NodeInfo(String nodeName) {
       this.nodeName = nodeName;
       this.status = new AtomicReference<NodeStatus>(NodeStatus.UNKNOWN);
+      this.downCount = 0;
+      this.useCount = new AtomicLong(0);
     }
 
     public String getNodeName() {
@@ -230,6 +261,7 @@ public class LoadBalancer {
     }
 
     public boolean changeStatus(NodeStatus fromStatus, NodeStatus toStatus) {
+      useCount.incrementAndGet();
       return status.compareAndSet(fromStatus, toStatus);
     }
 
@@ -238,12 +270,36 @@ public class LoadBalancer {
     }
 
     public NodeStatus setStatus(NodeStatus newStatus) {
-      return status.getAndSet(newStatus);
+      final NodeStatus result = status.getAndSet(newStatus);
+
+      if (newStatus == NodeStatus.DOWN) {
+        if (result == NodeStatus.DOWN) {
+          ++downCount;
+
+          if (downCount >= 5) {
+            status.getAndSet(NodeStatus.FAIL);
+          }
+        }
+        else {
+          downCount = 1;
+        }
+      }
+      else {
+        downCount = 0;
+      }
+
+      return result;
     }
 
     public String toString() {
       final StringBuilder result = new StringBuilder();
-      result.append(nodeName).append('(').append(status.get()).append(')');
+      result.
+        append(nodeName).
+        append('(').
+        append(useCount.get()).
+        append(',').
+        append(status.get()).
+        append(')');
       return result.toString();
     }
   }
