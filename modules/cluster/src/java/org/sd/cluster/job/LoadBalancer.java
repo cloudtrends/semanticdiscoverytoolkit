@@ -21,7 +21,7 @@ package org.sd.cluster.job;
 
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.sd.cluster.config.ClusterDefinition;
 import org.sd.cluster.config.ClusterException;
@@ -45,7 +45,8 @@ public class LoadBalancer {
 
   private int numGroupNodes;
   private List<String> groupNodes;
-  private ConcurrentLinkedQueue<NodeInfo> nodeInfos;  // group nodes to contact
+  private AtomicLong queryCount;
+  private NodeInfo[] nodeInfos;
 
   private int singleInitTimeout;
   private int singleNormalTimeout;
@@ -96,9 +97,11 @@ public class LoadBalancer {
     final ClusterDefinition clusterDef = clusterNode.getClusterDefinition();
     this.groupNodes = clusterDef.getGroupNodeNames(group, true);
     this.numGroupNodes = groupNodes.size();
-    this.nodeInfos = new ConcurrentLinkedQueue<NodeInfo>();
-    for (String groupNode : groupNodes) {
-      nodeInfos.add(new NodeInfo(groupNode));
+    this.queryCount = new AtomicLong(0);
+    this.nodeInfos = new NodeInfo[numGroupNodes];
+    for (int nodeIdx = 0; nodeIdx < numGroupNodes; ++nodeIdx) {
+      final String groupNode = groupNodes.get(nodeIdx);
+      nodeInfos[nodeIdx] = new NodeInfo(groupNode);
     }
 
     System.out.println(new Date() + ": LoadBalancer init(" + group +
@@ -127,7 +130,7 @@ public class LoadBalancer {
     return groupNodes;
   }
 
-  public ConcurrentLinkedQueue<NodeInfo> getNodeInfos() {
+  public NodeInfo[] getNodeInfos() {
     return nodeInfos;
   }
 
@@ -137,7 +140,6 @@ public class LoadBalancer {
 
   public Response sendMessageToNode(Message message, int singleInitTimeout, int singleNormalTimeout) {
     Response result = null;
-    NodeInfo nextNode = null;
     final int totalFailTimeout = singleInitTimeout * (numGroupNodes + 1);
 
     // Start the clock
@@ -145,24 +147,9 @@ public class LoadBalancer {
     int loopCountdown = countdownStart;
 
     while (result == null && (System.currentTimeMillis() - starttime) < totalFailTimeout && loopCountdown > 0) {
-      nextNode = null; // reset
 
-      // Grab the next node, waiting until one is available
-      for (; nextNode == null && (System.currentTimeMillis() - starttime) < totalFailTimeout; nextNode = nodeInfos.poll());
-
-      // Immediately place node back on queue
-      if (nextNode != null) {
-        nodeInfos.add(nextNode);
-
-        if (DEBUG && verbose) {
-          System.out.print(new Date() + ": LoadBalancer rolled nodes:");
-          for (NodeInfo ni : nodeInfos) {
-            System.out.print(" " + ni);
-          }
-          System.out.println();
-        }
-      }
-      else break;  // failed to acquire node in allotted time
+      final int nodeNum = (int)(queryCount.getAndIncrement() % numGroupNodes);
+      final NodeInfo nextNode = nodeInfos[nodeNum];
 
       --loopCountdown;
 
