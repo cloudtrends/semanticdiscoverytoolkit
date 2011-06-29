@@ -183,6 +183,36 @@ public class LoadBalancer {
     return result;
   }
 
+  /**
+   * Communications are "up" if none of the nodes are INITIALIZING and at least
+   * one of the nodes is UP.
+   */
+  public boolean isUp() {
+    boolean result = false;
+
+    for (NodeInfo nodeInfo : nodeInfos) {
+      final NodeStatus status = nodeInfo.getStatus();
+      if (status == NodeStatus.INITIALIZING) {
+        result = false;
+        break;
+      }
+      else if (status == NodeStatus.UP) {
+        result = true;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Reset this load balancer.
+   */
+  public void reset() {
+    for (NodeInfo nodeInfo : nodeInfos) {
+      nodeInfo.reset();
+    }
+  }
+
   public String toString() {
     final StringBuilder result = new StringBuilder();
 
@@ -289,6 +319,12 @@ public class LoadBalancer {
       }
 
       return result;
+    }
+
+    public synchronized void reset() {
+      setStatus(NodeStatus.UNKNOWN);
+      downCount = 0;
+      useCount.set(0);
     }
 
     public String toString() {
