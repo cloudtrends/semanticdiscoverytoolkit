@@ -49,6 +49,8 @@ public class RobinKarpStringSearch {
   private int[] lengths;
   private Map<Integer, Long> n2primeToN;
 
+  private final Object primeLock = new Object();
+
   /**
    * Default constructor for reconstruction through 'read'.
    */
@@ -225,13 +227,15 @@ public class RobinKarpStringSearch {
 
   private final long primeToN(int n) {
     long result = 0;
-    Long got = n2primeToN.get(n);
-    if (got == null) {
-      result = computePower(n);
-      n2primeToN.put(n, result);
-    }
-    else {
-      result = got;
+    synchronized (primeLock) {
+      Long got = n2primeToN.get(n);
+      if (got == null) {
+        result = computePower(n);
+        n2primeToN.put(n, result);
+      }
+      else {
+        result = got;
+      }
     }
     return result;
   }
