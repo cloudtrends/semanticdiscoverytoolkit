@@ -457,6 +457,8 @@ public class MathUtil {
   public static final GregorianCalendar parseGregorianCalendar(String dateString) {
     final String[] pieces = dateString.trim().split("[ :]");
 
+    if (pieces.length != 8) return null;
+
     final int month = MONTH_MAP.get(pieces[1]);      // Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
     final int day = Integer.parseInt(pieces[2]);     // 01-31
     final int hour = Integer.parseInt(pieces[3]);    // 00-23
@@ -472,7 +474,8 @@ public class MathUtil {
    * Date object.
    */
   public static final Date parseDate(String dateString) {
-    return parseGregorianCalendar(dateString).getTime();
+    final GregorianCalendar gc = parseGregorianCalendar(dateString);
+    return gc == null ? null : gc.getTime();
   }
 
   private static final Pattern BYTE_PATTERN = Pattern.compile("^.*?(\\d+)([BKMGT]).*$");
