@@ -28,7 +28,7 @@ import org.sd.xml.DomElement;
 import org.sd.xml.XmlStringBuilder;
 
 /**
- * An xml message to retrieve the cluster stdout, stderr logs.
+ * An xml message to retrieve a cluster node's stdout, stderr logs.
  * <p>
  * @author Spence Koehler
  */
@@ -37,7 +37,7 @@ public class LogRetrievalMessage extends XmlMessage {
   public enum Select { BOTH, ERR, OUT };
 
   //
-  // <request select='both|err|out' controllerGroup='' workerGroup='' groupTimeout='' />
+  // <request select='both|err|out' />
   // <response>
   //   <log file='' node='' starttime='' curtime='' [readError='true']>
   //     ...log text or readError details...
@@ -56,7 +56,7 @@ public class LogRetrievalMessage extends XmlMessage {
   /**
    * Factory method for creating an instance.
    */
-  public static final LogRetrievalMessage makeInstance(Select select, String controllerGroup, String workerGroup, Integer groupTimeout) {
+  public static final LogRetrievalMessage makeInstance(Select select) {
     if (select == null) select = Select.BOTH;
 
     final StringBuilder xml = new StringBuilder();
@@ -64,21 +64,7 @@ public class LogRetrievalMessage extends XmlMessage {
     xml.
       append("<request select='").
       append(select.name()).
-      append("'");
-
-    if (controllerGroup != null) {
-      xml.append(" controllerGroup='").append(controllerGroup).append("'");
-    }
-
-    if (workerGroup != null) {
-      xml.append(" workerGroup='").append(workerGroup).append("'");
-    }
-
-    if (groupTimeout != null) {
-      xml.append(" groupTimeout='").append(groupTimeout).append("'");
-    }
-
-    xml.append("/>");
+      append("'/>");
 
     return new LogRetrievalMessage(xml.toString());
   }
@@ -107,48 +93,31 @@ public class LogRetrievalMessage extends XmlMessage {
     final Message result = new XmlResponse(xml);
 
     if (serverContext instanceof ClusterNode) {
-      final ClusterNode clusterContext = (ClusterNode)serverContext;
+      final ClusterNode clusterNode = (ClusterNode)serverContext;
 
       final DomElement requestElement = getXmlElement();
-      final String controllerGroup = requestElement.getAttributeValue("controllerGroup", null);
-      final String workerGroup = requestElement.getAttributeValue("workerGroup", ClusterDefinition.ALL_NODES_GROUP);
 
-      if (controllerGroup != null && clusterContext.hasGroup(controllerGroup) && clusterContext.groupExists(workerGroup)) {
-        final int timeout = requestElement.getAttributeInt("groupTimeout", 30000);
-        processControllerRequest(xml, clusterContext, workerGroup, timeout);
-      }
-      else {  // assume worker group
-        processWorkRequest(xml, clusterContext);
+      final Select select = Select.valueOf(requestElement.getAttributeValue("select", "SELECT"));
+
+      final LogManager.LogInfo errorLog = clusterNode.getErrorLog();
+      final LogManager.LogInfo outputLog = clusterNode.getOutputLog();
+      final String nodeName = clusterNode.getConfig().getNodeName();
+
+      switch (select) {
+        case BOTH :
+          populateResponseXml(xml, errorLog, nodeName);
+          populateResponseXml(xml, outputLog, nodeName);
+          break;
+        case ERR :
+          populateResponseXml(xml, errorLog, nodeName);
+          break;
+        case OUT :
+          populateResponseXml(xml, outputLog, nodeName);
+          break;
       }
     }
 
     return result;
-  }
-
-  private void processControllerRequest(XmlStringBuilder xml, ClusterNode clusterNode, String workerGroup, int timeout) {
-  }
-
-  private void processWorkRequest(XmlStringBuilder xml, ClusterNode clusterNode) {
-    final DomElement requestElement = getXmlElement();
-
-    final Select select = Select.valueOf(requestElement.getAttributeValue("select", "SELECT"));
-
-    final LogManager.LogInfo errorLog = clusterNode.getErrorLog();
-    final LogManager.LogInfo outputLog = clusterNode.getOutputLog();
-    final String nodeName = clusterNode.getConfig().getNodeName();
-
-    switch (select) {
-      case BOTH :
-        populateResponseXml(xml, errorLog, nodeName);
-        populateResponseXml(xml, outputLog, nodeName);
-        break;
-      case ERR :
-        populateResponseXml(xml, errorLog, nodeName);
-        break;
-      case OUT :
-        populateResponseXml(xml, outputLog, nodeName);
-        break;
-    }
   }
 
   private final void populateResponseXml(XmlStringBuilder xml, LogManager.LogInfo log, String nodeName) {
