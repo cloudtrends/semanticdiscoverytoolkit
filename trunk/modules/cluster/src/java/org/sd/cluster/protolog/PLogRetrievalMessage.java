@@ -43,12 +43,10 @@ import org.sd.xml.XmlStringBuilder;
  */
 public class PLogRetrievalMessage extends XmlMessage {
 
-  public static final PLogRetrievalMessage makeInstance(String jobIdString, String dataDirName, long minTime, long maxTime,
-                                                        String controllerGroup, String workerGroup, Integer groupTimeout) {
+  public static final PLogRetrievalMessage makeInstance(String jobIdString, String dataDirName, long minTime, long maxTime) {
     final StringBuilder xml = new StringBuilder();
 
-    // <request jobIdString='' dataDirName='' minTime='' maxTime=''
-    //          controllerGroup='' workerGroup='' groupTimeout='' />
+    // <request jobIdString='' dataDirName='' minTime='' maxTime='' />
 
     //todo: add parameters (e.g. for custom streamer, maxMessageBytes, filename constraints, etc.)
     xml.
@@ -64,18 +62,6 @@ public class PLogRetrievalMessage extends XmlMessage {
 
     if (maxTime > 0L) {
       xml.append(" maxTime='").append(maxTime).append("'");
-    }
-
-    if (controllerGroup != null) {
-      xml.append(" controllerGroup='").append(controllerGroup).append("'");
-    }
-
-    if (workerGroup != null) {
-      xml.append(" workerGroup='").append(workerGroup).append("'");
-    }
-
-    if (groupTimeout != null) {
-      xml.append(" groupTimeout='").append(groupTimeout).append("'");
     }
 
     xml.append("/>");
@@ -107,73 +93,47 @@ public class PLogRetrievalMessage extends XmlMessage {
     final org.sd.cluster.io.Message result = new XmlResponse(xml);
 
     if (serverContext instanceof ClusterNode) {
-      final ClusterNode clusterContext = (ClusterNode)serverContext;
+      final ClusterNode clusterNode = (ClusterNode)serverContext;
 
       final DomElement requestElement = getXmlElement();
-      final String controllerGroup = requestElement.getAttributeValue("controllerGroup", null);
-      final String workerGroup = requestElement.getAttributeValue("workerGroup", ClusterDefinition.ALL_NODES_GROUP);
 
-      if (controllerGroup != null && clusterContext.hasGroup(controllerGroup) && clusterContext.groupExists(workerGroup)) {
-        final int timeout = requestElement.getAttributeInt("groupTimeout", 30000);
-        processControllerRequest(xml, clusterContext, workerGroup, timeout);
-      }
-      else {  // assume worker group
-        processWorkRequest(xml, clusterContext);
+      //todo: parse/handle parameters (e.g. for custom streamer, maxMessageBytes, filename constraints, etc.)
+      final String jobIdString = requestElement.getAttributeValue("jobIdString");
+      final String dataDirName = requestElement.getAttributeValue("dataDirName");
+      final long minTime = requestElement.getAttributeLong("minTime", 0L);
+      final long maxTime = requestElement.getAttributeLong("maxTime", 0L);
+
+      final Config config = clusterNode.getConfig();
+      final File plogdir = new File(config.getOutputDataPath(jobIdString, dataDirName));
+
+      if (plogdir.exists()) {
+        final ProtoLogXml protoLogXml = new ProtoLogXml();
+
+        MultiLogIterator iter = null;
+
+        try {
+          iter =
+            new MultiLogIterator(plogdir, EventEntry.class,
+                                 ProtoLogStreamer.DEFAULT_INSTANCE,
+                                 ProtoLogStreamer.MAX_MESSAGE_BYTES,
+                                 null, null,
+                                 (minTime <= 0) ? null : minTime,
+                                 (maxTime <= 0) ? null : maxTime);
+        
+          while (iter.hasNext()) {
+            final Message message = iter.next();
+            if (message instanceof EventEntry) {
+              final EventEntry eventEntry = (EventEntry)message;
+              protoLogXml.asXml(xml, eventEntry);
+            }
+          }
+        }
+        finally {
+          if (iter != null) iter.close();
+        }
       }
     }
 
     return result;
-  }
-
-  private final void processControllerRequest(XmlStringBuilder xml, ClusterNode clusterNode, String workerGroup, int timeout) {
-    final Console console = clusterNode.getJobManager().getConsole();
-    try {
-      XmlResponseUtil.consolidateResponses(xml, console, this, workerGroup, timeout, false);
-    }
-    catch (ClusterException e) {
-      System.err.println(new Date() + ": PLogRetrievalMessage distributed query failed!");
-      e.printStackTrace(System.err);
-    }
-  }
-
-  private final void processWorkRequest(XmlStringBuilder xml, ClusterNode clusterNode) {
-
-    final DomElement requestElement = getXmlElement();
-
-    //todo: parse/handle parameters (e.g. for custom streamer, maxMessageBytes, filename constraints, etc.)
-    final String jobIdString = requestElement.getAttributeValue("jobIdString");
-    final String dataDirName = requestElement.getAttributeValue("dataDirName");
-    final long minTime = requestElement.getAttributeLong("minTime", 0L);
-    final long maxTime = requestElement.getAttributeLong("maxTime", 0L);
-
-    final Config config = clusterNode.getConfig();
-    final File plogdir = new File(config.getOutputDataPath(jobIdString, dataDirName));
-
-    if (plogdir.exists()) {
-      final ProtoLogXml protoLogXml = new ProtoLogXml();
-
-      MultiLogIterator iter = null;
-
-      try {
-        iter =
-          new MultiLogIterator(plogdir, EventEntry.class,
-                               ProtoLogStreamer.DEFAULT_INSTANCE,
-                               ProtoLogStreamer.MAX_MESSAGE_BYTES,
-                               null, null,
-                               (minTime <= 0) ? null : minTime,
-                               (maxTime <= 0) ? null : maxTime);
-        
-        while (iter.hasNext()) {
-          final Message message = iter.next();
-          if (message instanceof EventEntry) {
-            final EventEntry eventEntry = (EventEntry)message;
-            protoLogXml.asXml(xml, eventEntry);
-          }
-        }
-      }
-      finally {
-        if (iter != null) iter.close();
-      }
-    }
   }
 }
