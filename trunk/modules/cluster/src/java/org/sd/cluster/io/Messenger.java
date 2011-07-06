@@ -94,7 +94,9 @@ public class Messenger {
       sendMessage(response, dataOutput);
     }
     catch (IOException e) {
-      System.err.println(new Date() + ": Messenger.receiveMessage() unable to send response! received=" + message + " response=" + response);
+      System.err.println(new Date() + ": Messenger.receiveMessage() unable to send response (to " +
+                         connectionContext.getInetAddress().getHostAddress() +
+                         ")! received=" + message + " response=" + response);
       throw e;
     }
     dataOutput.flush();

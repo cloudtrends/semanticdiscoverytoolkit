@@ -202,14 +202,14 @@ public class Admin {
     command = "./ddeploy " + topInfo[0] + " " + topInfo[1];
     if (out != null) out.println(command);
     execResult = ExecUtil.executeProcess(command, new File(binDir));
-    if (out != null && execResult != null && !execResult.failed() && execResult.output != null) out.println(execResult.output);
+    if (out != null && execResult != null /*&& !execResult.failed()*/ && execResult.output != null) out.println(execResult.output);
 
     // start top clusterDef node a-deployin'
     final String userName = clusterDef.getUser();
     command = "cd ~/cluster/bin;./hdeploy " + userName;
     if (out != null) out.println("ssh " + topInfo[0] + "@" + topInfo[1] + " " + command);
     execResult = ExecUtil.executeRemoteProcess(topInfo[0], topInfo[1], command);
-    if (out != null && execResult != null && !execResult.failed() && execResult.output != null) out.println(execResult.output);
+    if (out != null && execResult != null /*&& !execResult.failed()*/ && execResult.output != null) out.println(execResult.output);
   }
 
   public void start(String heapSize) throws IOException {

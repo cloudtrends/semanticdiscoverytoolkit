@@ -68,6 +68,13 @@ public class PropertiesParser {
    */
   public static final String DEFAULT_PROPERTIES_DIR = "/home/" + ExecUtil.getUser() + "/cluster/resources/properties";
 
+  private static boolean lostResourceVerbose = false;
+  public static final boolean setLostResourceVerbose(boolean v) {
+    final boolean result = lostResourceVerbose;
+    lostResourceVerbose = v;
+    return result;
+  }
+
 
   private Properties properties;
   private String[] args;
@@ -329,7 +336,7 @@ public class PropertiesParser {
     if (!gotResource) {
       System.err.println("***WARNING: Couldn't load resource '" + name + "' (user.dir=" +
                          System.getProperty("user.dir") + ")");
-      new Exception("Lost Resource").printStackTrace(System.err);
+      if (lostResourceVerbose) new Exception("Lost Resource").printStackTrace(System.err);
     }
 
     return result;
