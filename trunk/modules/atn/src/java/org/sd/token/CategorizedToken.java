@@ -35,4 +35,14 @@ public class CategorizedToken {
     this.token = token;
     this.category = category;
   }
+
+  public String toString() {
+    final StringBuilder result = new StringBuilder();
+
+    // overall format is (cat)token, or:
+    //   (cat)'text'[startIdx,endIdx{wordCount}](seqNum.revisNum)
+    result.append("(").append(category).append(')').append(token.toString());
+
+    return result.toString();
+  }
 }

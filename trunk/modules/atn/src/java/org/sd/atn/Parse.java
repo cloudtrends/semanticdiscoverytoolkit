@@ -38,6 +38,7 @@ import org.sd.token.Token;
 import org.sd.token.Tokenizer;
 import org.sd.io.Publishable;
 import org.sd.util.tree.Tree;
+import org.sd.xml.DomElement;
 
 /**
  * Container for the persistable distillation of a parse.
@@ -59,8 +60,17 @@ public class Parse implements Publishable, Serializable {
   private String remainingText;
 
   private List<CategorizedToken> _cTokens;
+  private DomElement _domElement;
 
   private static final long serialVersionUID = 42L;
+
+  private static IdentityParseInterpreter _ipi = null;
+  private static final IdentityParseInterpreter getIdentityParseInterpreter() {
+    if (_ipi == null) {
+      _ipi = new IdentityParseInterpreter(false);
+    }
+    return _ipi;
+  }
 
   /**
    * Empty constructor for publishable reconstruction.
@@ -85,6 +95,7 @@ public class Parse implements Publishable, Serializable {
     this.ruleId = ruleId;
     this.remainingText = null;
     this._cTokens = null;
+    this._domElement = null;
   }
 
   /**
@@ -175,6 +186,26 @@ public class Parse implements Publishable, Serializable {
       result = cTokens.get(cTokens.size() - 1);
     }
     return result;
+  }
+
+  /**
+   * Get this parse's tree as xml.
+   */
+  public DomElement asXml() {
+    if (_domElement == null) {
+      final IdentityParseInterpreter ipi = getIdentityParseInterpreter();
+      final List<ParseInterpretation> identityInterps = ipi.getInterpretations(this, null);
+      if (identityInterps != null && identityInterps.size() > 0) {
+        final ParseInterpretation identityInterp = identityInterps.get(0);
+        _domElement = (DomElement)identityInterp.getInterpTree().getData().asDomNode();
+
+        if (ruleId != null && !"".equals(ruleId) &&
+            (!_domElement.hasAttributes() || _domElement.getAttributeValue("_ruleId") == null)) {
+          _domElement.setAttribute("_ruleId", ruleId);
+        }
+      }
+    }
+    return _domElement;
   }
 
   /**
