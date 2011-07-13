@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.sd.token.CategorizedToken;
 import org.sd.util.tree.Tree;
@@ -95,6 +96,20 @@ public class IdentityParseInterpreter implements ParseInterpreter {
     if (isTag) {
       curInterpNode = XmlLite.createTagNode(parseTree.getData());
 
+      // add attributes
+      if (parseTree.hasAttributes()) {
+        final XmlLite.Tag tag = curInterpNode.getData().asTag();
+
+        for (Map.Entry<String, Object> entry : parseTree.getAttributes().entrySet()) {
+          final String attr = entry.getKey();
+          final Object val = entry.getValue();
+
+          if (val != null) {
+            tag.attributes.put(attr, val.toString());
+          }
+        }
+      }
+
       if (compressNodes != null && compressNodes.contains(parseTree)) {
         if (parent != null) {
           parent.addChild(curInterpNode);
@@ -125,6 +140,7 @@ public class IdentityParseInterpreter implements ParseInterpreter {
 
     // recurse
     if (isTag) {
+      // add children
       for (Tree<String> childTree : parseTree.getChildren()) {
         convertTree(childTree, curInterpNode, compressNodes);
       }
