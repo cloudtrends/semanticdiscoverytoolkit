@@ -22,6 +22,7 @@ package org.sd.cluster.protolog;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import org.sd.cluster.io.Shutdownable;
 import org.sd.cluster.protolog.codegen.ProtoLogProtos.*;
 import org.sd.io.FileUtil;
 
@@ -30,7 +31,7 @@ import org.sd.io.FileUtil;
  * <p>
  * @author Spence Koehler
  */
-public class FileEventLogger extends EventLogger {
+public class FileEventLogger extends EventLogger implements Shutdownable {
   
   private DataOutputStream dataOut;
   private ProtoLogStreamer streamer;
@@ -91,6 +92,10 @@ public class FileEventLogger extends EventLogger {
     }
 
     return result;
+  }
+
+  public void shutdown(boolean now) {
+    close();
   }
 
   /**
