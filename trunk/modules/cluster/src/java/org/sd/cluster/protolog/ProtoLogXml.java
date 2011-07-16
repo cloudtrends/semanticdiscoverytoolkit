@@ -34,8 +34,10 @@ import org.sd.xml.XmlStringBuilder;
 import org.w3c.dom.NodeList;
 
 /**
- * Xml helper class for protolog EventEntry instances.
+ * Custom xml helper class for protolog EventEntry instances.
  * <p>
+ * NOTE: This has been superceded by generic handling in Message2Xml.
+ *
  * @author Spence Koehler
  */
 public class ProtoLogXml {

@@ -33,6 +33,7 @@ import org.sd.cluster.io.Context;
 import org.sd.cluster.io.XmlMessage;
 import org.sd.cluster.io.XmlResponse;
 import org.sd.cluster.protolog.codegen.ProtoLogProtos.*;
+import org.sd.util.ReflectUtil;
 import org.sd.xml.DomElement;
 import org.sd.xml.XmlStringBuilder;
 
@@ -43,16 +44,26 @@ import org.sd.xml.XmlStringBuilder;
  */
 public class PLogRetrievalMessage extends XmlMessage {
 
+  /**
+   * Make a default instance expecting EventEntry instances in the logs.
+   */
   public static final PLogRetrievalMessage makeInstance(String jobIdString, String dataDirName, long minTime, long maxTime) {
+    return makeInstance(jobIdString, dataDirName, minTime, maxTime, null);
+  }
+
+  /**
+   * Make an instance expecting the given type of message instances in the logs.
+   */
+  public static final PLogRetrievalMessage makeInstance(String jobIdString, String dataDirName, long minTime, long maxTime, String msgClass) {
     final StringBuilder xml = new StringBuilder();
 
-    // <request jobIdString='' dataDirName='' minTime='' maxTime='' />
+    // <request jobIdString='' dataDir='' minTime='' maxTime='' msgClass='' />
 
     //todo: add parameters (e.g. for custom streamer, maxMessageBytes, filename constraints, etc.)
     xml.
       append("<request jobIdString='").
       append(jobIdString).
-      append("' dataDirName='").
+      append("' dataDir='").
       append(dataDirName).
       append("'");
 
@@ -62,6 +73,10 @@ public class PLogRetrievalMessage extends XmlMessage {
 
     if (maxTime > 0L) {
       xml.append(" maxTime='").append(maxTime).append("'");
+    }
+
+    if (msgClass != null) {
+      xml.append(" msgClass='").append(msgClass).append("'");
     }
 
     xml.append("/>");
@@ -87,6 +102,7 @@ public class PLogRetrievalMessage extends XmlMessage {
     // nothing to do
   }
 
+  @SuppressWarnings("unchecked")
   public org.sd.cluster.io.Message getResponse(Context serverContext, ConnectionContext connectionContext) {
 
     final XmlStringBuilder xml = new XmlStringBuilder("response");
@@ -99,37 +115,57 @@ public class PLogRetrievalMessage extends XmlMessage {
 
       //todo: parse/handle parameters (e.g. for custom streamer, maxMessageBytes, filename constraints, etc.)
       final String jobIdString = requestElement.getAttributeValue("jobIdString");
-      final String dataDirName = requestElement.getAttributeValue("dataDirName");
+      final String dataDirName = requestElement.getAttributeValue("dataDir");
       final long minTime = requestElement.getAttributeLong("minTime", 0L);
       final long maxTime = requestElement.getAttributeLong("maxTime", 0L);
+      final String msgClassName = requestElement.getAttributeValue("msgClass", "org.sd.cluster.protolog.codegen.ProtoLogProtos$EventEntry");
 
       final Config config = clusterNode.getConfig();
       final File plogdir = new File(config.getOutputDataPath(jobIdString, dataDirName));
 
-      if (plogdir.exists()) {
-        final ProtoLogXml protoLogXml = new ProtoLogXml();
-
-        MultiLogIterator iter = null;
+      if (!plogdir.exists()) {
+        xml.addTagAndText("warning", "No such direcotry: " + plogdir.getAbsolutePath());
+      }
+      else {
+        Class<? extends Message> msgClass = null;
 
         try {
-          iter =
-            new MultiLogIterator(plogdir, EventEntry.class,
-                                 ProtoLogStreamer.DEFAULT_INSTANCE,
-                                 ProtoLogStreamer.MAX_MESSAGE_BYTES,
-                                 null, null,
-                                 (minTime <= 0) ? null : minTime,
-                                 (maxTime <= 0) ? null : maxTime);
+          msgClass = (Class<? extends Message>)ReflectUtil.getClass(msgClassName);
+        }
+        catch (Exception e) {
+          xml.addTagAndText("error", e.toString(), true);
+        }
+
+        if (msgClass != null) {
+          //final ProtoLogXml protoLogXml = new ProtoLogXml();
+
+          MultiLogIterator iter = null;
+
+          try {
+            iter =
+              new MultiLogIterator(plogdir, msgClass,
+                                   ProtoLogStreamer.DEFAULT_INSTANCE,
+                                   ProtoLogStreamer.MAX_MESSAGE_BYTES,
+                                   null, null,
+                                   (minTime <= 0) ? null : minTime,
+                                   (maxTime <= 0) ? null : maxTime);
         
-          while (iter.hasNext()) {
-            final Message message = iter.next();
-            if (message instanceof EventEntry) {
-              final EventEntry eventEntry = (EventEntry)message;
-              protoLogXml.asXml(xml, eventEntry);
+            while (iter.hasNext()) {
+              final Message message = iter.next();
+
+              Message2Xml.DEFAULT.asXml(message, xml);
+
+/*
+              if (message instanceof EventEntry) {
+                final EventEntry eventEntry = (EventEntry)message;
+                protoLogXml.asXml(xml, eventEntry);
+              }
+*/
             }
           }
-        }
-        finally {
-          if (iter != null) iter.close();
+          finally {
+            if (iter != null) iter.close();
+          }
         }
       }
     }
