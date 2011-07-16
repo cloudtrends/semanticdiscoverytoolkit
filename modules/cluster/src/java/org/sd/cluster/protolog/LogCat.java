@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 import org.sd.util.PropertiesParser;
 
 /**
- * Utility to 'cat' lumberjack log files.
+ * Utility to 'cat' log files.
  * <p>
  * @author Spence Koehler
  */
@@ -156,8 +156,6 @@ public class LogCat {
     return result;
   }
 
-
-//java -Xmx640m -cp `cpgen /home/sbk/co/lingosuite/trunk/modules/logplugins` lingotek.lumberjack.util.LogCat /home/sbk/co/lingosuite/trunk/modules/logplugins/src/conf/translator-action-log.document-event.properties /usr/local/share/data/lingotek/lingosuite/logs/translator/doc/docevent.2009-10-09.15:20:36.342.log
 
   /**
    * Auxiliary to iterate over the messages in log files, printing them to
