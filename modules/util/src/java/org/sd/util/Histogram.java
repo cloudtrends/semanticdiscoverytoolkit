@@ -69,6 +69,15 @@ public class Histogram <T> {
   }
 
   /**
+   * Add (incorporate) the other histogram's elements to this instance.
+   */
+  public void add(Histogram<T> other) {
+    for (Map.Entry<T, Frequency<T>> otherEntry : other.map.entrySet()) {
+      this.add(otherEntry.getKey(), otherEntry.getValue().getFrequency());
+    }
+  }
+
+  /**
    * Get all of the frequencies in rank order.
    */
   public List<Frequency<T>> getFrequencies() {
