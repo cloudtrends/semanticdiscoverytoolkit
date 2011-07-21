@@ -151,10 +151,14 @@ public class BitPacker {
    * The string is formed of printable ASCII characters from the following
    * ranges:
    * <ul>
-   * <li>ASCII 32 to 126 (inclusive) mapped to from 0 to 94 (inclusive)</li>
-   * <li>ASCII 192 to 223 (inclusive) mapped to from 95 to 127 (inclusive)</li>
+   * <li>ASCII 48 to 57 (inclusive) mapped to from 0 to 9 (inclusive)</li>
+   * <li>ASCII 65 to 90 (inclusive) mapped to from 10 to 35 (inclusive)</li>
+   * <li>ASCII 97 to 122 (inclusive) mapped to from 36 to 61 (inclusive)</li>
+   * <li>ASCII 45 mapped to 62</li>
+   * <li>ASCII 95 mapped to 63</li>
    * </ul>
-   * This results in one character (8 bits) for every 7 set bits.
+   * This results in one character (8 bits) for every 6 set bits; a base 64
+   * encoding.
    * <p>
    * Decoding note: Lower set bits correspond to low ASCII bits.
    */
@@ -177,7 +181,7 @@ public class BitPacker {
     byte curByte = 0;
 
     for (int i = 0; i < bidx; ++i) {
-      if ((i % 7) == 0) {
+      if ((i % 6) == 0) {
         if (i > 0) {
           result.append(getChar(curByte));
         }
@@ -201,14 +205,26 @@ public class BitPacker {
   private char getChar(byte curByte) {
     char result = (char)0;
 
-    // map [0-94] to ASCII [32-126]
-    // map [95-127] to ASCII [192-224]
+    // map [0-9] to ASCII [48-57] "0"-"9"
+    // map [10-35] to ASCII [65-90] "A"-"Z"
+    // map [36-61] to ASCII [97-122] "a"-"z"
+    // map 62 to ASCII 45 "-"
+    // map 63 to ASCII 95 "_"
 
-    if (curByte < 95) {
-      result = (char)(curByte + 32);
+    if (curByte < 10) {
+      result = (char)(curByte + 48);
+    }
+    else if (curByte < 36) {
+      result = (char)(curByte + 55);
+    }
+    else if (curByte < 62) {
+      result = (char)(curByte + 61);
+    }
+    else if (curByte == 62) {
+      result = '-';
     }
     else {
-      result = (char)(curByte + 97);
+      result = '_';
     }
 
     return result;
@@ -218,8 +234,25 @@ public class BitPacker {
     final int len = packedString.length();
     for (int i = 0; i < len; ++i) {
       final char c = packedString.charAt(i);
-      final int value = (c >= 192) ? c - 97 : c - 32;
-      for (int j = 0; j < 7; ++j) {
+      int value = 0;
+
+      if (c == '-') {
+        value = 62;
+      }
+      else if (c == '_') {
+        value = 63;
+      }
+      else if (c < 58) {
+        value = c - 48;
+      }
+      else if (c < 91) {
+        value = c - 55;
+      }
+      else {  // c < 123
+        value = c - 61;
+      }
+
+      for (int j = 0; j < 6; ++j) {
         if (get(value, j)) {
           bits.set(bidx);
         }
