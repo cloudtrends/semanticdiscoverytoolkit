@@ -89,9 +89,9 @@ public class ClusterNode implements ClusterContext {
     final int numNodes = clusterDef.getNumNodes();
 
     // start enough threads to listen from and send connections to either all
-    // of the nodes or 50 (arbitrary, but reflective of limits we'd like to put
+    // of the nodes or 150 (arbitrary, but reflective of limits we'd like to put
     // on a single jvm's total thread count) at a time; whichever is more.
-    final int numThreads = Math.max(50, numNodes);
+    final int numThreads = Math.max(150, numNodes);
 //    final int numThreads = Math.min(50, numNodes);
 //TODO: parameterize this!
 

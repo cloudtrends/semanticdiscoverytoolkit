@@ -48,17 +48,15 @@ public final class NodeUtil {
     }
 
     if (addressString != null) {
-      result.append(delim);
-      result.append(addressString);
+      result.append(delim).append(addressString);
       delim = DELIM;
     }
 
-    result.append(id);
+    result.append(DELIM).append(id);
     delim = DELIM;
 
     if (name != null) {
-      result.append(delim);
-      result.append(name);
+      result.append(delim).append(name);
       delim = DELIM;
     }
 
