@@ -24,6 +24,7 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.SocketException;
 import java.util.Date;
 
 import org.sd.cio.MessageHelper;
@@ -93,10 +94,16 @@ public class Messenger {
     try {
       sendMessage(response, dataOutput);
     }
+    catch (SocketException se) {
+      System.err.println(new Date() +
+                         ": WARNING Messenger.receiveMessage() response connection dropped for clientIP=" +
+                         connectionContext.getInetAddress().getHostAddress() + " response=\n" +
+                         response);
+    }
     catch (IOException e) {
       System.err.println(new Date() + ": Messenger.receiveMessage() unable to send response (to " +
                          connectionContext.getInetAddress().getHostAddress() +
-                         ")! received=" + message + " response=" + response);
+                         ")! received=" + message + " response=\n" + response);
       throw e;
     }
     dataOutput.flush();

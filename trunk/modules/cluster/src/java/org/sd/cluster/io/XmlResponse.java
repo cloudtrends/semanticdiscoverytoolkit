@@ -67,6 +67,13 @@ public class XmlResponse extends Response {
     return xml == null ? null : xml.getXmlElement();
   }
 
+  public String toString() {
+    final StringBuilder result = new StringBuilder();
+    final XmlStringBuilder xml = getXmlStringBuilder();
+    xml.getXmlElement().asPrettyString(result, 2, 2);
+    return result.toString();
+  }
+
   public void write(DataOutput dataOutput) throws IOException {
     final String xmlString = getXmlString();
     DataHelper.writeString(dataOutput, xmlString);
