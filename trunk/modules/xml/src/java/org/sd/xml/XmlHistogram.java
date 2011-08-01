@@ -41,7 +41,7 @@ public class XmlHistogram extends Histogram<String> {
   }
 
   //
-  // <histogram>
+  // <histogram total=''>
   //   <key count=''>_string_</key>
   //   ...
   // </histogram>
@@ -105,8 +105,11 @@ public class XmlHistogram extends Histogram<String> {
    * &lt;_rootTag_&gt;&lt;key count='...'&gt;...element text...&lt;/key&gt;...&lt;/_rootTag_&gt;
    */
   public XmlStringBuilder asXml(String rootTag) {
-    final XmlStringBuilder result = new XmlStringBuilder(rootTag);
     final StringBuilder tag = new StringBuilder();
+    tag.append(rootTag).append(" total='").append(getTotalCount()).append("'");
+
+    final XmlStringBuilder result = new XmlStringBuilder(tag.toString());
+    tag.setLength(0);
 
     final List<Frequency<String>> freqs = getFrequencies();
     for (Frequency<String> freq : freqs) {
