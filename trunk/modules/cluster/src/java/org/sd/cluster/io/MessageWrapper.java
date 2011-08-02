@@ -59,6 +59,34 @@ public class MessageWrapper implements Message {
   }
 
   /**
+   * Get this instance's message class name (if present) or null.
+   */
+  public String getMessageClassName() {
+    return messageClassName;
+  }
+
+  /**
+   * Get this instance's message bytes (if present) or null.
+   */
+  public byte[] getMessageBytes() {
+    return messageBytes;
+  }
+
+  /**
+   * (Re-)set this instance's message bytes.
+   */
+  public void setMessageBytes(byte[] messageBytes) {
+    this.messageBytes = messageBytes;
+  }
+
+  /**
+   * Get this instance's wrapped message (if it has one) or null.
+   */
+  public Message getWrappedMessage() {
+    return wrappedMessage;
+  }
+
+  /**
    * Set the wrapped message on this instance (expert).
    */
   public void setWrappedMessage(Message wrappedMessage) {
