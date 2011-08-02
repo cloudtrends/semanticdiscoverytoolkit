@@ -161,6 +161,16 @@ public abstract class XmlMessage implements Message {
   }
 
   /**
+   * (Re-)Set this instance's payload.
+   */
+  public void setXmlData(XmlStringBuilder xml) {
+    if (xml != null) {
+      this.xmlDataString = xml.getXmlString();
+      this._xmlElement = xml.getXmlElement();
+    }
+  }
+
+  /**
    * Get this instance's xml element.
    */
   public DomElement getXmlElement() {
