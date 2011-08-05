@@ -37,6 +37,9 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
   protected RoteListClassifier roteListClassifier;
   protected RegexClassifier regexClassifier;
   protected boolean verbose;
+  protected boolean ignoreLastToken;
+  protected boolean ignoreFirstToken;
+  private boolean reverse;
 
   private static int nextAutoId = 0;
 
@@ -51,12 +54,18 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
 
     this.verbose = testNode.getAttributeBoolean("verbose", false);
 
+    this.ignoreLastToken = testNode.getAttributeBoolean("ignoreLastToken", false);
+    this.ignoreFirstToken = testNode.getAttributeBoolean("ignoreFirstToken", false);
+    this.reverse = testNode.getAttributeBoolean("reverse", false);
+
     // under token node, setup allowed and disallowed tokens
     //
     // options:
     // - when reverse='true', fail on match (handled elsewhere)
+    // - when ignoreLastToken='true', always succeed on last token
+    // - when ignoreFirstToken='true', always succeed on first token
     //
-    // <test reverse='true|false'>
+    // <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false'>
     //   <jclass>org.sd.atn.*Test</jclass>
     //   <terms caseSensitive='true|false'>
     //     <term>...</term>
@@ -69,7 +78,35 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
 
   }
 			
-  // extenders of this abstract class  must implement 'accept':
-  // public boolean accept(Token token, AtnState curState) {
+  // extenders of this abstract class  must implement 'doAccept':
+  protected abstract boolean doAccept(Token token, AtnState curState);
 
+
+  public final boolean accept(Token token, AtnState curState) {
+    boolean result = false;
+
+    if (ignoreLastToken && token.getNextToken() == null) {
+      if (verbose) {
+        System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
+                           ") skipping test on lastToken '" + token + "'! state=" +
+                           curState);
+      }
+
+      result = !reverse;
+    }
+    else if (ignoreFirstToken && token.getStartIndex() == 0) {
+      if (verbose) {
+        System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
+                           ") skipping test on firstToken '" + token + "'! state=" +
+                           curState);
+      }
+
+      result = !reverse;
+    }
+    else {
+      result = doAccept(token, curState);
+    }
+
+    return result;
+  }
 }
