@@ -74,7 +74,7 @@ public class TextTest extends BaseClassifierTest {
 
   }
 			
-  public boolean accept(Token token, AtnState curState) {
+  protected boolean doAccept(Token token, AtnState curState) {
     boolean result = false;
 
     String text = null;

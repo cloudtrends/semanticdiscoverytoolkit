@@ -63,6 +63,8 @@ public class TokenTest extends BaseClassifierTest {
     // - when reverse='true', fail on match (handled elsewhere)
     // - when next='true', test against the next token
     // - when revise='true', test against token revisions
+    // - when ignoreLastToken='true', always accept the last token
+    // - when ignoreFirstToken='true', always accept the first token
     //
     // <test reverse='true|false' next='true|false' revise='true|false'>
     //   <jclass>org.sd.atn.TokenTest</jclass>
@@ -78,7 +80,7 @@ public class TokenTest extends BaseClassifierTest {
 
   }
 			
-  public boolean accept(Token token, AtnState curState) {
+  protected boolean doAccept(Token token, AtnState curState) {
     boolean result = false;
 
     if (next) {

@@ -53,6 +53,8 @@ public abstract class AbstractAtnStateTokenClassifier extends AbstractTokenClass
 
     // check for consume attribute; default to 'true'
     this.consume = classifierIdElement.getAttributeBoolean("consume", true);
+
+    super.setMaxWordCount(classifierIdElement.getAttributeInt("maxWordCount", 0));
   }
 
   protected boolean consume() {
