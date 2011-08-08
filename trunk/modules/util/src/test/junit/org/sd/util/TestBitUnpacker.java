@@ -58,6 +58,24 @@ public class TestBitUnpacker extends TestCase {
     assertEquals(11, bitUnpacker2.readInt(4));
   }
 
+  public void testReadUnspecifiedAscii() {
+    final BitPacker bitPacker = new BitPacker();
+    bitPacker.addInt(5, 3);
+    bitPacker.addAscii("test", -1);
+    bitPacker.addInt(11, 4);
+
+    final String packedString = bitPacker.toString();
+
+    final BitUnpacker bitUnpacker1 = new  BitUnpacker(bitPacker);
+    assertEquals(5, bitUnpacker1.readInt(3));
+    assertEquals("test", bitUnpacker1.readAscii(-1));
+    assertEquals(11, bitUnpacker1.readInt(4));
+
+    final BitUnpacker bitUnpacker2 = new  BitUnpacker(packedString);
+    assertEquals(5, bitUnpacker2.readInt(3));
+    assertEquals("test", bitUnpacker2.readAscii(-1));
+    assertEquals(11, bitUnpacker2.readInt(4));
+  }
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestBitUnpacker.class);
