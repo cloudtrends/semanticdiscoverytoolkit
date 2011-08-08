@@ -116,6 +116,11 @@ public class BitPacker {
   /**
    * Add up to numBytes bytes of the string's (presumed to be in ASCII ranges)
    * characters.
+   * @param value the string value to encode
+   * @param numBytes the number of bytes of the string to encode, if set to -1, 
+   * first two bytes representing the number of bytes to be written are encoded, 
+   * then all bytes in the string up to the max unsigned short value(65535) index 
+   * are written
    */
   public int addAscii(String value, int numBytes) {
 
@@ -127,6 +132,12 @@ public class BitPacker {
     //NOTE: low bits end up with low bit indexes, appearing reversed in output.
 
     final byte[] bytes = value.getBytes(Charset.forName("US-ASCII"));
+    if(numBytes == -1)
+    {
+      numBytes = (bytes.length > 65535 ? 65535 : bytes.length);
+      addInt(numBytes, 16);
+    }      
+
     for (int i = 0; i < numBytes; ++i) {
       if (i >= bytes.length) {
         bidx += 8;  // terminate with a byte of 0's

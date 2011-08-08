@@ -65,9 +65,15 @@ public class BitUnpacker {
 
   /**
    * Read the next bits as an ASCII string.
+   * @param numBytes the number of bytes to decode into the string, if set to -1, 
+   * first two bytes representing the number of bytes to be read are decoded, then
+   * that number of bytes are read
    */
   public String readAscii(int numBytes) {
     final StringBuilder result = new StringBuilder();
+
+    if(numBytes == -1)
+      numBytes = readInt(16);
 
     for (int i = 0; i < numBytes; ++i) {
       final char c = readChar();

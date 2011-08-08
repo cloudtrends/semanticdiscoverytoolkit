@@ -145,6 +145,22 @@ public class TestBitPacker extends TestCase {
     verify(bitPacker, expected);
   }
 
+  public void testUnspecifiedAscii() {
+    final BitPacker bitPacker = new BitPacker();
+    bitPacker.addAscii("test", -1);
+
+    final boolean[] expected = new boolean[] {
+      false, false, true, false, false, false, false, false,  // ...
+      false, false, false, false, false, false, false, false, // 0x04
+      false, false, true, false, true, true, true, false,     // t
+      true, false, true, false, false, true, true, false,     // e
+      true, true, false, false, true, true, true, false,      // s
+      false, false, true, false, true, true, true, false,     // t
+    };
+
+    verify(bitPacker, expected);
+  }
+
   public static Test suite() {
     TestSuite suite = new TestSuite(TestBitPacker.class);
     return suite;
