@@ -146,9 +146,9 @@ public class ByteBufferUtil
     else if(numBytes >= 4)
       return bytes.putInt(pos, value);
       
-    int maxValue = 0x00000000;
-    for(int i = 0; i < numBytes; i++)
-      maxValue = (maxValue << (8*i)) | 0xff;
+    int maxValue = 0xff;
+    for(int i = 1; i < numBytes; i++)
+      maxValue = (maxValue << 8) | 0xff;
 
     if(value > maxValue)
       throw new IOException("int value exceeds maximum truncated int value of "+maxValue+"!");

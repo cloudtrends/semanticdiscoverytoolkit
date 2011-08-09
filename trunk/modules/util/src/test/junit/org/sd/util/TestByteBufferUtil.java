@@ -90,6 +90,62 @@ public class TestByteBufferUtil extends TestCase {
     }
   }
 
+  public void testSerializeAbsolute() 
+    throws Exception
+  {
+    int[] unsignedInputs = new int[] { 0, 345, 1235, 22346, 65535 };
+    int[][] truncatedInputs = new int[][] 
+      { 
+        new int[] { 0, 8, 73, 108, 255 },
+        new int[] { 0, 345, 1235, 22346, 65535 },
+        new int[] { 0, 2612, 12528, 1298347, 5148931, 12938714, 16777215},
+      };
+    String[] asciiInputs = new String[] 
+      { 
+        "",
+        "test",
+        "This is a test.",
+        "This is only a test.",
+      };
+
+    for(int i = 0; i < unsignedInputs.length; i++)
+    {
+      ByteBuffer bytes = ByteBuffer.allocate(2);
+
+      ByteBufferUtil.putUnsignedShort(bytes, 0, unsignedInputs[i]);
+      int result = ByteBufferUtil.getUnsignedShort(bytes, 0);
+
+      assertEquals(unsignedInputs[i], result);
+    }
+
+    for(int i = 0; i < truncatedInputs.length; i++)
+    {
+      int[] inputs = truncatedInputs[i];
+
+      for(int j = 0; j < inputs.length; j++)
+      {
+        ByteBuffer bytes = ByteBuffer.allocate(i+1);
+
+        ByteBufferUtil.putTruncatedInt(bytes, 0, inputs[j], i+1);
+        int result = ByteBufferUtil.getTruncatedInt(bytes, 0, i+1);
+        
+        assertEquals(inputs[j], result);
+      }
+    }
+
+    for(int i = 0; i < asciiInputs.length; i++)
+    {
+      String asciiString = asciiInputs[i];
+      byte[] asciiBytes = asciiString.getBytes("US-ASCII");
+      ByteBuffer bytes = ByteBuffer.allocate(asciiBytes.length + 2);
+
+      ByteBufferUtil.putAscii(bytes, 0, asciiInputs[i]);
+      String result = ByteBufferUtil.getAscii(bytes, 0);
+
+      assertEquals(asciiInputs[i], result);
+    }
+  }
+
   public static Test suite() {
     TestSuite suite = new TestSuite(TestByteBufferUtil.class);
     return suite;
