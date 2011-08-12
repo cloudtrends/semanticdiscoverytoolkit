@@ -145,6 +145,10 @@ public abstract class AbstractNumericRange implements NumericRange {
     return string;
   }
 
+  public String toString() {
+    return asString();
+  }
+
   /**
    * Parse a collection of values. See parseValue.
    */

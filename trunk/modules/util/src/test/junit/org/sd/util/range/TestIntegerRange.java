@@ -98,6 +98,27 @@ public class TestIntegerRange extends TestCase {
     }
   }
 
+  public void testIncrementalConstruction() {
+    final IntegerRange range = new IntegerRange();
+
+    assertEquals(0, range.getLow());
+    assertEquals(0, range.getHigh());
+
+    range.add(3, true, 7, true);
+    assertEquals(3, range.getLow());
+    assertEquals(7, range.getHigh());
+
+    range.add(5, true, 8, true);
+    assertEquals(3, range.getLow());
+    assertEquals(8, range.getHigh());
+  }
+
+  public void testUnspecifiedBoundsString() {
+    final IntegerRange range = new IntegerRange("3-8");
+    assertEquals(3, range.getLow());
+    assertEquals(8, range.getHigh());
+  }
+
   public void testSingleValue() {
     IntegerRange range = null;
 

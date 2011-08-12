@@ -28,6 +28,13 @@ import java.util.Collection;
  */
 public class IntegerRange extends AbstractNumericRange {
 
+  /**
+   * Construct an empty instance.
+   */
+  public IntegerRange() {
+    super();
+  }
+
   public IntegerRange(Collection<String> values) {
     super();
     super.parseValues(values);
@@ -45,17 +52,22 @@ public class IntegerRange extends AbstractNumericRange {
 
   public IntegerRange(int number) {
     super();
-    super.addRange(new SimpleIntegerRange(number));
+    add(number);
   }
 
   public IntegerRange(int left, boolean leftInclusive, int right, boolean rightInclusive) {
     super();
-    super.addRange(new SimpleIntegerRange(left, leftInclusive, right, rightInclusive));
+    add(left, leftInclusive, right, rightInclusive);
+  }
+
+  public IntegerRange(int lowInclusive, int highInclusive) {
+    super();
+    add(lowInclusive, highInclusive);
   }
 
   public IntegerRange(int base, int tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
     super();
-    super.addRange(new SimpleIntegerRange(base, tolerance, inclusiveStart, inclusiveEnd));
+    add(base, tolerance, inclusiveStart, inclusiveEnd);
   }
 
   public int getLow() {
@@ -84,6 +96,26 @@ public class IntegerRange extends AbstractNumericRange {
     }
 
     return result;
+  }
+
+  public final IntegerRange add(int singleValue) {
+    super.addRange(new SimpleIntegerRange(singleValue));
+    return this;
+  }
+
+  public final IntegerRange add(int lowInclusive, int highInclusive) {
+    super.addRange(new SimpleIntegerRange(lowInclusive, true, highInclusive, true));
+    return this;
+  }
+
+  public final IntegerRange add(int left, boolean leftInclusive, int right, boolean rightInclusive) {
+    super.addRange(new SimpleIntegerRange(left, leftInclusive, right, rightInclusive));
+    return this;
+  }
+
+  public final IntegerRange add(int base, int tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
+    super.addRange(new SimpleIntegerRange(base, tolerance, inclusiveStart, inclusiveEnd));
+    return this;
   }
 
   protected SimpleRange buildRange(String number) {

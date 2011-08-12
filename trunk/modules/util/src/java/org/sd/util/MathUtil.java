@@ -153,9 +153,12 @@ public class MathUtil {
    * places.
    */
   public static final String doubleString(double d, int places) {
-    long l = Math.round(d * Math.pow(10, places));
-    char[] chars = Long.toString(l).toCharArray();
-    StringBuilder result = new StringBuilder();
+    final boolean neg = d < 0.0;
+    d = Math.abs(d);
+
+    final long l = Math.round(d * Math.pow(10, places));
+    final char[] chars = Long.toString(l).toCharArray();
+    final StringBuilder result = new StringBuilder();
 
     for (int i = 0; i < chars.length - places; ++i) {
       result.append(chars[i]);
@@ -173,6 +176,9 @@ public class MathUtil {
     for (int i = chars.length - places; i < chars.length; ++i) {
       result.append((i < 0) ? '0' : chars[i]);
     }
+
+    if (neg) result.insert(0, '-');
+
     return result.toString();
   }
 

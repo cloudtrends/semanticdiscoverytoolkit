@@ -74,6 +74,8 @@ public class TestMathUtil extends TestCase {
     assertEquals("0.000", MathUtil.doubleString(0.0, 3));
     assertEquals("3.142", MathUtil.doubleString(3.14159265, 3));
     assertEquals("0.001", MathUtil.doubleString(0.0011, 3));
+    assertEquals("-0.061224", MathUtil.doubleString(-0.061224, 6));
+    assertEquals("-0.606060", MathUtil.doubleString(-0.606060, 6));
 
     assertEquals("1", MathUtil.doubleString(1.0, 0));
     assertEquals("1", MathUtil.doubleString(1.1234, 0));
