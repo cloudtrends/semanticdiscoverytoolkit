@@ -370,5 +370,14 @@ public class RealRange extends AbstractNumericRange {
     public double getHighAsDouble() {
       return high;
     }
+
+    /**
+     * Shift this range's bounds by the given value.
+     */
+    public void shift(double value) {
+      string = null;  // need to recompute
+      this.low += value;
+      this.high += value;
+    }
   }
 }
