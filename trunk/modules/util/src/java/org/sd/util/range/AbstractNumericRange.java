@@ -110,6 +110,15 @@ public abstract class AbstractNumericRange implements NumericRange {
   }
 
   /**
+   * Shift all range end points by the given value.
+   */
+  public void shift(double value) {
+    for (SimpleRange range : ranges) {
+      range.shift(value);
+    }
+  }
+
+  /**
    * Get the number of integers included in this range.
    *
    * @return null if the range is infinite; otherwise the size.
@@ -389,5 +398,10 @@ public abstract class AbstractNumericRange implements NumericRange {
      * Get the high value as a double.
      */
     public double getHighAsDouble();
+
+    /**
+     * Shift this range's bounds by the given value.
+     */
+    public void shift(double value);
   }
 }
