@@ -20,6 +20,7 @@ package org.sd.xml;
 
 
 import java.io.IOException;
+import java.util.Map;
 import org.apache.commons.lang.StringEscapeUtils;
 
 /**
@@ -133,6 +134,27 @@ public class XmlStringBuilder {
     if (ended || tagWithAttrs == null) return null;
     final StringBuilder tag = new StringBuilder();
     tag.append('<').append(tagWithAttrs).append('>');
+    return addXml(tag.toString());
+  }
+
+  /**
+   * Add a (start) tag with the specified name and attributes
+   */
+  public XmlStringBuilder addTag(String tagName, Map<String,String> tagAttrs) {
+    // todo: use flag for single/double quotes?
+    if (ended || tagName == null) return null;
+
+    final StringBuilder tag = new StringBuilder();
+    tag.append('<').append(tagName);
+    for(Map.Entry<String,String> entry : tagAttrs.entrySet())
+    {
+      tag.append(' ')
+         .append(entry.getKey())
+         .append("=\"")
+         .append(entry.getValue())
+         .append('"');
+    }
+    tag.append('>');
     return addXml(tag.toString());
   }
 
