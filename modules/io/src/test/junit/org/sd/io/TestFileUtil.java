@@ -110,6 +110,16 @@ public class TestFileUtil extends TestCase {
     assertTrue(freeDiskSpace >= 0L);
   }
 
+  public void testGetBaseName() {
+    final String filename = "foo.txt";
+
+    assertEquals("foo", FileUtil.getBaseName(filename, null));
+    assertEquals("foo", FileUtil.getBaseName(filename, ".txt"));
+    assertEquals("foo.txt", FileUtil.getBaseName(filename, ".csv"));
+    assertEquals("foo", FileUtil.getBaseName(filename, ".txt"));
+    assertEquals("foo", FileUtil.getBaseName(filename, null));
+  }
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestFileUtil.class);

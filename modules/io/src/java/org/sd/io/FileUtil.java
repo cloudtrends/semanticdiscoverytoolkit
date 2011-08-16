@@ -862,6 +862,32 @@ public class FileUtil {
     return getFilename(parent.getAbsolutePath(), name);
   }
 
+  /**
+   * Get the base name of the given file.
+   * <p>
+   * If ext is null, then the base name is all of the filename up to the last
+   * extension, defined as the text from the last '.' in the name.
+   * <p>
+   * If ext is non-null, then the base name is all of the filename up to ext.
+   * If the filename does not end in ext, then the full filename is the
+   * basename.
+   */
+  public static final String getBaseName(String filename, String ext) {
+    String result = filename;
+
+    if (ext == null) {
+      final int lastDotPos = filename.lastIndexOf('.');
+      if (lastDotPos >= 0) {
+        result = filename.substring(0, lastDotPos);
+      }
+    }
+    else if (filename.endsWith(ext)) {
+      result = filename.substring(0, filename.length() - ext.length());
+    }
+
+    return result;
+  }
+
   private static final Pattern NAME_PATTERN = Pattern.compile("^([^\\.]+)\\..*$");
 
   /**
