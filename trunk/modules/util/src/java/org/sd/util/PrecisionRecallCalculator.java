@@ -148,14 +148,16 @@ public class PrecisionRecallCalculator {
    * Get the precision.
    */
   public double getPrecision() {
-    return (double)tp / (double)(tp + fp);
+    final int d = tp + fp;
+    return d == 0 ? 0.0 : (double)tp / (double)d;
   }
 
   /**
    * Get the recall.
    */
   public double getRecall() {
-    return (double)tp / (double)(tp + fn);
+    final int d = tp + fn;
+    return d == 0 ? 0.0 : (double)tp / (double)d;
   }
 
   /**
