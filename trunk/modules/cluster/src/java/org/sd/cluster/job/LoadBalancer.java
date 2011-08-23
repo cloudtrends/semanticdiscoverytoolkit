@@ -43,6 +43,7 @@ public class LoadBalancer {
   private Console console; // console borrowed from JobManager
   private boolean verbose;
 
+  private String group;
   private int numGroupNodes;
   private List<String> groupNodes;
   private AtomicLong queryCount;
@@ -95,6 +96,7 @@ public class LoadBalancer {
     this.console = clusterNode.getJobManager().getConsole();
     this.verbose = false;
     final ClusterDefinition clusterDef = clusterNode.getClusterDefinition();
+    this.group = group;
     this.groupNodes = clusterDef.getGroupNodeNames(group, true);
     this.numGroupNodes = groupNodes.size();
     this.queryCount = new AtomicLong(0);
@@ -178,6 +180,24 @@ public class LoadBalancer {
         case FAIL :
           break;  // skip failed nodes
       }
+    }
+
+    return result;
+  }
+
+  public Response[] sendMessageToGroup(Message message) {
+    return sendMessageToGroup(message, singleInitTimeout);
+  }
+
+  public Response[] sendMessageToGroup(Message message, int timeout) {
+    Response[] result = null;
+
+    try {
+      result = console.sendMessageToNodes(message, group, timeout, false);
+    }
+    catch (ClusterException e) {
+      System.err.println(new Date() + ": LoadBalancer failed sending message to group '" + group + "'");
+      e.printStackTrace(System.err);
     }
 
     return result;
