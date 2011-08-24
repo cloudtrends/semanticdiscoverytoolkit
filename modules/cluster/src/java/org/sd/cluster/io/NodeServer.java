@@ -90,6 +90,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private StatsAccumulator responseGenTimeStats;
   private StatsAccumulator sendTimeStats;
   private StatsAccumulator handleTimeStats;
+  private long numDroppedConnections;
 
   private final Object socketPoolMutex = new Object();
   private final Object messagePoolMutex = new Object();
@@ -115,6 +116,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     this.responseGenTimeStats = new StatsAccumulator("ResponseGenTime");
     this.sendTimeStats = new StatsAccumulator("SendTimeStats");
     this.handleTimeStats = new StatsAccumulator("HandleTimeStats");
+    this.numDroppedConnections = 0L;
 
     // initialize stable queues
     this.messageQueue = new LinkedBlockingQueue<MessageBundle>();
@@ -253,6 +255,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
       this.responseGenTimeStats.clear();
       this.sendTimeStats.clear();
       this.handleTimeStats.clear();
+      this.numDroppedConnections = 0L;
 
       //this.starttime = System.currentTimeMillis();
     }
@@ -349,6 +352,12 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     return handleTimeStats;
   }
 
+  /**
+   * Get the number of dropped connections due to saturation.
+   */
+  public long getNumDroppedConnections() {
+    return numDroppedConnections;
+  }
 
   public void run() {
 //    System.out.println("Starting server: " + nodeName);
@@ -554,7 +563,26 @@ public class NodeServer extends Thread implements NodeServerMXBean {
         if (socket != null) {
           // start a socket thread
           synchronized (socketPoolMutex) {
-            socketPool.execute(new SocketHandler(socket));
+            try {
+              socketPool.execute(new SocketHandler(socket));
+            }
+            catch (RejectedExecutionException e) {
+              ++numDroppedConnections;
+
+              // connecting clients that get an empty response should try back later.
+              System.err.println(new Date() +
+                                 ": WARNING : NodeServer socketPool saturated (" +
+                                 numSocketThreads + "). Dropping connection #" +
+                                 numDroppedConnections + ".");
+
+              try {
+                // be nice and close the socket
+                socket.close();
+              }
+              catch (IOException ioe) {
+                //ignore
+              }
+            }
           }
           socket = null;
         }
