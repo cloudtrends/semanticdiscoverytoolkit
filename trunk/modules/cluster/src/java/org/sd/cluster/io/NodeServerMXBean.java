@@ -135,4 +135,8 @@ public interface NodeServerMXBean {
    */
   public StatsAccumulator getHandleTimeStats();
 
+  /**
+   * Get the number of dropped connections due to saturation.
+   */
+  public long getNumDroppedConnections();
 }
