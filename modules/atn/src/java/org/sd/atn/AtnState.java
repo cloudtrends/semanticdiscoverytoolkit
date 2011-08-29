@@ -1185,9 +1185,20 @@ public class AtnState {
 
 
   private static boolean trace = false;
+  private static boolean stepThruFlag = false;
+  private static String stepThruRuleId = null;
+  private static String stepThruRuleStep = null;
+  private static String stepThruText = null;
 
   public static final void setTrace(boolean traceValue) {
     trace = traceValue;
+  }
+
+  public static final void setStepThruDebugging(String ruleId, String ruleStep, String text) {
+    stepThruFlag = (ruleId != null && ruleStep != null && text != null);
+    stepThruRuleId = ruleId;
+    stepThruRuleStep = ruleStep;
+    stepThruText = text;
   }
 
   static List<CategorizedToken> computeTokens(Tree<AtnState> stateNode) {
@@ -1210,6 +1221,15 @@ public class AtnState {
 
     while ((states.size() + skipStates.size() > 0) && !result && (die == null || !die.get())) {
       final AtnState curstate = states.size() > 0 ? states.removeFirst() : skipStates.removeFirst();
+
+      if (stepThruFlag) {
+        if ((stepThruRuleId != null && stepThruRuleId.equals(curstate.getRule().getRuleId())) &&
+            (stepThruRuleStep != null && stepThruRuleStep.equals(curstate.getRuleStep().getCategory())) &&
+            (stepThruText != null && stepThruText.equals(curstate.getInputToken().getText()))) {
+          // set a breakpoint on the following line when using stepThru debugging
+          final boolean stopHere = true;
+        }
+      }
 
       boolean success = false;
       final boolean meetsRequirements = curstate.meetsRequirements();
@@ -1353,10 +1373,6 @@ public class AtnState {
         break;
       }
     }
-
-if (nextstate.toString().endsWith("-qList('11-5-1882'[10,19{1}](1.0))")) {
-  final boolean stopHere = true;
-}
 
     // check cluster (greedy) flag
     if (!isDup && nextstate.clusterConditionFails(states)) {

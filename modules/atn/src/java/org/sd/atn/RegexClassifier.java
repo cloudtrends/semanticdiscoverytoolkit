@@ -150,6 +150,10 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
           }
         }
       }
+      if (group2attr.size() == 0 && regexElement.getParentNode() != null && regexElement.getParentNode().getParentNode() != null) {
+        // default to group0=classifierName (= regex.parent.parent.name)
+        group2attr.put(0, regexElement.getParentNode().getParentNode().getLocalName());
+      }
     }
 
     public boolean matches(String text, Token token) {

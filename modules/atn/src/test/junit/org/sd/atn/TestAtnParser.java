@@ -1413,6 +1413,28 @@ public class TestAtnParser extends TestCase {
   }
 
 
+  public void testConstituentPreDelim() throws IOException {
+    //
+    // E <- (^-)D (-)D
+    // D <- a (-) b (-) c
+    //
+    // "a-b-c - a-b-c" -> (E (D a b c) (D a b c))
+    //
+    final AtnParser test20_Parser = AtnParseTest.buildParser("<grammar><rules><E start='true'><D><predelim><allowall/><disallow type='substr'>-</disallow></predelim></D><D><predelim><require type='substr'>-</require></predelim></D></E><D><a/><b><predelim><disallowall/><allow type='exact'>-</allow></predelim></b><c><predelim><disallowall/><allow type='exact'>-</allow></predelim></c></D></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer20a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a-b-c - a-b-c");
+
+    runParseTest("parserTest_20a",
+                 test20_Parser,
+                 tokenizer20a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(E (D a b c) (D a b c))",
+                 });
+  }
+
+  //public void testConstituentPostDelim() throws IOException {
+
 
   private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings) throws IOException {
     runParseTest(name, parser, tokenizer, parseOptionsXml, expectedTreeStrings, null, false);

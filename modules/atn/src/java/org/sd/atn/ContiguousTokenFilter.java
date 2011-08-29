@@ -40,6 +40,7 @@ public class ContiguousTokenFilter implements TokenFilter {
     final DomNode innerdelimNode = (DomNode)domElement.selectSingleNode("innerdelim");
     if (innerdelimNode != null) {
       this.delimTest = new DelimTest(true, innerdelimNode);
+      this.delimTest.setIgnoreConstituents(true);
     }
 
     DomNode tokenregNode = (DomNode)domElement.selectSingleNode("tokenreg");

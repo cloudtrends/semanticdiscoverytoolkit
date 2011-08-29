@@ -74,6 +74,8 @@ public class DelimTest implements AtnRuleStepTest {
     return failRepeatRange;
   }
 
+  private boolean ignoreConstituents;
+
 
   DelimTest(boolean isPre, DomNode delimNode) {
     this.isPre = isPre;
@@ -83,6 +85,7 @@ public class DelimTest implements AtnRuleStepTest {
     this.requiredDelimStrings = null;
     this.ignoreRepeatRange = null;
     this.failRepeatRange = null;
+    this.ignoreConstituents = false;
 
     // under delim node, setup allowed and disallowed delims
     //
@@ -144,8 +147,12 @@ public class DelimTest implements AtnRuleStepTest {
     }
   }
 			
+  public void setIgnoreConstituents(boolean ignoreConstituents) {
+    this.ignoreConstituents = ignoreConstituents;
+  }
+
   public boolean accept(Token token, AtnState curState) {
-    final String delim = getDelim(token);
+    final String delim = getDelim(token, curState);
 
     if (ignoreRepeatRange != null || failRepeatRange != null) {
       final int repeat = curState.getRepeatNum();
@@ -206,13 +213,29 @@ public class DelimTest implements AtnRuleStepTest {
     return result;
   }
 
-  private String getDelim(Token token) {
+  private String getDelim(Token token, AtnState curState) {
     String delim = null;
 
-    if (isPre) {
-      delim = token.getPreDelim();
+    if (isPre) {  // predelim
+      final AtnState parentState = curState != null ? curState.getParentState() : null;
+      final boolean constituent =
+        !ignoreConstituents &&
+        (parentState != null && parentState.isPoppedState()) &&
+        curState.getRuleStep().getCategory().equals(parentState.getRule().getRuleName());
+
+      if (constituent) {
+        // we're looking at a pre-test on the result of a constituent pop
+        // get the delimiter string that precedes the constituent, not the token
+        final AtnState startState = AtnStateUtil.getConstituentStartState(parentState);
+        final Token startToken = startState.getInputToken();
+        delim = startToken.getPreDelim();
+      }
+      else {
+        // get the delimiter preceding the token
+        delim = token.getPreDelim();
+      }
     }
-    else {
+    else {  // postdelim
       delim = token.getPostDelim();
     }
 
