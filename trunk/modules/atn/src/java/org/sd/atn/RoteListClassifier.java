@@ -39,12 +39,18 @@ import org.w3c.dom.NodeList;
  * file with terms.
  * <p>
  * Flat file names are specified under 'textfile caseSensitive="true|false"'
- * nodes and have contents of the form:
+ * _keyFeature="..." nodes and have contents of the form:
  * <p>
  * term \t key=val \t key=val \t ...
  * <p>
  * Xml terms are specified under 'terms caseSensitive="true|false" nodes and
  * have child nodes of the form 'term att=val ...' with each term's text.
+ * <p>
+ * The '_keyFeature' designates the feature name used in the file that should
+ * be changed to mirror the current classifier's name instead of that value
+ * used in the file. This is needed to avoid shadowing rules of the same
+ * name as the feature in the file, when the rote list is used in a classifier
+ * with a different name.
  * 
  * @author Spence Koehler
  */
@@ -60,7 +66,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   //     ...
   //   </terms>
   //   ...
-  //   <textfile caseSensitive='...' ...collective term attributes...>
+  //   <textfile caseSensitive='...' _keyFeature='...' ...collective term attributes...>
   //   ...
   //   <stopwords>
   //     <terms.../>
@@ -109,7 +115,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         this.terms = loadTerms(this.terms, childElement, false);
       }
       else if ("textfile".equalsIgnoreCase(childNodeName)) {
-        this.terms = loadTextFile(this.terms, childElement, false);
+        this.terms = loadTextFile(this.terms, childElement, false, classifierIdElement.getLocalName());
       }
       else if ("stopwords".equalsIgnoreCase(childNodeName)) {
         final NodeList stopChildNodes = childNode.getChildNodes();
@@ -125,7 +131,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
             this.stopwords = loadTerms(this.stopwords, stopElement, true);
           }
           else if ("textfile".equalsIgnoreCase(stopNodeName)) {
-            this.stopwords = loadTextFile(this.stopwords, stopElement, true);
+            this.stopwords = loadTextFile(this.stopwords, stopElement, true, classifierIdElement.getLocalName());
           }
         }
       }
@@ -244,11 +250,11 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     return termsBundle;
   }
 
-  protected final TermsBundle loadTextFile(TermsBundle termsBundle, DomElement textfileElement, boolean isStopwords) {
+  protected final TermsBundle loadTextFile(TermsBundle termsBundle, DomElement textfileElement, boolean isStopwords, String classifierName) {
     if (textfileElement == null) return termsBundle;
 
     if (termsBundle == null) termsBundle = new TermsBundle(isStopwords);
-    termsBundle.loadTextFile(textfileElement, this.defaultCaseSensitivity, resourceManager);
+    termsBundle.loadTextFile(textfileElement, this.defaultCaseSensitivity, resourceManager, classifierName);
     return termsBundle;
   }
 
@@ -380,9 +386,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       }
     }
 
-    protected final void loadTextFile(DomElement textfileElement, ResourceManager resourceManager) {
+    protected final void loadTextFile(DomElement textfileElement, ResourceManager resourceManager, String classifierName) {
 
       final int minChars = textfileElement.getAttributeInt("minChars", 1);
+      final String keyFeature = textfileElement.getAttributeValue("_keyFeature", null); 
 
       final File textfile = resourceManager.getWorkingFile(textfileElement);
 
@@ -402,7 +409,15 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
               for (int fieldNum = 1; fieldNum < lineFields.length; ++fieldNum) {
                 final String[] attVal = lineFields[fieldNum].split("=");
                 if (attVal.length == 2) {
-                  termAttributes.put(attVal[0], attVal[1]);
+                  String key = attVal[0];
+                  final String value = attVal[1];
+
+                  // change the keyFeature to match the classifier name
+                  if (keyFeature != null && classifierName != null && keyFeature.equals(key)) {
+                    key = classifierName;
+                  }
+
+                  termAttributes.put(key, value);
                 }
               }
             }
@@ -496,7 +511,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       theTerms.loadTerms(termsElement);
     }
 
-    protected final void loadTextFile(DomElement textfileElement, boolean defaultCaseSensitivity, ResourceManager resourceManager) {
+    protected final void loadTextFile(DomElement textfileElement, boolean defaultCaseSensitivity, ResourceManager resourceManager, String classifierName) {
       Terms theTerms = null;
 
       final boolean caseSensitive = textfileElement.getAttributeBoolean("caseSensitive", defaultCaseSensitivity);
@@ -511,7 +526,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         theTerms = this.caseInsensitiveTerms;
       }
 
-      theTerms.loadTextFile(textfileElement, resourceManager);
+      theTerms.loadTextFile(textfileElement, resourceManager, classifierName);
     }
   }
 }
