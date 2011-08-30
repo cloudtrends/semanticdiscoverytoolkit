@@ -19,6 +19,8 @@
 package org.sd.token;
 
 
+import java.util.HashSet;
+import java.util.Set;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 
@@ -288,6 +290,35 @@ public class StandardTokenizerOptions {
     this.embeddedPunctuationBreak = embeddedPunctuationBreak;
   }
 
+  private String symbolDigits;
+  private Set<Integer> symbolDigitsCodePoints;
+  public final String getSymbolDigits() {
+    return symbolDigits == null ? "" : symbolDigits;
+  }
+  public final void setSymbolDigits(String symbolDigits) {
+    this.symbolDigits = symbolDigits;
+    this.symbolDigitsCodePoints = computeCodePoints(symbolDigits);
+  }
+
+  private String symbolUppers;
+  private Set<Integer> symbolUppersCodePoints;
+  public final String getSymbolUppers() {
+    return symbolUppers == null ? "" : symbolUppers;
+  }
+  public final void setSymbolUppers(String symbolUppers) {
+    this.symbolUppers = symbolUppers;
+    this.symbolUppersCodePoints = computeCodePoints(symbolUppers);
+  }
+
+  private String symbolLowers;
+  private Set<Integer> symbolLowersCodePoints;
+  public final String getSymbolLowers() {
+    return symbolLowers == null ? "" : symbolLowers;
+  }
+  public final void setSymbolLowers(String symbolLowers) {
+    this.symbolLowers = symbolLowers;
+    this.symbolLowersCodePoints = computeCodePoints(symbolLowers);
+  }
 
   /**
    * Construct with default options.
@@ -313,6 +344,13 @@ public class StandardTokenizerOptions {
     this.symbolBreak = Break.NO_BREAK;
     this.slashBreak = Break.SINGLE_WIDTH_HARD_BREAK;
     this.embeddedPunctuationBreak = Break.NO_BREAK;
+
+    this.symbolDigits = null;
+    this.symbolUppers = null;
+    this.symbolLowers = null;
+    this.symbolDigitsCodePoints = null;
+    this.symbolUppersCodePoints = null;
+    this.symbolLowersCodePoints = null;
   }
 
   /**
@@ -384,6 +422,76 @@ public class StandardTokenizerOptions {
     this.symbolBreak = translateBreak(symbolBreak);
     this.slashBreak = translateBreak(slashBreak);
     this.embeddedPunctuationBreak = translateBreak(embeddedPunctuationBreak);
+
+    setSymbolDigits(options.getString("symbolDigits", null));
+    setSymbolUppers(options.getString("symbolUppers", null));
+    setSymbolLowers(options.getString("symbolLowers", null));
+  }
+
+  public boolean isLetterOrDigit(int codePoint) {
+    boolean result = Character.isLetterOrDigit(codePoint);
+
+    if (!result && symbolDigitsCodePoints != null) {
+      result = symbolDigitsCodePoints.contains(codePoint);
+    }
+
+    if (!result && symbolUppersCodePoints != null) {
+      result = symbolUppersCodePoints.contains(codePoint);
+    }
+
+    if (!result && symbolLowersCodePoints != null) {
+      result = symbolLowersCodePoints.contains(codePoint);
+    }
+
+    return result;
+  }
+
+  public boolean isLetter(int codePoint) {
+    boolean result = Character.isLetter(codePoint);
+
+    if (!result && symbolUppersCodePoints != null) {
+      result = symbolUppersCodePoints.contains(codePoint);
+    }
+
+    if (!result && symbolLowersCodePoints != null) {
+      result = symbolLowersCodePoints.contains(codePoint);
+    }
+
+    return result;
+  }
+
+  public boolean isUpperCase(int codePoint) {
+    boolean result = Character.isUpperCase(codePoint);
+
+    if (!result && symbolUppersCodePoints != null) {
+      result = symbolUppersCodePoints.contains(codePoint);
+    }
+
+    return result;
+  }
+
+  public boolean isLowerCase(int codePoint) {
+    boolean result = Character.isLowerCase(codePoint);
+
+    if (!result && symbolLowersCodePoints != null) {
+      result = symbolLowersCodePoints.contains(codePoint);
+    }
+
+    return result;
+  }
+
+  public boolean isDigit(int codePoint) {
+    boolean result = Character.isDigit(codePoint);
+
+    if (!result && symbolDigitsCodePoints != null) {
+      result = symbolDigitsCodePoints.contains(codePoint);
+    }
+
+    return result;
+  }
+
+  public boolean isWhitespace(int codePoint) {
+    return Character.isWhitespace(codePoint);
   }
 
   /**
@@ -499,6 +607,21 @@ public class StandardTokenizerOptions {
     result = result * 17 + this.symbolBreak.hashCode();
     result = result * 17 + this.slashBreak.hashCode();
     result = result * 17 + this.embeddedPunctuationBreak.hashCode();
+
+    return result;
+  }
+
+  private Set<Integer> computeCodePoints(String string) {
+    Set<Integer> result = null;
+
+    if (string != null && !"".equals(string)) {
+      result = new HashSet<Integer>();
+      final int len = string.length();
+      for (int charPos = 0; charPos < len; ++charPos) {
+        final int codePoint = string.codePointAt(charPos);
+        result.add(codePoint);
+      }
+    }
 
     return result;
   }

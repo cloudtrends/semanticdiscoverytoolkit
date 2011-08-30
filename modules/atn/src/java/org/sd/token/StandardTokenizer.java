@@ -92,20 +92,20 @@ public class StandardTokenizer implements Tokenizer {
       increment = 1;  // reset
 
       final int curChar = text.codePointAt(charPos);
-      if (Character.isWhitespace(curChar)) {
+      if (options.isWhitespace(curChar)) {
         curBreak = options.getWhitespaceBreak();
       }
-      else if (Character.isLetterOrDigit(curChar)) {
-        if (charPos > 0 && Character.isLetterOrDigit(text.codePointAt(charPos - 1))) {
+      else if (options.isLetterOrDigit(curChar)) {
+        if (charPos > 0 && options.isLetterOrDigit(text.codePointAt(charPos - 1))) {
           // previous char was also a letter or digit
           final int prevChar = text.codePointAt(charPos - 1);
 
-          if (Character.isDigit(curChar)) {
-            if (Character.isDigit(prevChar)) {
+          if (options.isDigit(curChar)) {
+            if (options.isDigit(prevChar)) {
               // digit digit
               curBreak = Break.NO_BREAK;
             }
-            else if (Character.isUpperCase(prevChar)) {
+            else if (options.isUpperCase(prevChar)) {
               // upper digit
               curBreak = options.getUpperDigitBreak();
             }
@@ -114,12 +114,12 @@ public class StandardTokenizer implements Tokenizer {
               curBreak = options.getLowerDigitBreak();
             }
           }
-          else if (Character.isUpperCase(curChar)) {
-            if (Character.isDigit(prevChar)) {
+          else if (options.isUpperCase(curChar)) {
+            if (options.isDigit(prevChar)) {
               // digit upper
               curBreak = options.getDigitUpperBreak();
             }
-            else if (Character.isUpperCase(prevChar)) {
+            else if (options.isUpperCase(prevChar)) {
               // upper upper
               curBreak = Break.NO_BREAK;
             }
@@ -128,12 +128,12 @@ public class StandardTokenizer implements Tokenizer {
               curBreak = options.getLowerUpperBreak();
             }
           }
-          else {  // Character.isLower(curChar)
-            if (Character.isDigit(prevChar)) {
+          else {  // options.isLower(curChar)
+            if (options.isDigit(prevChar)) {
               // digit lower
               curBreak = options.getDigitLowerBreak();
             }
-            else if (Character.isUpperCase(prevChar)) {
+            else if (options.isUpperCase(prevChar)) {
               // upper lower
               curBreak = options.getUpperLowerBreak();
             }
@@ -165,7 +165,7 @@ public class StandardTokenizer implements Tokenizer {
             }
             else {
               // just 2 dashes
-              if ((charPos > 0 && Character.isLetterOrDigit(text.codePointAt(charPos - 1))) && (charPos + 2 < text.length() && Character.isLetterOrDigit(text.codePointAt(charPos + 2)))) {
+              if ((charPos > 0 && options.isLetterOrDigit(text.codePointAt(charPos - 1))) && (charPos + 2 < text.length() && options.isLetterOrDigit(text.codePointAt(charPos + 2)))) {
                 // embedded double dash
                 curBreak = options.getEmbeddedDoubleDashBreak();
               }
@@ -184,8 +184,8 @@ public class StandardTokenizer implements Tokenizer {
           }
           else {
             // this is a single dash
-            if (charPos > 0 && !Character.isWhitespace(text.codePointAt(charPos - 1))) {
-              if (charPos + 1 < text.length() && !Character.isWhitespace(text.codePointAt(charPos + 1))) {
+            if (charPos > 0 && !options.isWhitespace(text.codePointAt(charPos - 1))) {
+              if (charPos + 1 < text.length() && !options.isWhitespace(text.codePointAt(charPos + 1))) {
                 // embedded dash
                 curBreak = options.getEmbeddedDashBreak();
               }
@@ -194,7 +194,7 @@ public class StandardTokenizer implements Tokenizer {
                 curBreak = options.getLeftBorderedDashBreak();
               }
             }
-            else if (charPos + 1 < text.length() && !Character.isWhitespace(text.codePointAt(charPos + 1))) {
+            else if (charPos + 1 < text.length() && !options.isWhitespace(text.codePointAt(charPos + 1))) {
               // right-bordered dash
               curBreak = options.getRightBorderedDashBreak();
             }
@@ -204,10 +204,10 @@ public class StandardTokenizer implements Tokenizer {
             }
           }
         }
-        else if (charPos + 1 < text.length() && Character.isLetterOrDigit(text.codePointAt(charPos + 1))) {
+        else if (charPos + 1 < text.length() && options.isLetterOrDigit(text.codePointAt(charPos + 1))) {
           // symbol immediately precedes a non-white, non-symbol char as part of a token
 
-          if (charPos > 0 && Character.isLetterOrDigit(text.codePointAt(charPos - 1)) && curChar != '/' && curChar != '\\') {
+          if (charPos > 0 && options.isLetterOrDigit(text.codePointAt(charPos - 1)) && curChar != '/' && curChar != '\\') {
             // symbol is embedded between non-white, non-symbol chars e.g. "don't" or "3.14"
             if (isSymbol(curChar)) {
               curBreak = options.getSymbolBreak();
@@ -229,7 +229,7 @@ public class StandardTokenizer implements Tokenizer {
             curBreak = options.getSymbolBreak();
           }
         }
-        else if (curChar == '%' && charPos > 0 && Character.isDigit(text.codePointAt(charPos - 1))) {
+        else if (curChar == '%' && charPos > 0 && options.isDigit(text.codePointAt(charPos - 1))) {
           // e.g. "99.9%"
           curBreak = Break.NO_BREAK;
         }
