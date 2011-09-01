@@ -20,6 +20,7 @@ package org.sd.util.range;
 
 
 import java.util.Collection;
+import java.util.TreeSet;
 
 /**
  * Class to represent a set of integers.
@@ -92,6 +93,81 @@ public class IntegerRange extends AbstractNumericRange {
       if (!didFirst || simpleRange.getHighAsInt(true) > result) {
         result = simpleRange.getHighAsInt(true);
         didFirst = true;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Determine whether the other integer range is included in this integer range.
+   */
+  public boolean includes(IntegerRange other) {
+    boolean result = false;
+
+    final TreeSet<Integer> myValues = this.getValues();
+    final TreeSet<Integer> otherValues = other.getValues();
+
+    if (myValues == null) {
+      result = true;
+    }
+    else if (otherValues != null) {
+      if (myValues.size() >= otherValues.size()) {
+        for (Integer otherValue : otherValues) {
+          if (!myValues.contains(otherValue)) {
+            result = false;
+            break;
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Compare this integer range to the other with return values:
+   * <ul>
+   * <li>-1: If this range's low is less than the other range's low or this range's high is less than the other range's high</li>
+   * <li> 0: If this range is the same as or includes all of the other's values, including if both are infinite</li>
+   * <li> 1: If the other range's low is less than this range's low or the other range's high is less than this range's high</li>
+   * </ul>
+   */
+  public int compareTo(IntegerRange other) {
+    int result = 0;
+
+    if (this.getLow() < other.getLow() && this.getHigh() < other.getHigh()) {
+      result = -1;
+    }
+    else if (other.getLow() < this.getLow() && other.getHigh() < this.getHigh()) {
+      result = 1;
+    }
+
+    return result;
+  }
+
+  /**
+   * Get each of this range's values, unless it is infinite.
+   *
+   * @return the discrete values or null.
+   */
+  public TreeSet<Integer> getValues() {
+    TreeSet<Integer> result = new TreeSet<Integer>();
+
+    for (SimpleRange range : getSimpleRanges()) {
+      final Integer curSize = range.size();
+      if (curSize == null) {
+        result = null;
+        break;
+      }
+      else {
+        int low = range.getLowAsInt(false);
+        if (!range.includesLow()) ++low;
+        int high = range.getHighAsInt(false);
+        if (!range.includesHigh()) --high;
+        for (int i = low; i <= high; ++i) {
+          result.add(i);
+        }
       }
     }
 
