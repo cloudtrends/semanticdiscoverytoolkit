@@ -19,6 +19,7 @@
 package org.sd.util.range;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +31,9 @@ import java.util.List;
  * @author Spence Koehler
  */
 public abstract class AbstractNumericRange implements NumericRange {
+
+  private static final long serialVersionUID = 42L;
+
 
   protected abstract SimpleRange buildRange(String number);
   protected abstract SimpleRange buildRange(String left, boolean leftInclusive, String right, boolean rightInclusive);
@@ -324,8 +328,13 @@ public abstract class AbstractNumericRange implements NumericRange {
     return result;
   }
 
-  protected final void addRange(SimpleRange newRange) {
-    incorporateRange(newRange);
+  protected final void addRange(SimpleRange newRange, boolean combineIfContiguous) {
+    if (combineIfContiguous) {
+      incorporateRange(newRange);
+    }
+    else {
+      ranges.add(newRange);
+    }
   }
 
   private final void incorporateRange(SimpleRange newRange) {

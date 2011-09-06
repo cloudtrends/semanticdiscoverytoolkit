@@ -82,6 +82,13 @@ public class AtnStateUtil {
       if (result == null) {
         final String ruleName = pathState.getRule().getRuleName();
         result = new Tree<String>(ruleName);
+
+        // add ruleID as an attribute on the parse node
+        final String ruleId = pathState.getRule().getRuleId();
+        if (ruleId != null) {
+          result.getAttributes().put("_ruleID", ruleId);
+        }
+
         curResultNode = result;
       }
 
@@ -101,6 +108,14 @@ public class AtnStateUtil {
             unknownNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(inputToken, "?"));
           }
           else {
+            // add ruleID as an attribute on the parse node
+            if (!curResultNode.hasAttributes() || !curResultNode.getAttributes().containsKey("_ruleID")) {
+              final String ruleId = pathState.getRule().getRuleId();
+              if (ruleId != null) {
+                curResultNode.getAttributes().put("_ruleID", ruleId);
+              }
+            }
+
             curResultNode = curResultNode.addChild(category);
           }
         }
