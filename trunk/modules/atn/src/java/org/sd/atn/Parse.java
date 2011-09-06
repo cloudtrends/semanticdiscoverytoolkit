@@ -200,7 +200,7 @@ public class Parse implements Publishable, Serializable {
         _domElement = (DomElement)identityInterp.getInterpTree().getData().asDomNode();
 
         if (ruleId != null && !"".equals(ruleId) &&
-            (!_domElement.hasAttributes() || _domElement.getAttributeValue("_ruleId") == null)) {
+            (!_domElement.hasAttributes() || _domElement.getAttributeValue("_ruleId", null) == null)) {
           _domElement.setAttribute("_ruleId", ruleId);
         }
       }
