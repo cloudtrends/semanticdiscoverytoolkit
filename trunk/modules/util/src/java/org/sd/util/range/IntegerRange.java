@@ -19,6 +19,7 @@
 package org.sd.util.range;
 
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.TreeSet;
 
@@ -27,7 +28,9 @@ import java.util.TreeSet;
  * <p>
  * @author Spence Koehler
  */
-public class IntegerRange extends AbstractNumericRange {
+public class IntegerRange extends AbstractNumericRange implements Serializable {
+
+  private static final long serialVersionUID = 42L;
 
   /**
    * Construct an empty instance.
@@ -175,22 +178,38 @@ public class IntegerRange extends AbstractNumericRange {
   }
 
   public final IntegerRange add(int singleValue) {
-    super.addRange(new SimpleIntegerRange(singleValue));
+    return add(singleValue, true);
+  }
+
+  public final IntegerRange add(int singleValue, boolean combineIfContiguous) {
+    super.addRange(new SimpleIntegerRange(singleValue), combineIfContiguous);
     return this;
   }
 
   public final IntegerRange add(int lowInclusive, int highInclusive) {
-    super.addRange(new SimpleIntegerRange(lowInclusive, true, highInclusive, true));
+    return add(lowInclusive, highInclusive, true);
+  }
+
+  public final IntegerRange add(int lowInclusive, int highInclusive, boolean combineIfContiguous) {
+    super.addRange(new SimpleIntegerRange(lowInclusive, true, highInclusive, true), combineIfContiguous);
     return this;
   }
 
   public final IntegerRange add(int left, boolean leftInclusive, int right, boolean rightInclusive) {
-    super.addRange(new SimpleIntegerRange(left, leftInclusive, right, rightInclusive));
+    return add(left, leftInclusive, right, rightInclusive, true);
+  }
+
+  public final IntegerRange add(int left, boolean leftInclusive, int right, boolean rightInclusive, boolean combineIfContiguous) {
+    super.addRange(new SimpleIntegerRange(left, leftInclusive, right, rightInclusive), combineIfContiguous);
     return this;
   }
 
   public final IntegerRange add(int base, int tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
-    super.addRange(new SimpleIntegerRange(base, tolerance, inclusiveStart, inclusiveEnd));
+    return add(base, tolerance, inclusiveStart, inclusiveEnd, true);
+  }
+
+  public final IntegerRange add(int base, int tolerance, boolean inclusiveStart, boolean inclusiveEnd, boolean combineIfContiguous) {
+    super.addRange(new SimpleIntegerRange(base, tolerance, inclusiveStart, inclusiveEnd), combineIfContiguous);
     return this;
   }
 
@@ -206,7 +225,10 @@ public class IntegerRange extends AbstractNumericRange {
     return new SimpleIntegerRange(base, tolerance, inclusiveStart, inclusiveEnd);
   }
 
-  private final class SimpleIntegerRange implements SimpleRange {
+  private final class SimpleIntegerRange implements SimpleRange, Serializable  {
+
+    private static final long serialVersionUID = 42L;
+
     private int low;
     private int high;
     private boolean includeLow;

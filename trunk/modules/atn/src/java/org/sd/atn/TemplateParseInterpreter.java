@@ -717,6 +717,16 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
         }
       }
 
+      // include attributes on the parse node
+      if (parseNode.hasAttributes()) {
+        final Object value = parseNode.getAttributes().get(attribute);
+        if (value != null) {
+          if (result == null) result = new ArrayList<Tree<XmlLite.Data>>();
+          final Tree<XmlLite.Data> featureNode = XmlLite.createTextNode(value.toString());
+          result.add(featureNode);
+        }
+      }
+
       return cleanup(result, parse, parseNode, true);
     }
 

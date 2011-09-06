@@ -45,17 +45,17 @@ public class RealRange extends AbstractNumericRange {
 
   public RealRange(double number) {
     super();
-    super.addRange(new SimpleRealRange(number));
+    super.addRange(new SimpleRealRange(number), true);
   }
 
   public RealRange(double left, boolean leftInclusive, double right, boolean rightInclusive) {
     super();
-    super.addRange(new SimpleRealRange(left, leftInclusive, right, rightInclusive));
+    super.addRange(new SimpleRealRange(left, leftInclusive, right, rightInclusive), true);
   }
 
   public RealRange(double base, double tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
     super();
-    super.addRange(new SimpleRealRange(base, tolerance, inclusiveStart, inclusiveEnd));
+    super.addRange(new SimpleRealRange(base, tolerance, inclusiveStart, inclusiveEnd), true);
   }
 
   protected SimpleRange buildRange(String number) {
