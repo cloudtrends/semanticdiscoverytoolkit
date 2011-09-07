@@ -19,6 +19,7 @@
 package org.sd.util;
 
 import java.nio.ByteBuffer;
+import java.util.UUID;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -50,6 +51,12 @@ public class TestByteBufferUtil extends TestCase {
         "test",
         "This is a test.",
         "This is only a test.",
+      };
+    UUID[] uuidInputs = new UUID[] 
+      { 
+        UUID.randomUUID(),
+        new UUID(0L, 0L),
+        new UUID(Long.MIN_VALUE, Long.MAX_VALUE),
       };
 
     for(int i = 0; i < unsignedInputs.length; i++)
@@ -88,6 +95,17 @@ public class TestByteBufferUtil extends TestCase {
 
       assertEquals(asciiInputs[i], result);
     }
+
+    for(int i = 0; i < uuidInputs.length; i++)
+    {
+      UUID uuid = uuidInputs[i];
+      ByteBuffer bytes = ByteBuffer.allocate(16);
+
+      ByteBufferUtil.putUUID(bytes, uuid);
+      UUID result = ByteBufferUtil.getUUID(bytes, 0);
+
+      assertEquals(uuid, result);
+    }
   }
 
   public void testSerializeAbsolute() 
@@ -106,6 +124,12 @@ public class TestByteBufferUtil extends TestCase {
         "test",
         "This is a test.",
         "This is only a test.",
+      };
+    UUID[] uuidInputs = new UUID[] 
+      { 
+        UUID.randomUUID(),
+        new UUID(0L, 0L),
+        new UUID(Long.MIN_VALUE, Long.MAX_VALUE),
       };
 
     for(int i = 0; i < unsignedInputs.length; i++)
@@ -143,6 +167,17 @@ public class TestByteBufferUtil extends TestCase {
       String result = ByteBufferUtil.getAscii(bytes, 0);
 
       assertEquals(asciiInputs[i], result);
+    }
+
+    for(int i = 0; i < uuidInputs.length; i++)
+    {
+      UUID uuid = uuidInputs[i];
+      ByteBuffer bytes = ByteBuffer.allocate(16);
+
+      ByteBufferUtil.putUUID(bytes, 0, uuid);
+      UUID result = ByteBufferUtil.getUUID(bytes, 0);
+
+      assertEquals(uuid, result);
     }
   }
 
