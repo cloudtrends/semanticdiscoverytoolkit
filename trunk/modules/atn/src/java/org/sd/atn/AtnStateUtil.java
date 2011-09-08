@@ -37,8 +37,11 @@ import org.sd.util.tree.Tree;
  */
 public class AtnStateUtil {
   
-  public static String TOKEN_KEY = "cToken";
+  // parse node attributes
 
+  public static String TOKEN_KEY = "cToken";     // -> cToken:CategorizedToken (leafs' parents)
+  public static String RULE_ID_KEY = "_ruleID";  // -> ruleID:String (id'd constituents)
+  public static String INTERP_KEY = "_interps";  // -> interps:ParseInterpretation[] (pre-parsed constituents)
 
   /**
    * Convert the state (automaton) path to a parse tree.
@@ -86,7 +89,7 @@ public class AtnStateUtil {
         // add ruleID as an attribute on the parse node
         final String ruleId = pathState.getRule().getRuleId();
         if (ruleId != null) {
-          result.getAttributes().put("_ruleID", ruleId);
+          result.getAttributes().put(RULE_ID_KEY, ruleId);
         }
 
         curResultNode = result;
@@ -109,10 +112,10 @@ public class AtnStateUtil {
           }
           else {
             // add ruleID as an attribute on the parse node
-            if (!curResultNode.hasAttributes() || !curResultNode.getAttributes().containsKey("_ruleID")) {
+            if (!curResultNode.hasAttributes() || !curResultNode.getAttributes().containsKey(RULE_ID_KEY)) {
               final String ruleId = pathState.getRule().getRuleId();
               if (ruleId != null) {
-                curResultNode.getAttributes().put("_ruleID", ruleId);
+                curResultNode.getAttributes().put(RULE_ID_KEY, ruleId);
               }
             }
 
