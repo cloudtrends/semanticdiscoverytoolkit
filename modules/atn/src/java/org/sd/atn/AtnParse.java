@@ -304,6 +304,12 @@ public class AtnParse {
       return _parseInterpretations;
     }
   }
+  /**
+   * Determine whether this parse has been interpreted.
+   */
+  public boolean wasInterpreted() {
+    return _parseInterpretations != null;
+  }
 
 
   Tree<AtnState> endState;

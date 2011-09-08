@@ -117,6 +117,7 @@ public class Parse implements Publishable, Serializable {
     int[] offset = new int[]{0};
     this.parseTree = buildParseTree(parse.getParseTree(), tokenizer, zeroIndex, offset);
 
+    // NOTE: ruleIDs are placed on parse tree nodes while built in AtnStateUtil
     this.ruleId = parse.getStartRule().getRuleId();
 
     this.remainingText = parse.getRemainingText();

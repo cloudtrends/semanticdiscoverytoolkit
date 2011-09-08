@@ -19,7 +19,10 @@
 package org.sd.atn;
 
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +35,7 @@ import org.sd.util.InputContext;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
+import org.sd.xml.XmlFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -171,7 +175,26 @@ public class CompoundParser {
     this.parserWrappers = new LinkedHashMap<String, AtnParserWrapper>();
     final NodeList parserNodes = config.getDomElement().selectNodes("parser");
     for (int parserNodeIndex = 0; parserNodeIndex < parserNodes.getLength(); ++parserNodeIndex) {
-      final DomElement parserElement = (DomElement)parserNodes.item(parserNodeIndex);
+      DomElement parserElement = (DomElement)parserNodes.item(parserNodeIndex);
+      final String parserFileName = parserElement.getAttributeValue("file", null);
+      if (parserFileName != null) {
+        final File parserFile = resourceManager.getOptions().getWorkingFile(parserFileName, "workingDir");
+        System.out.println(new Date() + ": CompoundParser loading parserFile '" + parserFile.getAbsolutePath() + "'.");
+        if (parserFile.exists()) {
+          try {
+            parserElement = (DomElement)XmlFactory.loadDocument(parserFile, false, resourceManager.getOptions()).getDocumentElement();
+          }
+          catch (IOException e) {
+            throw new IllegalStateException(e);
+          }
+        }
+        else {
+          throw new IllegalStateException(new Date() +
+                                          ": ERROR can't find parser file in CompoundParser: '" +
+                                          parserFile.getAbsolutePath() + "'");
+        }
+      }
+
       final AtnParserWrapper parserWrapper = new AtnParserWrapper(parserElement, resourceManager);
       parserWrappers.put(parserWrapper.getId(), parserWrapper);
       if (parserWrapper.getMinNumTokens() > this.minNumTokens) this.minNumTokens = parserWrapper.getMinNumTokens();
