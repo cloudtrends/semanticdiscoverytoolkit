@@ -89,6 +89,8 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
   private List<RecordTemplate> topTemplates;
   private boolean trace;
 
+  private static final Object interpLock = new Object();
+
   public TemplateParseInterpreter(DomNode domNode, ResourceManager resourceManager) {
     this.resources = new InnerResources(resourceManager);
     this.topTemplates = new ArrayList<RecordTemplate>();
@@ -126,16 +128,18 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
   public List<ParseInterpretation> getInterpretations(Parse parse, DataProperties overrides) {
     List<ParseInterpretation> result = null;
 
-    for (RecordTemplate topTemplate : topTemplates) {
-      if (topTemplate.matches(parse)) {
-        final boolean doInterpret = foundMatchingTemplateHook(topTemplate, parse, overrides);
-        ParseInterpretation interp = doInterpret ? topTemplate.interpret(parse, overrides) : null;
-        if (interp != null) {
-          interp = interpretationHook(interp, parse, overrides);
-        }
-        if (interp != null) {
-          if (result == null) result = new ArrayList<ParseInterpretation>();
-          result.add(interp);
+    synchronized (interpLock) {
+      for (RecordTemplate topTemplate : topTemplates) {
+        if (topTemplate.matches(parse)) {
+          final boolean doInterpret = foundMatchingTemplateHook(topTemplate, parse, overrides);
+          ParseInterpretation interp = doInterpret ? topTemplate.interpret(parse, overrides) : null;
+          if (interp != null) {
+            interp = interpretationHook(interp, parse, overrides);
+          }
+          if (interp != null) {
+            if (result == null) result = new ArrayList<ParseInterpretation>();
+            result.add(interp);
+          }
         }
       }
     }
