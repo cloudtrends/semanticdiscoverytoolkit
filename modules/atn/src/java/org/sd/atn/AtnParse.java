@@ -281,28 +281,25 @@ public class AtnParse {
   }
 
 
-  private Object parseInterpretationsLock = new Object();
   private List<ParseInterpretation> _parseInterpretations;
   /**
    * Get (possibly empty, but not null) parse interpretations for this parse.
    */
   public List<ParseInterpretation> getParseInterpretations() {
-    synchronized (parseInterpretationsLock) {
-      if (_parseInterpretations == null && parseResult != null) {
-        final ParseInterpreter interpreter = parseResult.getOptions().getParseInterpreter();
-        if (interpreter != null) {
-          _parseInterpretations = interpreter.getInterpretations(this.getParse(), parseResult.getOverrides());
-        }
+    if (_parseInterpretations == null && parseResult != null) {
+      final ParseInterpreter interpreter = parseResult.getOptions().getParseInterpreter();
+      if (interpreter != null) {
+        _parseInterpretations = interpreter.getInterpretations(this.getParse(), parseResult.getOverrides());
+      }
         
-        if (_parseInterpretations == null) _parseInterpretations = new ArrayList<ParseInterpretation>();
-        else {
-          for (ParseInterpretation interp : _parseInterpretations) {
-            interp.setSourceParse(this);
-          }
+      if (_parseInterpretations == null) _parseInterpretations = new ArrayList<ParseInterpretation>();
+      else {
+        for (ParseInterpretation interp : _parseInterpretations) {
+          interp.setSourceParse(this);
         }
       }
-      return _parseInterpretations;
     }
+    return _parseInterpretations;
   }
   /**
    * Determine whether this parse has been interpreted.

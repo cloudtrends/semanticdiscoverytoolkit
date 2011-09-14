@@ -44,61 +44,70 @@ import org.w3c.dom.NodeList;
  */
 public class RecordParseInterpreter extends TemplateParseInterpreter {
   
-  private String[] classifications;
-  private InnerResources resources;
-  private List<RecordTemplate> topTemplates;
-  private boolean trace;
-
   public RecordParseInterpreter(DomNode domNode, ResourceManager resourceManager) {
     super(domNode, resourceManager);
   }
 
-  /**
-   * @return true to execute recordTemplate.interpret(parse); otherwise, false.
-   */
-  protected boolean foundMatchingTemplateHook(RecordTemplate recordTemplate, Parse parse, DataProperties overrides) {
-    return true;
+  protected InterpretationController buildInterpretationController() {
+    return new RecordInterpretationController();
   }
 
-  /**
-   * Hook on a final interpretation.
-   */
-  protected ParseInterpretation interpretationHook(ParseInterpretation interp, Parse parse, DataProperties overrides) {
-    return interp;
-  }
+  private static final class RecordInterpretationController implements InterpretationController {
 
-  /**
-   * Hook on each record interpNode just after creation and before insertion
-   * as a child into its tree.
-   * <p>
-   * NOTE: This hook can be called twice for each recordTemplate -- once before
-   *       its fields are processed (start==true) and again after the fields
-   *       have been *successfully* processed (start=false).  If the hook is
-   *       called twice in a row with start=true, then field processing of the
-   *       prior invocation yielded no true results.
-   */
-  protected Tree<XmlLite.Data> interpRecordNodeHook(Tree<XmlLite.Data> recordNode, Parse parse,
-                                                    Tree<String> parseNode, Tree<XmlLite.Data> parentNode,
-                                                    String fieldName, RecordTemplate recordTemplate,
-                                                    boolean start, DataProperties overrides) {
-    if (trace) trace("record", recordNode, fieldName, start);
+    private String[] classifications;
+    private InnerResources resources;
+    private List<RecordTemplate> topTemplates;
+    private boolean trace;
 
-    return recordNode;
-  }
+    public RecordInterpretationController() {}
 
-  /**
-   * Hook on each field interpNode just after creation and before insertion
-   * as a child into its tree.
-   * <p>
-   * Note that each non-root record node will come back through as a field
-   * (after all fields have been visited) but not all fields come through as a
-   * record.
-   */
-  protected Tree<XmlLite.Data> interpFieldNodeHook(Tree<XmlLite.Data> fieldNode, Parse parse,
-                                                   Tree<String> selectedNode, Tree<XmlLite.Data> parentNode,
-                                                   FieldTemplate fieldTemplate, DataProperties overrides) {
-    if (trace) trace("field", fieldNode, fieldTemplate.getName(), null);
+    /**
+     * @return true to execute recordTemplate.interpret(parse); otherwise, false.
+     */
+    public boolean foundMatchingTemplateHook(RecordTemplate recordTemplate, Parse parse, DataProperties overrides) {
+      return true;
+    }
 
-    return fieldNode;
+    /**
+     * Hook on a final interpretation.
+     */
+    public ParseInterpretation interpretationHook(ParseInterpretation interp, Parse parse, DataProperties overrides) {
+      return interp;
+    }
+
+    /**
+     * Hook on each record interpNode just after creation and before insertion
+     * as a child into its tree.
+     * <p>
+     * NOTE: This hook can be called twice for each recordTemplate -- once before
+     *       its fields are processed (start==true) and again after the fields
+     *       have been *successfully* processed (start=false).  If the hook is
+     *       called twice in a row with start=true, then field processing of the
+     *       prior invocation yielded no true results.
+     */
+    public Tree<XmlLite.Data> interpRecordNodeHook(Tree<XmlLite.Data> recordNode, Parse parse,
+                                                   Tree<String> parseNode, Tree<XmlLite.Data> parentNode,
+                                                   String fieldName, RecordTemplate recordTemplate,
+                                                   boolean start, DataProperties overrides) {
+      if (trace) trace("record", recordNode, fieldName, start);
+
+      return recordNode;
+    }
+
+    /**
+     * Hook on each field interpNode just after creation and before insertion
+     * as a child into its tree.
+     * <p>
+     * Note that each non-root record node will come back through as a field
+     * (after all fields have been visited) but not all fields come through as a
+     * record.
+     */
+    public Tree<XmlLite.Data> interpFieldNodeHook(Tree<XmlLite.Data> fieldNode, Parse parse,
+                                                  Tree<String> selectedNode, Tree<XmlLite.Data> parentNode,
+                                                  FieldTemplate fieldTemplate, DataProperties overrides) {
+      if (trace) trace("field", fieldNode, fieldTemplate.getName(), null);
+
+      return fieldNode;
+    }
   }
 }
