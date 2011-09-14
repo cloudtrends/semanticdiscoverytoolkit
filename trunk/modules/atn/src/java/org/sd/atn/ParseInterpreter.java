@@ -26,6 +26,8 @@ import org.sd.xml.DomElement;
 /**
  * Interface for getting an interpretatin for a parse if available.
  * <p>
+ * NOTE: Implementations of this must be thread-safe!
+ *
  * @author Spence Koehler
  */
 public interface ParseInterpreter {
