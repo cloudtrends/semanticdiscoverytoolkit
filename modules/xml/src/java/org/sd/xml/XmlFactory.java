@@ -96,7 +96,14 @@ public class XmlFactory {
    * Parse the xml string as a DomNode.
    */
   public static final DomNode buildDomNode(String xmlString, boolean htmlFlag) throws IOException {
-    return buildXmlTree(xmlString, true, htmlFlag).getData().asDomNode();
+    DomNode result = null;
+
+    final Tree<XmlLite.Data> xmlTree = buildXmlTree(xmlString, true, htmlFlag);
+    if (xmlTree != null) {
+      result = xmlTree.getData().asDomNode();
+    }
+
+    return result;
   }
 
 
