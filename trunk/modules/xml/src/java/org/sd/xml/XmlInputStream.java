@@ -569,6 +569,7 @@ public class XmlInputStream {
 
   private final boolean utf8Okay() throws IOException {
     boolean result = true;
+    boolean sawLetterOrDigit = false;
 
     // set stream to bounce back to this point.
     inputStream.mark(READ_LIMIT + 100);
@@ -588,6 +589,10 @@ public class XmlInputStream {
             break;
           }
         }
+
+        if (!sawLetterOrDigit && Character.isLetterOrDigit(c)) {
+          sawLetterOrDigit = true;
+        }
       }
     }
     finally {
@@ -595,7 +600,7 @@ public class XmlInputStream {
       inputStream.reset();
     }
 
-    return result;
+    return result && sawLetterOrDigit;
   }
 
   private final boolean findFirstTag() throws IOException {
