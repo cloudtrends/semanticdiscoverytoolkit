@@ -75,6 +75,8 @@ public class AtnParseRunner {
     this.activeFlowSpec = null;
     this.activeFlow = new ArrayList<ParserFlow>();
 
+    if (dataProperties.getBoolean("trace", false)) AtnState.setTrace(true);
+
     updateOptions();
   }
 
@@ -527,8 +529,6 @@ public class AtnParseRunner {
     //
 
     final DataProperties dataProperties = new DataProperties(args);
-
-    if (dataProperties.getBoolean("trace", false)) AtnState.setTrace(true);
 
     final AtnParseRunner runner = new AtnParseRunner(dataProperties);
     try {

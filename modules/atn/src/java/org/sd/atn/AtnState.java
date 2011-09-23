@@ -1321,9 +1321,12 @@ public class AtnState {
         foundOne = true;
 
         for (AtnRule rule : grammar.getCat2Rules().get(category)) {
-          addState(grammar, states, skipStates,
-                   new AtnState(curstate.getInputToken(), rule, 0, nextStateNode, curstate.parseOptions, 0, 0, curstate),
-                   stopList);
+          AtnState pushState = new AtnState(curstate.getInputToken(), rule, 0, nextStateNode, curstate.parseOptions, 0, 0, curstate);
+
+          // add push state and states skipping initial optional steps after push
+          for (; pushState != null; pushState = pushState.getSkipOptionalState()) {
+            addState(grammar, states, skipStates, pushState, stopList);
+          }
         }
 
         // skip constituents

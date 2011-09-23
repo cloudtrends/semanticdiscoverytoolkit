@@ -1435,6 +1435,29 @@ public class TestAtnParser extends TestCase {
 
   //public void testConstituentPostDelim() throws IOException {
 
+  public void testSkipOptionalAfterPush() throws IOException {
+    //
+    // P <- G S?
+    // G <- c? c
+    // S <- c? c
+    //
+    // c c -> (P (G c) (S c))
+    // c c -> (P (G c c))
+    //
+    final AtnParser test21_Parser = AtnParseTest.buildParser("<grammar><rules><P start='true'><G/><S optional='true'/></P><G><c optional='true'/><c/></G><S><c optional='true'/><c/></S></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer21 = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c c");
+
+    runParseTest("parserTest_21",
+                 test21_Parser,
+                 tokenizer21,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(P (G c c))",
+                   "(P (G c) (S c))",
+                 });
+  }
+
 
   private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings) throws IOException {
     runParseTest(name, parser, tokenizer, parseOptionsXml, expectedTreeStrings, null, false);
