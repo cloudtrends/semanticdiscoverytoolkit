@@ -91,6 +91,8 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private StatsAccumulator sendTimeStats;
   private StatsAccumulator handleTimeStats;
   private long numDroppedConnections;
+  // private StatsAccumulator numInBytesStats;
+  // private StatsAccumulator numOutBytesStats;
 
   private final Object socketPoolMutex = new Object();
   private final Object messagePoolMutex = new Object();
@@ -117,6 +119,8 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     this.sendTimeStats = new StatsAccumulator("SendTimeStats");
     this.handleTimeStats = new StatsAccumulator("HandleTimeStats");
     this.numDroppedConnections = 0L;
+    // this.numInBytesStats = new StatsAccumulator("NumInBytesStats");
+    // this.numOutBytesStats = new StatsAccumulator("NumOutBytesStats");
 
     // initialize stable queues
     this.messageQueue = new LinkedBlockingQueue<MessageBundle>();
@@ -256,6 +260,8 @@ public class NodeServer extends Thread implements NodeServerMXBean {
       this.sendTimeStats.clear();
       this.handleTimeStats.clear();
       this.numDroppedConnections = 0L;
+      // this.numInBytesStats.clear();
+      // this.numOutBytesStats.clear();
 
       //this.starttime = System.currentTimeMillis();
     }
@@ -358,6 +364,22 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   public long getNumDroppedConnections() {
     return numDroppedConnections;
   }
+
+//we can't really count the bytes at this level w/out too much overhead
+  // /**
+  //  * Get the stats for the request bytes received.
+  //  */
+  // public StatsAccumulator getNumInBytesStats() {
+  //   return numInBytesStats;
+  // }
+
+  // /**
+  //  * Get the stats for the response bytes returned.
+  //  */
+  // public StatsAccumulator getNumOutBytesStats() {
+  //   return numOutBytesStats;
+  // }
+
 
   public void run() {
 //    System.out.println("Starting server: " + nodeName);
@@ -593,13 +615,15 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     }
   }
   
-  private final void addStats(long receiveTime, long responseGenTime, long sendTime) {
+  private final void addStats(long receiveTime, long responseGenTime, long sendTime/*, long numInBytes, long numOutBytes*/) {
     final long totalTime = receiveTime + responseGenTime + sendTime;
     synchronized (statsMutex) {
       totalTimeStats.add(totalTime);
       receiveTimeStats.add(receiveTime);
       responseGenTimeStats.add(responseGenTime);
       sendTimeStats.add(sendTime);
+      // numInBytesStats.add(numInBytes);
+      // numOutBytesStats.add(numOutBytes);
     }
   }
 
@@ -624,7 +648,8 @@ public class NodeServer extends Thread implements NodeServerMXBean {
           final Message message = messenger.receiveMessage(context, connectionContext);  // does both receive and response
 
           // tally stats
-          addStats(messenger.getReceiveTime(), messenger.getResponseGenTime(), messenger.getSendTime());
+          addStats(messenger.getReceiveTime(), messenger.getResponseGenTime(), messenger.getSendTime()/*,
+                   messenger.getNumInBytes(), messenger.getNumOutBytes*/);
 
           //todo: split up receiving message and sending response so that if the message
           //      queue is full we can report that in the response to the client.
