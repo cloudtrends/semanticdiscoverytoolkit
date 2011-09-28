@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.sd.token.StandardTokenizerOptions;
 import org.sd.util.InputContext;
 import org.sd.util.InputContextIterator;
 import org.sd.xml.DataProperties;
@@ -172,6 +173,9 @@ public class ParseConfig {
     //
     // <supplement>
     //   <classifier parser="compoundID:parserID" id="classifierID" ...supplemental attributes..>...supplemental elements...</classifier>
+    //   <tokenizerOptions parser="compoundID:parserID">
+    //      ...overriding tokenizer options...
+    //   </tokenizerOptions>
     //   <grammar parser="compoundID:parserID">...supplemental file or elements...</grammar>
     //   <interpreter parser="compoundID:parserID" mode="supplement|override">
     //      ...
@@ -233,6 +237,12 @@ public class ParseConfig {
               }
             }
           }
+        }
+
+        // 'tokenizerOptions' supplement
+        else if ("tokenizeroptions".equals(directive)) {
+          parserWrapper.setTokenizerOptions(new StandardTokenizerOptions((DomElement)supplementNode));
+          supplemented = true;
         }
 
         // 'grammar' supplement

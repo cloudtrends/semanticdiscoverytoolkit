@@ -139,4 +139,15 @@ public interface NodeServerMXBean {
    * Get the number of dropped connections due to saturation.
    */
   public long getNumDroppedConnections();
+
+//we can't really count the bytes at this level w/out too much overhead
+  // /**
+  //  * Get the stats for the request bytes received.
+  //  */
+  // public StatsAccumulator getNumInBytesStats();
+
+  // /**
+  //  * Get the stats for the response bytes returned.
+  //  */
+  // public StatsAccumulator getNumOutBytesStats();
 }

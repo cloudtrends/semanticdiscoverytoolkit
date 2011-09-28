@@ -52,6 +52,9 @@ public class AtnParserWrapper {
   public StandardTokenizerOptions getTokenizerOptions() {
     return tokenizerOptions;
   }
+  public void setTokenizerOptions(StandardTokenizerOptions tokenizerOptions) {
+    this.tokenizerOptions = tokenizerOptions;
+  }
 
   private AtnParseOptions parseOptions;
   public AtnParseOptions getParseOptions() {

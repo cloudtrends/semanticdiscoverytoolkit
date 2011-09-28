@@ -43,6 +43,8 @@ public class Messenger {
   private long receiveTime;
   private long responseGenTime;
   private long sendTime;
+  // private long numInBytes;
+  // private long numOutBytes;
 
   Messenger(DataOutputStream dataOutput, DataInputStream dataInput) {
     this.dataOutput = dataOutput;
@@ -157,4 +159,19 @@ public class Messenger {
   public long getSendTime() {
     return sendTime;
   }
+
+//we can't really count the bytes at this level w/out too much overhead
+  // /**
+  //  * Get the number of request bytes received.
+  //  */
+  // public long getNumInBytes() {
+  //   return numInBytes;
+  // }
+
+  // /**
+  //  * Get the number of response bytes returned.
+  //  */
+  // public long getNumOutBytes() {
+  //   return numOutBytes;
+  // }
 }
