@@ -19,6 +19,7 @@
 package org.sd.xml;
 
 
+import java.util.Comparator;
 import java.util.List;
 import org.sd.util.Histogram;
 import org.w3c.dom.NodeList;
@@ -31,7 +32,13 @@ import org.w3c.dom.NodeList;
 public class XmlHistogram extends Histogram<String> {
   
   public static final String DEFAULT_ROOT_TAG = "histogram";
-
+  public static final KeyComparator s_keyComparator = new KeyComparator();
+  private static final class KeyComparator 
+    implements Comparator<String>
+  {
+    public int compare(String o1, String o2) { return o1.compareTo(o2); }
+    public boolean equals(Object obj) { return (obj instanceof KeyComparator); }
+  }
 
   /**
    * Construct an empty instance.
@@ -94,7 +101,10 @@ public class XmlHistogram extends Histogram<String> {
    * &lt;histogram&gt;&lt;key count='...'&gt;...element text...&lt;/key&gt;...&lt;/histogram&gt;
    */
   public XmlStringBuilder asXml() {
-    return asXml(DEFAULT_ROOT_TAG);
+    return asXml(DEFAULT_ROOT_TAG, false);
+  }
+  public XmlStringBuilder asXml(String rootTag) {
+    return asXml(rootTag, false);
   }
 
   /**
@@ -104,14 +114,15 @@ public class XmlHistogram extends Histogram<String> {
    * <p>
    * &lt;_rootTag_&gt;&lt;key count='...'&gt;...element text...&lt;/key&gt;...&lt;/_rootTag_&gt;
    */
-  public XmlStringBuilder asXml(String rootTag) {
+  public XmlStringBuilder asXml(String rootTag, boolean sortByKey) {
     final StringBuilder tag = new StringBuilder();
     tag.append(rootTag).append(" total='").append(getTotalCount()).append("'");
 
     final XmlStringBuilder result = new XmlStringBuilder(tag.toString());
     tag.setLength(0);
 
-    final List<Frequency<String>> freqs = getFrequencies();
+    final List<Frequency<String>> freqs = 
+      (sortByKey ? getFrequencies(s_keyComparator) : getFrequencies());
     for (Frequency<String> freq : freqs) {
       tag.append("key count='").append(freq.getFrequency()).append("'");
       result.addTagAndText(tag.toString(), freq.element, true);
