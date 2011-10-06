@@ -55,6 +55,28 @@ public class TestXmlHistogram extends TestCase {
     assertEquals(3, xh2.getFrequencyCount(1));
   }
 
+  public void testKeySort() {
+    // construct a histogram
+    final XmlHistogram xh = new XmlHistogram();
+    xh.add("foo", 10);
+    xh.add("bar", 5);
+    xh.add("bash", 3);
+
+    // convert to xml
+    final XmlStringBuilder xml = xh.asXml("h", true);
+
+    StringBuilder builder = new StringBuilder();
+    xml.getXmlElement().asFlatString(builder);
+
+    StringBuilder expected = new StringBuilder();
+    expected.append("<h total=\"18\">");
+    expected.append("<key count=\"5\">bar</key>");
+    expected.append("<key count=\"3\">bash</key>");
+    expected.append("<key count=\"10\">foo</key>");
+    expected.append("</h>");
+
+    assertEquals(expected.toString(), builder.toString());
+  }
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestXmlHistogram.class);

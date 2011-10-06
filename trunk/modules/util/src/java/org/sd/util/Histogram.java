@@ -22,9 +22,11 @@ package org.sd.util;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * Utility and container for generating histogram data.
@@ -35,6 +37,7 @@ public class Histogram <T> {
   
   private Map<T, Frequency<T>> map;
   private List<Frequency<T>> _frequencies;
+  private Map<Comparator<T>, List<Frequency<T>>> _sortedFrequencies;
 
   public Histogram() {
     this.map = new HashMap<T, Frequency<T>>();
@@ -86,6 +89,28 @@ public class Histogram <T> {
       Collections.sort(this._frequencies);
     }
     return _frequencies;
+  }
+  /**
+   * Get all of the frequencies in key order.
+   */
+  public List<Frequency<T>> getFrequencies(Comparator<T> comparator) {
+    if(_sortedFrequencies == null)
+      this._sortedFrequencies = new HashMap<Comparator<T>, List<Frequency<T>>>();
+    
+    List<Frequency<T>> result = this._sortedFrequencies.get(comparator);
+    if (result == null) {
+      result = new ArrayList<Frequency<T>>();
+
+      TreeSet<T> aggregator = new TreeSet<T>(comparator);
+      for(T key : map.keySet())
+        aggregator.add(key);
+
+      for(T key : aggregator)
+        result.add(map.get(key));
+
+      this._sortedFrequencies.put(comparator, result);
+    }
+    return result;
   }
   
   /**
