@@ -249,9 +249,43 @@ public class Histogram <T> {
   public String toString(int maxRanks) {
     final StringBuilder result = new StringBuilder();
 
+    final int totalCount = getTotalCount();
+    int cumulativeCount = 0;
+
+    int numRanks = getNumRanks();
+    if (maxRanks >= 0 && maxRanks < numRanks) numRanks = maxRanks;
+    final int maxRankDigits = (int)Math.round(MathUtil.log10(numRanks) + 0.5);
+
+    final int maxFreq = getMaxFrequencyCount();
+    final int maxFreqDigits = (int)Math.round(MathUtil.log10(maxFreq) + 0.5);
+
+    // rank  freq  cumulativePct  pct  label
+    // %<maxRankDigits>d  %<maxFreqDigits>d  %6.2f  %6.2f  %40s
+    final StringBuilder formatString = new StringBuilder();
+    formatString.
+      append("%").
+      append(Math.max(1, maxRankDigits)).
+      append("d  %").
+      append(Math.max(1, maxFreqDigits)).
+      append("d  %6.2f  %6.2f  %-40s");
+
     result.append("h(").append(getNumRanks()).append(")");
-    for (int i = 0; i < maxRanks && i < getNumRanks(); ++i) {
-      result.append("\n  ").append(i).append(": ").append(getFrequency(i));
+    for (int i = 0; i < numRanks; ++i) {
+
+      //result.append("\n  ").append(i).append(": ").append(getFrequency(i));
+
+      final Frequency<T> freq = getFrequency(i);
+      cumulativeCount += freq.getFrequency();
+      final double cumPct = 100.0 * ((double)cumulativeCount / (double)totalCount);
+      final double pct = 100.0 * ((double)freq.getFrequency() / (double)totalCount);
+      result.
+        append("\n  ").
+        append(String.format(formatString.toString(),
+                             i,                    // rank
+                             freq.getFrequency(),  // freq
+                             cumPct,               // cumPct
+                             pct,                  // pct
+                             freq.getElement().toString()));
     }
 
     return result.toString();

@@ -19,6 +19,8 @@
 package org.sd.xml;
 
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import org.sd.util.Histogram;
@@ -130,5 +132,22 @@ public class XmlHistogram extends Histogram<String> {
     }
 
     return result;
+  }
+
+
+  public static void main(String[] args) throws IOException {
+    // arg0: file w/xml histogram
+    // arg1: (optional) limit on # of entries to show
+    final File xmlFile = new File(args[0]);
+    final DomElement histoXml = XmlFactory.loadDocument(xmlFile, false).getDocumentDomElement();
+    final XmlHistogram xmlHisto = new XmlHistogram(histoXml);
+
+    if (args.length > 1) {
+      final int limit = Integer.parseInt(args[1]);
+      System.out.println(xmlHisto.toString(limit));
+    }
+    else {
+      System.out.println(xmlHisto.toString());
+    }
   }
 }
