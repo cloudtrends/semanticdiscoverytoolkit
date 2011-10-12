@@ -63,9 +63,12 @@ public class ParseConfig {
 
     final DomDocument domDocument = XmlFactory.loadDocument(parseConfigFile, false, options);
     final DomElement parseElement = (DomElement)domDocument.getDocumentElement();
+    final StringBuilder description = new StringBuilder();
 
     System.out.println(new Date() + ": ParseConfig init(" + parseConfigFile + ")");
     final ParseConfig result = new ParseConfig(parseElement);
+
+    description.append(parseConfigFile.getName());
 
     // add-in optional supplements
     final String supplementsString = options.getString("supplementalConfig", null);
@@ -77,14 +80,21 @@ public class ParseConfig {
         final DomDocument supDocument = XmlFactory.loadDocument(supplementFile, false, options);
         final DomElement supElement = (DomElement)supDocument.getDocumentElement();
         result.supplement(supElement);
+
+        description.append('+').append(supplementFile.getName());
       }
     }
+
+    result.setDescription(description.toString());
+    result.setTraceFlow(options.getBoolean("traceflow", false));
 
     return result;
   }
 
 
   private String[] compoundParserIds;
+  private String description;
+  private boolean traceflow;
 
   private DataProperties parseConfigProperties;
   public DataProperties getParseConfigProperties() {
@@ -158,6 +168,23 @@ public class ParseConfig {
         this.id2CompoundParser.put(cparser.getId(), cparser);
       }
     }
+  }
+
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setTraceFlow(boolean traceflow) {
+    this.traceflow = traceflow;
+  }
+
+  public boolean getTraceFlow() {
+    return traceflow;
   }
 
 
@@ -450,6 +477,7 @@ public class ParseConfig {
 
     if (compoundParser != null) {
       compoundParser.setVerbose(this.getVerbose());
+      compoundParser.setTraceFlow(this.getTraceFlow());
       result = compoundParser.parse(inputContext, flow, result, stopList, collector, overrides, die);
     }
     else {
