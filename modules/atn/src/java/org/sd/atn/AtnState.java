@@ -1185,6 +1185,7 @@ public class AtnState {
 
 
   private static boolean trace = false;
+  private static boolean traceflow = false;
   private static boolean stepThruFlag = false;
   private static String stepThruRuleId = null;
   private static String stepThruRuleStep = null;
@@ -1192,6 +1193,10 @@ public class AtnState {
 
   public static final void setTrace(boolean traceValue) {
     trace = traceValue;
+  }
+
+  public static final void setTraceFlow(boolean traceflowValue) {
+    traceflow = traceflowValue;
   }
 
   public static final void setStepThruDebugging(String ruleId, String ruleStep, String text) {
@@ -1236,6 +1241,11 @@ public class AtnState {
       MatchResult matchResult = null;
       boolean matches = meetsRequirements;
       if (matches) {
+
+        if (traceflow) {
+          System.out.println("traceflow--AtnState matching " + curstate.toString());
+        }
+
         matchResult = curstate.tokenMatchesStepCategory(grammar);
         matches = matchResult.matched();
       }
@@ -1246,7 +1256,16 @@ public class AtnState {
       }
 
       if (matches) {
+
+        if (traceflow) {
+          System.out.println("traceflow--AtnState MATCH " + curstate.toString());
+        }
+
         matches = curstate.applyAllPops(nextStateNode, states, skipStates, stopList);
+
+        if (traceflow && !matches) {
+          System.out.println("traceflow--AtnState DROPPED match " + curstate.toString());
+        }
       }
 
       if (matches) {

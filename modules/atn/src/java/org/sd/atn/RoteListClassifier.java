@@ -118,6 +118,11 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         this.terms = loadTextFile(this.terms, childElement, false, classifierIdElement.getLocalName());
       }
       else if ("stopwords".equalsIgnoreCase(childNodeName)) {
+        final boolean reset = childElement.getAttributeBoolean("reset", false);
+        if (reset) {
+          if (this.stopwords != null) this.stopwords.reset();
+        }
+
         final NodeList stopChildNodes = childNode.getChildNodes();
         final int numStopChildNodes = stopChildNodes.getLength();
         for (int stopNodeNum = 0; stopNodeNum < numStopChildNodes; ++stopNodeNum) {
@@ -272,6 +277,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       this.caseSensitive = caseSensitive;
       this.isStopwords = isStopwords;
       this.term2attributes = new HashMap<String, Map<String, String>>();
+    }
+
+    public void reset() {
+      if (term2attributes != null) term2attributes.clear();
     }
 
     public boolean isEmpty() {
@@ -445,6 +454,11 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       this.isStopwords = isStopwords;
       this.caseSensitiveTerms = null;
       this.caseInsensitiveTerms = null;
+    }
+
+    public void reset() {
+      if (caseSensitiveTerms != null) caseSensitiveTerms.reset();
+      if (caseInsensitiveTerms != null) caseInsensitiveTerms.reset();
     }
 
     public boolean isStopwords() {

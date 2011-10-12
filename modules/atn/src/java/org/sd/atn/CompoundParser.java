@@ -92,6 +92,14 @@ public class CompoundParser {
     this.verbose = verbose;
   }
 
+  private boolean traceflow;
+  public boolean getTraceFlow() {
+    return traceflow;
+  }
+  public void setTraceFlow(boolean traceflow) {
+    this.traceflow = traceflow;
+  }
+
 
   private DomElement outputNode;
 
@@ -255,6 +263,12 @@ public class CompoundParser {
       }
 
       currentTokenizer = getCurrentTokenizer(currentTokenizer, output, input, parserWrapper);
+
+      if (traceflow) {
+        System.out.println("traceflow--CompoundParser.collectOutput(" +
+                           getId() + ":" + id + ") seeking parses for \"" +
+                           currentTokenizer.getText() + "\"");
+      }
 
       // generate initial parse results
       final List<AtnParseResult> parseResults = parserWrapper.seekAll(currentTokenizer, stopList, overrides, die);

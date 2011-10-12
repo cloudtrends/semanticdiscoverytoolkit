@@ -170,6 +170,13 @@ public class AtnStateUtil {
   }
 
   /**
+   * Determine whether the state is the first in its constituent.
+   */
+  public static final boolean isFirstConstituentState(AtnState curState) {
+    return curState.getPushState() == curState.getParentState();
+  }
+
+  /**
    * Get the first state of the state's constituent.
    */
   public static final AtnState getConstituentStartState(AtnState curState) {

@@ -282,6 +282,14 @@ public class StandardTokenizerOptions {
     this.slashBreak = slashBreak;
   }
 
+  private Break embeddedApostropheBreak;
+  public Break getEmbeddedApostropheBreak() {
+    return embeddedApostropheBreak;
+  }
+  public void setEmbeddedApostropheBreak(Break embeddedApostropheBreak) {
+    this.embeddedApostropheBreak = embeddedApostropheBreak;
+  }
+
   private Break embeddedPunctuationBreak;
   public Break getEmbeddedPunctuationBreak() {
     return embeddedPunctuationBreak;
@@ -343,6 +351,7 @@ public class StandardTokenizerOptions {
     this.quoteAndParenBreak = Break.SINGLE_WIDTH_HARD_BREAK;
     this.symbolBreak = Break.NO_BREAK;
     this.slashBreak = Break.SINGLE_WIDTH_HARD_BREAK;
+    this.embeddedApostropheBreak = Break.NO_BREAK;
     this.embeddedPunctuationBreak = Break.NO_BREAK;
 
     this.symbolDigits = null;
@@ -390,6 +399,7 @@ public class StandardTokenizerOptions {
     String quoteAndParenBreak = options.getString("quoteAndParenBreak", "SINGLE_WIDTH_HARD_BREAK");
     String symbolBreak = options.getString("symbolBreak", "NO_BREAK");
     String slashBreak = options.getString("slashBreak", "SINGLE_WIDTH_HARD_BREAK");
+    String embeddedApostropheBreak = options.getString("embeddedApostropheBreak", "NO_BREAK");
     String embeddedPunctuationBreak = options.getString("embeddedPunctuationBreak", "NO_BREAK");
 
     // NOTES:
@@ -398,7 +408,7 @@ public class StandardTokenizerOptions {
     //    but would also free up tokens that might be "bulleted".
     //   a symbolBreak of NO_BREAK allows (math, currency, modifier, other) symbols to be a part of their immediately adjacent tokens
     //    while setting to SINGLE_WIDTH_HARD_BREAK separates the symbols as delimiters around the tokens.
-    //   an embeddedPunctuationBreak doesn't distinguish between embedded between letters or digits
+    //   embeddedApostropheBreak and embeddedPunctuationBreak don't distinguish between embedded between letters or digits
 
     // set RevisionStrategy
     this.revisionStrategy = translateRevisionStrategy(revisionStrategy);
@@ -421,6 +431,7 @@ public class StandardTokenizerOptions {
     this.quoteAndParenBreak = translateBreak(quoteAndParenBreak);
     this.symbolBreak = translateBreak(symbolBreak);
     this.slashBreak = translateBreak(slashBreak);
+    this.embeddedPunctuationBreak = translateBreak(embeddedApostropheBreak);
     this.embeddedPunctuationBreak = translateBreak(embeddedPunctuationBreak);
 
     setSymbolDigits(options.getString("symbolDigits", null));
@@ -579,6 +590,7 @@ public class StandardTokenizerOptions {
         this.quoteAndParenBreak == other.quoteAndParenBreak &&
         this.symbolBreak == other.symbolBreak &&
         this.slashBreak == other.slashBreak &&
+        this.embeddedApostropheBreak == other.embeddedApostropheBreak &&
         this.embeddedPunctuationBreak == other.embeddedPunctuationBreak;
     }
 
@@ -606,6 +618,7 @@ public class StandardTokenizerOptions {
     result = result * 17 + this.quoteAndParenBreak.hashCode();
     result = result * 17 + this.symbolBreak.hashCode();
     result = result * 17 + this.slashBreak.hashCode();
+    result = result * 17 + this.embeddedApostropheBreak.hashCode();
     result = result * 17 + this.embeddedPunctuationBreak.hashCode();
 
     return result;

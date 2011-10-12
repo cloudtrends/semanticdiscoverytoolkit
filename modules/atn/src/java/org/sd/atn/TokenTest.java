@@ -65,6 +65,8 @@ public class TokenTest extends BaseClassifierTest {
     // - when revise='true', test against token revisions
     // - when ignoreLastToken='true', always accept the last token
     // - when ignoreFirstToken='true', always accept the first token
+    // - when onlyFirstToken='true', only test against a "first" constituent token
+    // - when onlyLastToken='true', only test against a "last" constituent token
     //
     // <test reverse='true|false' next='true|false' revise='true|false'>
     //   <jclass>org.sd.atn.TokenTest</jclass>

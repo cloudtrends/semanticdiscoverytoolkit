@@ -76,6 +76,7 @@ public class AtnParseRunner {
     this.activeFlow = new ArrayList<ParserFlow>();
 
     if (dataProperties.getBoolean("trace", false)) AtnState.setTrace(true);
+    if (dataProperties.getBoolean("traceflow", false)) AtnState.setTraceFlow(true);
 
     updateOptions();
   }
@@ -282,6 +283,10 @@ public class AtnParseRunner {
     if ((showResults || briefResults || writeMarkup || showMarkup) && output != null) {
       showOutput(output, extractionGroups);
     }
+  }
+
+  public String toString() {
+    return parseConfig.getDescription();
   }
 
   private final void writeParseResultsXml(File outputXmlFile, ParseOutputCollector output) throws IOException {
