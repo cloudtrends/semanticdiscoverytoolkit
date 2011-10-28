@@ -253,7 +253,7 @@ public class Histogram <T> {
     int cumulativeCount = 0;
 
     int numRanks = getNumRanks();
-    if (maxRanks >= 0 && maxRanks < numRanks) numRanks = maxRanks;
+    if (maxRanks > 0 && maxRanks < numRanks) numRanks = maxRanks;
     final int maxRankDigits = (int)Math.round(MathUtil.log10(numRanks) + 0.5);
 
     final int maxFreq = getMaxFrequencyCount();
