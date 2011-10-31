@@ -99,6 +99,14 @@ public class MathUtil {
   }
 
   /**
+   * Normalize (scale) the value from one range to another.
+   */
+  public static final double normalize(double value, double fromLow, double fromHigh, double toLow, double toHigh) {
+    final double pct = (value - fromLow) / (fromHigh - fromLow);
+    return toLow + (pct * (toHigh - toLow));
+  }
+
+  /**
    * Given a string of the form "a,b,c-d,e,...", parse out the integers
    * represented including those within the (hyphenated) ranges.
    */
