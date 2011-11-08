@@ -82,10 +82,22 @@ public class Token {
 
       // prepend immediate pre-delims
       final String preDelim = getPreDelim();
-      for (int idx = preDelim.length() - 1; idx >= 0; --idx) {
-        final char delim = preDelim.charAt(idx);
-        if (delim == ' ') break;
-        builder.insert(0, delim);
+      final int preDelimLen = preDelim.length();
+      if (preDelimLen == startIndex) {
+        // this is the first token, so include all delims
+        builder.insert(0, preDelim);
+      }
+      else {
+        for (int idx = preDelimLen - 1; idx >= 0; --idx) {
+          final char delim = preDelim.charAt(idx);
+          if (delim == ' ') {
+            // insert all preDelims back to but not including a space
+            builder.insert(0, preDelim.substring(idx + 1));
+          }
+          // if there is no "space" preDelim, then don't consider any preDelims part of this token
+          // assume they are part of the postDelims of the prior token.
+          else if (Character.isLetterOrDigit(delim)) break;
+        }
       }
 
       // append immediate post-delims
@@ -93,7 +105,7 @@ public class Token {
       final int postLen = postDelim.length();
       for (int idx = 0; idx < postLen; ++idx) {
         final char delim = postDelim.charAt(idx);
-        if (delim == ' ') break;
+        if (delim == ' ' || Character.isLetterOrDigit(delim)) break;
         builder.append(delim);
       }
 

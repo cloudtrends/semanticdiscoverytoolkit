@@ -519,6 +519,8 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
     private boolean collapse;
     private NodeSelector selector;
     private NodeExtractor extractor;
+    private String ifOption;
+    private String unlessOption;
 
     private NodeSelector nameSelector;
     private NodeExtractor nameExtractor;
@@ -529,6 +531,8 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
       this.repeats = fieldElement.getAttributeBoolean("repeats", false);
       this.nameOverride = "nameOverride".equals(fieldElement.getAttributeValue("type", null));
       this.collapse = fieldElement.getAttributeBoolean("collapse", false);
+      this.ifOption = fieldElement.getAttributeValue("if", null);
+      this.unlessOption = fieldElement.getAttributeValue("unless", null);
 
       // select
       final DomElement selectNode = (DomElement)fieldElement.selectSingleNode("select");
@@ -564,7 +568,24 @@ public abstract class TemplateParseInterpreter implements ParseInterpreter {
     }
 
     List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode, DataProperties overrides, InterpretationController controller) {
-      return extractor.extract(parse, parseNode, overrides, controller);
+      List<Tree<XmlLite.Data>> result = null;
+      boolean doExtract = true;
+
+      if (ifOption != null) {
+        final boolean hasIfOption = overrides == null ? false : overrides.getBoolean(ifOption, false);
+        if (!hasIfOption) doExtract = false;
+      }
+
+      if (unlessOption != null) {
+        final boolean hasUnlessOption = overrides == null ? false : overrides.getBoolean(unlessOption, false);
+        if (hasUnlessOption) doExtract = false;
+      }
+
+      if (doExtract) {
+        result = extractor.extract(parse, parseNode, overrides, controller);
+      }
+
+      return result;
     }
 
     String extractString(Parse parse, Tree<String> parseNode) {
