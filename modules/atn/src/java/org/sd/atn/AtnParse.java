@@ -371,6 +371,17 @@ public class AtnParse {
     return _extraction;
   }
 
+  public String getImmediatePostParseDelims() {
+    String result = null;
+
+    if (endState != null) {
+      final Token inputToken = endState.getData().getInputToken();
+      result = inputToken.getTokenizer().getPostDelim(inputToken);
+    }
+
+    return result;
+  }
+
   public String getRemainingText() {
     String result = null;
 
