@@ -72,7 +72,13 @@ public class LongestParseSelector implements AtnParseSelector {
       parseDatas.add(new ParseData(parse, simplest, weightPath));
     }
 
-    Collections.sort(parseDatas);
+    try {
+      Collections.sort(parseDatas);
+    }
+    catch (IllegalArgumentException e) {
+      //TODO: simplify ParseData compare so this doesn't happen.
+      //      in the meantime, it seems to happen in inconsequential cases.
+    }
 
     final Set<Integer> selected = new HashSet<Integer>();
 
@@ -147,6 +153,9 @@ public class LongestParseSelector implements AtnParseSelector {
     private int diversity;   // num different tags
     private int weight;      // prefer higher
     
+    private boolean computedRulePattern = false;
+    private String _rulePattern = null;
+
     ParseData(AtnParse atnParse, boolean simplest, NodePath<String> weightPath) {
       this.atnParse = atnParse;
       this.simplest = simplest;
@@ -229,6 +238,39 @@ public class LongestParseSelector implements AtnParseSelector {
       return weight;
     }
 
+    public boolean equals(Object o) {
+      boolean result = (this == o);
+
+      if (!result && o instanceof ParseData) {
+        final ParseData other = (ParseData)o;
+        result = (this.compareTo(other) == 0);
+      }
+
+      return result;
+    }
+
+    public int hashCode() {
+      // rulePattern, simplest, skipCount, length, complexity, diversity, weight
+      int result = 1;
+
+      final String rulePattern = getRulePattern();
+      if (rulePattern != null) {
+        result = (result * 17) + rulePattern.hashCode();
+      }
+
+      if (simplest) {
+        result = (result * 17) + 1;
+      }
+
+      result = (result * 17) + skipCount;
+      result = (result * 17) + length;
+      result = (result * 17) + complexity;
+      result = (result * 17) + diversity;
+      result = (result * 17) + weight;
+
+      return result;
+    }
+
     public int compareTo(ParseData other) {
       int result = this == other ? 0 : -1;
 
@@ -269,25 +311,28 @@ public class LongestParseSelector implements AtnParseSelector {
       return result;
     }
 
-    private final boolean hasMatchingRulePattern(ParseData other) {
-      boolean result = false;
+    private final String getRulePattern() {
+      if (!computedRulePattern) {
+        final AtnRule rule = atnParse.getStartRule();
 
-      final AtnParse p1 = atnParse;
-      final AtnParse p2 = other.getAtnParse();
+        _rulePattern = rule.getRuleId();
 
-      final AtnRule rule1 = p1.getStartRule();
-      final AtnRule rule2 = p2.getStartRule();
-
-      String pattern1 = rule1.getRuleId();
-      String pattern2 = rule2.getRuleId();
-
-      if (pattern1 == null && pattern2 == null) {
-        // fall back to rule name if neither have an ID
-        pattern1 = rule1.getRuleName();
-        pattern2 = rule2.getRuleName();
+        if (_rulePattern == null) {
+          // fall back to rule name if no ID
+          _rulePattern = rule.getRuleName();
+        }
+        computedRulePattern = true;
       }
 
-      result = (pattern1 == pattern2) || (pattern1 != null && pattern1.equals(pattern2));
+      return _rulePattern;
+    }
+
+    private final boolean hasMatchingRulePattern(ParseData other) {
+
+      final String pattern1 = this.getRulePattern();
+      final String pattern2 = other.getRulePattern();
+
+      final boolean result = (pattern1 == pattern2) || (pattern1 != null && pattern1.equals(pattern2));
 
       return result;
     }
