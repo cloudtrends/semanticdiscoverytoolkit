@@ -48,9 +48,11 @@ public class Histogram <T> {
    * <p>
    * Note that the element's class should have equals and hashCode implemented
    * consistently.
+   *
+   * @return the added frequency instance.
    */
-  public void add(T element) {
-    add(element, 1);
+  public Frequency<T> add(T element) {
+    return add(element, 1);
   }
 
   /**
@@ -58,8 +60,10 @@ public class Histogram <T> {
    * <p>
    * Note that the element's class should have equals and hashCode implemented
    * consistently.
+   *
+   * @return the added frequency instance.
    */
-  public void add(T element, int freqCount) {
+  public Frequency<T> add(T element, int freqCount) {
     Frequency<T> freq = map.get(element);
     if (freq == null) {
       freq = new Frequency<T>(element, freqCount);
@@ -69,6 +73,7 @@ public class Histogram <T> {
       freq.inc(freqCount);
     }
     _frequencies = null;
+    return freq;
   }
 
   /**
@@ -295,10 +300,12 @@ public class Histogram <T> {
   public class Frequency <T> implements Comparable<Frequency<T>> {
     public final T element;
     private int frequency;
+    private Map<String, String> attributes;
 
     private Frequency(T element, int frequency) {
       this.element = element;
       this.frequency = frequency;
+      this.attributes = null;
     }
 
     void inc(int amount) {
@@ -311,6 +318,35 @@ public class Histogram <T> {
 
     public int getFrequency() {
       return frequency;
+    }
+
+    public boolean hasAttributes() {
+      return attributes != null && attributes.size() > 0;
+    }
+
+    /**
+     * Get the (possibly null) attributes.
+     */
+    public Map<String, String> getAttributes() {
+      return attributes;
+    }
+
+    public void setAttribute(String att, String val) {
+      if (attributes == null) attributes = new HashMap<String, String>();
+      attributes.put(att, val);
+    }
+
+    /**
+     * Get the (possibly null) value for the given attribute.
+     */
+    public String getAttributeValue(String att) {
+      String result = null;
+
+      if (attributes != null) {
+        result = attributes.get(att);
+      }
+
+      return result;
     }
 
     /**

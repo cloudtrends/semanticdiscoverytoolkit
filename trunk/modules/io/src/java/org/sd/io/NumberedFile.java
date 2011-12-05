@@ -22,6 +22,7 @@ package org.sd.io;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,16 +63,22 @@ public class NumberedFile {
 
     final File[] files = FileUtil.findFiles(dir, namePattern);
     if (files != null) {
+      final TreeMap<Integer, File> sortedFiles = new TreeMap<Integer, File>();
       int nextNumber = -1;
 
       result = new ArrayList<File>();
       for (File file : files) {
-        result.add(file);
-
         final int curNumber = getNumber(file);
-        if (curNumber > nextNumber) {  // keep maximum
+
+        sortedFiles.put(curNumber, file);
+
+        if (curNumber > nextNumber) {  // keep track of maximum
           nextNumber = curNumber;
         }
+      }
+
+      for (File file : sortedFiles.values()) {
+        result.add(file);
       }
 
       ++nextNumber;
