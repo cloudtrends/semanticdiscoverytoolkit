@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.sd.util.Histogram;
 import org.w3c.dom.NodeList;
 
@@ -75,11 +77,24 @@ public class XmlHistogram extends Histogram<String> {
     for (int childIdx = 0; childIdx < numNodes; ++childIdx) {
       final DomNode childNode = (DomNode)childNodes.item(childIdx);
       if (childNode.getNodeType() == DomNode.ELEMENT_NODE && "key".equals(childNode.getLocalName())) {
+        // create entry with count
         final int count = childNode.getAttributeInt("count", 0);
         if (count > 0) {
           final String key = childNode.getTextContent();
           if (key != null) {
-            add(key, count);
+            final Frequency<String> freq = add(key, count);
+
+            // add other attributes
+            final Map<String, String> atts = ((DomElement)childNode).getDomAttributes().getAttributes();
+            if (atts != null) {
+              for (Map.Entry<String, String> att : atts.entrySet()) {
+                final String attribute = att.getKey();
+                if ("count".equals(att.getKey())) continue;
+
+                final String val = StringEscapeUtils.unescapeXml(att.getValue());
+                freq.setAttribute(attribute, val);
+              }
+            }
           }
         }
       }
@@ -127,6 +142,18 @@ public class XmlHistogram extends Histogram<String> {
       (sortByKey ? getFrequencies(s_keyComparator) : getFrequencies());
     for (Frequency<String> freq : freqs) {
       tag.append("key count='").append(freq.getFrequency()).append("'");
+      if (freq.hasAttributes()) {
+        for (Map.Entry<String, String> attrEntry : freq.getAttributes().entrySet()) {
+          final String attribute = attrEntry.getKey();
+          final String val = attrEntry.getValue();
+          tag.
+            append(' ').
+            append(attribute).
+            append("='").
+            append(StringEscapeUtils.escapeXml(val)).
+            append("'");
+        }
+      }
       result.addTagAndText(tag.toString(), freq.element, true);
       tag.setLength(0);
     }
