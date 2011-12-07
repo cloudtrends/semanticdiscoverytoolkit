@@ -38,6 +38,7 @@ public class Histogram <T> {
   private Map<T, Frequency<T>> map;
   private List<Frequency<T>> _frequencies;
   private Map<Comparator<T>, List<Frequency<T>>> _sortedFrequencies;
+  private Histogram<Integer> _distribution;
 
   public Histogram() {
     this.map = new HashMap<T, Frequency<T>>();
@@ -73,6 +74,7 @@ public class Histogram <T> {
       freq.inc(freqCount);
     }
     _frequencies = null;
+    _distribution = null;
     return freq;
   }
 
@@ -137,6 +139,21 @@ public class Histogram <T> {
     }
 
     return result;
+  }
+
+  /**
+   * Get the distribution of this histogram where the keys are the histogram's
+   * frequency counts and the frequency counts are the  number of buckets with
+   * that frequency count.
+   */
+  public Histogram<Integer> getDistribution() {
+    if (_distribution == null) {
+      _distribution = new Histogram<Integer>();
+      for (Frequency<T> freq : getFrequencies()) {
+        _distribution.add(freq.getFrequency());
+      }
+    }
+    return _distribution;
   }
 
   /**
