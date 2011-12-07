@@ -45,6 +45,21 @@ public class XmlHistogram extends Histogram<String> {
   }
 
   /**
+   * Convert an arbitrary histogram to an XmlHistogram by converting each
+   * key to a string using the object's toString method.
+   */
+  public static <T> XmlHistogram asXmlHistogram(Histogram<T> histogram) {
+    final XmlHistogram result = new XmlHistogram();
+
+    for (Histogram<T>.Frequency<T> freq : histogram.getFrequencies()) {
+      result.add(freq.getElement().toString(), freq.getFrequency());
+    }
+
+    return result;
+  }
+
+
+  /**
    * Construct an empty instance.
    */
   public XmlHistogram() {
