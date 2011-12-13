@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.sd.util.Histogram;
+import org.sd.util.HistogramDistribution;
 import org.w3c.dom.NodeList;
 
 /**
@@ -58,6 +59,31 @@ public class XmlHistogram extends Histogram<String> {
     return result;
   }
 
+  /**
+   * Load the distribution histogram for the xml histogram contained in the
+   * given file.
+   * <p>
+   * NOTE: This method incrementally considers each key without ever loading
+   * everything into memory to guard against overwhelming memory with very
+   * large histograms.
+   */
+  public static HistogramDistribution loadDistribution(File xmlHistogram) throws IOException {
+    final HistogramDistribution result = new HistogramDistribution();
+
+    XmlHistogramIterator iter = null;
+    try {
+      for (iter = new XmlHistogramIterator(xmlHistogram); iter.hasNext(); ) {
+        final XmlKeyContainer keyContainer = iter.next();
+        result.add(keyContainer.getCount());
+      }
+    }
+    finally {
+      if (iter != null) iter.close();
+    }
+
+    return result;
+  }
+
 
   /**
    * Construct an empty instance.
@@ -67,7 +93,7 @@ public class XmlHistogram extends Histogram<String> {
   }
 
   //
-  // <histogram total=''>
+  // <histogram total='' bins=''>
   //   <key count=''>_string_</key>
   //   ...
   // </histogram>
@@ -79,6 +105,19 @@ public class XmlHistogram extends Histogram<String> {
    */
   public XmlHistogram(String histogramXml) {
     this(new XmlStringBuilder().setXmlString(histogramXml));
+  }
+
+  public XmlHistogram(File xmlHistogram) throws IOException {
+    XmlHistogramIterator iter = null;
+    try {
+      for (iter = new XmlHistogramIterator(xmlHistogram); iter.hasNext(); ) {
+        final XmlKeyContainer keyContainer = iter.next();
+        add(keyContainer);
+      }
+    }
+    finally {
+      if (iter != null) iter.close();
+    }
   }
 
   /**
@@ -97,19 +136,9 @@ public class XmlHistogram extends Histogram<String> {
         if (count > 0) {
           final String key = childNode.getTextContent();
           if (key != null) {
-            final Frequency<String> freq = add(key, count);
-
-            // add other attributes
             final Map<String, String> atts = ((DomElement)childNode).getDomAttributes().getAttributes();
-            if (atts != null) {
-              for (Map.Entry<String, String> att : atts.entrySet()) {
-                final String attribute = att.getKey();
-                if ("count".equals(att.getKey())) continue;
-
-                final String val = StringEscapeUtils.unescapeXml(att.getValue());
-                freq.setAttribute(attribute, val);
-              }
-            }
+            final XmlKeyContainer keyContainer = new XmlKeyContainer(key, atts);
+            add(keyContainer);
           }
         }
       }
@@ -148,7 +177,9 @@ public class XmlHistogram extends Histogram<String> {
    */
   public XmlStringBuilder asXml(String rootTag, boolean sortByKey) {
     final StringBuilder tag = new StringBuilder();
-    tag.append(rootTag).append(" total='").append(getTotalCount()).append("'");
+    tag.
+      append(rootTag).append(" total='").append(getTotalCount()).
+      append("' bins='").append(getNumRanks()).append("'");
 
     final XmlStringBuilder result = new XmlStringBuilder(tag.toString());
     tag.setLength(0);
@@ -176,17 +207,24 @@ public class XmlHistogram extends Histogram<String> {
     return result;
   }
 
+  private final void add(XmlKeyContainer keyContainer) {
+    add(keyContainer.getKey(), keyContainer.getCount()).setAttributes(keyContainer.getAttributes());
+  }
+
 
   public static void main(String[] args) throws IOException {
     // arg0: file w/xml histogram
     // arg1: (optional) limit on # of entries to show
     final File xmlFile = new File(args[0]);
-    final DomElement histoXml = XmlFactory.loadDocument(xmlFile, false).getDocumentDomElement();
-    final XmlHistogram xmlHisto = new XmlHistogram(histoXml);
+    //final DomElement histoXml = XmlFactory.loadDocument(xmlFile, false).getDocumentDomElement();
+    //final XmlHistogram xmlHisto = new XmlHistogram(histoXml);
+    final XmlHistogram xmlHisto = new XmlHistogram(xmlFile);
 
     if (args.length > 1) {
       final int limit = Integer.parseInt(args[1]);
       System.out.println(xmlHisto.toString(limit));
+
+      System.out.println("\nDistribution " + xmlHisto.getDistribution().toString(0));
     }
     else {
       System.out.println(xmlHisto.toString());

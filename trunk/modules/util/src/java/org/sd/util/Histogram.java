@@ -38,7 +38,7 @@ public class Histogram <T> {
   private Map<T, Frequency<T>> map;
   private List<Frequency<T>> _frequencies;
   private Map<Comparator<T>, List<Frequency<T>>> _sortedFrequencies;
-  private Histogram<Integer> _distribution;
+  private HistogramDistribution _distribution;
 
   public Histogram() {
     this.map = new HashMap<T, Frequency<T>>();
@@ -76,6 +76,16 @@ public class Histogram <T> {
     _frequencies = null;
     _distribution = null;
     return freq;
+  }
+
+  /**
+   * Set the frequency count for the current element.
+   */
+  public void set(T element, int freqCount) {
+    final Frequency<T> freq = new Frequency<T>(element, freqCount);
+    map.put(element, freq);
+    _frequencies = null;
+    _distribution = null;
   }
 
   /**
@@ -146,12 +156,9 @@ public class Histogram <T> {
    * frequency counts and the frequency counts are the  number of buckets with
    * that frequency count.
    */
-  public Histogram<Integer> getDistribution() {
+  public HistogramDistribution getDistribution() {
     if (_distribution == null) {
-      _distribution = new Histogram<Integer>();
-      for (Frequency<T> freq : getFrequencies()) {
-        _distribution.add(freq.getFrequency());
-      }
+      _distribution = HistogramDistribution.makeInstance(this);
     }
     return _distribution;
   }
@@ -169,7 +176,7 @@ public class Histogram <T> {
    *
    * @return the frequency or null if there is no frequency with the given rank.
    */
-  public Frequency<T> getFrequency(int rank) {
+  public Frequency<T> getRankFrequency(int rank) {
     Frequency<T> result = null;
 
     if (rank < map.size()) {
@@ -189,7 +196,7 @@ public class Histogram <T> {
   public T getElement(int rank) {
     T result = null;
 
-    final Frequency<T> freq = getFrequency(rank);
+    final Frequency<T> freq = getRankFrequency(rank);
     if (freq != null) {
       result = freq.getElement();
     }
@@ -206,7 +213,7 @@ public class Histogram <T> {
   public int getFrequencyCount(int rank) {
     int result = -1;
 
-    final Frequency<T> freq = getFrequency(rank);
+    final Frequency<T> freq = getRankFrequency(rank);
     if (freq != null) {
       result = freq.getFrequency();
     }
@@ -234,7 +241,7 @@ public class Histogram <T> {
   /**
    * Get the frequency instance for the given element.
    */
-  public Frequency<T> getFrequency(T element) {
+  public Frequency<T> getElementFrequency(T element) {
     return map.get(element);
   }
 
@@ -250,7 +257,7 @@ public class Histogram <T> {
     List<Frequency<T>> result = null;
 
     for (T element : elements) {
-      final Frequency<T> freq = getFrequency(element);
+      final Frequency<T> freq = getElementFrequency(element);
       if (freq != null) {
         if (result == null) result = new ArrayList<Frequency<T>>();
         result.add(freq);
@@ -291,12 +298,12 @@ public class Histogram <T> {
       append(Math.max(1, maxFreqDigits)).
       append("d  %6.2f  %6.2f  %-40s");
 
-    result.append("h(").append(getNumRanks()).append(")");
+    result.append("h(").append(getTotalCount()).append('/').append(getNumRanks()).append(")");
     for (int i = 0; i < numRanks; ++i) {
 
-      //result.append("\n  ").append(i).append(": ").append(getFrequency(i));
+      //result.append("\n  ").append(i).append(": ").append(getRankFrequency(i));
 
-      final Frequency<T> freq = getFrequency(i);
+      final Frequency<T> freq = getRankFrequency(i);
       cumulativeCount += freq.getFrequency();
       final double cumPct = 100.0 * ((double)cumulativeCount / (double)totalCount);
       final double pct = 100.0 * ((double)freq.getFrequency() / (double)totalCount);
@@ -346,6 +353,17 @@ public class Histogram <T> {
      */
     public Map<String, String> getAttributes() {
       return attributes;
+    }
+
+    /**
+     * Set this instance's attributes to the given map instance.
+     *
+     * @return the previous attributes map.
+     */
+    public Map<String, String> setAttributes(Map<String, String> attributes) {
+      final Map<String, String> result = this.attributes;
+      this.attributes = attributes;
+      return result;
     }
 
     public void setAttribute(String att, String val) {

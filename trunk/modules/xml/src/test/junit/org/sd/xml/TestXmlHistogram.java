@@ -69,7 +69,7 @@ public class TestXmlHistogram extends TestCase {
     xml.getXmlElement().asFlatString(builder);
 
     StringBuilder expected = new StringBuilder();
-    expected.append("<h total=\"18\">");
+    expected.append("<h total=\"18\" bins=\"3\">");
     expected.append("<key count=\"5\">bar</key>");
     expected.append("<key count=\"3\">bash</key>");
     expected.append("<key count=\"10\">foo</key>");
