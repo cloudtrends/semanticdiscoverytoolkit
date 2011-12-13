@@ -20,7 +20,9 @@ package org.sd.xml;
 
 
 import java.util.List;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.sd.util.SampleCollector;
+import org.w3c.dom.NodeList;
 
 /**
  * Container for collapsed histogram keys used as the elements in
@@ -30,6 +32,38 @@ import org.sd.util.SampleCollector;
  */
 public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContainer<T>> {
   
+  /**
+   * Construct an instance from collapsed xml format.
+   */
+  public static CollapsedKeyContainer<String> loadFromXml(DomElement xml, int maxSamples) {
+
+    String key = xml.getAttributeValue("key", null);
+    if (key != null) key = StringEscapeUtils.unescapeXml(key);
+    final int origCount = xml.getAttributeInt("origCount", 0);
+    final int binCount = xml.getAttributeInt("binCount", 0);
+
+    final CollapsedKeyContainer<String> result = new CollapsedKeyContainer<String>(key, origCount, maxSamples);
+    result.setBinCount(binCount);
+
+    if (maxSamples > 0) {
+      final SampleCollector<String> sampleCollector = result.getSampleCollector();
+      final NodeList childNodes = xml.getChildNodes();
+      final int numNodes = childNodes.getLength();
+      for (int childIdx = 0; childIdx < numNodes; ++childIdx) {
+        final DomNode childNode = (DomNode)childNodes.item(childIdx);
+        if (childNode.getNodeType() == DomNode.ELEMENT_NODE && "sample".equals(childNode.getLocalName())) {
+          final String sampleKey = childNode.getAttributeValue("key", null);
+          if (sampleKey != null) {
+            sampleCollector.add(sampleKey);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+
   private T key;
   private int origCount;
   private int binCount;
@@ -85,6 +119,14 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
     }
   }
 
+  public SampleCollector<T> getSampleCollector() {
+    return sampleCollector;
+  }
+
+  public boolean hasSamples() {
+    return sampleCollector != null && sampleCollector.getNumSamples() > 0;
+  }
+
   public List<T> getSamples() {
     List<T> result = null;
 
@@ -102,7 +144,7 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
       result.append(key);
     }
     else {
-      // ~"..." (M)
+      // ~"..." (M*N)
       if (sampleCollector != null && sampleCollector.getNumSamples() > 0) {
         result.
           append("~\"").
@@ -128,6 +170,48 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
     }
 
     return result.toString();
+  }
+
+  /**
+   * Serialize this instance as xml into the builder.
+   */
+  public void asXml(XmlStringBuilder xmlBuilder) {
+    // <cc key='...' origCount='...' binCount='...'>
+    //   <sample key='...'/>
+    //   ...
+    // </cc>
+    final StringBuilder tag = new StringBuilder();
+    tag.append("cc");
+    if (key != null) {
+      tag.
+        append(" key='").
+        append(StringEscapeUtils.escapeXml(key.toString())).
+        append("'");
+    }
+    tag.
+      append(" origCount='").
+      append(origCount).
+      append("' binCount='").
+      append(binCount).
+      append("'");
+
+    if (hasSamples()) {
+      xmlBuilder.addTag(tag.toString());
+      tag.setLength(0);
+      for (T sample : sampleCollector.getSamples()) {
+        if (sample != null) {
+          tag.
+            append("sample key='").
+            append(StringEscapeUtils.escapeXml(sample.toString())).
+            append("'");
+          xmlBuilder.addTagAndText(tag.toString(), null, true);
+        }
+      }
+      xmlBuilder.addEndTag("cc");
+    }
+    else {
+      xmlBuilder.addTagAndText(tag.toString(), null, true);
+    }
   }
 
   public boolean equals(Object o) {
