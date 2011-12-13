@@ -78,6 +78,15 @@ public class SampleCollector<T> {
   }
 
   /**
+   * Add the value as a sample unless no more will fit.
+   */
+  public void add(T value) {
+    if (maxSamples == 0 || samples.size() < maxSamples) {
+      samples.add(value);
+    }
+  }
+
+  /**
    * Get the maximum number of samples to collect.
    */
   public int getMaxSamples() {

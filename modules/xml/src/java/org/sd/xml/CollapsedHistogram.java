@@ -27,6 +27,7 @@ import org.sd.util.HistogramDistribution;
 import org.sd.util.MathUtil;
 import org.sd.util.SampleCollector;
 import org.sd.util.range.IntegerRange;
+import org.w3c.dom.NodeList;
 
 /**
  * A histogram with the frequent tail keys collapsed by their count.
@@ -47,6 +48,8 @@ import org.sd.util.range.IntegerRange;
  */
 public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> {
   
+  public static final String DEFAULT_COLLAPSED_XML_ROOT_TAG = "chisto";
+
   /**
    * Construct with a fully populated histogram using automatic rank switching
    * and collecting a single sample for collapsed buckets.
@@ -128,6 +131,43 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
     }
     finally {
       if (iter != null) iter.close();
+    }
+
+    return result;
+  }
+
+  /**
+   * Construct an instance from collapsed xml format.
+   */
+  public static CollapsedHistogram<String> loadFromXml(String xml) {
+    return loadFromXml(new XmlStringBuilder().setXmlString(xml).getXmlElement());
+  }
+
+  /**
+   * Construct an instance from collapsed xml format.
+   */
+  public static CollapsedHistogram<String> loadFromXml(File xmlFile) throws IOException {
+    final DomElement xml = XmlFactory.loadDocument(xmlFile, false).getDocumentDomElement();
+    return loadFromXml(xml);
+  }
+
+  /**
+   * Load from CollapsedHistogram xml.
+   */
+  public static final CollapsedHistogram<String> loadFromXml(DomElement collapsedXml) {
+    final int switchRank = collapsedXml.getAttributeInt("switchRank", 0);
+    final int maxSamples = collapsedXml.getAttributeInt("maxSamples", 0);
+
+    final CollapsedHistogram<String> result = new CollapsedHistogram<String>(switchRank, maxSamples);
+
+    final NodeList childNodes = collapsedXml.getChildNodes();
+    final int numNodes = childNodes.getLength();
+    for (int childIdx = 0; childIdx < numNodes; ++childIdx) {
+      final DomNode childNode = (DomNode)childNodes.item(childIdx);
+      if (childNode.getNodeType() == DomNode.ELEMENT_NODE && "cc".equals(childNode.getLocalName())) {
+        final CollapsedKeyContainer<String> ckc = CollapsedKeyContainer.loadFromXml((DomElement)childNode, maxSamples);
+        result.set(ckc, ckc.getOrigCount());
+      }
     }
 
     return result;
@@ -289,6 +329,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
       append(':').
       append(getTotalCount()).append('/').append(getNumRanks()).
       append(")");
+
     for (int i = 0; i < getNumRanks(); ++i) {
 
       final Frequency<CollapsedKeyContainer<T>> freq = getRankFrequency(i);
@@ -332,6 +373,30 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
       }
       keyContainer.considerSample(bucketKey);
     }
+  }
+
+  public XmlStringBuilder asXml() {
+    return asXml(DEFAULT_COLLAPSED_XML_ROOT_TAG);
+  }
+
+  public XmlStringBuilder asXml(String rootTag) {
+    final StringBuilder tag = new StringBuilder();
+    tag.
+      append(rootTag).
+      append(" switchRank='").append(switchRank).
+      append("' maxSamples='").append(maxSamples).
+      append("' total='").append(getTotalCount()).
+      append("' bins='").append(getNumRanks()).
+      append("' origTotal='").append(getOriginalTotalCount()).
+      append("' origRanks='").append(getOriginalNumRanks());
+
+    final XmlStringBuilder result = new XmlStringBuilder(tag.toString());
+
+    for (Frequency<CollapsedKeyContainer<T>> freq : getFrequencies()) {
+      freq.getElement().asXml(result);
+    }
+
+    return result;
   }
 
 
