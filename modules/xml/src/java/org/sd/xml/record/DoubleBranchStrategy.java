@@ -86,7 +86,7 @@ public class DoubleBranchStrategy implements DivideStrategy {
         if (Record.isNonRecord(child)) continue;
 
         final String name = view.getViewName(child);
-        final Histogram.Frequency freq = h.getFrequency(name);
+        final Histogram.Frequency freq = h.getElementFrequency(name);
         if (freq.getFrequency() > 1) {
           branchingChildren.add(child);
         }
