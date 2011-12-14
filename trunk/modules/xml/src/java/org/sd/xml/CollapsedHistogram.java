@@ -21,6 +21,7 @@ package org.sd.xml;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import org.sd.util.Histogram;
 import org.sd.util.HistogramDistribution;
@@ -49,6 +50,33 @@ import org.w3c.dom.NodeList;
 public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> {
   
   public static final String DEFAULT_COLLAPSED_XML_ROOT_TAG = "chisto";
+
+  public static final KeyComparator SORTED_KEY_COMPARATOR = new KeyComparator();
+  private static final class KeyComparator <T> implements Comparator<CollapsedKeyContainer<T>> {
+    public int compare(CollapsedKeyContainer<T> o1, CollapsedKeyContainer<T> o2) {
+      int result = 0;
+
+      if (o1.isNormalKey()) {
+        if (o2.isNormalKey()) {
+          result = o1.getKey().toString().compareTo(o2.getKey().toString());
+        }
+        else {
+          result = -1;
+        }
+      }
+      else {
+        if (o2.isNormalKey()) {
+          result = 1;
+        }
+        else {
+          result = o2.getOrigCount() - o1.getOrigCount();
+        }
+      }
+      return result;
+    }
+    public boolean equals(Object obj) { return (obj instanceof KeyComparator); }
+  }
+
 
   /**
    * Construct with a fully populated histogram using automatic rank switching
@@ -166,7 +194,8 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
       final DomNode childNode = (DomNode)childNodes.item(childIdx);
       if (childNode.getNodeType() == DomNode.ELEMENT_NODE && "cc".equals(childNode.getLocalName())) {
         final CollapsedKeyContainer<String> ckc = CollapsedKeyContainer.loadFromXml((DomElement)childNode, maxSamples);
-        result.set(ckc, ckc.getOrigCount());
+        final Histogram<CollapsedKeyContainer<String>>.Frequency<CollapsedKeyContainer<String>> freq = result.set(ckc, ckc.getOrigCount());
+        freq.setAttributes(ckc.getAttributes());
       }
     }
 
@@ -393,7 +422,9 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
     final XmlStringBuilder result = new XmlStringBuilder(tag.toString());
 
     for (Frequency<CollapsedKeyContainer<T>> freq : getFrequencies()) {
-      freq.getElement().asXml(result);
+      final CollapsedKeyContainer<T> ckc = freq.getElement();
+      ckc.setAttributes(freq.getAttributes());
+      ckc.asXml(result);
     }
 
     return result;
