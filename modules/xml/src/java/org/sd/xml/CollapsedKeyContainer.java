@@ -20,6 +20,8 @@ package org.sd.xml;
 
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.sd.util.SampleCollector;
 import org.w3c.dom.NodeList;
@@ -37,13 +39,35 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
    */
   public static CollapsedKeyContainer<String> loadFromXml(DomElement xml, int maxSamples) {
 
-    String key = xml.getAttributeValue("key", null);
-    if (key != null) key = StringEscapeUtils.unescapeXml(key);
-    final int origCount = xml.getAttributeInt("origCount", 0);
-    final int binCount = xml.getAttributeInt("binCount", 0);
+    String key = null;
+    int origCount = 0;
+    int binCount = 0;
+    Map<String, String> attributes = null;
+
+    // load attributes
+    if (xml.hasAttributes()) {
+      for (Map.Entry<String, String> attrEntry : xml.getDomAttributes().getAttributes().entrySet()) {
+        final String attrKey = attrEntry.getKey();
+        final String attrVal = attrEntry.getValue();
+        if ("key".equals(attrKey)) {
+          key = StringEscapeUtils.unescapeXml(attrVal);
+        }
+        else if ("origCount".equals(attrKey)) {
+          origCount = Integer.parseInt(attrVal);
+        }
+        else if ("binCount".equals(attrKey)) {
+          binCount = Integer.parseInt(attrVal);
+        }
+        else {
+          if (attributes == null) attributes = new HashMap<String, String>();
+          attributes.put(attrKey, StringEscapeUtils.unescapeXml(attrVal));
+        }
+      }
+    }
 
     final CollapsedKeyContainer<String> result = new CollapsedKeyContainer<String>(key, origCount, maxSamples);
     result.setBinCount(binCount);
+    result.setAttributes(attributes);
 
     if (maxSamples > 0) {
       final SampleCollector<String> sampleCollector = result.getSampleCollector();
@@ -69,6 +93,7 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
   private int binCount;
   private int maxSamples;
   private SampleCollector<T> sampleCollector;
+  private Map<String, String> attributes;
 
   /**
    * Construct an instance backed by a bin key.
@@ -79,6 +104,15 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
     this.binCount = 1;
     this.maxSamples = maxSamples;
     this.sampleCollector = (maxSamples > 0) ? new SampleCollector<T>(maxSamples) : null;
+    this.attributes = null;
+  }
+
+  public void setAttributes(Map<String, String> attributes) {
+    this.attributes = attributes;
+  }
+
+  public Map<String, String> getAttributes() {
+    return attributes;
   }
 
   public boolean isCountKey() {
@@ -109,7 +143,7 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
     return origCount * binCount;
   }
 
-  public T getNormalKey() {
+  public T getKey() {
     return key;
   }
 
@@ -176,7 +210,7 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
    * Serialize this instance as xml into the builder.
    */
   public void asXml(XmlStringBuilder xmlBuilder) {
-    // <cc key='...' origCount='...' binCount='...'>
+    // <cc key='...' origCount='...' binCount='...' ...attributes...>
     //   <sample key='...'/>
     //   ...
     // </cc>
@@ -194,6 +228,19 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
       append("' binCount='").
       append(binCount).
       append("'");
+
+    if (attributes != null) {
+      for (Map.Entry<String, String> attrEntry : attributes.entrySet()) {
+        final String attribute = attrEntry.getKey();
+        final String val = attrEntry.getValue();
+        tag.
+          append(' ').
+          append(attribute).
+          append("='").
+          append(StringEscapeUtils.escapeXml(val)).
+          append("'");
+      }
+    }
 
     if (hasSamples()) {
       xmlBuilder.addTag(tag.toString());

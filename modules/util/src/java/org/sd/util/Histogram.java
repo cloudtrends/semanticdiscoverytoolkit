@@ -81,11 +81,12 @@ public class Histogram <T> {
   /**
    * Set the frequency count for the current element.
    */
-  public void set(T element, int freqCount) {
+  public Frequency<T> set(T element, int freqCount) {
     final Frequency<T> freq = new Frequency<T>(element, freqCount);
     map.put(element, freq);
     _frequencies = null;
     _distribution = null;
+    return freq;
   }
 
   /**
