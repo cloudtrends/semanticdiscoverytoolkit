@@ -167,7 +167,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
    * Load from CollapsedHistogram xml.
    */
   public static final CollapsedHistogram<String> loadFromXml(DomElement collapsedXml) {
-    final int maxSamples = collapsedXml.getAttributeInt("maxSamples", 0);
+    final int maxSamples = collapsedXml.getAttributeInt("maxSamples", 1);
 
     final CollapsedHistogram<String> result = new CollapsedHistogram<String>(maxSamples);
 
@@ -197,7 +197,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
    * Construct an empty instance with no switching, no samples.
    */
   public CollapsedHistogram() {
-    this(0);
+    this(1);
   }
 
   /**
