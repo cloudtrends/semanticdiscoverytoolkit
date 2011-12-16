@@ -388,7 +388,8 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
       append("' total='").append(getTotalCount()).
       append("' bins='").append(getNumRanks()).
       append("' origTotal='").append(getOriginalTotalCount()).
-      append("' origRanks='").append(getOriginalNumRanks());
+      append("' origRanks='").append(getOriginalNumRanks()).
+      append("'");
 
     final XmlStringBuilder result = new XmlStringBuilder(tag.toString());
 
