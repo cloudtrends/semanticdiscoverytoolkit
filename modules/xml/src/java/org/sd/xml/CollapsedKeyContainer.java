@@ -65,8 +65,7 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
       }
     }
 
-    final CollapsedKeyContainer<String> result = new CollapsedKeyContainer<String>(key, origCount, maxSamples);
-    result.setBinCount(binCount);
+    final CollapsedKeyContainer<String> result = new CollapsedKeyContainer<String>(key, origCount, binCount, maxSamples);
     result.setAttributes(attributes);
 
     if (maxSamples > 0) {
@@ -89,19 +88,23 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
 
 
   private T key;
-  private int origCount;
-  private int binCount;
-  private int maxSamples;
+  private int origCount;  // original freq count for key or keys
+  private int binCount;   // original number of buckets w/freq=origCount
+  private int maxSamples; // maximum number of samples to collect
   private SampleCollector<T> sampleCollector;
   private Map<String, String> attributes;
 
   /**
    * Construct an instance backed by a bin key.
    */
-  public CollapsedKeyContainer(T key, int origCount, int maxSamples) {
+  public CollapsedKeyContainer(T key, int origCount) {
+    this(key, origCount, 1, 0);
+  }
+
+  public CollapsedKeyContainer(T key, int origCount, int binCount, int maxSamples) {
     this.key = key;
     this.origCount = origCount;
-    this.binCount = 1;
+    this.binCount = binCount;
     this.maxSamples = maxSamples;
     this.sampleCollector = (maxSamples > 0) ? new SampleCollector<T>(maxSamples) : null;
     this.attributes = null;
@@ -143,8 +146,24 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
     return origCount * binCount;
   }
 
+  /**
+   * Get this instance's key.
+   */
   public T getKey() {
     return key;
+  }
+
+  /**
+   * Get the key if set or a sample if there is one.
+   */
+  public T getAnyKey() {
+    T result = key;
+
+    if (result == null && hasSamples()) {
+      result = getSamples().get(0);
+    }
+
+    return result;
   }
 
   public void considerSample(T element) {
@@ -288,34 +307,7 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
   }
 
   public int compareTo(CollapsedKeyContainer<T> other) {
-    int result = 0;
-
-    // count keys come after normal keys
-    // sort by descending origCount
-
-    if (this != other) {
-      if (this.isNormalKey()) {
-        if (other.isCountKey()) {
-          // this comes before other
-          result = -1;
-        }
-        else {
-          // sort by descending frequency
-          result = other.origCount - this.origCount;
-        }
-      }
-      else {  // this.isCountKey()
-        if (other.isNormalKey()) {
-          // this comes after other
-          result = 1;
-        }
-        else {
-          // sort by descending count
-          result = other.origCount - this.origCount;
-        }
-      }
-    }
-
-    return result;
+    // sort by descending origCount regardless of count -vs- normal keys
+    return other.origCount - this.origCount;
   }
 }

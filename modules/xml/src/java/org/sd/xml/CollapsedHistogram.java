@@ -31,7 +31,7 @@ import org.sd.util.range.IntegerRange;
 import org.w3c.dom.NodeList;
 
 /**
- * A histogram with the frequent tail keys collapsed by their count.
+ * A histogram with the frequent (usually tail) keys collapsed by their count.
  * <p>
  * This data structure is useful to represent histograms that grow very
  * large due to relatively unique (bin) keys (long tails).
@@ -39,11 +39,6 @@ import org.w3c.dom.NodeList;
  * The top-frequency bins are kept as in a normal histogram, but the
  * low-frequency bins are collapsed by count with sample bin keys kept
  * instead of storing the entire set of bin keys for the histogram.
- * <p>
- * This can contain (or copy) a full histogram without collapsing it
- * if the base histogram is considered small, which is indicated by
- * supplying a minSwitchRank that is greater than or equal to the
- * number of ranks in the histogram (e.g. Integer.MAX_VALUE).
  *
  * @author Spence Koehler
  */
@@ -56,22 +51,21 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
     public int compare(CollapsedKeyContainer<T> o1, CollapsedKeyContainer<T> o2) {
       int result = 0;
 
-      if (o1.isNormalKey()) {
-        if (o2.isNormalKey()) {
-          result = o1.getKey().toString().compareTo(o2.getKey().toString());
-        }
-        else {
-          result = -1;
-        }
+      final T o1Key = o1.getAnyKey();
+      final T o2Key = o2.getAnyKey();
+
+      if (o1Key != null && o2Key != null) {
+        result = o1Key.toString().compareTo(o2Key.toString());
       }
-      else {
-        if (o2.isNormalKey()) {
-          result = 1;
-        }
-        else {
-          result = o2.getOrigCount() - o1.getOrigCount();
-        }
+      else if (o2Key == null) {
+        // prefer o1
+        result = -1;
       }
+      else {  // o1Key == null
+        // prefer o2
+        result = 1;
+      }
+
       return result;
     }
     public boolean equals(Object obj) { return (obj instanceof KeyComparator); }
@@ -83,7 +77,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
    * and collecting a single sample for collapsed buckets.
    */
   public static final <T> CollapsedHistogram<T> makeInstance(Histogram<T> original) {
-    return makeInstance(original, 0, 1);
+    return makeInstance(original, 1);
   }
 
   /**
@@ -91,20 +85,16 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
    * to collect for collapsed keys.
    *
    * @param original  The original histogram to load.
-   * @param minSwitchRank  The minimum rank at which to switch to collapsed buckets.
-   *                       A value of 0 will ensure automatic switching at the appropriate
-   *                       rank while a value of original.getNumRanks() will ensure no
-   *                       collapsing.
    * @param maxSamples  The maximum number of sample keys to collect for collapsed buckets.
    */
-  public static final <T> CollapsedHistogram<T> makeInstance(Histogram<T> original, int minSwitchRank, int maxSamples) {
+  public static final <T> CollapsedHistogram<T> makeInstance(Histogram<T> original, int maxSamples) {
     final HistogramDistribution distribution = original.getDistribution();
-    final int switchRank = Math.max(minSwitchRank, distribution.getSwitchRank());
-    final CollapsedHistogram<T> result = new CollapsedHistogram<T>(switchRank, maxSamples);
+    final CollapsedHistogram<T> result = new CollapsedHistogram<T>(maxSamples);
 
-    int curRank = 0;
     for (Histogram<T>.Frequency<T> freq : original.getFrequencies()) {
-      result.add(curRank++, freq.getElement(), freq.getFrequency());
+      final int curCount = freq.getFrequency();
+      final int numBuckets = distribution.getNumBins(curCount);
+      result.add(numBuckets, freq.getElement(), curCount);
     }
 
     return result;
@@ -115,7 +105,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
    * and collecting a single sample for collapsed buckets.
    */
   public static final CollapsedHistogram<String> makeInstance(File xmlHistogramFile) throws IOException {
-    return makeInstance(xmlHistogramFile, 0, 1);
+    return makeInstance(xmlHistogramFile, 1);
   }
 
   /**
@@ -123,21 +113,17 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
    * to collect for collapsed keys.
    *
    * @param xmlHistogramFile  The xml histogram to load.
-   * @param minSwitchRank  The minimum rank at which to switch to collapsed buckets.
-   *                       A value of 0 will ensure automatic switching at the appropriate
-   *                       rank while a value of original.getNumRanks() will ensure no
-   *                       collapsing.
    * @param maxSamples  The maximum number of sample keys to collect for collapsed buckets.
    */
-  public static final CollapsedHistogram<String> makeInstance(File xmlHistogramFile, int minSwitchRank, int maxSamples) throws IOException {
+  public static final CollapsedHistogram<String> makeInstance(File xmlHistogramFile, int maxSamples) throws IOException {
     final HistogramDistribution distribution = XmlHistogram.loadDistribution(xmlHistogramFile);
-    final int switchRank = Math.max(minSwitchRank, distribution.getSwitchRank());
-    final CollapsedHistogram<String> result = new CollapsedHistogram<String>(switchRank, maxSamples);
+    final CollapsedHistogram<String> result = new CollapsedHistogram<String>();
 
     //
     // To guard against overwhelming memory with very large histograms,
     // this method incrementally considers each key without ever loading
-    // everything into memory.
+    // everything (except the count -> numBucketsWithCount distribution)
+    // into memory.
     //
 
     //
@@ -151,10 +137,8 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
       for (iter = new XmlHistogramIterator(xmlHistogramFile); iter.hasNext(); ) {
         final XmlKeyContainer xmlKeyContainer = iter.next();
         final int curCount = xmlKeyContainer.getCount();
-        final IntegerRange rankRange = distribution.getOriginalRank(curCount);
-        final int curRank = rankRange.getLow();
-
-        result.add(curRank, xmlKeyContainer.getKey(), curCount);
+        final int numBuckets = distribution.getNumBins(curCount);
+        result.add(numBuckets, xmlKeyContainer.getKey(), curCount);
       }
     }
     finally {
@@ -183,10 +167,9 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
    * Load from CollapsedHistogram xml.
    */
   public static final CollapsedHistogram<String> loadFromXml(DomElement collapsedXml) {
-    final int switchRank = collapsedXml.getAttributeInt("switchRank", 0);
     final int maxSamples = collapsedXml.getAttributeInt("maxSamples", 0);
 
-    final CollapsedHistogram<String> result = new CollapsedHistogram<String>(switchRank, maxSamples);
+    final CollapsedHistogram<String> result = new CollapsedHistogram<String>(maxSamples);
 
     final NodeList childNodes = collapsedXml.getChildNodes();
     final int numNodes = childNodes.getLength();
@@ -205,7 +188,6 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
 
 
   private int maxSamples;
-  private int switchRank;
 
   private Integer _originalTotalCount;
   private Integer _originalNumRanks;
@@ -215,17 +197,16 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
    * Construct an empty instance with no switching, no samples.
    */
   public CollapsedHistogram() {
-    this(Integer.MAX_VALUE, 0);
+    this(0);
   }
 
   /**
    * Construct with the given parameters.
    */
-  public CollapsedHistogram(int switchRank, int maxSamples) {
+  public CollapsedHistogram(int maxSamples) {
     super();
 
     this.maxSamples = maxSamples;
-    this.switchRank = switchRank;
 
     this._originalTotalCount = null;
     this._originalNumRanks = null;
@@ -238,14 +219,6 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
 
   public void setMaxSamples(int maxSamples) {
     this.maxSamples = maxSamples;
-  }
-
-  public int getSwitchRank() {
-    return switchRank;
-  }
-
-  public void setSwitchRank(int switchRank) {
-    this.switchRank = switchRank;
   }
 
   /**
@@ -384,23 +357,22 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
   /**
    * Add an appropriate element to this instance with the given params.
    */
-  public void add(int curRank, T bucketKey, int curCount) {
-    if (curRank < switchRank) {
+  public void add(int numBuckets, T bucketKey, int curCount) {
+    if (numBuckets <= curCount) {
       // keep the original key
-      final CollapsedKeyContainer<T> keyContainer = new CollapsedKeyContainer<T>(bucketKey, curCount, 0);
+      final CollapsedKeyContainer<T> keyContainer = new CollapsedKeyContainer<T>(bucketKey, curCount);
       super.add(keyContainer, curCount);
     }
     else {
       // store (or update) a countKey
-      final CollapsedKeyContainer<T> keyContainer = new CollapsedKeyContainer<T>(null, curCount, maxSamples);
+      final CollapsedKeyContainer<T> keyContainer = new CollapsedKeyContainer<T>(null, curCount, numBuckets, maxSamples);
       final Frequency<CollapsedKeyContainer<T>> curfreq = getElementFrequency(keyContainer);
-      if (curfreq != null) {
-        curfreq.getElement().incBinCount();
-      }
-      else {
+      if (curfreq == null) {
         super.add(keyContainer, curCount);
       }
-      keyContainer.considerSample(bucketKey);
+      if (maxSamples > 0) {
+        keyContainer.considerSample(bucketKey);
+      }
     }
   }
 
@@ -412,8 +384,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
     final StringBuilder tag = new StringBuilder();
     tag.
       append(rootTag).
-      append(" switchRank='").append(switchRank).
-      append("' maxSamples='").append(maxSamples).
+      append(" maxSamples='").append(maxSamples).
       append("' total='").append(getTotalCount()).
       append("' bins='").append(getNumRanks()).
       append("' origTotal='").append(getOriginalTotalCount()).
@@ -434,7 +405,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
   public static void main(String[] args) throws IOException {
     // arg0: file w/xml histogram
     final File xmlFile = new File(args[0]);
-    final CollapsedHistogram h = CollapsedHistogram.makeInstance(xmlFile, 0, 1);
+    final CollapsedHistogram h = CollapsedHistogram.makeInstance(xmlFile, 1);
 
     System.out.println(h.toString());
   }

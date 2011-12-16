@@ -67,6 +67,20 @@ public class HistogramDistribution extends Histogram<Integer> {
   }
 
   /**
+   * Get the number of original bins with the given original count.
+   */
+  public int getNumBins(int origCount) {
+    int result = 0;
+
+    final Frequency<Integer> freq = getElementFrequency(origCount);
+    if (freq != null) {
+      result = freq.getFrequency();
+    }
+    
+    return result;
+  }
+
+  /**
    * Get the number of ranks in the *original* histogram.
    */
   public int getNumOriginalRanks() {
