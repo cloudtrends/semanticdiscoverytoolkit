@@ -357,23 +357,27 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
   /**
    * Add an appropriate element to this instance with the given params.
    */
-  public void add(int numBuckets, T bucketKey, int curCount) {
+  public Frequency<CollapsedKeyContainer<T>> add(int numBuckets, T bucketKey, int curCount) {
+    Frequency<CollapsedKeyContainer<T>> result = null;
+
     if (numBuckets <= curCount) {
       // keep the original key
       final CollapsedKeyContainer<T> keyContainer = new CollapsedKeyContainer<T>(bucketKey, curCount);
-      super.add(keyContainer, curCount);
+      result = super.add(keyContainer, curCount);
     }
     else {
       // store (or update) a countKey
       final CollapsedKeyContainer<T> keyContainer = new CollapsedKeyContainer<T>(null, curCount, numBuckets, maxSamples);
-      final Frequency<CollapsedKeyContainer<T>> curfreq = getElementFrequency(keyContainer);
-      if (curfreq == null) {
-        super.add(keyContainer, curCount);
+      result = getElementFrequency(keyContainer);
+      if (result == null) {
+        result = super.add(keyContainer, curCount);
       }
       if (maxSamples > 0) {
         keyContainer.considerSample(bucketKey);
       }
     }
+
+    return result;
   }
 
   public XmlStringBuilder asXml() {
