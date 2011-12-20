@@ -19,6 +19,8 @@
 package org.sd.xml;
 
 
+import java.util.HashSet;
+import java.util.Set;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -46,7 +48,15 @@ public class TestCollapsedHistogram extends TestCase {
       chisto.add(10, i, 1);
     }
 
+    // make sure we collected 5 samples
     assertEquals(5, chisto.getRankFrequency(2).getElement().getSampleCollector().getNumSamples());
+
+    // make sure the samples are all different
+    final Set<Integer> sampleValues = new HashSet<Integer>();
+    for (Integer sampleValue : chisto.getRankFrequency(2).getElement().getSampleCollector().getSamples()) {
+      sampleValues.add(sampleValue);
+    }
+    assertEquals(5, sampleValues.size());
   }
 
 
