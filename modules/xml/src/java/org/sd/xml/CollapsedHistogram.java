@@ -117,7 +117,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
    */
   public static final CollapsedHistogram<String> makeInstance(File xmlHistogramFile, int maxSamples) throws IOException {
     final HistogramDistribution distribution = XmlHistogram.loadDistribution(xmlHistogramFile);
-    final CollapsedHistogram<String> result = new CollapsedHistogram<String>();
+    final CollapsedHistogram<String> result = new CollapsedHistogram<String>(maxSamples);
 
     //
     // To guard against overwhelming memory with very large histograms,
@@ -421,7 +421,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
   public static void main(String[] args) throws IOException {
     // arg0: file w/xml histogram
     final File xmlFile = new File(args[0]);
-    final CollapsedHistogram h = CollapsedHistogram.makeInstance(xmlFile, 1);
+    final CollapsedHistogram h = CollapsedHistogram.makeInstance(xmlFile, 5);
 
     System.out.println(h.toString());
   }
