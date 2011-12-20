@@ -263,9 +263,9 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
 
     if (hasSamples()) {
       xmlBuilder.addTag(tag.toString());
-      tag.setLength(0);
       for (T sample : sampleCollector.getSamples()) {
         if (sample != null) {
+          tag.setLength(0);
           tag.
             append("sample key='").
             append(StringEscapeUtils.escapeXml(sample.toString())).

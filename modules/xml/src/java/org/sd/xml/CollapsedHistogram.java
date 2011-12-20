@@ -349,6 +349,13 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
                              cumPct,               // cumPct
                              pct,                  // pct
                              keyString));
+
+
+      if (keyContainer.hasSamples() && keyContainer.getSampleCollector().getNumSamples() > 1) {
+        result.
+          append(' ').
+          append(keyContainer.getSamples().toString());
+      }
     }
 
     return result.toString();
