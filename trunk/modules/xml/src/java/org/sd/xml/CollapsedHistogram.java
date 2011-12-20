@@ -360,6 +360,10 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
   public Frequency<CollapsedKeyContainer<T>> add(int numBuckets, T bucketKey, int curCount) {
     Frequency<CollapsedKeyContainer<T>> result = null;
 
+    this._originalTotalCount = null;
+    this._originalNumRanks = null;
+    this._originalMaxFrequencyCount = null;
+
     if (numBuckets <= curCount) {
       // keep the original key
       final CollapsedKeyContainer<T> keyContainer = new CollapsedKeyContainer<T>(bucketKey, curCount);
@@ -373,7 +377,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
         result = super.add(keyContainer, curCount);
       }
       if (maxSamples > 0) {
-        keyContainer.considerSample(bucketKey);
+        result.getElement().considerSample(bucketKey);
       }
     }
 

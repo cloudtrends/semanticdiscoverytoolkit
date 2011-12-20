@@ -33,6 +33,7 @@ public class SampleCollector<T> {
   private Random random;
   private int maxSamples;
   private List<T> samples;
+  private int totalCount;
 
   /**
    * Construct to collect a maximum of maxSamples samples.
@@ -49,6 +50,7 @@ public class SampleCollector<T> {
     this.random = random;
     this.maxSamples = maxSamples;
     this.samples = new ArrayList<T>();
+    this.totalCount = 0;
   }
 
   /**
@@ -58,11 +60,12 @@ public class SampleCollector<T> {
    */
   public boolean consider(T value) {
     boolean result = false;
-    final int totalCount = samples.size();
+    final int curCount = samples.size();
 
-    if (totalCount < maxSamples) {
+    if (curCount < maxSamples) {
       // fill samples with first encountered values
       samples.add(value);
+      result = true;
     }
     else {
       // randomly replace a sample with this at rate of numSamples/totalCount
@@ -74,7 +77,9 @@ public class SampleCollector<T> {
       }
     }
 
-    return true;
+    ++totalCount;
+
+    return result;
   }
 
   /**
@@ -126,5 +131,12 @@ public class SampleCollector<T> {
    */
   public List<T> getSamples() {
     return samples;
+  }
+
+  /**
+   * Get the total number of samples considered.
+   */
+  public int getTotalCount() {
+    return totalCount;
   }
 }
