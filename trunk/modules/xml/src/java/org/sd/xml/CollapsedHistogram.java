@@ -46,7 +46,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
   
   public static final String DEFAULT_COLLAPSED_XML_ROOT_TAG = "chisto";
 
-  public static final KeyComparator SORTED_KEY_COMPARATOR = new KeyComparator();
+  public static final KeyComparator<String> SORTED_KEY_COMPARATOR = new KeyComparator<String>();
   private static final class KeyComparator <T> implements Comparator<CollapsedKeyContainer<T>> {
     public int compare(CollapsedKeyContainer<T> o1, CollapsedKeyContainer<T> o2) {
       int result = 0;
