@@ -1,0 +1,132 @@
+/*
+    Copyright 2011 Semantic Discovery, Inc. (www.semanticdiscovery.com)
+
+    This file is part of the Semantic Discovery Toolkit.
+
+    The Semantic Discovery Toolkit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    The Semantic Discovery Toolkit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
+*/
+package org.sd.atn;
+
+
+import java.util.Map;
+import org.sd.atn.AbstractAtnStateTokenClassifier;
+import org.sd.atn.ResourceManager;
+import org.sd.token.Normalizer;
+import org.sd.token.Token;
+import org.sd.util.range.IntegerRange;
+import org.sd.xml.DomElement;
+
+/**
+ * Classifier for recognizing digits (for improved efficiency over regexes).
+ * <p>
+ * Attributes:
+ * <ul>
+ * <li>feature -- (optional, default='value') specifies name of feature holding
+ *                 recognized value.</li>
+ * <li>range -- (optional, default unbounded) specifies the range of acceptable
+ *               values</li>
+ * <li>acceptUnknowns -- (optional, default=false) specifies whether to
+ *                       accept '?' as an unknown digit</li>
+ * <li>requireTrueDigit -- (optional, default=true) specifies whether to accept
+ *                         letters that look like digits without finding any
+ *                         true digits</li>
+ * <li>minLength -- (optional, default=0 [unbounded]) specifies the minimum
+ *                  acceptable input text length (e.g. at least 2 digits).
+ * </ul>
+ *
+ * @author Spence Koehler
+ */
+public class DigitsClassifier extends AbstractAtnStateTokenClassifier {
+
+  private String featureName;
+  private IntegerRange range;
+  private boolean acceptUnknowns;
+  private boolean requireTrueDigit;
+  private int minLength;
+
+  public DigitsClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
+    super(classifierIdElement, id2Normalizer);
+
+    // ignore any maxWordCount specified by the element and set to 1
+    super.setMaxWordCount(1);
+
+    this.featureName = classifierIdElement.getAttributeValue("feature", "value");
+
+    this.range = null;
+    final String rangeString = classifierIdElement.getAttributeValue("range", null);
+    if (rangeString != null) {
+      this.range = new IntegerRange(rangeString);
+    }
+
+    this.acceptUnknowns = classifierIdElement.getAttributeBoolean("acceptUnknowns", false);
+    this.requireTrueDigit = classifierIdElement.getAttributeBoolean("requireTrueDigit", true);
+
+    this.minLength = classifierIdElement.getAttributeInt("minLength", 0);
+  }
+  
+  public boolean doClassify(Token token) {
+    boolean result = false;
+
+    final String text = token.getText();
+
+    if (text.length() >= minLength) {
+      result = verify(text);
+
+      if (!result && acceptUnknowns) {
+        final String unknownEnhancedText = enhanceUnknowns(text);
+        if (unknownEnhancedText != null) {
+          result = verify(unknownEnhancedText);
+        }
+      }
+    
+      if (result) {
+        token.setFeature(featureName, text, this);
+      }
+    }
+
+    return result;
+  }
+
+  private final boolean verify(String text) {
+    boolean result = false;
+
+    final int[] intValue = new int[]{0};
+
+    if (text != null && !"".equals(text) && isDigits(text, intValue, requireTrueDigit)) {
+      if (range == null || range.includes(intValue[0])) {
+        result = true;
+      }
+    }
+
+    return result;
+  }
+
+  private final String enhanceUnknowns(String text) {
+    final StringBuilder result = new StringBuilder();
+
+    boolean foundUnknown = false;
+    final int len = text.length();
+
+    for (int i = 0; i < len; ++i) {
+      char c = text.charAt(i);
+      if (c == '?') {
+        foundUnknown = true;
+        c = '1';
+      }
+      result.append(c);
+    }
+
+    return foundUnknown ? result.toString() : null;
+  }
+}

@@ -88,7 +88,7 @@ public class AtnStateUtil {
 
         // add ruleID as an attribute on the parse node
         final String ruleId = pathState.getRule().getRuleId();
-        if (ruleId != null) {
+        if (ruleId != null && !"".equals(ruleId)) {
           result.getAttributes().put(RULE_ID_KEY, ruleId);
         }
 
@@ -114,7 +114,7 @@ public class AtnStateUtil {
             // add ruleID as an attribute on the parse node
             if (!curResultNode.hasAttributes() || !curResultNode.getAttributes().containsKey(RULE_ID_KEY)) {
               final String ruleId = pathState.getRule().getRuleId();
-              if (ruleId != null) {
+              if (ruleId != null && !"".equals(ruleId)) {
                 curResultNode.getAttributes().put(RULE_ID_KEY, ruleId);
               }
             }
@@ -125,6 +125,14 @@ public class AtnStateUtil {
         else {
           // add matched token
           final Tree<String> categoryNode = curResultNode.addChild(category);
+
+          // add ruleID as an attribute on the parse node
+          if (!curResultNode.hasAttributes() || !curResultNode.getAttributes().containsKey(RULE_ID_KEY)) {
+            final String ruleId = pathState.getRule().getRuleId();
+            if (ruleId != null && !"".equals(ruleId)) {
+              curResultNode.getAttributes().put(RULE_ID_KEY, ruleId);
+            }
+          }
 
           if (!category.equals(inputToken.getText())) {
             // add non-literal matched token

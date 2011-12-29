@@ -39,18 +39,40 @@ import java.util.Map;
 public class StringSplitter {
   
   /**
-   * Trim whitespace off the ends and remove extra internal whitespace.
+   * Trim whitespace off the ends and remove extra non-quoted internal whitespace.
    */
   public static String hypertrim(String data) {
     final StringBuilder result = new StringBuilder();
 
     boolean sawWhite = false;
+    Character quote = (char)0;
+    Character lastQuote = (char)0;
 
     for (int charIndex = 0; charIndex < data.length(); ++charIndex) {
       final char c = data.charAt(charIndex);
 
-      final boolean isWhite = Character.isWhitespace(c);
+      lastQuote = quote;
+      boolean isQuoted = (quote != 0 || lastQuote == '\\');
+      if (!isQuoted) {
+        if (c == '\\' || c == '"' || c == '\'') {
+          quote = c;
+          isQuoted = true;
+        }
+      }
+      else {  // isQuoted
+        if (c == quote) {
+          // end quote when we see its match
+          isQuoted = false;
+          quote = 0;
+        }
+        else if (lastQuote == '\\') {
+          // still quoted this round, but not next
+          quote = 0;
+        }
+      }
 
+      final boolean isWhite = !isQuoted && Character.isWhitespace(c);
+      
       if (isWhite) {
         sawWhite = true;
       }

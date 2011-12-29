@@ -254,6 +254,14 @@ public class TestStringSplitter extends TestCase {
     assertEquals("testing this stuff", StringSplitter.hypertrim("   testing   this    stuff      "));
   }
 
+  public void testHypertrimWithQuotes() {
+    assertEquals("a\\ \\ b c", StringSplitter.hypertrim("a\\ \\ b c"));
+    assertEquals("a\\  b c", StringSplitter.hypertrim("a\\  b c"));
+    assertEquals("a 'b  c'", StringSplitter.hypertrim("a 'b  c'"));
+    assertEquals("a \"b  c\"", StringSplitter.hypertrim("a \"b  c\""));
+    assertEquals("a \"b  c's  \"", StringSplitter.hypertrim("a \"b  c's  \""));
+  }
+
   public void testReplaceDiacritics() {
     assertEquals("Koehler", StringSplitter.replaceDiacritics("Köhler"));
     assertEquals("fuer", StringSplitter.replaceDiacritics("für"));

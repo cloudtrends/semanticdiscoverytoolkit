@@ -89,7 +89,7 @@ public class TestBite extends TestCase {
   
   private final String getReserializedIndexableContent(Post post) throws IOException {
     final Tree<XmlLite.Data> xmlTree = XmlFactory.buildXmlTree(XmlLite.asXml(post.getContentTree(), false), true, true);
-    return Bite.getIndexableContent(Bite.buildBites(xmlTree)).replaceAll("\\s+", " ");
+    return Bite.getIndexableContent(Bite.buildBites(xmlTree)).replaceAll("\\s+", " ").trim();
   }
 
 
