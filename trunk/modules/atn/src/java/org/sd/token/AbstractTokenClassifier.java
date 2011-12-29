@@ -64,16 +64,51 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
    * If true, the asInt[0] will be the numerical value of the digits.
    */
   public static boolean isDigits(String text, int[] asInt) {
+    return isDigits(text, asInt, true);
+  }
+
+  public static boolean isDigits(String text, int[] asInt, boolean requireTrueDigit) {
     boolean result = true;
 
-    for (int textIndex = 0; textIndex < text.length(); ++textIndex) {
-      if (!Character.isDigit(text.codePointAt(textIndex))) {
-        result = false;
-        break;
+    int value = 0;
+    int tens = 1;
+    boolean hasTrueDigit = !requireTrueDigit;
+
+    // scan from right to left, building the integer value
+    for (int textIndex = text.length() - 1; textIndex >= 0; --textIndex) {
+      int c = text.codePointAt(textIndex);
+      int digit = 0;
+
+      if (c >= '0' && c <= '9') {
+        digit = (int)(c - '0');
+        hasTrueDigit = true;
       }
+      else {
+        // check for OCR-like digits
+        final int lc = Character.toLowerCase(c);
+        if (lc == 'o') {
+          digit = 0;
+        }
+        else if (lc == 'l' || lc == 'i') {
+          digit = 1;
+        }
+        else if (lc == 'b') {
+          digit = 8;
+        }
+        else {
+          result = false;
+          break;
+        }
+      }
+
+      if (digit > 0) value += (digit * tens);
+      tens *= 10;
     }
 
-    if (result) asInt[0] = Integer.parseInt(text);
+    // only accept OCR-like errors if there was a true digit in the mix
+    if (!hasTrueDigit) result = false;
+
+    if (result) asInt[0] = value;
 
     return result;
   }

@@ -753,7 +753,7 @@ public class XmlLite {
     }
 
     public void setAttribute(String name, String value) {
-      attributes.put(fixText(commonCase ? name.toLowerCase() : name), fixText(value));
+      attributes.put(fixText(commonCase ? name.toLowerCase() : name), EntityConverter.unescape(value));
     }
 
     /**
@@ -831,7 +831,7 @@ public class XmlLite {
         final int eap = (endAttPos < alen) ? endAttPos : alen;
         final String value = (eap <= eqPos + 1) ? "" : stripQuotes(attributesString.substring(eqPos + 1, eap));
 
-        attributes.put(fixText(att), fixText(value));
+        attributes.put(fixText(att), EntityConverter.unescape(value));
 
         if (endAttPos < attributesString.length()) {
           extractAttributes(attributesString.substring(endAttPos + 1), attributes);

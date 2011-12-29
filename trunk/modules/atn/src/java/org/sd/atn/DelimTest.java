@@ -199,15 +199,19 @@ public class DelimTest implements AtnRuleStepTest {
   }
 
   private boolean meetsRequiredConstraints(String delim) {
-    boolean result = true;
+    boolean result = false;
 
+    // require only one of the required constraints, not all
     if (requiredDelimStrings != null) {
       for (DelimString delimString : requiredDelimStrings) {
-        if (!delimString.matches(delim)) {
-          result = false;
+        if (delimString.matches(delim)) {
+          result = true;
           break;
         }
       }
+    }
+    else {
+      result = true;
     }
 
     return result;
