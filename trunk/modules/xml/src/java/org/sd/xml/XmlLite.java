@@ -702,7 +702,7 @@ public class XmlLite {
   }
 
   public static final class Tag extends AbstractData {
-    public final String name;
+    public String name;  //TODO: refactor to add setter/getter for this attribute
     public final boolean commonCase;
     public final Map<String, String> attributes;
     private boolean selfTerminating;
