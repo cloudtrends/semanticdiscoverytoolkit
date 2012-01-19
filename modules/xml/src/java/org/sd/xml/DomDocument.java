@@ -93,7 +93,14 @@ public class DomDocument extends DomNode implements Document {
   }
 
   public Node adoptNode(Node source) {
-    throw new UnsupportedOperationException("Implement when needed.");
+    Node result = null;
+
+    if (source instanceof DomNode) {
+      ((DomNode)source).setOwnerDocument(this);
+      result = source;
+    }
+
+    return result;
   }
 
   public Attr createAttribute(String name) {

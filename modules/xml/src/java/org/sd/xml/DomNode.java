@@ -620,6 +620,21 @@ public abstract class DomNode implements Node {
     return result;
   }
 
+  public void setNodeName(String nodeName) {
+    this.nodeName = nodeName;
+
+    // change the node name in the backing tree
+    if (backref != null) {
+      final Tree<XmlLite.Data> node = backref.getContainer();
+      if (node != null) {
+        final XmlLite.Tag tag = node.getData().asTag();
+        if (tag != null) {
+          tag.name = nodeName;
+        }
+      }
+    }
+  }
+
   public void setNodeValue(String nodeValue) {
     this.nodeValue = nodeValue;
   }
