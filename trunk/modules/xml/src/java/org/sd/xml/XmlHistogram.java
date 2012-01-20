@@ -19,12 +19,14 @@
 package org.sd.xml;
 
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.sd.io.FileUtil;
 import org.sd.util.Histogram;
 import org.sd.util.HistogramDistribution;
 import org.w3c.dom.NodeList;
@@ -177,9 +179,7 @@ public class XmlHistogram extends Histogram<String> {
    */
   public XmlStringBuilder asXml(String rootTag, boolean sortByKey) {
     final StringBuilder tag = new StringBuilder();
-    tag.
-      append(rootTag).append(" total='").append(getTotalCount()).
-      append("' bins='").append(getNumRanks()).append("'");
+    buildRootTag(tag, rootTag);
 
     final XmlStringBuilder result = new XmlStringBuilder(tag.toString());
     tag.setLength(0);
@@ -187,24 +187,75 @@ public class XmlHistogram extends Histogram<String> {
     final List<Frequency<String>> freqs = 
       (sortByKey ? getFrequencies(s_keyComparator) : getFrequencies());
     for (Frequency<String> freq : freqs) {
-      tag.append("key count='").append(freq.getFrequency()).append("'");
-      if (freq.hasAttributes()) {
-        for (Map.Entry<String, String> attrEntry : freq.getAttributes().entrySet()) {
-          final String attribute = attrEntry.getKey();
-          final String val = attrEntry.getValue();
-          tag.
-            append(' ').
-            append(attribute).
-            append("='").
-            append(StringEscapeUtils.escapeXml(val)).
-            append("'");
-        }
-      }
+      buildFreqTag(tag, freq);
       result.addTagAndText(tag.toString(), freq.element, true);
       tag.setLength(0);
     }
 
     return result;
+  }
+
+  /**
+   * Dump this histogram directly to the given output file.
+   * <p>
+   * NOTE: In the case of very large histograms, this avoids the memory cost
+   *       of holding the full histogram and its xml version in memory at
+   *       the same time.
+   */
+  public void dumpXml(File xmlOutputFile) throws IOException {
+    dumpXml(DEFAULT_ROOT_TAG, xmlOutputFile);
+  }
+
+  public void dumpXml(String rootTag, File xmlOutputFile) throws IOException {
+    BufferedWriter writer = null;
+    try {
+      final StringBuilder tag = new StringBuilder();
+
+      writer = FileUtil.getWriter(xmlOutputFile);
+      writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+
+      tag.append('<');
+      buildRootTag(tag, rootTag);
+      tag.append(">\n");
+      writer.write(tag.toString());
+
+      for (Frequency<String> freq : getFrequencies()) {
+        tag.setLength(0);
+        tag.append("  <");
+        buildFreqTag(tag, freq);
+        tag.append(">").append(freq.element).append("</key>\n");
+        writer.write(tag.toString());
+      }
+
+      tag.setLength(0);
+      tag.append('<').append(rootTag).append(">\n");
+      writer.write(tag.toString());
+    }
+    finally {
+      if (writer != null) writer.close();
+    }
+  }
+
+  private final void buildRootTag(StringBuilder tag, String rootTag) {
+    tag.
+      append(rootTag).append(" total='").append(getTotalCount()).
+      append("' bins='").append(getNumRanks()).append("'");
+  }
+
+  private final void buildFreqTag(StringBuilder tag, Frequency<String> freq) {
+    tag.append("key count='").append(freq.getFrequency()).append("'");
+    if (freq.hasAttributes()) {
+      for (Map.Entry<String, String> attrEntry : freq.getAttributes().entrySet()) {
+        final String attribute = attrEntry.getKey();
+        final String val = attrEntry.getValue();
+        tag.
+          append(' ').
+          append(attribute).
+          append("='").
+          append(StringEscapeUtils.escapeXml(val)).
+          append("'");
+      }
+    }
   }
 
   private final void add(XmlKeyContainer keyContainer) {
