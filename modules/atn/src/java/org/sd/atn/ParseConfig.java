@@ -72,7 +72,7 @@ public class ParseConfig {
 
     // add-in optional supplements
     final String supplementsString = options.getString("supplementalConfig", null);
-    if (supplementsString != null) {
+    if (supplementsString != null && !"".equals(supplementsString)) {
       final String[] supplements = supplementsString.split("\\s*;\\s*");
       for (String supplement : supplements) {
         final File supplementFile = options.getWorkingFile(supplement, "workingDir");
@@ -220,6 +220,7 @@ public class ParseConfig {
       final String parserId = supplementNode.getAttributeValue("parser");
 
       boolean supplemented = false;
+      String failureReason = null;
 
       final AtnParserWrapper parserWrapper = getParserWrapper(parserId);
       if (parserWrapper != null) {
@@ -263,6 +264,12 @@ public class ParseConfig {
                                    " for parserId '" + parserId + "'");
               }
             }
+            else {
+              failureReason = "No classifiers for id=" + classifierId;
+            }
+          }
+          else {
+            failureReason = "No grammar";
           }
         }
 
@@ -302,10 +309,13 @@ public class ParseConfig {
           supplemented = true;
         }
       }
+      else {
+        failureReason = "No parserWrapper";
+      }
 
       if (!supplemented) {
         System.err.println(new Date() + " : ***WARNING : ParseConfig unable to supplement " +
-                           directive + " for parserId '" + parserId + "'");
+                           directive + " for parserId '" + parserId + "' (" + failureReason + ")");
       }
     }
   }
