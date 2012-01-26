@@ -333,7 +333,7 @@ public abstract class AbstractNumericRange implements NumericRange {
       incorporateRange(newRange);
     }
     else {
-      ranges.add(newRange);
+      addNonDuplicate(newRange);
     }
   }
 
@@ -352,6 +352,18 @@ public abstract class AbstractNumericRange implements NumericRange {
     else {
       // combining ranges may have brought two ranges together now. try to collapse.
       collapse(combined);
+    }
+  }
+
+  private final void addNonDuplicate(SimpleRange newRange) {
+    boolean isDup = false;
+    for (SimpleRange range : ranges) {
+      if (range.compareTo(newRange) == 0) {
+        isDup = true;
+      }
+    }
+    if (!isDup) {
+      ranges.add(newRange);
     }
   }
 
