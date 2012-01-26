@@ -295,6 +295,14 @@ public class TestIntegerRange extends TestCase {
     verify(range, new int[]{-5}, new boolean[]{true}, new int[]{-3}, new boolean[]{true}, "-5--3", 3);
   }
 
+  public void testDontAddNonContiguousDuplicate() {
+    final IntegerRange range = new IntegerRange(1947);
+    range.add(13, false);
+    range.add(1947, false);
+
+    assertEquals("13,1947", range.toString());
+  }
+
   public static Test suite() {
     TestSuite suite = new TestSuite(TestIntegerRange.class);
     return suite;
