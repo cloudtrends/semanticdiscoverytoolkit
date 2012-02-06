@@ -40,6 +40,18 @@ public class DomAttribute extends DomNode implements Attr {
     super(null, attrName, attrName, attrValue);
 
     this.containingNode = containingNode;
+
+/*
+    if (containingNode != null) {
+      final XmlLite.Data backref = containingNode.getBackReference();
+      if (backref != null) {
+        final XmlLite.Tag tag = backref.asTag();
+        if (tag != null) {
+          tag.setAttribute(attrName, attrValue);
+        }
+      }
+    }
+*/
   }
 
   public String getTextContent() {

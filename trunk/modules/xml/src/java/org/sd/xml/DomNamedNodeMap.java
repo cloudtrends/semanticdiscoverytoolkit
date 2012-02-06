@@ -146,35 +146,67 @@ public class DomNamedNodeMap implements NamedNodeMap {
   }
 
   public Node setNamedItem(Node arg) {
+    Node result = arg;
+
     final String name = arg.getNodeName();
     final String value = arg.getNodeValue();
 
-    setAttribute(name, value);
+    if (setAttribute(name, value)) {
+      if (attr2node != null) {
+        final Node oldItem = attr2node.remove(name);
+      }
+    }
 
-    return getNamedItem(name);
+    if (arg instanceof DomAttribute) {
+      if (attr2node == null) attr2node = new DomNamespaceMap<DomAttribute>();
+      attr2node.put(name, (DomAttribute)arg);
+    }
+    else {
+      result = getNamedItem(name);
+    }
+
+    return arg;
   }
 
   public Node setNamedItemNS(Node arg) {
+    Node result = arg;
+
     final String nsUri = arg.getNamespaceURI();
     final String prefix = arg.lookupPrefix(nsUri);
     final String name = arg.getNodeName();
     final String value = arg.getNodeValue();
 
-    setAttributeNS(nsUri, prefix, name, value);
+    if (setAttributeNS(nsUri, prefix, name, value)) {
+      if (attr2node != null) {
+        final Node oldItem = attr2node.remove(name);
+      }
+    }
 
-    return getNamedItemNS(nsUri, name);
+    if (arg instanceof DomAttribute) {
+      if (attr2node == null) attr2node = new DomNamespaceMap<DomAttribute>();
+      attr2node.put(name, (DomAttribute)arg);
+    }
+    else {
+      result = getNamedItemNS(nsUri, name);
+    }
+
+    return arg;
   }
 
-  private void setAttribute(String name, String value) {
+  private boolean setAttribute(String name, String value) {
     final boolean changed = setValue(null, name, value);
-    _attributeNodes = null;
-    if (changed) removeNamedItem(name);
+    if (changed) {
+      _attributeNodes = null;
+    }
+    return changed;
   }
 
-  private void setAttributeNS(String nsUri, String prefix, String name, String value) {
+  private boolean setAttributeNS(String nsUri, String prefix, String name, String value) {
     final boolean changed = setValue(prefix, name, value);
-    _attributeNodes = null;
-    if (changed) removeNamedItemNS(nsUri, name);
+    if (changed) {
+      _attributeNodes = null;
+    }
+    return changed;
   }
 
 
@@ -281,7 +313,7 @@ public class DomNamedNodeMap implements NamedNodeMap {
 
   private boolean setAttributeValue(String lookupName, String value) {
     final Map<String, String> attrMap = getAttributes();
-    final boolean result = attrMap.containsKey(lookupName);
+    final boolean result = attrMap.containsKey(lookupName) && !value.equals(attrMap.get(lookupName));
 
     attrMap.put(lookupName, value);
 

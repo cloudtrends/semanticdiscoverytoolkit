@@ -102,14 +102,27 @@ public class XmlStringBuilder {
     this.ended = other.ended;
   }
 
+  public boolean isEnded() {
+    return ended;
+  }
+
   /**
    * Adds the full element to this instance if possible.
+   * <p>
+   * NOTE: If this builder's xml is already complete (isEnded), the element
+   * will be appended as the last child of the root element.
    */
   public XmlStringBuilder addElement(DomElement element) {
-    if (ended || element == null) return null;
+    if (element == null) return null;
+    if (ended) {
+      // remove the end tag, set ended=false
+      reopen();
+    }
+
     if (xml == null) initXml(rootTag, false);
     element.asFlatString(xml);
     _xmlElement = null;
+
     return this;
   }
 
@@ -228,9 +241,11 @@ public class XmlStringBuilder {
   public String getXmlString() {
     String result = null;
 
-    if ((xml == null || xml.length() == 0)) {
+    if (xml == null || xml.length() == 0 || (_xmlElement != null && _xmlElement.wasModified())) {
       if (_xmlElement != null) {
         if (xml == null) xml = new StringBuilder();
+        else if (xml.length() != 0) xml.setLength(0);
+
         _xmlElement.asFlatString(xml);
         ended = true;
         result = xml.toString();
@@ -258,6 +273,20 @@ public class XmlStringBuilder {
 
   public String toString() {
     return getXmlString();
+  }
+
+  private final void reopen() {
+    if (xml != null) {
+      final int len = xml.length();
+      for (int pos = len - 1; pos >= 0; --pos) {
+        final char c = xml.charAt(pos);
+        if (c == '<') {
+          xml.setLength(pos);
+          break;
+        }
+      }
+    }
+    ended = false;
   }
 
   private final String getTagName(String tagString) {

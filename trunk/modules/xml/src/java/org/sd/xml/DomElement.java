@@ -345,6 +345,7 @@ public class DomElement extends DomNode implements Element {
     if (hasAttributes()) {
       final DomNamedNodeMap attributes = getDomAttributes();
       attributes.removeNamedItem(name);
+      markAsModified();
     }
   }
 
@@ -354,6 +355,7 @@ public class DomElement extends DomNode implements Element {
     if (hasAttributes()) {
       final DomNamedNodeMap attributes = getDomAttributes();
       result = (Attr)attributes.removeNamedItem(oldAttr.getName());
+      markAsModified();
     }
 
     return result;
@@ -363,23 +365,27 @@ public class DomElement extends DomNode implements Element {
     if (hasAttributes()) {
       final DomNamedNodeMap attributes = getDomAttributes();
       attributes.removeNamedItemNS(namespaceURI, localName);
+      markAsModified();
     }
   }
 
   public void setAttribute(String name, String value) {
     final DomAttribute attr = getOwnerDomDocument().createDomAttribute(this, name, value);
     setAttributeNode(attr);
+    markAsModified();
   }
 
   public Attr setAttributeNode(Attr newAttr) {
     //NOTE: newAttr's values are used and a new Attr instance is created!
     final DomNamedNodeMap attributes = getDomAttributes();
+    markAsModified();
     return (Attr)attributes.setNamedItem(newAttr);
   }
 
   public Attr setAttributeNodeNS(Attr newAttr) {
     //NOTE: newAttr's values are used and a new Attr instance is created!
     final DomNamedNodeMap attributes = getDomAttributes();
+    markAsModified();
     return (Attr)attributes.setNamedItemNS(newAttr);
   }
 
@@ -387,17 +393,21 @@ public class DomElement extends DomNode implements Element {
     final DomAttribute attr = (DomAttribute)(getOwnerDocument().createAttributeNS(namespaceURI, qualifiedName));
     attr.setValue(value);
     setAttributeNodeNS(attr);
+    markAsModified();
   }
 
   public void setIdAttribute(String name, boolean isId) {
+    markAsModified();
     throw new UnsupportedOperationException("Implement when needed.");
   }
 
   public void setIdAttributeNode(Attr idAttr, boolean isId) {
+    markAsModified();
     throw new UnsupportedOperationException("Implement when needed.");
   }
 
   public void setIdAttributeNS(String namespaceURI, String localName, boolean isId) {
+    markAsModified();
     throw new UnsupportedOperationException("Implement when needed.");
   }
 }

@@ -47,6 +47,7 @@ public abstract class DomNode implements Node {
   protected String nodeName;
   protected String nodeValue;
 
+  private boolean modified;
   private DomDocument _ownerDocument;
   private List<DomNode> _domChildNodes;
 
@@ -61,6 +62,7 @@ public abstract class DomNode implements Node {
 
     this.nodeName = nodeName;
     this.nodeValue = nodeValue;
+    this.modified = false;
     this._domChildNodes = null;
 
     this.computedXmlns = false;
@@ -88,11 +90,16 @@ public abstract class DomNode implements Node {
       this._domChildNodes = null;
       this._domChildNodes = null;
       this._domContext = null;
+      markAsModified();
     }
   }
 
   XmlLite.Data getBackReference() {
     return backref;
+  }
+
+  public boolean wasModified() {
+    return modified;
   }
 
   protected boolean commonCase() {
@@ -245,6 +252,7 @@ public abstract class DomNode implements Node {
 
     if (theNewChild != null) {
       addChild(theNewChild);
+      markAsModified();
     }
     else {
       throw new DOMException(errorCode, "Can't append child.");
@@ -259,6 +267,7 @@ public abstract class DomNode implements Node {
       final Tree<XmlLite.Data> childTree = childNode.asTree();
       if (childTree != null) {
         tree.addChild(childTree);
+        markAsModified();
 
         if (_domChildNodes != null) {
           _domChildNodes.add(childNode);
@@ -411,6 +420,7 @@ public abstract class DomNode implements Node {
   void setOwnerDocument(DomDocument ownerDocument) {
     // only called from DomDocument.
     this._ownerDocument = ownerDocument;
+    markAsModified();
   }
 
   public DomContext getDomContext() {
@@ -435,6 +445,7 @@ public abstract class DomNode implements Node {
   public void setDataProperties(DataProperties dataProperties) {
     final DomDocument ownerDocument = getOwnerDomDocument();
     ownerDocument.doSetDataProperties(dataProperties);
+    markAsModified();
   }
 
   public Node getParentNode() {
@@ -528,6 +539,7 @@ public abstract class DomNode implements Node {
   }
 
   public Node insertBefore(Node newChild, Node refChild) {
+    markAsModified();
     throw new UnsupportedOperationException("Implement when needed.");
   }
 
@@ -568,6 +580,7 @@ public abstract class DomNode implements Node {
   }
 
   public void normalize() {
+    markAsModified();
     throw new UnsupportedOperationException("Implement when needed.");
   }
 
@@ -579,6 +592,7 @@ public abstract class DomNode implements Node {
       final Tree<XmlLite.Data> oldChildTree = oldChildNode.asTree();
       if (oldChildTree != null) {
         oldChildTree.prune();
+        markAsModified();
 
         if (_domChildNodes != null) {
           _domChildNodes.remove(oldChildNode);
@@ -606,6 +620,7 @@ public abstract class DomNode implements Node {
           final Tree<XmlLite.Data> newChildTree = newChildNode.asTree();
           if (newChildTree != null) {
             myTree.setChild(childPos, newChildTree);
+            markAsModified();
 
             if (_domChildNodes != null) {
               _domChildNodes.set(childPos, newChildTree.getData().asDomNode());
@@ -630,6 +645,7 @@ public abstract class DomNode implements Node {
         final XmlLite.Tag tag = node.getData().asTag();
         if (tag != null) {
           tag.name = nodeName;
+          markAsModified();
         }
       }
     }
@@ -637,17 +653,21 @@ public abstract class DomNode implements Node {
 
   public void setNodeValue(String nodeValue) {
     this.nodeValue = nodeValue;
+    markAsModified();
   }
 
   public void setPrefix(String prefix) {
+    markAsModified();
     throw new UnsupportedOperationException("Implement when needed.");
   }
 
   public void setTextContent(String textContent) {
+    markAsModified();
     throw new UnsupportedOperationException("Implement when needed.");
   }
 
   public Object setUserData(String key, Object data, UserDataHandler handler) {
+    markAsModified();
     throw new UnsupportedOperationException("Implement when needed.");
   }
 
@@ -680,10 +700,12 @@ public abstract class DomNode implements Node {
   protected void addUri(String uri, String prefix) {
     if (nsUri2Prefix == null) nsUri2Prefix = new HashMap<String, String>();
     nsUri2Prefix.put(uri, prefix);
+    markAsModified();
   }
 
   protected void setNamespaceURI(String namespaceURI) {
     _xmlns = namespaceURI;
+    markAsModified();
   }
 
   protected NodeList doGetElementsByTagName(String tagname) {
@@ -747,5 +769,12 @@ public abstract class DomNode implements Node {
       }
     }
     return _domChildNodes;
+  }
+
+  protected final void markAsModified() {
+    for (DomNode domNode = this; domNode != null; domNode = domNode.getParent()) {
+      if (domNode.modified) break;
+      domNode.modified = true;
+    }
   }
 }
