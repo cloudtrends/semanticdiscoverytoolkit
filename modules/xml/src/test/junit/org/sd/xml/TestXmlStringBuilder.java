@@ -19,6 +19,7 @@
 package org.sd.xml;
 
 
+import java.io.IOException;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -46,6 +47,28 @@ public class TestXmlStringBuilder extends TestCase {
     xml.addTagAndText("child id='1'", null);
     final String xmlString = xml.getXmlString();
     assertEquals("<root><child id='1'/></root>", xmlString);
+  }
+
+  public void testAddElementAfterEnd() throws IOException {
+    final XmlStringBuilder xmlBuilder = new XmlStringBuilder();
+    xmlBuilder.setXmlString("<test><a a=\"1\"/></test>");
+    xmlBuilder.addElement((DomElement)XmlFactory.buildDomNode("<b b=\"2\"/>", false));
+    assertEquals("<test><a a=\"1\"/><b b=\"2\"/>", xmlBuilder.getXmlString());
+  }
+
+  public void testAddAttribute() {
+    final XmlStringBuilder xmlBuilder = new XmlStringBuilder();
+    xmlBuilder.setXmlString("<test><a a=\"1\"/></test>");
+    xmlBuilder.getXmlElement().setAttribute("b", "2");
+
+    // test setting a non-existent value
+    String got = xmlBuilder.getXmlString();
+    assertEquals("<test b=\"2\"><a a=\"1\"/></test>", got);
+
+    // test overwriting an existing value
+    xmlBuilder.getXmlElement().setAttribute("b", "it's 2");
+    got = xmlBuilder.getXmlString();
+    assertEquals("<test b=\"it&apos;s 2\"><a a=\"1\"/></test>", got);
   }
 
   public static Test suite() {
