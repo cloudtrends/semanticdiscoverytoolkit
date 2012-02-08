@@ -56,6 +56,28 @@ public class TestXmlStringBuilder extends TestCase {
     assertEquals("<test><a a=\"1\"/><b b=\"2\"/>", xmlBuilder.getXmlString());
   }
 
+  public void testAddChildToTerminal() throws IOException {
+    final XmlStringBuilder xmlBuilder = new XmlStringBuilder();
+    xmlBuilder.setXmlString("<test a=\"1\"/>");
+    xmlBuilder.addElement((DomElement)XmlFactory.buildDomNode("<b b=\"2\"/>", false));
+    assertEquals("<test a=\"1\"><b b=\"2\"/></test>", xmlBuilder.getXmlString());
+  }
+
+  public void testAddChildToTerminalElement() throws IOException {
+    //NOTE: this is really testing DomNode.addChild, not XmlStringBuilder!
+
+    final XmlStringBuilder xmlBuilder = new XmlStringBuilder();
+    xmlBuilder.setXmlString("<test a=\"1\"/>");
+    final DomElement domElement = xmlBuilder.getXmlElement();
+
+    final DomElement childElement = (DomElement)XmlFactory.buildDomNode("<b b=\"2\"/>", false);
+    domElement.addChild(childElement);
+
+    final StringBuilder xmlString = new StringBuilder();
+    domElement.asFlatString(xmlString);
+    assertEquals("<test a=\"1\"><b b=\"2\"/></test>", xmlString.toString());
+  }
+
   public void testAddAttribute() {
     final XmlStringBuilder xmlBuilder = new XmlStringBuilder();
     xmlBuilder.setXmlString("<test><a a=\"1\"/></test>");

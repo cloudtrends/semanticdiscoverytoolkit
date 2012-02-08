@@ -278,14 +278,30 @@ public class XmlStringBuilder {
   private final void reopen() {
     if (xml != null) {
       final int len = xml.length();
-      for (int pos = len - 1; pos >= 0; --pos) {
+      boolean selfClosing = false;
+      int pos = len - 1;
+      for (; pos >= 0; --pos) {
         final char c = xml.charAt(pos);
         if (c == '<') {
-          xml.setLength(pos);
           break;
+        }
+        else if (c == '/' && pos == len - 2) {
+          selfClosing = true;
+        }
+      }
+
+      if (pos >= 0) {
+        if (selfClosing) {
+          rootTag = xml.substring(pos + 1, len - 2);
+          xml.setLength(len - 2);
+          xml.append('>');
+        }
+        else {
+          xml.setLength(pos);
         }
       }
     }
+
     ended = false;
   }
 
