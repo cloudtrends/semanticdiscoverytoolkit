@@ -779,6 +779,10 @@ public class XmlLite {
       this.selfTerminating = true;
     }
 
+    public void setSelfTerminating(boolean selfTerminating) {
+      this.selfTerminating = selfTerminating;
+    }
+
     /**
      * Utility to help keep track of the number of children this tag has.
      * <p>

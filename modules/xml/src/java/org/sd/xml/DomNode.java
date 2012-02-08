@@ -268,10 +268,10 @@ public abstract class DomNode implements Node {
       if (childTree != null) {
         tree.addChild(childTree);
         markAsModified();
+        tree.getData().asTag().setSelfTerminating(false);
 
-        if (_domChildNodes != null) {
-          _domChildNodes.add(childNode);
-        }
+        if (_domChildNodes == null) _domChildNodes = new ArrayList<DomNode>();
+        _domChildNodes.add(childNode);
       }
     }
   }
