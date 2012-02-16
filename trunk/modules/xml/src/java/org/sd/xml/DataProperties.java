@@ -100,7 +100,14 @@ public class DataProperties extends BaseDataProperties {
   }
 
   private final Properties copy(Properties otherProperties) {
-    return (otherProperties == null) ? null : new Properties(otherProperties);
+    if (otherProperties == null) return null;
+
+    final Properties result = new Properties();
+    for (String name : otherProperties.stringPropertyNames()) {
+      result.setProperty(name, otherProperties.getProperty(name));
+    }
+
+    return result;
   }
 
   private final String[] copy(String[] otherArgs) {

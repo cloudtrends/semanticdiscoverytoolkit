@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.util.InputContextIterator;
 import org.sd.xml.DataProperties;
+import org.sd.xml.DomElement;
 
 /**
  * Container for settings for multi-pass parsing.
@@ -57,6 +58,6 @@ public class MultiParseSettings {
     for (ParseSettings parseSettings : this.parseSettings) {
       output = parseSettings.parse(parseConfig, inputContextIterator, output, overrides, die);
     }
-    return output;
+    return output == null ? new ParseOutputCollector((DomElement)null) : output;
   }
 }
