@@ -447,7 +447,7 @@ public class AtnParseRunner {
       didOne = true;
     }
 
-    return result;
+    return result == null ? new ParseOutputCollector((DomElement)null) : result;
   }
 
   private InputContextIterator updateInput(InputContextIterator inputContextIterator, InputUpdateStrategy inputUpdateStrategy, ParseOutputCollector output) {
