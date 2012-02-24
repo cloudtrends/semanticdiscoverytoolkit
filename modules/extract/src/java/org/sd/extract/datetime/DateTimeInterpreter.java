@@ -37,11 +37,22 @@ import java.util.List;
  */
 public class DateTimeInterpreter implements Interpreter {
   
+  private static Calendar DEFAULT_CURRENT_CALENDAR = DateUtil.CURRENT_CALENDAR;
+  public static Calendar getDefaultCalendar() {
+    return DEFAULT_CURRENT_CALENDAR;
+  }
+  public static final Calendar setDefaultCalendar(Calendar calendar) {
+    Calendar result = DEFAULT_CURRENT_CALENDAR;
+    DEFAULT_CURRENT_CALENDAR = calendar;
+    return result;
+  }
+
+
   private Calendar currentCalendar;
   private boolean doGuessYear;
 
   public DateTimeInterpreter() {
-    this(DateUtil.CURRENT_CALENDAR, true);
+    this(DEFAULT_CURRENT_CALENDAR, true);
   }
 
   /**
