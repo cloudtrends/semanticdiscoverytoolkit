@@ -22,11 +22,13 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import org.sd.extract.datetime.DateTimeInterpreter;
 import org.sd.io.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.GregorianCalendar;
 
 /**
  * JUnit Tests for the BlogSnippetExtractor class.
@@ -130,6 +132,7 @@ public class TestBlogSnippetExtractor extends TestCase {
   }
 
   public void testSamples() throws IOException {
+    DateTimeInterpreter.setDefaultCalendar(new GregorianCalendar(2010, 6, 1));
     final BlogSnippetExtractor snippetizer = new BlogSnippetExtractor(2000);
 
     verifySnippets(snippetizer, FileUtil.getFile(this.getClass(), "resources/cache/cache-9999/bl/blog.maudoune.com.html.gz"),
@@ -215,7 +218,7 @@ public class TestBlogSnippetExtractor extends TestCase {
           "[(DATE (MONTH 'December') (DAY '23') (YEAR '2005'))]",
           "[(DATE (MONTH 'December') (DAY '20') (YEAR '2005'))]",
           "[(DATE (MONTH 'December') (DAY '18') (YEAR '2005'))]",
-          "[(DATE (MONTH 'December') (DAY '13') (YEAR '2005'))]",
+          "[(DATE (MONTH 'December') (YEAR '13')), (DATE (MONTH 'December') (DAY '13') (YEAR '2005'))]",
         });
 
     verifySnippets(snippetizer, FileUtil.getFile(this.getClass(), "resources/snippet-sample02.html.gz"),

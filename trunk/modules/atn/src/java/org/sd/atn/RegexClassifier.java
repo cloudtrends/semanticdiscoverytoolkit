@@ -19,17 +19,12 @@
 package org.sd.atn;
 
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.sd.atn.ResourceManager;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
 import org.sd.xml.DomElement;
-import org.w3c.dom.NodeList;
 
 /**
  * A classifier based on one or more regex patterns.
@@ -54,17 +49,8 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
   }
 
   private final void init(DomElement classifierIdElement, String regexesNodeName) {
-    this.regexes = new ArrayList<RegexData>();
-
     final DomElement regexesNode = (DomElement)classifierIdElement.selectSingleNode(regexesNodeName);
-
-    if (regexesNode != null) {
-      final NodeList regexNodes = regexesNode.selectNodes("regex");
-      for (int i = 0; i < regexNodes.getLength(); ++i) {
-        final DomElement regexElement = (DomElement)(regexNodes.item(i));
-        this.regexes.add(new RegexData(regexElement));
-      }
-    }
+    this.regexes = RegexData.load(regexesNode);
   }
 
   public boolean isEmpty() {
@@ -93,7 +79,6 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
     return result;
   }
 
-
   //
   // <regex
   //   type='matches/lookingat/find'
@@ -112,88 +97,4 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
   //  text content:
   //  - regular expression
   //
-
-
-  private enum MatchType { MATCHES, LOOKING_AT, FIND };
-
-  private static final class RegexData {
-    private Pattern pattern;
-    private MatchType matchType;
-    private Map<Integer, String> group2attr;
-    private boolean ldelim;
-    private boolean rdelim;
-
-    RegexData(DomElement regexElement) {
-      final String regex = regexElement.getTextContent();
-      this.pattern = Pattern.compile(regex);
-
-      // matchType
-      final String type = regexElement.getAttributeValue("type", "matches").toLowerCase();
-      this.matchType = "lookingat".equals(type) ? MatchType.LOOKING_AT : "find".equals(type) ? MatchType.FIND : MatchType.MATCHES;
-
-      // ldelim, rdelim
-      this.ldelim = regexElement.getAttributeBoolean("ldelim", false);
-      this.rdelim = regexElement.getAttributeBoolean("rdelim", false);
-
-      // group2attr
-      final Map<String, String> attrs = regexElement.getDomAttributes().getAttributes();
-      this.group2attr = new TreeMap<Integer, String>();
-      for (Map.Entry<String, String> attrEntry : attrs.entrySet()) {
-        final String key = attrEntry.getKey();
-        if (key.startsWith("group")) {
-          try {
-            final Integer groupNum = new Integer(key.substring(5));
-            group2attr.put(groupNum, attrEntry.getValue());
-          }
-          catch (NumberFormatException e) {
-            //ignore non-number groupN attrs
-          }
-        }
-      }
-      if (group2attr.size() == 0 && regexElement.getParentNode() != null && regexElement.getParentNode().getParentNode() != null) {
-        // default to group0=classifierName (= regex.parent.parent.name)
-        group2attr.put(0, regexElement.getParentNode().getParentNode().getLocalName());
-      }
-    }
-
-    public boolean matches(String text, Token token) {
-      boolean result = false;
-
-      if (token != null && (ldelim || rdelim)) {
-        final StringBuilder delimText = new StringBuilder(text);
-        if (ldelim) {
-          delimText.insert(0, token.getPreDelim());
-        }
-        if (rdelim) {
-          delimText.append(token.getPostDelim());
-        }
-        text = delimText.toString();
-      }
-
-      final Matcher m = pattern.matcher(text);
-
-      switch (matchType) {
-        case LOOKING_AT :
-          result = m.lookingAt(); break;
-        case FIND :
-          result = m.find(); break;
-        default :
-          result = m.matches();
-      }
-
-      if (result) {
-        for (Map.Entry<Integer, String> entry : group2attr.entrySet()) {
-          final Integer group = entry.getKey();
-
-          final String value = m.group(group);
-          if (value != null) {
-            final String attr = entry.getValue();
-            if (token != null) token.setFeature(attr, value, this);
-          }
-        }
-      }
-
-      return result;
-    }
-  }
 }
