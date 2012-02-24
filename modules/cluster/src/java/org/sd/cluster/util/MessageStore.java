@@ -43,7 +43,7 @@ public class MessageStore
 
     final File firstStoreFile = getFirstStoreFile(config, jobIdString, dataDirName, storeFileName);
     this.storeDir = firstStoreFile.getParentFile();
-    this.storeName = storeName;
+    this.storeName = storeFileName;
 
     final int storeLen = storeName.length();
     int lastDotPos = storeName.lastIndexOf('.');
