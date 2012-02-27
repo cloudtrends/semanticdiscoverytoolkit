@@ -431,7 +431,7 @@ public class StandardTokenizerOptions {
     this.quoteAndParenBreak = translateBreak(quoteAndParenBreak);
     this.symbolBreak = translateBreak(symbolBreak);
     this.slashBreak = translateBreak(slashBreak);
-    this.embeddedPunctuationBreak = translateBreak(embeddedApostropheBreak);
+    this.embeddedApostropheBreak = translateBreak(embeddedApostropheBreak);
     this.embeddedPunctuationBreak = translateBreak(embeddedPunctuationBreak);
 
     setSymbolDigits(options.getString("symbolDigits", null));
