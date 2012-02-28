@@ -24,6 +24,7 @@ import org.sd.cio.MessageHelper;
 import org.sd.util.RollingStore;
 import org.sd.cluster.config.Config;
 import org.sd.cluster.config.ClusterContext;
+import java.io.DataOutputStream;
 import java.io.OutputStream;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -38,6 +39,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 /**
  * Utility class for holding stores of publishable messages
@@ -47,60 +51,54 @@ import java.util.regex.Pattern;
 public class MessageStore
   extends RollingStore<Publishable>
 {
+  public static final String DEFAULT_JOBID = "message";
+  public static final String DEFAULT_PREFIX = "message";
+  public static final String DEFAULT_SUFFIX = "out";
+  private static final DateFormat s_format = new SimpleDateFormat("yyyy-MM-dd-kk:mm:ss");
+  private static final int ROLL_INTERVAL = 3600;  // number of seconds between rolls
+
   private File storeDir;
-  private String storeName;
   private String storeNamePrefix;
   private String storeNameSuffix;
   private Pattern namePattern;
   private List<File> storeFiles;
 
-  public MessageStore(Config config, String jobIdString, 
-                      String dataDirName, String storeFileName) 
+  public MessageStore(Config config, String dataDirName) 
+  {
+    this(config, DEFAULT_JOBID, dataDirName, 
+         new Date(), DEFAULT_PREFIX, DEFAULT_SUFFIX);
+  }
+
+  public MessageStore(Config config, String jobIdString, String dataDirName, 
+                      Date startDate, String storeNamePrefix, String storeNameSuffix) 
   {
     super(null, true, false, true);
 
-    final File firstStoreFile = getFirstStoreFile(config, jobIdString, dataDirName, storeFileName);
-    this.storeDir = firstStoreFile.getParentFile();
-    this.storeName = storeFileName;
-
-    final int storeLen = storeName.length();
-    int lastDotPos = storeName.lastIndexOf('.');
-    if (lastDotPos < 0) lastDotPos = storeLen;
-
-    this.storeNamePrefix = 
-      lastDotPos >= 0 ? storeName.substring(0, lastDotPos) : storeName;
-    this.storeNameSuffix = 
-      lastDotPos < 0 || lastDotPos >= storeLen ? "" : storeName.substring(lastDotPos);
-    this.namePattern = Pattern.compile("^" + storeNamePrefix + "-(\\d+)" + storeNameSuffix + "(.*)$");
-    this.storeFiles = getStoreFiles(storeDir, storeNamePrefix, storeNameSuffix, namePattern);
+    this.storeNamePrefix = storeNamePrefix;
+    this.storeNameSuffix = storeNameSuffix;
+    this.storeDir = new File(config.getOutputDataPath(jobIdString, dataDirName));
+    this.namePattern = Pattern.compile("^" + storeNamePrefix + "-(.*)\\."+storeNameSuffix+"$");
+    this.storeFiles = getStoreFiles();
 
     initialize(null);
   }
 
-  private final File getFirstStoreFile(Config config, String jobIdString,  
-                                       String dataDirName, String storeName) 
-  {
-    String filename = config.getOutputDataPath(jobIdString, dataDirName);
-    return new File(filename + "/" + storeName);
-  }
+  private final Comparator<File> s_storeComparator = 
+    new Comparator<File>() 
+    {
+      public int compare(File f1, File f2) 
+      {
+        final Date d1 = getStoreDate(f1, namePattern);
+        final Date d2 = getStoreDate(f2, namePattern);
+        return d1.compareTo(d2);
+      }
+      public boolean equals(Object o) 
+      {
+        return this == o;
+      }
+    };
 
-  /**
-   * Get the last existing store file, or null if none exist.
-   */
-  private final File getLastStoreFile() 
-  {
-    File result = null;
-
-    if (this.storeFiles.size() > 0) {
-      result = storeFiles.get(storeFiles.size() - 1);
-    }
-
-    return result;
-  }
-
-  private final List<File> getStoreFiles(File storeDir, 
-                                       String storeNamePrefix, String storeNameSuffix, 
-                                       final Pattern p) 
+  private final List<File> getStoreFiles() 
   {
     final List<File> result = new ArrayList<File>();
 
@@ -110,37 +108,47 @@ public class MessageStore
     else {
       final File[] files = storeDir.listFiles(new FilenameFilter() {
           public boolean accept(File dir, String name) {
-            return p.matcher(name).matches();
+            return namePattern.matcher(name).matches();
           }
         });
-      Arrays.sort(files, new Comparator<File>() {
-          public int compare(File f1, File f2) {
-            final int i1 = getStoreNumber(f1, p);
-            final int i2 = getStoreNumber(f2, p);
-            return i1 - i2;
-          }
-          public boolean equals(Object o) {
-            return this == o;
-          }
-        });
+      Arrays.sort(files, s_storeComparator);
       for (File file : files) result.add(file);
     }
 
     return result;
   }
 
+  public List<File> getStoreFiles(Date startDate, Date endDate) 
+  {
+    List<File> result = new ArrayList<File>();
+    for(File storeFile : getStoreFiles())
+    {
+      if((startDate == null || getStoreDate(storeFile, namePattern).compareTo(startDate) >= 0) &&
+         (endDate == null || getStoreDate(storeFile, namePattern).compareTo(endDate) <= 0))
+        result.add(storeFile);
+    }
+    return result;
+  }
+
   /**
    * Get the store number for the file (if it has one) or -1.
    */
-  private final int getStoreNumber(final File storeFile, final Pattern p) 
+  private static final Date getStoreDate(final File storeFile, Pattern p) 
   {
-    int result = -1;
-
+    Date result = null;
     final Matcher m = p.matcher(storeFile.getName());
-    if (m.matches()) {
-      result = Integer.parseInt(m.group(1));
+    if (m.matches()) 
+    {
+      try
+      {
+        result = s_format.parse(m.group(1));
+      }
+      catch(ParseException parseex)
+      {
+        System.err.println("Error while attempting to parse date from file("+storeFile.getName()+"):"+
+                           parseex.getMessage());
+      }
     }
-
     return result;
   }
 
@@ -156,7 +164,7 @@ public class MessageStore
    */
   protected Store<Publishable> buildStore(File storeFile) 
   {
-    return new PublishableStore(storeFile);
+    return new PublishableStore(storeFile, namePattern);
   }
 
   /**
@@ -165,19 +173,23 @@ public class MessageStore
    */
   protected List<File> nextAvailableFile() 
   {
-    File result = null;
-
-    final File lastStoreFile = getLastStoreFile();
-    int nextNum = 0;
-
-    if (lastStoreFile != null) {
-      nextNum = getStoreNumber(lastStoreFile, namePattern) + 1;
-    }
-
-    result = new File(storeDir, storeNamePrefix + "-" + nextNum + storeNameSuffix);
+    File result = new File(storeDir, getStoreFilename(new Date()));
     storeFiles.add(result);
-
     return storeFiles;
+  }
+
+  private String getStoreFilename(Date date)
+  {
+    long ts = date.getTime();
+    long tsMod = (ts/(ROLL_INTERVAL * 1000L)) * (ROLL_INTERVAL * 1000L);
+
+    StringBuilder nameBuilder = new StringBuilder();
+    nameBuilder.append(storeNamePrefix);
+    nameBuilder.append("-");
+    nameBuilder.append(s_format.format(new Date(tsMod)));
+    nameBuilder.append(".");
+    nameBuilder.append(storeNameSuffix);
+    return nameBuilder.toString();
   }
 
   /**
@@ -190,16 +202,36 @@ public class MessageStore
     // nothing to do here just yet
   }
 
+  public void writeMessage(Publishable message)
+    throws IOException
+  {
+    PublishableStore store = (PublishableStore)getStore();
+    if (store != null) 
+    {
+      boolean rollover = store.shouldRoll();
+      if (rollover)
+      {
+        roll(); // not rolling with add, since we will add after roll
+        store = (PublishableStore)getStore();
+      }
+
+      synchronized (store) {
+        store.addElement(message);
+      }
+    }
+  }
+
   public static final class PublishableStore 
     implements Store<Publishable> 
   {
-    private long createDate = System.currentTimeMillis();
+    private long createDate;
     private File outputFile;
     private OutputStream outputStore;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     
-    public PublishableStore(File outputFile) {
+    public PublishableStore(File outputFile, Pattern p) {
       this.outputFile = outputFile;
+      this.createDate = getStoreDate(outputFile, p).getTime();
     }
 
     public void open() 
@@ -233,12 +265,14 @@ public class MessageStore
     public boolean addElement(Publishable message)
       throws IOException 
     {
-      MessageHelper.dumpPublishable(outputStore, message);
-      outputStore.flush();
+      DataOutputStream out = new DataOutputStream(outputStore);
+      MessageHelper.writePublishable(out, message);
+      out.flush();
       return false;
     }
 
-    // always start a new store on restarts
+    // always append to the existing store
+    // (rely on the interval to roll the store upon resume)
     public boolean shouldResume() 
     {
       return true;
@@ -248,7 +282,7 @@ public class MessageStore
     public boolean shouldRoll() 
     {
       long interval = System.currentTimeMillis() - createDate;
-      return (interval > 3600000L); // 1hr intervals
+      return (interval > (ROLL_INTERVAL * 1000L));
     }
   }
 }
