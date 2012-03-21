@@ -477,7 +477,13 @@ public abstract class DomNode implements Node {
   }
 
   public Object getUserData(String key) {
-    throw new UnsupportedOperationException("Implement when needed.");
+    Object result = null;
+
+    if (backref != null) {
+      result = backref.getProperty(key);
+    }
+
+    return result;
   }
 
   public boolean hasAttributes() {
@@ -667,8 +673,16 @@ public abstract class DomNode implements Node {
   }
 
   public Object setUserData(String key, Object data, UserDataHandler handler) {
-    markAsModified();
-    throw new UnsupportedOperationException("Implement when needed.");
+    Object result = data;
+    if (backref != null) {
+      backref.setProperty(key, data);
+      //todo: invoke UserDataHandler appropriately
+    }
+    else {
+      result = null;
+    }
+
+    return result;
   }
 
   public DomNode selectSingleNode(String xpath) {

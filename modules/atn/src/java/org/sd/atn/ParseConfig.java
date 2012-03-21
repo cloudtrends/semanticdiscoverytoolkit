@@ -199,7 +199,7 @@ public class ParseConfig {
   public void supplement(DomElement supplementElement) {
     //
     // <supplement>
-    //   <classifier parser="compoundID:parserID" id="classifierID" ...supplemental attributes..>...supplemental elements...</classifier>
+    //   <classifier parser="compoundID:parserID" id="classifierID" mode="supplement|override" ...supplemental attributes..>...supplemental elements...</classifier>
     //   <tokenizerOptions parser="compoundID:parserID">
     //      ...overriding tokenizer options...
     //   </tokenizerOptions>
