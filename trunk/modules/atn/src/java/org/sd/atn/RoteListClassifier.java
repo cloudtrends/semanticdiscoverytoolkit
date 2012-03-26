@@ -41,8 +41,8 @@ import org.w3c.dom.NodeList;
  * Classifier that takes a list of terms in the defining xml or reads a flat
  * file with terms.
  * <p>
- * Flat file names are specified under 'textfile caseSensitive="true|false"'
- * _keyFeature="..." nodes and have contents of the form:
+ * Flat file names are specified under 'textfile caseSensitive="true|false"
+ * _keyFeature="..." classFeature="..."' nodes and have contents of the form:
  * <p>
  * term \t key=val \t key=val \t ...
  * <p>
@@ -54,6 +54,9 @@ import org.w3c.dom.NodeList;
  * used in the file. This is needed to avoid shadowing rules of the same
  * name as the feature in the file, when the rote list is used in a classifier
  * with a different name.
+ * <p>
+ * If classFeature is non-empty, then all terms will receive a feature with
+ * "class" as the the key and the classifer's name as the value.
  * 
  * @author Spence Koehler
  */
@@ -62,14 +65,14 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   private static final Map<String, String> EMPTY_ATTRIBUTES = new HashMap<String, String>();
 
   //
-  // <roteListType name='optionalName' caseSensitive='defaultCaseSensitivity'>
+  // <roteListType name='optionalName' caseSensitive='defaultCaseSensitivity' classFeature='...'>
   //   <jclass>org.sd.atn.RoteListClassifier</jclass>
-  //   <terms caseSensitive='...' ...collective term attributes...>
+  //   <terms caseSensitive='...' classFeature='...' ...collective term attributes...>
   //     <term ...single term attributes...>...</term>
   //     ...
   //   </terms>
   //   ...
-  //   <textfile caseSensitive='...' _keyFeature='...' ...collective term attributes...>
+  //   <textfile caseSensitive='...' classFeature='...' _keyFeature='...' ...collective term attributes...>
   //   ...
   //   <regexes ...>   // see RegexData
   //     <regex ...>...</regex>
@@ -93,6 +96,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   private TermsBundle terms;
   private TermsBundle stopwords;
   private boolean defaultCaseSensitivity;
+  private String classFeature;
   private ResourceManager resourceManager;
   private String name;
   private boolean trace;
@@ -109,12 +113,14 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     this.terms = null;
     this.stopwords = null;
     this.defaultCaseSensitivity = true;
+    this.classFeature = null;
 
     doSupplement(classifierIdElement);
   }
 
   protected final void doSupplement(DomNode classifierIdElement) {
     this.defaultCaseSensitivity = classifierIdElement.getAttributeBoolean("caseSensitive", this.defaultCaseSensitivity);
+    this.classFeature = classifierIdElement.getAttributeValue("classFeature", this.classFeature);
     this.trace = classifierIdElement.getAttributeBoolean("trace", false);
 
     final NodeList childNodes = classifierIdElement.getChildNodes();
@@ -286,6 +292,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     return defaultCaseSensitivity;
   }
 
+  protected String getClassFeature() {
+    return classFeature;
+  }
+
   protected TermsBundle getTerms() {
     return terms;
   }
@@ -298,7 +308,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     if (termsElement == null) return termsBundle;
 
     if (termsBundle == null) termsBundle = new TermsBundle(isStopwords);
-    termsBundle.loadTerms(termsElement, this.defaultCaseSensitivity);
+    termsBundle.loadTerms(termsElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature);
     return termsBundle;
   }
 
@@ -306,7 +316,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     if (textfileElement == null) return termsBundle;
 
     if (termsBundle == null) termsBundle = new TermsBundle(isStopwords);
-    termsBundle.loadTextFile(textfileElement, this.defaultCaseSensitivity, resourceManager, classifierName);
+    termsBundle.loadTextFile(textfileElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature, resourceManager, classifierName);
     return termsBundle;
   }
 
@@ -314,7 +324,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     if (regexesElement == null) return termsBundle;
 
     if (termsBundle == null) termsBundle = new TermsBundle(isStopwords);
-    termsBundle.loadRegexes(regexesElement, this.defaultCaseSensitivity);
+    termsBundle.loadRegexes(regexesElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature);
     return termsBundle;
   }
 
@@ -322,7 +332,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     if (classifiersElement == null) return termsBundle;
 
     if (termsBundle == null) termsBundle = new TermsBundle(isStopwords);
-    termsBundle.loadClassifiers(classifiersElement, this.defaultCaseSensitivity, resourceManager);
+    termsBundle.loadClassifiers(classifiersElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature, resourceManager);
     return termsBundle;
   }
 
@@ -333,14 +343,16 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
    */
   protected static final class Terms {
     private boolean caseSensitive;
+    private String classFeature;
     private boolean isStopwords;
     private Map<String, Map<String, String>> term2attributes;
     private List<RegexData> regexes;
     private List<RoteListClassifier> classifiers;
     private boolean trace;
 
-    public Terms(boolean caseSensitive, boolean isStopwords) {
+    public Terms(boolean caseSensitive, String classFeature, boolean isStopwords) {
       this.caseSensitive = caseSensitive;
+      this.classFeature = "".equals(classFeature) ? null : classFeature;
       this.isStopwords = isStopwords;
       this.term2attributes = new HashMap<String, Map<String, String>>();
       this.regexes = null;
@@ -381,6 +393,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       return caseSensitive;
     }
 
+    public String getClassFeature() {
+      return classFeature;
+    }
+
     public boolean isStopwords() {
       return isStopwords;
     }
@@ -388,6 +404,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     public boolean doClassify(Token token) {
       boolean result = false;
 
+      boolean hasClassAttribute = false;
       String key = token.getText();
 
       if (!caseSensitive) {
@@ -406,6 +423,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
           final Map<String, String> attributes = term2attributes.get(key);
 
           if (attributes != null) {
+            hasClassAttribute = attributes.containsKey("class");
             for (Map.Entry<String, String> kvPair : attributes.entrySet()) {
               token.setFeature(kvPair.getKey(), kvPair.getValue(), this);
             }
@@ -439,7 +457,11 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         }
       }
 
-      if (trace) {
+      if (result && classFeature != null && !hasClassAttribute) {
+        token.setFeature("class", classFeature, this);
+      }
+
+      if (trace && !result) {
         System.out.println("\tdidn't find '" + key + "'");
       }
 
@@ -480,6 +502,17 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
             matched = true;
             break;
           }
+        }
+      }
+
+      if (matched && classFeature != null) {
+        boolean hasClassAttribute = false;
+        if (result != null) {
+          hasClassAttribute = result.containsKey("class");
+        }
+        if (!hasClassAttribute) {
+          if (result == null) result = new HashMap<String, String>();
+          result.put("class", classFeature);
         }
       }
 
@@ -685,39 +718,40 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       return result;
     }
 
-    protected final void loadTerms(DomElement termsElement, boolean defaultCaseSensitivity) {
-      final Terms theTerms = getTheTerms(termsElement, defaultCaseSensitivity);
+    protected final void loadTerms(DomElement termsElement, boolean defaultCaseSensitivity, String classFeature) {
+      final Terms theTerms = getTheTerms(termsElement, defaultCaseSensitivity, classFeature);
       theTerms.loadTerms(termsElement);
     }
 
-    protected final void loadTextFile(DomElement textfileElement, boolean defaultCaseSensitivity, ResourceManager resourceManager, String classifierName) {
-      final Terms theTerms = getTheTerms(textfileElement, defaultCaseSensitivity);
+    protected final void loadTextFile(DomElement textfileElement, boolean defaultCaseSensitivity, String classFeature, ResourceManager resourceManager, String classifierName) {
+      final Terms theTerms = getTheTerms(textfileElement, defaultCaseSensitivity, classFeature);
       theTerms.loadTextFile(textfileElement, resourceManager, classifierName);
     }
 
-    protected final void loadRegexes(DomElement regexesElement, boolean defaultCaseSensitivity) {
-      final Terms theTerms = getTheTerms(regexesElement, defaultCaseSensitivity);
+    protected final void loadRegexes(DomElement regexesElement, boolean defaultCaseSensitivity, String classFeature) {
+      final Terms theTerms = getTheTerms(regexesElement, defaultCaseSensitivity, classFeature);
       theTerms.loadRegexes(regexesElement);
     }
 
-    protected final void loadClassifiers(DomElement classifiersElement, boolean defaultCaseSensitivity, ResourceManager resourceManager) {
-      final Terms theTerms = getTheTerms(classifiersElement, defaultCaseSensitivity);
+    protected final void loadClassifiers(DomElement classifiersElement, boolean defaultCaseSensitivity, String classFeature, ResourceManager resourceManager) {
+      final Terms theTerms = getTheTerms(classifiersElement, defaultCaseSensitivity, classFeature);
       theTerms.loadClassifiers(classifiersElement, resourceManager);
     }
 
     /** Get the correct (case -sensitive or -insensitive) terms */
-    private final Terms getTheTerms(DomElement theElement, boolean defaultCaseSensitivity) {
+    private final Terms getTheTerms(DomElement theElement, boolean defaultCaseSensitivity, String defaultClassFeature) {
       Terms theTerms = null;
 
       final boolean caseSensitive = theElement.getAttributeBoolean("caseSensitive", defaultCaseSensitivity);
+      final String classFeature = theElement.getAttributeValue("classFeature", defaultClassFeature);
 
       // Get a handle on theTerms based on case sensitivity
       if (caseSensitive) {
-        if (this.caseSensitiveTerms == null) this.caseSensitiveTerms = new Terms(true, isStopwords);
+        if (this.caseSensitiveTerms == null) this.caseSensitiveTerms = new Terms(true, classFeature, isStopwords);
         theTerms = this.caseSensitiveTerms;
       }
       else {
-        if (this.caseInsensitiveTerms == null) this.caseInsensitiveTerms = new Terms(false, isStopwords);
+        if (this.caseInsensitiveTerms == null) this.caseInsensitiveTerms = new Terms(false, classFeature, isStopwords);
         theTerms = this.caseInsensitiveTerms;
       }
 
