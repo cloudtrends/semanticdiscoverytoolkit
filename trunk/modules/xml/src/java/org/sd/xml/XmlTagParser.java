@@ -137,7 +137,7 @@ public class XmlTagParser {
     else {
       if (data != null) data.appendCodePoint(codePoint);  // don't forget the first char!
 
-      readToTagEnd(inputStream, data);
+      readToTagEnd(inputStream, data, commonCase);
 
       final String text = getBuiltText(data, false);
       if (text.length() > 0) {
@@ -253,7 +253,7 @@ public class XmlTagParser {
    * The trick here is to skip over angle brackets within xml attribute values
    * within the tag being read.
    */
-  private final void readToTagEnd(XmlInputStream inputStream, StringBuilder data) throws IOException {
+  private final void readToTagEnd(XmlInputStream inputStream, StringBuilder data, boolean htmlFlag) throws IOException {
 
     // read up to '>' or '=', whichever comes first
     for (int stoppedAt = inputStream.readToChar('>', data, '=');
@@ -277,16 +277,22 @@ public class XmlTagParser {
         if (quoteChar == '\'' || quoteChar == '"') {
           int nextStop = -1;
 
-          // read up to end quote, skipping backslash-quoted characters
-          for (nextStop = inputStream.readToChar((char)quoteChar, data, '\\');
-               nextStop == '\\';
-               nextStop = inputStream.readToChar((char)quoteChar, data, '\\')) {
+          if (htmlFlag) {
+            // read up to end quote, skipping backslash-quoted characters
+            for (nextStop = inputStream.readToChar((char)quoteChar, data, '\\');
+                 nextStop == '\\';
+                 nextStop = inputStream.readToChar((char)quoteChar, data, '\\')) {
 
-            // found backslash. store it and the next char and keep going
-            if (data != null) data.appendCodePoint(nextStop);
-            final int quotedChar = inputStream.read();
-            if (quotedChar == -1) break;
-            if (data != null) data.appendCodePoint(quotedChar);
+              // found backslash. store it and the next char and keep going
+              if (data != null) data.appendCodePoint(nextStop);
+              final int quotedChar = inputStream.read();
+              if (quotedChar == -1) break;
+              if (data != null) data.appendCodePoint(quotedChar);
+            }
+          }
+          else {
+            // don't use backslash quoting in normal xml
+            nextStop = inputStream.readToChar((char)quoteChar, data, -1);
           }
 
           if (nextStop == quoteChar && data != null) data.appendCodePoint(nextStop);
