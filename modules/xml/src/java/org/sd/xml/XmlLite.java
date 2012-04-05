@@ -846,10 +846,16 @@ public class XmlLite {
     private final int delimOrEnd(String string, int delim, int fromPos) {
       int result = -1;
 
-      // find delim from fromPos that isn't immediately preceded by a backslash
-      for (result = string.indexOf(delim, fromPos); result > 0 && string.charAt(result - 1) == '\\';
-           result = string.indexOf(delim, fromPos)) {
-        fromPos = result + 1;
+      if (commonCase) {
+        // find delim from fromPos that isn't immediately preceded by a backslash
+        for (result = string.indexOf(delim, fromPos); result > 0 && string.charAt(result - 1) == '\\';
+             result = string.indexOf(delim, fromPos)) {
+          fromPos = result + 1;
+        }
+      }
+      else {
+        // don't use backslash quoting in normal xml (where commonCase is here used as/equivalent to htmlFlag)
+        result = string.indexOf(delim, fromPos);
       }
       
       return (result < 0) ? string.length() : result; 

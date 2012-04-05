@@ -43,6 +43,7 @@ public class TestXmlTagRipper extends TestCase {
   private static final String TEST2_XML = "resources/xml-tag-ripper-test-data-1.xml";
   private static final String TEST3_XML = "resources/xml-tag-ripper-test-data-2.xml";
   private static final String TEST4_XML = "resources/xml-tag-ripper-test-data-3.xml";
+  private static final String TEST5_XML = "resources/xml-tag-ripper-test-data-4.xml";
 
   public void testNormalIteration() throws IOException {
     final String filename = FileUtil.getFilename(this.getClass(), TEST1_XML);
@@ -131,7 +132,7 @@ public class TestXmlTagRipper extends TestCase {
     }
   }
 
-  public void testRipEmbeddedXmlInAttribute() throws IOException {
+  public void testRipEmbeddedXmlInHtmlAttribute() throws IOException {
     final String filename = FileUtil.getFilename(this.getClass(), TEST4_XML);
     final XmlTagRipper ripper = new XmlTagRipper(filename, true, null);
 
@@ -154,6 +155,44 @@ public class TestXmlTagRipper extends TestCase {
         assertEquals(onmouseovers[aNum], tag.getAttribute("onmouseover"));
 
         ++aNum;
+      }
+    }
+  }
+
+  public void testIgnoreEmbeddedBackslashInXml() throws IOException {
+    final String filename = FileUtil.getFilename(this.getClass(), TEST5_XML);
+    final XmlTagRipper ripper = new XmlTagRipper(filename, false, null);
+
+    final String[][][] expected = new String[][][] {
+      {
+        {"fingerprint", "42148:2583|1892|1093|353|547|1043"},
+        {"imageid", "a353:2583"},
+        {"highlightrectangles", "Tennant~547,1043,649,1069|H.~661,1044,690,1065|G\\,~700,1044,735,1071|Bell~753,1043,800,1065|and~807,1043,851,1064|Bear~859,1044,915,1067|Imi,~923,1046,970,1072|tiigh~985,1043,1041,1073|street~574,1072,638,1091|\\~1036,1070,1047,1089"},
+        {"dbid", "2583"},
+        {"freetext", "Tennant H. G\\, Bell and Bear Imi, tiigh street \\"},
+      },
+      {
+        {"fingerprint", "42148:2583|1930|1149|149|61|293"},
+        {"imageid", "a149:2583"},
+        {"highlightrectangles", "Morton~61,295,152,321|Thomas,~166,295,267,322|beer~279,295,327,316|retailer,~341,294,430,321|St.~444,294,475,316|James'~486,293,566,315|street~91,324,159,343"},
+        {"dbid", "2583"},
+        {"freetext", "Morton Thomas, beer retailer, St. James' street"},
+      },
+    };
+
+    // iterate up to the "in" nodes. check attributes and text.
+    int inNum = 0;
+    while (ripper.hasNext()) {
+      final XmlLite.Tag tag = ripper.next();
+      if ("in".equals(tag.name)) {
+        final Tree<XmlLite.Data> inNode = ripper.ripNode(XmlFactory.XML_LITE_IGNORE_COMMENTS);
+
+        final String[][] expectedAttributes = expected[inNum++];
+        for (String[] expectedAttribute : expectedAttributes) {
+          final String key = expectedAttribute[0];
+          final String value = expectedAttribute[1];
+          assertEquals(value, tag.getAttribute(key));
+        }
       }
     }
   }
