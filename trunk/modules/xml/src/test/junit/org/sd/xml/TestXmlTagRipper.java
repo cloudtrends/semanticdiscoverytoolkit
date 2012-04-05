@@ -170,6 +170,7 @@ public class TestXmlTagRipper extends TestCase {
         {"highlightrectangles", "Tennant~547,1043,649,1069|H.~661,1044,690,1065|G\\,~700,1044,735,1071|Bell~753,1043,800,1065|and~807,1043,851,1064|Bear~859,1044,915,1067|Imi,~923,1046,970,1072|tiigh~985,1043,1041,1073|street~574,1072,638,1091|\\~1036,1070,1047,1089"},
         {"dbid", "2583"},
         {"freetext", "Tennant H. G\\, Bell and Bear Imi, tiigh street \\"},
+        {null, "Tennant H. G\\, Bell and Bear Imi, tiigh street \\"},
       },
       {
         {"fingerprint", "42148:2583|1930|1149|149|61|293"},
@@ -177,6 +178,7 @@ public class TestXmlTagRipper extends TestCase {
         {"highlightrectangles", "Morton~61,295,152,321|Thomas,~166,295,267,322|beer~279,295,327,316|retailer,~341,294,430,321|St.~444,294,475,316|James'~486,293,566,315|street~91,324,159,343"},
         {"dbid", "2583"},
         {"freetext", "Morton Thomas, beer retailer, St. James' street"},
+        {null, "Morton Thomas, beer retailer, St. James' street"},
       },
     };
 
@@ -191,7 +193,15 @@ public class TestXmlTagRipper extends TestCase {
         for (String[] expectedAttribute : expectedAttributes) {
           final String key = expectedAttribute[0];
           final String value = expectedAttribute[1];
-          assertEquals(value, tag.getAttribute(key));
+          if (key != null) {
+            // check attribute
+            assertEquals(value, tag.getAttribute(key));
+          }
+          else {
+            // check text
+            final String text = inNode.getChildren().get(0).getData().asText().text;
+            assertEquals(value, text);
+          }
         }
       }
     }
