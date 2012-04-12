@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import org.sd.token.Normalizer;
 import org.sd.util.ReflectUtil;
@@ -317,17 +318,39 @@ public class ResourceManager {
 
   public static class MetaData {
     protected Object[] extraArgs;
+    protected Properties properties;
 
     protected MetaData() {
-      this(null);
+      this(null, null);
     }
 
-    protected MetaData(Object[] extraArgs) {
+    protected MetaData(Object[] extraArgs, Properties properties) {
       this.extraArgs = extraArgs;
+      this.properties = properties;
+    }
+
+    public boolean hasExtraArgs() {
+      return extraArgs != null && extraArgs.length > 0;
     }
 
     public Object[] getExtraArgs() {
       return extraArgs;
+    }
+
+    public void setExtraArgs(Object[] extraArgs) {
+      this.extraArgs = extraArgs;
+    }
+
+    public boolean hasProperties() {
+      return properties != null && properties.size() > 0;
+    }
+
+    public Properties getProperties() {
+      return properties;
+    }
+
+    public void setProperties(Properties properties) {
+      this.properties = properties;
     }
 
     public XmlMetaData asXmlMetaData() {
@@ -358,6 +381,12 @@ public class ResourceManager {
             }
           }
         }
+        if (result) {
+          result = (properties == otherMetaData.properties);
+          if (!result && properties != null && otherMetaData.properties != null) {
+            result = properties.equals(otherMetaData.properties);
+          }
+        }
       }
 
       return result;
@@ -374,6 +403,9 @@ public class ResourceManager {
           }
         }
       }
+      if (properties != null) {
+        result = result * 11 + properties.hashCode();
+      }
 
       return result;
     }
@@ -384,8 +416,13 @@ public class ResourceManager {
     private String _flatString; // for equals/hashCode
 
     public XmlMetaData(DomElement resourceElement, Object[] extraArgs) {
-      super(extraArgs);
+      super(extraArgs, null);
       this.resourceElement = resourceElement;
+    }
+
+    public XmlMetaData(DataProperties dataProperties) {
+      super(null, dataProperties.getProperties());
+      this.resourceElement = dataProperties.getDomElement();
     }
 
     public DomElement getResourceElement() {
@@ -432,7 +469,7 @@ public class ResourceManager {
     private String classPath;
 
     public ClassMetaData(String classPath, Object[] extraArgs) {
-      super(extraArgs);
+      super(extraArgs, null);
       this.classPath = classPath;
     }
 
