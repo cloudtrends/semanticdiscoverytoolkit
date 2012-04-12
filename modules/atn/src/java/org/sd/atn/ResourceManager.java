@@ -22,7 +22,9 @@ package org.sd.atn;
 import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import org.sd.token.Normalizer;
 import org.sd.util.ReflectUtil;
 import org.sd.xml.DataProperties;
@@ -56,6 +58,8 @@ public class ResourceManager {
   private Map<String, Object> name2resource;
 
   private Map<String, Normalizer> id2Normalizer;
+
+  private LinkedHashSet<MetaData> metaData;
 
   /**
    * Default constructor for empty instance.
@@ -103,6 +107,10 @@ public class ResourceManager {
 
   public Map<String, Normalizer> getId2Normalizer() {
     return id2Normalizer;
+  }
+
+  public LinkedHashSet<MetaData> getMetaData() {
+    return metaData;
   }
 
   public final void loadResources(DomElement resourcesElement) {
@@ -165,6 +173,9 @@ public class ResourceManager {
         if (resourceName != null) {
           name2resource.put(resourceName, result);
           System.out.println(new Date() + ": ResourceManager built/stored '" + resourceName + "' resource.");
+
+          if (metaData == null) metaData = new LinkedHashSet<MetaData>();
+          metaData.add(new XmlMetaData(resourceElement, extraArgs));
         }
       }
     }
@@ -183,6 +194,11 @@ public class ResourceManager {
       final Class theClass = Class.forName(classPath);
       final Object[] args = getArgs(null, extraArgs);
       result = ReflectUtil.constructInstance(theClass, args);
+
+      if (result != null) {
+        if (metaData == null) metaData = new LinkedHashSet<MetaData>();
+        metaData.add(new ClassMetaData(classPath, extraArgs));
+      }
     }
     catch (ClassNotFoundException e) {
       throw new IllegalArgumentException(e);
@@ -230,6 +246,11 @@ public class ResourceManager {
       }
       else {
         result = new File(filename);
+      }
+
+      if (result != null) {
+        if (metaData == null) metaData = new LinkedHashSet<MetaData>();
+        metaData.add(new FileMetaData(filename, result));
       }
     }
 
@@ -291,5 +312,207 @@ public class ResourceManager {
       }
     }
     return args;
+  }
+
+
+  public static class MetaData {
+    protected Object[] extraArgs;
+
+    protected MetaData() {
+      this(null);
+    }
+
+    protected MetaData(Object[] extraArgs) {
+      this.extraArgs = extraArgs;
+    }
+
+    public Object[] getExtraArgs() {
+      return extraArgs;
+    }
+
+    public XmlMetaData asXmlMetaData() {
+      return null;
+    }
+
+    public ClassMetaData asClassMetaData() {
+      return null;
+    }
+
+    public FileMetaData asFileMetaData() {
+      return null;
+    }
+
+    public boolean equals(Object other) {
+      boolean result = (this == other);
+
+      if (!result && other instanceof MetaData) {
+        final MetaData otherMetaData = (MetaData)other;
+        result = (extraArgs == otherMetaData.extraArgs);
+        if (!result && extraArgs != null && otherMetaData.extraArgs != null &&
+            extraArgs.length == otherMetaData.extraArgs.length) {
+          result = true;
+          for (int i = 0; i < extraArgs.length; ++i) {
+            if (!extraArgs[i].equals(otherMetaData.extraArgs[i])) {
+              result = false;
+              break;
+            }
+          }
+        }
+      }
+
+      return result;
+    }
+
+    public int hashCode() {
+      int result = 11;
+
+      if (extraArgs != null) {
+        result = result * 11 + extraArgs.length;
+        for (Object extraArg : extraArgs) {
+          if (extraArg != null) {
+            result = result * 11 + extraArg.hashCode();
+          }
+        }
+      }
+
+      return result;
+    }
+  }
+
+  public static class XmlMetaData extends MetaData {
+    private DomElement resourceElement;
+    private String _flatString; // for equals/hashCode
+
+    public XmlMetaData(DomElement resourceElement, Object[] extraArgs) {
+      super(extraArgs);
+      this.resourceElement = resourceElement;
+    }
+
+    public DomElement getResourceElement() {
+      return resourceElement;
+    }
+
+    public final XmlMetaData asXmlMetaData() {
+      return this;
+    }
+
+    public boolean equals(Object other) {
+      boolean result = (this == other);
+
+      if (!result && other instanceof XmlMetaData && super.equals(other)) {
+        final XmlMetaData otherMetaData = (XmlMetaData)other;
+        result = (resourceElement == otherMetaData.resourceElement);
+        if (!result && resourceElement != null && otherMetaData.resourceElement != null) {
+          result = getFlatString().equals(otherMetaData.getFlatString());
+        }
+      }
+
+      return result;
+    }
+
+    public int hashCode() {
+      int result = super.hashCode();
+
+      if (resourceElement != null) {
+        result = result * 11 + getFlatString().hashCode();
+      }
+
+      return result;
+    }
+
+    private final String getFlatString() {
+      if (_flatString == null) {
+        _flatString = (resourceElement == null) ? "" : resourceElement.asFlatString(null).toString();
+      }
+      return _flatString;
+    }
+  }
+
+  public static class ClassMetaData extends MetaData {
+    private String classPath;
+
+    public ClassMetaData(String classPath, Object[] extraArgs) {
+      super(extraArgs);
+      this.classPath = classPath;
+    }
+
+    public String getClassPath() {
+      return classPath;
+    }
+
+    public final ClassMetaData asClassMetaData() {
+      return this;
+    }
+
+    public boolean equals(Object other) {
+      boolean result = (this == other);
+
+      if (!result && other instanceof ClassMetaData && super.equals(other)) {
+        final ClassMetaData otherMetaData = (ClassMetaData)other;
+        result = (classPath == otherMetaData.classPath);
+        if (!result && classPath != null && otherMetaData.classPath != null) {
+          result = classPath.equals(otherMetaData.classPath);
+        }
+      }
+
+      return result;
+    }
+
+    public int hashCode() {
+      int result = super.hashCode();
+
+      if (classPath != null) {
+        result = result * 11 + classPath.hashCode();
+      }
+
+      return result;
+    }
+  }
+
+  public static class FileMetaData extends MetaData {
+    private String filename;
+    private File file;
+
+    public FileMetaData(String filename, File file) {
+      super();
+      this.filename = filename;
+      this.file = file;
+    }
+
+    public String getFileName() {
+      return filename;
+    }
+
+    public File getFile() {
+      return file;
+    }
+
+    public final FileMetaData asFileMetaData() {
+      return this;
+    }
+
+    public boolean equals(Object other) {
+      boolean result = (this == other);
+
+      if (!result && other instanceof FileMetaData && super.equals(other)) {
+        final FileMetaData otherMetaData = (FileMetaData)other;
+        result = (filename == otherMetaData.filename);
+        if (!result && filename != null && otherMetaData.filename != null) {
+          result = filename.equals(otherMetaData.filename);
+        }
+      }
+
+      return result;
+    }
+
+    public int hashCode() {
+      int result = super.hashCode();
+
+      if (filename != null) {
+        result = result * 11 + filename.hashCode();
+      }
+
+      return result;
+    }
   }
 }
