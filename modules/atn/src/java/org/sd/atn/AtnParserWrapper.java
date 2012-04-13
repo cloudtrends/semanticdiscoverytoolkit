@@ -79,8 +79,25 @@ public class AtnParserWrapper {
     return minNumTokens;
   }
 
+  private DomElement parserElement;
+  public DomElement getParserElement() {
+    return parserElement;
+  }
+
+  private DomElement parseSelectorElement;
+  public DomElement getParseSelectorElement() {
+    return parseSelectorElement;
+  }
+
+  private DomElement ambiguityResolverElement;
+  public DomElement getAmbiguityResolverElement() {
+    return ambiguityResolverElement;
+  }
+
 
   AtnParserWrapper(DomElement parserElement, ResourceManager resourceManager) {
+    this.parserElement = parserElement;
+
     final DomElement idElement = (DomElement)parserElement.selectSingleNode("id");
     if (idElement != null) {
       this.id = idElement.getTextContent();
@@ -98,10 +115,10 @@ public class AtnParserWrapper {
 
     this.parser = new AtnParser(grammarElement, resourceManager);
 
-    final DomElement parseSelectorElement = (DomElement)parserElement.selectSingleNode("parseSelector");
+    this.parseSelectorElement = (DomElement)parserElement.selectSingleNode("parseSelector");
     this.parseSelector = (parseSelectorElement != null) ? (AtnParseSelector)resourceManager.getResource(parseSelectorElement) : null;
 
-    final DomElement ambiguityResolverElement = (DomElement)parserElement.selectSingleNode("ambiguityResolver");
+    this.ambiguityResolverElement = (DomElement)parserElement.selectSingleNode("ambiguityResolver");
     this.ambiguityResolver = (ambiguityResolverElement != null) ? (AmbiguityResolver)resourceManager.getResource(ambiguityResolverElement) : null;
 
     this.tokenizerOverride = (DomElement)parserElement.selectSingleNode("tokenizer");

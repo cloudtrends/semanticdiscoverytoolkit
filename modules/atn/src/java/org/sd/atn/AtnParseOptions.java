@@ -32,6 +32,11 @@ import org.w3c.dom.NodeList;
  */
 public class AtnParseOptions {
   
+  private DataProperties options;
+  public DataProperties getOptions() {
+    return options;
+  }
+
   private boolean consumeAllText;
   /**
    * If true, a successful parse must consume all available text.
@@ -180,6 +185,7 @@ public class AtnParseOptions {
    * Copy constructor.
    */
   public AtnParseOptions(AtnParseOptions options) {
+    this.options = options.options;
     this.resourceManager = options.resourceManager;
     this.consumeAllText = options.consumeAllText;
     this.skipTokenLimit = options.skipTokenLimit;
@@ -208,7 +214,7 @@ public class AtnParseOptions {
     // that are designated as starts will be used for the parse.
     //
 
-
+    this.options = options;
     this.consumeAllText = options.getBoolean("consumeAllText", true);
     this.skipTokenLimit = options.getInt("skipTokenLimit", 0);
     this.firstParseOnly = options.getBoolean("firstParseOnly", false);

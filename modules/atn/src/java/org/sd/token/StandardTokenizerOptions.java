@@ -21,8 +21,10 @@ package org.sd.token;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
+import org.sd.xml.XmlStringBuilder;
 
 /**
  * Options for a StandardTokenizer instance.
@@ -31,6 +33,8 @@ import org.sd.xml.DomElement;
  */
 public class StandardTokenizerOptions {
   
+  private DataProperties options;
+
   private TokenRevisionStrategy revisionStrategy;
   public TokenRevisionStrategy getRevisionStrategy() {
     return revisionStrategy;
@@ -314,6 +318,7 @@ public class StandardTokenizerOptions {
     return symbolUppers == null ? "" : symbolUppers;
   }
   public final void setSymbolUppers(String symbolUppers) {
+    if (symbolUppers != null) symbolUppers = StringEscapeUtils.unescapeXml(symbolUppers);
     this.symbolUppers = symbolUppers;
     this.symbolUppersCodePoints = computeCodePoints(symbolUppers);
   }
@@ -324,6 +329,7 @@ public class StandardTokenizerOptions {
     return symbolLowers == null ? "" : symbolLowers;
   }
   public final void setSymbolLowers(String symbolLowers) {
+    if (symbolLowers != null) symbolLowers = StringEscapeUtils.unescapeXml(symbolLowers);
     this.symbolLowers = symbolLowers;
     this.symbolLowersCodePoints = computeCodePoints(symbolLowers);
   }
@@ -378,6 +384,8 @@ public class StandardTokenizerOptions {
   }
 
   private void init(DataProperties options) {
+    this.options = options;
+
     // enum LSL, SO, LO, SL, LS
     String revisionStrategy = options.getString("revisionStrategy", "LSL");
 
@@ -437,6 +445,10 @@ public class StandardTokenizerOptions {
     setSymbolDigits(options.getString("symbolDigits", null));
     setSymbolUppers(options.getString("symbolUppers", null));
     setSymbolLowers(options.getString("symbolLowers", null));
+  }
+
+  public DataProperties getOptions() {
+    return options;
   }
 
   public boolean isLetterOrDigit(int codePoint) {
@@ -561,6 +573,37 @@ public class StandardTokenizerOptions {
     else {
       result = Break.NO_BREAK;
     }
+
+    return result;
+  }
+
+  public XmlStringBuilder asXml() {
+    final XmlStringBuilder result = new XmlStringBuilder("tokenizerOptions");
+
+    result.addTagAndText("revisionStrategy", revisionStrategy.toString());
+    result.addTagAndText("lowerUpperBreak", lowerUpperBreak.getBLongName());
+    result.addTagAndText("upperLowerBreak", upperLowerBreak.getBLongName());
+    result.addTagAndText("upperDigitBreak", upperDigitBreak.getBLongName());
+    result.addTagAndText("lowerDigitBreak", lowerDigitBreak.getBLongName());
+    result.addTagAndText("digitUpperBreak", digitUpperBreak.getBLongName());
+    result.addTagAndText("digitLowerBreak", digitLowerBreak.getBLongName());
+
+    result.addTagAndText("nonEmbeddedDoubleDashBreak", nonEmbeddedDoubleDashBreak.getBLongName());
+    result.addTagAndText("embeddedDoubleDashBreak", embeddedDoubleDashBreak.getBLongName());
+    result.addTagAndText("embeddedDashBreak", embeddedDashBreak.getBLongName());
+    result.addTagAndText("leftBorderedDashBreak", leftBorderedDashBreak.getBLongName());
+    result.addTagAndText("rightBorderedDashBreak", rightBorderedDashBreak.getBLongName());
+    result.addTagAndText("freeStandingDashBreak", freeStandingDashBreak.getBLongName());
+    result.addTagAndText("whitespaceBreak", whitespaceBreak.getBLongName());
+    result.addTagAndText("quoteAndParenBreak", quoteAndParenBreak.getBLongName());
+    result.addTagAndText("symbolBreak", symbolBreak.getBLongName());
+    result.addTagAndText("slashBreak", slashBreak.getBLongName());
+    result.addTagAndText("embeddedApostropheBreak", embeddedApostropheBreak.getBLongName());
+    result.addTagAndText("embeddedPunctuationBreak", embeddedPunctuationBreak.getBLongName());
+
+    result.addTagAndText("symbolDigits", symbolDigits);
+    result.addTagAndText("symbolUppers", StringEscapeUtils.escapeXml(symbolUppers));
+    result.addTagAndText("symbolLowers", StringEscapeUtils.escapeXml(symbolLowers));
 
     return result;
   }

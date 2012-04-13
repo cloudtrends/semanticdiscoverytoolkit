@@ -95,6 +95,7 @@ public class ParseConfig {
   private String[] compoundParserIds;
   private String description;
   private boolean traceflow;
+  private List<DomElement> supplementElements;
 
   private DataProperties parseConfigProperties;
   public DataProperties getParseConfigProperties() {
@@ -193,6 +194,10 @@ public class ParseConfig {
   }
 
 
+  public List<DomElement> getSupplementElements() {
+    return supplementElements;
+  }
+
   /**
    * Supplement resources according to the given supplement element.
    */
@@ -210,6 +215,9 @@ public class ParseConfig {
     //   <parseSelector parser="compoundID:parserID" ...override attributes...>...override elements...</parseSelector>
     // </supplement>
     //
+
+    if (supplementElements == null) supplementElements = new ArrayList<DomElement>();
+    supplementElements.add(supplementElement);
 
     final NodeList supplementNodes = supplementElement.getChildNodes();
     for (int nodeNum = 0; nodeNum < supplementNodes.getLength(); ++nodeNum) {

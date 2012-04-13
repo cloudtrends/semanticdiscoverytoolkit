@@ -110,6 +110,10 @@ public class ResourceManager {
     return id2Normalizer;
   }
 
+  public boolean hasMetaData() {
+    return metaData != null && metaData.size() > 0;
+  }
+
   public LinkedHashSet<MetaData> getMetaData() {
     return metaData;
   }
@@ -414,6 +418,10 @@ public class ResourceManager {
   public static class XmlMetaData extends MetaData {
     private DomElement resourceElement;
     private String _flatString; // for equals/hashCode
+
+    public XmlMetaData(DomElement resourceElement) {
+      this(resourceElement, null);
+    }
 
     public XmlMetaData(DomElement resourceElement, Object[] extraArgs) {
       super(extraArgs, null);
