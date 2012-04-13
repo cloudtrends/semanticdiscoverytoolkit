@@ -101,6 +101,7 @@ public class CompoundParser {
   }
 
 
+  private DataProperties config;
   private DomElement outputNode;
 
   public CompoundParser(DomElement configElement, ResourceManager resourceManager) {
@@ -177,6 +178,7 @@ public class CompoundParser {
     //
 
 
+    this.config = config;
     this.id = config.getString("id");
 
     this.minNumTokens = 1;
@@ -209,6 +211,10 @@ public class CompoundParser {
     }
 
     this.outputNode = (DomElement)config.getDomElement().selectSingleNode("outputs");
+  }
+
+  public DataProperties getConfig() {
+    return config;
   }
 
 

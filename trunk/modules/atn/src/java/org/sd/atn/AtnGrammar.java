@@ -116,6 +116,7 @@ public class AtnGrammar {
     return resourceManager;
   }
 
+  private List<DomElement> grammarNodes;
   private List<AtnRule> startRules;
 
   AtnGrammar(DomElement grammarNode, ResourceManager resourceManager) {
@@ -175,6 +176,9 @@ public class AtnGrammar {
   }
   
   private final void doSupplement(DomElement grammarNode) {
+    if (grammarNodes == null) grammarNodes = new ArrayList<DomElement>();
+    grammarNodes.add(grammarNode);
+
     // load normalizers
     loadNormalizers(grammarNode);
 
@@ -201,6 +205,13 @@ public class AtnGrammar {
   public void supplement(DomNode supplementNode) {
     final DomElement grammarElement = getGrammarElement((DomElement)supplementNode);
     doSupplement(grammarElement);
+  }
+
+  /**
+   * Get the grammar xml nodes (primary and supplements) defining this grammar.
+   */
+  public List<DomElement> getGrammarNodes() {
+    return grammarNodes;
   }
 
   public List<AtnRule> getStartRules(AtnParseOptions parseOptions) {
