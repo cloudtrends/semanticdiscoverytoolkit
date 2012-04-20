@@ -145,7 +145,13 @@ public class ParseAnalyzer {
   protected void analyzeGrammarTrees(String id, List<Tree<String>> trees) {
     final Set<String> interpXmlStrings = getInterpXml(trees);
     System.out.println("For id=" + id + ", found " + interpXmlStrings.size() + " unique interps from " + trees.size() + " trees.");
-    System.out.println("\t" + interpXmlStrings.iterator().next());
+
+    int idx = 0;
+    for (String interpXmlString : interpXmlStrings) {
+      System.out.println("\t" + idx + ": " + interpXmlString);
+      ++idx;
+      //break;
+    }
 
     for (Tree<String> tree : trees) {
       analyzeGrammarTree(id, tree);

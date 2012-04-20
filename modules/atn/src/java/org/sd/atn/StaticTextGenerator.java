@@ -35,7 +35,11 @@ import org.sd.util.tree.Tree;
  */
 public class StaticTextGenerator implements TextGenerator {
   
-  private Map<String, String> cat2text;
+  protected Map<String, String> cat2text;
+
+  public StaticTextGenerator() {
+    this.cat2text = new HashMap<String, String>();
+  }
 
   /**
    * Construct with mappings from the file of the form:
@@ -45,8 +49,7 @@ public class StaticTextGenerator implements TextGenerator {
    * Ignore blank lines and those beginning with a '#'.
    */
   public StaticTextGenerator(File file) throws IOException {
-    this.cat2text = new HashMap<String, String>();
-
+    this();
     load(file);
   }
 
