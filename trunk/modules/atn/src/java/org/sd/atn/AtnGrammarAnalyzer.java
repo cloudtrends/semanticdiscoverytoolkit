@@ -266,7 +266,9 @@ public class AtnGrammarAnalyzer {
         }
         if (isDupe) iter.remove();
       }
-      stepTreesList.add(stepTrees);
+      if (stepTrees.size() > 0) {
+        stepTreesList.add(stepTrees);
+      }
     }
 
 //System.out.println("\tcombining stepTreesList!");
