@@ -399,7 +399,13 @@ public class AtnGrammar {
         }
 
         if (classifier != null) {
-          classifiers.add(classifier);
+          if (!classifiers.contains(classifier)) {
+            classifiers.add(classifier);
+          }
+          else {
+            System.out.println(new Date() + ": AtnGrammar supplementing classifier (" + classifierId + ")");
+            classifier.supplement(classifierElement);
+          }
         }
         else {
           System.out.println("***WARNING: Couldn't load classifier '" + classifierId + "'!");
