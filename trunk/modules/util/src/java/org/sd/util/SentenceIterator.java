@@ -87,6 +87,8 @@ public class SentenceIterator extends BaseTextIterator {
     boolean result = true;
 
     if (detectAbbrev) {
+      final int origEnd = end;
+
       // scan backwards to first letter or digit
       for (--end; end >= start; --end) {
         final char curC = text.charAt(end);
@@ -105,6 +107,38 @@ public class SentenceIterator extends BaseTextIterator {
         // reject capitalized abbreviations as a sentence boundary
         if (Character.isUpperCase(text.charAt(lastWordStart)) && StringUtil.isLikelyAbbreviation(text.substring(lastWordStart, end))) {
           result = false;
+        }
+      }
+
+      // reject in favor of greedy collection if next word ends in non-white
+      if (result) {
+        final int len = text.length();
+        if (origEnd < len) {
+          int ptr = origEnd;
+
+          // skip forward over white to Letter, failing if encounter non-White/Letter
+          for (; ptr < len; ++ptr) {
+            final char curC = text.charAt(ptr);
+            if (!Character.isWhitespace(curC)) {
+              if (!Character.isLetter(curC)) {
+                result = false; //fail
+              }
+              break;
+            }
+          }
+
+          // skip forward over letters, failing if first non-letter isn't whitespace
+          if (result) {
+            for (ptr = ptr + 1; ptr < len; ++ptr) {
+              final char curC = text.charAt(ptr);
+              if (!Character.isLetter(curC) && curC != '-') {
+                if (!Character.isWhitespace(curC)) {
+                  result = false;
+                }
+                break;
+              }
+            }
+          }
         }
       }
     }
