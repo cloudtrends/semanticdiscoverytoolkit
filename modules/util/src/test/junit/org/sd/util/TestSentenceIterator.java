@@ -212,6 +212,16 @@ public class TestSentenceIterator extends TestCase {
            });
   }
 
+  public void testGreedyInclusion() {
+    doTest(new SentenceIterator("Cowdrey Mary E. Mrs. h. 18 Talbot ave. N. B.", true),
+           new String[] {
+             "Cowdrey Mary E. Mrs. h. 18 Talbot ave. N. B.",
+           },
+           new int[][] {
+             {0, 44},
+           });
+  }
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestSentenceIterator.class);
