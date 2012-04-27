@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomNode;
 
 /**
@@ -27,6 +28,10 @@ import org.sd.xml.DomNode;
  *
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An org.sd.atn.BaseClassifierTest implementation that succeeds\n" +
+       "for a token when it has a next token in the input."
+  )
 public class HasNextTokenTest extends BaseClassifierTest {
   
   public HasNextTokenTest(DomNode testNode, ResourceManager resourceManager) {

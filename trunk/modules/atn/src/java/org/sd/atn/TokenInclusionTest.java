@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.NodeList;
@@ -34,6 +35,24 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An org.sd.atn.AtnRuleStep test that checks tokens in states\n" +
+       "leading up to the current state for inclusion of certain\n" +
+       "categories and/or text content.\n" +
+       " \n" +
+       " Walk back through the states looking for tokens with certain assigned\n" +
+       " categories and/or applicable classifiers.\n" +
+       " \n" +
+       " <test [include='any|all']>\n" +
+       "   <jclass>org.sd.atn.TokenInclusionTest</jclass>\n" +
+       "   <category values=\"cat1,...,catN\" [include='any|all'] />\n" +
+       "   <classifier values=\"classifier1,...,classifierN\" [include='any|all'] />\n" +
+       " </test>\n" +
+       " \n" +
+       " The test passes (or fails when reverse=true) when any (or all) categories\n" +
+       " are present and/or classifiers match tokens in the current constituent's\n" +
+       " (rule's) history."
+  )
 public class TokenInclusionTest implements AtnRuleStepTest {
   
   //

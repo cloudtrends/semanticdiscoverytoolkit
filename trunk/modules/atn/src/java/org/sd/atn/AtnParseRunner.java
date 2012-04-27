@@ -36,6 +36,7 @@ import org.sd.util.FileContext;
 import org.sd.util.InputContext;
 import org.sd.util.InputContextIterator;
 import org.sd.util.WhitespacePolicy;
+import org.sd.util.Usage;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomContextIterator;
@@ -50,10 +51,51 @@ import org.sd.xml.XmlFactory;
 import org.sd.xml.XmlLite;
 
 /**
- * 
+ * Execution class for loading resources through a ParseConfig and marshaling
+ * processing through identified CompoundParser AtnParser instances (wrapped within
+ * AtnParserWrappers).
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "Execution class for loading resources through a org.sd.atn.ParseConfig\n" +
+       "and marshaling processing through identified org.sd.atn.CompoundParser\n" +
+       "org.sd.atn.AtnParser instances (wrapped within org.sd.atn.AtnParserWrappers).\n" +
+       " \n" +
+       " Properties\n" +
+       " \n" +
+       "   parseConfig -- (required) path to data properties (config) file (xml)\n" +
+       "   supplementalConfig -- (optional) semicolon delimited list of paths to supplemental parse config files\n" +
+       "   resourcesDir -- (required) path to resources (e.g. \"${HOME}/co/ancestry/resources\")\n" +
+       " \n" +
+       "   inputLines -- path to input file whose lines are to be parsed\n" +
+       "   inputHtml -- path to input html file to parse\n" +
+       "   diffHtml -- path to html file to use as mask for inputHtml\n" +
+       "   \n" +
+       "   verbose -- (optional, default=true)\n" +
+       "   trace -- (optional, default=false) true to trace/debug AtnStates\n" +
+       " \n" +
+       "   parseFlow -- (optional, default uses all) cpId1:pId1,...,pIdN;cpId2:...\n" +
+       "                semi-colon delimited list of compound parser flows of the form:\n" +
+       "                compoundParserId : parserId1, parserId2, ...\n" +
+       "                If absent, then all parsers within all compound parsers will be executed.\n" +
+       " \n" +
+       "   showMarkup -- (optional, default=false)\n" +
+       "   writeMarkup -- (optional, default=true)\n" +
+       "   showInterpretations -- (optional, default=true)\n" +
+       "   showOnlyInterpreted -- (optional, default=false)\n" +
+       " \n" +
+       " \n" +
+       "   showOnlySelected -- (optional, default=true)\n" +
+       "   outputXml -- (optional) path to which xml output is to be written\n" +
+       "   dumpGroups -- (optional, default=true) true to dump extraction groups instead of (raw/ungrouped) parse results\n" +
+       " \n" +
+       "   showResults -- (optional, default=true) true to show results on console\n" +
+       "   briefResults -- (optional, default=true) true to show brief (instead of full) result output on console\n" +
+       "   numberKeys -- (optional, default=true) true to show numbered group and extraction keys instead of xpaths\n" +
+       " \n" +
+       "   args -- (optional) path to .properties file containing options"
+  )
 public class AtnParseRunner {
   
   private enum InputUpdateStrategy { RESET, BROADEN, XML };

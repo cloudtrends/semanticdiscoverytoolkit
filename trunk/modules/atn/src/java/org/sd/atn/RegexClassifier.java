@@ -24,6 +24,7 @@ import java.util.Map;
 import org.sd.atn.ResourceManager;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 
 /**
@@ -31,6 +32,10 @@ import org.sd.xml.DomElement;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "The functionaly of this org.sd.atn.AbstractAtnStateTokenClassifier\n" +
+       "has been usurped by org.sd.atn.RoteListClassifier. Use it instead!"
+  )
 public class RegexClassifier extends AbstractAtnStateTokenClassifier {
   
   public static final String DEFAULT_REGEXES_NODE_NAME = "regexes";

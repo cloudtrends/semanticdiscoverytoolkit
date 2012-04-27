@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.token.StandardTokenizerOptions;
 import org.sd.token.Tokenizer;
 import org.sd.util.InputContext;
+import org.sd.util.Usage;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
@@ -49,6 +50,14 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "A CompoundParser applies org.sd.atn.AtnParser instances to tokenized\n" +
+       "input, updating (compounding) the tokenization with parse results.\n" +
+       "\n" +
+       "In effect, if o = p(i), where o is parsed output; i is input, and\n" +
+       "p is the application of the parser to the input, this class computes\n" +
+       "pN(...p2(p1(i)) for each parser pI, I=1..N for N parsers."
+  )
 public class CompoundParser {
   
   private String id;

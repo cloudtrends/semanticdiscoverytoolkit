@@ -23,6 +23,7 @@ import java.util.Map;
 import org.sd.token.AbstractTokenClassifier;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 
@@ -31,6 +32,7 @@ import org.sd.xml.DomNode;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes = "Base class for classifying tokens through an org.sd.atn.AtnGrammar.")
 public abstract class AbstractAtnStateTokenClassifier extends AbstractTokenClassifier implements AtnStateTokenClassifier {
 
   private boolean consume;

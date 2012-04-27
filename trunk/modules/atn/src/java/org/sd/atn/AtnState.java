@@ -27,14 +27,27 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.util.tree.Tree;
 
 /**
  * Container class for a processing state to pair a grammar rule step with
  * an input token and generate successive states.
  * <p>
+ * This is the main machine controller class for traversal of states, during
+ * which a State tree is constructed, preserving the paths of states visited
+ * and from which parse trees are constructed.
+ *
  * @author Spence Koehler
  */
+@Usage(notes =
+       "Container class for a processing state to pair a grammar rule step with\n" +
+       "an input token and generate successive states.\n" +
+       "\n" +
+       "This is the main machine controller class for traversal of states, during\n" +
+       "which a State tree is constructed, preserving the paths of states visited\n" +
+       "and from which parse trees are constructed."
+  )
 public class AtnState {
   
   private Token inputToken;
@@ -103,11 +116,11 @@ public class AtnState {
     return _isSkipped;
   }
 
-  boolean isRuleEnd() {
+  public boolean isRuleEnd() {
     return isRuleEnd(true);
   }
 
-  boolean isRuleEnd(boolean verifyPop) {
+  public boolean isRuleEnd(boolean verifyPop) {
     boolean result = (rule != null) ? rule.isTerminal(stepNum) : false;
 
     if (result && verifyPop) {
@@ -117,7 +130,7 @@ public class AtnState {
     return result;
   }
 
-  boolean isRuleStart() {
+  public boolean isRuleStart() {
     return pushState == getParentState();
   }
 
@@ -606,7 +619,7 @@ public class AtnState {
     AtnState result = this;
 
     for (; result != null; result = result.getParentState()) {
-      if (result.getPushState() == result.getParentState()) break;
+      if (result.isRuleStart()) break;
     }
 
     return result == null ? this : result;

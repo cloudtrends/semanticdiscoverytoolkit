@@ -22,14 +22,27 @@ package org.sd.atn;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 
 /**
- * 
+ * A generic parameter-driven TokenFilter implementation.
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "This org.sd.atn.TokenFilter is applied to each token encountered within its\n" +
+       "associated rule and is intended to ensure that each of the rule's tokens\n" +
+       "follows the specified matching rules.\n" +
+       "\n" +
+       "If the 'tokenreg' (optional) matches, the 'innerdelim' (optional) delim test\n" +
+       "is applied.\n" +
+       "\n" +
+       "Note that there are currently limitations to token filtering with respect to\n" +
+       "constituents since pushed rules do not inherit token filters and the filter is\n" +
+       "applied purely at a token (not constituent) level."
+  )
 public class ContiguousTokenFilter implements TokenFilter {
   
   private DelimTest delimTest;

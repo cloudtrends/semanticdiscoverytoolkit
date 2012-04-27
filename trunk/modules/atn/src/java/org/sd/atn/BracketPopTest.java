@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.NodeList;
@@ -36,6 +37,14 @@ import org.w3c.dom.NodeList;
  * 
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An org.sd.atn.AtnRuleStepTest intended to be used as a popTest for\n" +
+       "ensuring that a constituent does not end (and/or start) with a\n" +
+       "bracket unless it starts (and/or ends) with a bracket. This is used\n" +
+       "to ensure bracketed text is parsed as a separate constituent even\n" +
+       "when it may otherwise appear to belong with its preceding (or\n" +
+       "following) text."
+  )
 public class BracketPopTest implements AtnRuleStepTest {
   
   private boolean allowBalanced;

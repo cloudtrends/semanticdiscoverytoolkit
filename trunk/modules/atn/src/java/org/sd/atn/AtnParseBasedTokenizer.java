@@ -30,6 +30,7 @@ import org.sd.token.Token;
 import org.sd.token.StandardTokenizer;
 import org.sd.token.StandardTokenizerOptions;
 import org.sd.util.InputContext;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.sd.xml.DomUtil;
@@ -37,10 +38,11 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * 
+ * Primary ATN Parser tokenizer that wraps prior parses as tokens.
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes = "Primary org.sd.AtnParser tokenizer that wraps prior parses as tokens.")
 public class AtnParseBasedTokenizer extends StandardTokenizer {
   
   public static final String SOURCE_PARSE = "_sourceParse";

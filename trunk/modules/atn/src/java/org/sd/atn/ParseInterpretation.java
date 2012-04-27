@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.sd.cio.MessageHelper;
 import org.sd.io.Publishable;
+import org.sd.util.Usage;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
 import org.sd.xml.XmlFactory;
@@ -39,6 +40,7 @@ import org.sd.xml.XmlLite;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes = "Container for an interpretation of a parse.")
 public class ParseInterpretation implements Publishable, Serializable {
   
   private static final long serialVersionUID = 42L;

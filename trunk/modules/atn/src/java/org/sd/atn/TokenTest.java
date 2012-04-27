@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.List;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.NodeList;
@@ -35,6 +36,38 @@ import org.w3c.dom.NodeList;
  *
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An org.sd.atn.BaseClassifierTest to evaluate tokens through\n" +
+       "org.sd.atn.RoteListClassifier, org.sd.atn.RegexClassifier and/or\n" +
+       "named org.sd.atn.AtnStateTokenClassifier instances.\n" +
+       "\n" +
+       "Note that this tests the last single token seen, not for example the full\n" +
+       "token text of a constituent that has been matched. For testing against the\n" +
+       "full text of a constituent, see TextTest instead.\n" +
+       " \n" +
+       " under token node, setup allowed and disallowed tokens\n" +
+       " \n" +
+       " options:\n" +
+       " - when reverse='true', fail on match (handled elsewhere)\n" +
+       " - when next='true', test against the next token\n" +
+       " - when revise='true', test against token revisions\n" +
+       " - when ignoreLastToken='true', always accept the last token\n" +
+       " - when ignoreFirstToken='true', always accept the first token\n" +
+       " - when onlyFirstToken='true', only test against a \"first\" constituent token\n" +
+       " - when onlyLastToken='true', only test against a \"last\" constituent token\n" +
+       " \n" +
+       " <test reverse='true|false' next='true|false' revise='true|false'>\n" +
+       "   <jclass>org.sd.atn.TokenTest</jclass>\n" +
+       "   <terms caseSensitive='true|false'>\n" +
+       "     <term>...</term>\n" +
+       "     ...\n" +
+       "   </terms>\n" +
+       "   <regexes>\n" +
+       "     <regex type='...' groupN='...'>...</regex>\n" +
+       "   </regexes>\n" +
+       "   <classifier cat='...'/>\n" +
+       " </test>"
+  )
 public class TokenTest extends BaseClassifierTest {
   
   private boolean next;
@@ -57,6 +90,7 @@ public class TokenTest extends BaseClassifierTest {
       }
     }
 
+    //
     // under token node, setup allowed and disallowed tokens
     //
     // options:

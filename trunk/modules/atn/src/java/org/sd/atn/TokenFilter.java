@@ -19,6 +19,7 @@
 package org.sd.atn;
 
 import org.sd.token.Token;
+import org.sd.util.Usage;
 
 
 /**
@@ -26,6 +27,7 @@ import org.sd.token.Token;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes = "Interface for filtering tokens.")
 public interface TokenFilter {
   
   /**

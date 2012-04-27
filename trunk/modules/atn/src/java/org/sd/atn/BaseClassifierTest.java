@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.List;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 
@@ -31,6 +32,28 @@ import org.sd.xml.DomNode;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An abstract base class implementation of org.sd.atn.AtnRuleStepTest\n" +
+       "that sets up the following environment for tests:\n" +
+       "\n" +
+       "options:\n" +
+       " - when reverse='true', fail on match (handled elsewhere)\n" +
+       " - when ignoreLastToken='true', always succeed on last (full input) token\n" +
+       " - when ignoreFirstToken='true', always succeed on first (full input) token\n" +
+       " - when onlyFirstToken='true', only test against a \"first\" constituent token\n" +
+       " - when onlyLastToken='true', only test against a \"last\" (full input) token\n" +
+       " \n" +
+       " <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false'>\n" +
+       "   <jclass>org.sd.atn.*Test</jclass>\n" +
+       "   <terms caseSensitive='true|false'>\n" +
+       "     <term>...</term>\n" +
+       "     ...\n" +
+       "   </terms>\n" +
+       "   <regexes>\n" +
+       "     <regex type='...' groupN='...'>...</regex>\n" +
+       "   </regexes>\n" +
+       " </test>"
+  )
 public abstract class BaseClassifierTest implements AtnRuleStepTest {
   
   protected String id;

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Feature;
+import org.sd.util.Usage;
 import org.sd.util.tree.NodePath;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DataProperties;
@@ -40,6 +41,31 @@ import org.w3c.dom.NodeList;
  *
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An early attempt to create a Generic org.sd.atn.ParseInterpreter for\n" +
+       "parses that transforms parse trees into an XML interpretation tree.\n" +
+       "\n" +
+       "The main idea is to specify selection of the following attributes\n" +
+       "from identified parse tree nodes:\n" +
+       "  nodeText -- the normalized/interpreted token text\n" +
+       "  parseInterpretation -- the interpretation from an embedded parse\n" +
+       "  tokenFeature -- a feature set on the token (e.g. by a classifier or interpreter)\n" +
+       "  tokenText -- the input token text\n" +
+       "  nodeAttribute -- an attribute value set on the token (e.g. by a classifier or interpreter)\n" +
+       "\n" +
+       "Construct with a domNode of the form:\n" +
+       "\n" +
+       "<...>\n" +
+       "  <jclass>...</jclass>\n" +
+       "  <classifications>\n" +
+       "    <classification>classification</classification>\n" +
+       "    ...\n" +
+       "  </classifications>\n" +
+       "  <fields>\n" +
+       "    <field|fields ...field-options...>fieldspec</field|fields>\n" +
+       "    ...\n" +
+       "  </fields>"
+  )
 public class GenericParseInterpreter implements ParseInterpreter {
   
   private String[] classifications;
