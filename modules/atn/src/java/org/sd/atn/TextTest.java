@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.sd.token.Token;
 import org.sd.token.Tokenizer;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.NodeList;
@@ -36,6 +37,37 @@ import org.w3c.dom.NodeList;
  *
  * @author Spence Koehler
  */
+@Usage(notes =
+       "A org.sd.atn.BaseClassifierTest to evaluate text through\n" +
+       "org.sd.atn.RoteListClassifier or org.sd.atn.RegexClassifier\n" +
+       "instances.\n" +
+       "\n" +
+       "Note that this tests the full text of the constituent being considered,\n" +
+       "not for example the last single token encountered. For testing against the\n" +
+       "last token, see TokenTest instead.\n" +
+       " \n" +
+       "Under the token node, setup allowed and disallowed tokens\n" +
+       " \n" +
+       " options:\n" +
+       " - when reverse='true', fail on match (handled elsewhere)\n" +
+       " \n" +
+       " <test reverse='true|false'>\n" +
+       "   <jclass>org.sd.atn.TextTest</jclass>\n" +
+       "   <terms caseSensitive='true|false'>\n" +
+       "     <term>...</term>\n" +
+       "     ...\n" +
+       "   </terms>\n" +
+       "   <regexes>      applied to text of constituent\n" +
+       "     <regex type='...' groupN='...'>...</regex>\n" +
+       "   </regexes>\n" +
+       "   <prior-regexes>  // applied to text prior to constituent\n" +
+       "     <regex type='...' groupN='...'>...</regex>\n" +
+       "   </prior-regexes>\n" +
+       "   <post-regexes> applied to text after the constituent\n" +
+       "     <regex type='...' groupN='...'>...</regex>\n" +
+       "   </post-regexes>\n" +
+       " </test>"
+  )
 public class TextTest extends BaseClassifierTest {
   
   private RegexClassifier priorRegexClassifier;

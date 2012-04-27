@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomNode;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -36,6 +37,48 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An org.sd.atn.AtnRuleStep test that checks tokens in states leading up\n" +
+       "to the current state.\n" +
+       "\n" +
+       "Walk back through the states looking for a token with a category\n" +
+       "whose text matches (or doesn't match) certain values.\n" +
+       "\n" +
+       "test attributes:\n" +
+       "  category: (required) category (rule-step name) of token to test\n" +
+       "  missing: (optional) pass/fail when the category is never found\n" +
+       "  present: (optional) pass/fail when the category is found\n" +
+       "           if this option is specified as 'fail', then once the category\n" +
+       "           is seen, the test will fail regardless of any tests on the\n" +
+       "           token's value.\n" +
+       "           if this option is specified as 'pass', then tests on the token's\n" +
+       "           value (if any) are first applied and searching terminates with\n" +
+       "           the result upon visiting the first 'category' token. If no\n" +
+       "           value checking is performed, then the test will pass.\n" +
+       "  halt: (optional) state category (rule-step name) at which to terminate searching\n" +
+       "        if same as category, then category is tested first and then search is halted.\n" +
+       "\n" +
+       "test directives (child nodes) are of the form:\n" +
+       "  <categories>\n" +
+       "    <category tokenClassifier='...' />\n" +
+       "    ...\n" +
+       "  </categories>\n" +
+       "\n" +
+       "  Each directive is applied in order to identified (normalized) token text.\n" +
+       "  If any directive fails, then the test fails. [todo: parameterize this behavior]\n" +
+       "\n" +
+       "example:\n" +
+       "\n" +
+       "<!-- birth event fails if non-birth keyword found -->\n" +
+       "<event>\n" +
+       "  <test category='eventKeyword' halt='event' missing='pass'>\n" +
+       "    <jclass>org.sd.atn.TokenHistoryTest</jclass>\n" +
+       "    <categories>\n" +
+       "      <eventKeyword tokenClassifier='birthKeyword' />\n" +
+       "    </categories>\n" +
+       "  </test>\n" +
+       "</event>"
+  )
 public class TokenHistoryTest implements AtnRuleStepTest {
   
   //

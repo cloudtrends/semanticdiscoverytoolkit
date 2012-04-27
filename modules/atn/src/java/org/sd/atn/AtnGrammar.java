@@ -31,6 +31,7 @@ import org.sd.token.Normalizer;
 import org.sd.token.StandardNormalizer;
 import org.sd.token.StandardNormalizerOptions;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
@@ -45,6 +46,41 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+      "ATN Grammars are of the form:\n" +
+      "\n" +
+      "<grammar>\n" +
+      "  <normalizer id='commonCase' default='true'>\n" +
+      "    <options>\n" +
+      "      <commonCase>true</commonCase>\n" +
+      "      <replaceSymbolsWithWhite>true</replaceSymbolsWithWhite>\n" +
+      "      <compactWhite>true</compact>\n" +
+      "    </options>\n" +
+      "  </normalizer>\n" +
+      "\n" +
+      "  <normalizer id='keepCase'>\n" +
+      "    <options>\n" +
+      "      <commonCase>false</commonCase>\n" +
+      "      <replaceSymbolsWithWhite>true</replaceSymbolsWithWhite>\n" +
+      "      <compactWhite>true</compact>\n" +
+      "    </options>\n" +
+      "  </normalizer>\n" +
+      "\n" +
+      "  <tokenFilter id='...'>\n" +
+      "    <jclass>...</jclass>\n" +
+      "    <class>...</class>\n" +
+      "    <dll>...</dll>\n" +
+      "  </tokenFilter>\n" +
+      "\n" +
+      "  <classifiers>\n" +
+      "    <!-- -->\n" +
+      "  </classifiers>\n" +
+      "\n" +
+      "  <rules>\n" +
+      "    <!-- -->\n" +
+      "  </rules>\n" +
+      "</grammar>"
+  )
 public class AtnGrammar {
   
   /**

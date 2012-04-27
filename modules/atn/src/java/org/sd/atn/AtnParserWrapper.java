@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.token.StandardTokenizerOptions;
+import org.sd.util.Usage;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 
@@ -31,6 +32,7 @@ import org.sd.xml.DomElement;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes = "A container for an org.sd.atn.AtnParser with its options and strategies.")
 public class AtnParserWrapper {
   
   private String id;

@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.util.tree.NodePath;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
@@ -35,6 +36,11 @@ import org.sd.xml.DomNode;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An org.sd.atn.AtnParseSelector implementation that\n" +
+       "chooses the longest parse(s), meaning those that cover the\n" +
+       "most input"
+  )
 public class LongestParseSelector implements AtnParseSelector {
   
   private boolean simplest;

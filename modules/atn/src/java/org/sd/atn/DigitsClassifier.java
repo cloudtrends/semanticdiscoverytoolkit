@@ -25,6 +25,7 @@ import org.sd.atn.ResourceManager;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
 import org.sd.util.range.IntegerRange;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 
 /**
@@ -47,6 +48,24 @@ import org.sd.xml.DomElement;
  *
  * @author Spence Koehler
  */
+@Usage(notes =
+       "org.sd.atn.AbstractAtnStateTokenClassifier for recognizing digits\n" +
+       "(for improved efficiency over regexes).\n" +
+       "\n" +
+       "Attributes:\n" +
+       "\n" +
+       "  feature -- (optional, default='value') specifies name of feature holding\n" +
+       "             recognized value.\n" +
+       "  range -- (optional, default unbounded) specifies the range of acceptable\n" +
+       "           values\n" +
+       "  acceptUnknowns -- (optional, default=false) specifies whether to\n" +
+       "                    accept '?' as an unknown digit\n" +
+       "  requireTrueDigit -- (optional, default=true) specifies whether to accept\n" +
+       "                      letters that look like digits without finding any\n" +
+       "                      true digits\n" +
+       "  minLength -- (optional, default=0 [unbounded]) specifies the minimum\n" +
+       "               acceptable input text length (e.g. at least 2 digits)."
+  )
 public class DigitsClassifier extends AbstractAtnStateTokenClassifier {
 
   private String featureName;

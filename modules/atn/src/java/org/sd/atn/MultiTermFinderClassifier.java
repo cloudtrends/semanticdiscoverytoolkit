@@ -26,6 +26,7 @@ import org.sd.atn.ResourceManager;
 import org.sd.text.MultiTermFinder;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 
@@ -34,6 +35,11 @@ import org.sd.xml.DomNode;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An org.sd.atn.AbstractAtnStateTokenClassifier implementation\n" +
+       "that uses an org.sd.text.MultiTermFinder loaded from the\n" +
+       "specified 'textfile' referenced on initialization."
+  )
 public class MultiTermFinderClassifier extends AbstractAtnStateTokenClassifier {
   
   private ResourceManager resourceManager;

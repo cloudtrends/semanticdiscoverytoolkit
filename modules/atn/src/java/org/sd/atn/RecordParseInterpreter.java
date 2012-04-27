@@ -29,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Feature;
+import org.sd.util.Usage;
 import org.sd.util.tree.NodePath;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DataProperties;
@@ -42,6 +43,10 @@ import org.w3c.dom.NodeList;
  *
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An org.sd.atn.TemplateParseInterpreter implementation\n" +
+       "intended for use as a 'generic' parse interpreter."
+  )
 public class RecordParseInterpreter extends TemplateParseInterpreter {
   
   public RecordParseInterpreter(DomNode domNode, ResourceManager resourceManager) {

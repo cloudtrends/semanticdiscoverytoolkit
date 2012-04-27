@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import org.sd.token.Token;
+import org.sd.util.Usage;
 
 /**
  * Interface for testing a token's applicability at a step.
@@ -32,6 +33,15 @@ import org.sd.token.Token;
  *
  * @author Spence Koehler
  */
+@Usage(notes =
+       "Interface for testing a token's applicability at a step.\n" +
+       "\n" +
+       "Note that implementations referenced from an xml config require a\n" +
+       "constructor accepting the DomNode in the config that defines the\n" +
+       "test. For example, if a \"test\" node has a \"jclass\" child that gives\n" +
+       "the java class for an AtnRuleStepTest implementation, the \"test\"\n" +
+       "node will be passed into the constructor."
+  )
 public interface AtnRuleStepTest {
 
   /**

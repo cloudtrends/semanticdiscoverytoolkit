@@ -1,5 +1,5 @@
 /*
-    Copyright 2009 Semantic Discovery, Inc. (www.semanticdiscovery.com)
+    Copyright 2011 Semantic Discovery, Inc. (www.semanticdiscovery.com)
 
     This file is part of the Semantic Discovery Toolkit.
 
@@ -16,27 +16,18 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.sd.atn;
+package org.sd.util;
 
 
-import java.util.List;
-import org.sd.util.Usage;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /**
- * Interface for specifying parses to select as a first-cut pass at parse
- * disambiguation.
+ * An AnnotationType for expressing Usage to method or class users.
  * <p>
  * @author Spence Koehler
  */
-@Usage(notes =
-       "Interface for specifying parses to select as a first-cut\n" +
-       "pass at parse disambiguation."
-  )
-public interface AtnParseSelector {
-  
-  /**
-   * Return the selected parses from the parseResult.
-   */
-  public List<AtnParse> selectParses(AtnParseResult parseResult);
-
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Usage {
+  String notes();
 }

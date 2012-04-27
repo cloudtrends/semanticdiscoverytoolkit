@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomNode;
 
 /**
@@ -27,6 +28,10 @@ import org.sd.xml.DomNode;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "A special org.sd.atn.AtnRuleStepTest purely for parser debugging\n" +
+       "that always returns a true or false result."
+  )
 public class DebugTest implements AtnRuleStepTest {
   
   private DomNode testNode;

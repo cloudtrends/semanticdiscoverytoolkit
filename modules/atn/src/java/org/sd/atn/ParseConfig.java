@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.token.StandardTokenizerOptions;
 import org.sd.util.InputContext;
 import org.sd.util.InputContextIterator;
+import org.sd.util.Usage;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomDocument;
 import org.sd.xml.DomElement;
@@ -46,6 +47,63 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "Class for loading and managing parse configuration information\n" +
+       "through XML input of the form:\n" +
+       "\n" +
+       "  <parse>\n" +
+       "    <resources>\n" +
+       "      <resource name='resource-name'>\n" +
+       "        <jclass>resource-classpath</jclass>\n" +
+       "        ...resource configuration...\n" +
+       "      </resource>\n" +
+       "      ...more resource elements...\n" +
+       "    </resources>\n" +
+       "\n" +
+       "    <compoundParser>\n" +
+       "      <id>compoundParser-id</id>\n" +
+       "\n" +
+       "      <outputs><markup><style>...</style></markup></outputs>\n" +
+       "\n" +
+       "      <parser>\n" +
+       "        <id>parser-id</id>\n" +
+       "        <grammar>path-to-grammar-file</grammar>\n" +
+       "        <parseSelector>\n" +
+       "          <jclass>selector-classpath</jclass>\n" +
+       "        </parseSelector>\n" +
+       "        <ambiguityResolver>\n" +
+       "          <jclass>resolver-classpath</jclass>\n" +
+       "        </ambiguityResolver>\n" +
+       "        <tokenizer>\n" +
+       "          <tokens>\n" +
+       "            <token start='' end=''>token-category</token>\n" +
+       "            ...more tokens...\n" +
+       "          </tokens>\n" +
+       "        </tokenizer>\n" +
+       "        <tokenizerOptions>...</tokenizerOptions>\n" +
+       "        <parseOptions>...</parseOptions>\n" +
+       "      </parser>\n" +
+       "\n" +
+       "      ...more parser elements...\n" +
+       "    </compoundParser>\n" +
+       "\n" +
+       "    ...more compoundParser elements...\n" +
+       "  </parse>\n" +
+       "\n" +
+       "And supplements of the form:\n" +
+       "\n" +
+       "   <supplement>\n" +
+       "     <classifier parser=\"compoundID:parserID\" id=\"classifierID\" mode=\"supplement|override\" ...supplemental attributes..>...supplemental elements...</classifier>\n" +
+       "     <tokenizerOptions parser=\"compoundID:parserID\">\n" +
+       "        ...overriding tokenizer options...\n" +
+       "     </tokenizerOptions>\n" +
+       "     <grammar parser=\"compoundID:parserID\">...supplemental file or elements...</grammar>\n" +
+       "     <interpreter parser=\"compoundID:parserID\" mode=\"supplement|override\">\n" +
+       "        ...\n" +
+       "     </interpreter>\n" +
+       "     <parseSelector parser=\"compoundID:parserID\" ...override attributes...>...override elements...</parseSelector>\n" +
+       "   </supplement>"
+  )
 public class ParseConfig {
   
   public static ParseConfig buildInstance(DataProperties options) throws IOException {

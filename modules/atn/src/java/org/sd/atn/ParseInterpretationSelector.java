@@ -19,11 +19,14 @@
 package org.sd.atn;
 
 
+import org.sd.util.Usage;
+
 /**
  * Interface for selecting a parse interpretation.
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes = "Interface for selecting parse interpretation(s), one at a time.")
 public interface ParseInterpretationSelector {
   
   /**

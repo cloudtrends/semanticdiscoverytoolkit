@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.List;
+import org.sd.util.Usage;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 
@@ -30,6 +31,7 @@ import org.sd.xml.DomElement;
  *
  * @author Spence Koehler
  */
+@Usage(notes = "Interface for getting an interpretation for a parse if available.")
 public interface ParseInterpreter {
   
   /**

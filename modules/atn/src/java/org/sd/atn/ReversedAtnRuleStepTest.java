@@ -20,12 +20,16 @@ package org.sd.atn;
 
 
 import org.sd.token.Token;
+import org.sd.util.Usage;
 
 /**
  * Wrapper around an AtnRuleStepTest that reverses its 'accept' logic.
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "Wrapper around an org.sd.atn.AtnRuleStepTest that\n" +
+       "reverses its 'accept' logic.")
 public class ReversedAtnRuleStepTest implements AtnRuleStepTest {
   
   private AtnRuleStepTest test;

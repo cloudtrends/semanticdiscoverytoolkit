@@ -32,6 +32,7 @@ import org.sd.io.FileUtil;
 import org.sd.atn.ResourceManager;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.Node;
@@ -60,6 +61,43 @@ import org.w3c.dom.NodeList;
  * 
  * @author Spence Koehler
  */
+@Usage(notes =
+       "This is an org.sd.atn.AbstractAtnStateTokenClassifier used as a Classifier\n" +
+       "within an org.sd.atn.AtnGrammar based on matching terms by dictionary or\n" +
+       "regular expression matching.\n" +
+       "\n" +
+       "Terms are loaded from in-line lists (terms), text files (textfile), or regular\n" +
+       "expressions (regexes). Stopword terms can also be specified and are applied\n" +
+       "before term matches.  Supplements can mask base terms using stopwords and/or add\n" +
+       "terms to the classifier. Stopwords can also be triggered based on other classifier\n" +
+       "classifications. The XML format for specifying the terms is:\n" +
+       "\n" +
+       "<roteListType name='optionalName' caseSensitive='defaultCaseSensitivity' classFeature='...'>\n" +
+       "  <jclass>org.sd.atn.RoteListClassifier</jclass>\n" +
+       "  <terms caseSensitive='...' classFeature='...' ...collective term attributes...>\n" +
+       "    <term ...single term attributes...>...</term>\n" +
+       "    ...\n" +
+       "  </terms>\n" +
+       "  ...\n" +
+       "  <textfile caseSensitive='...' classFeature='...' _keyFeature='...' ...collective term attributes...>\n" +
+       "  ...\n" +
+       "  <regexes ...>   see RegexData\n" +
+       "    <regex ...>...</regex>\n" +
+       "    ...\n" +
+       "  </regexes>\n" +
+       "  ...\n" +
+       "  <stopwords>\n" +
+       "    <terms.../>\n" +
+       "    ...\n" +
+       "    <textfile.../>\n" +
+       "    ...\n" +
+       "    <regexes.../>\n" +
+       "    ...\n" +
+       "    <classifier>...</classifier>\n" +
+       "    ...\n" +
+       "  </stopwords>\n" +
+       "</roteListType>"
+  )
 public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   
   private static final Map<String, String> EMPTY_ATTRIBUTES = new HashMap<String, String>();

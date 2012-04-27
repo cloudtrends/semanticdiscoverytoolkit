@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.token.Token;
 import org.sd.token.Tokenizer;
+import org.sd.util.Usage;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 
@@ -37,6 +38,13 @@ import org.sd.xml.DomElement;
  *
  * @author Spence Koehler
  */
+@Usage(notes =
+       "Controlling class for parsing input tokenizer text according to a grammar.\n" +
+       "\n" +
+       "This is a Phrase Parser implementation using principles of an Augmented\n" +
+       "Transition Network (ATN). It is capable of computing all potential parses\n" +
+       "of input according to the grammar."
+  )
 public class AtnParser {
   
   private AtnGrammar grammar;

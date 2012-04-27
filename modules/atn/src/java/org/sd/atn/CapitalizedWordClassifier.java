@@ -26,6 +26,7 @@ import org.sd.atn.ResourceManager;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
 import org.sd.util.StringUtil;
+import org.sd.util.Usage;
 import org.sd.xml.DomNode;
 import org.sd.xml.DomElement;
 import org.w3c.dom.NodeList;
@@ -35,6 +36,10 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "Simple org.sd.atn.RoteListClassifier that recognizes\n" +
+       "capitalized words."
+  )
 public class CapitalizedWordClassifier extends RoteListClassifier {
   
   private boolean excludeAllCaps;

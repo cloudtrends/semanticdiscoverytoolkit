@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.sd.token.CategorizedToken;
+import org.sd.util.Usage;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
@@ -36,6 +37,10 @@ import org.sd.xml.XmlLite;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An org.sd.atn.ParseInterpreter implementation that transforms\n" +
+       "a parse tree directly into an interpretation."
+  )
 public class IdentityParseInterpreter implements ParseInterpreter {
   
   private boolean compress;

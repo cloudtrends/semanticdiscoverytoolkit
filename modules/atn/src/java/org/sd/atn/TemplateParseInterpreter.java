@@ -29,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Feature;
+import org.sd.util.Usage;
 import org.sd.util.tree.NodePath;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DataProperties;
@@ -42,6 +43,14 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An abstract org.sd.org.atn.ParseInterpreter base implementation\n" +
+       "that allows for parse node targeting using org.sd.util.tree.NodePaths\n" +
+       "(similar to XPaths, but for parse trees) and manipulating the contents\n" +
+       "of selected nodes for generating an org.sd.atn.ParseInterpretation,\n" +
+       "where generated interpretations are viewed as records (non-terminal\n" +
+       "XML elements) containing fields (nested or terminal elements)."
+  )
 public abstract class TemplateParseInterpreter implements ParseInterpreter {
   
   /**

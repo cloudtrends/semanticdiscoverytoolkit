@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.sd.token.Token;
 import org.sd.util.range.IntegerRange;
+import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.Node;
@@ -33,6 +34,51 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes =
+       "Delim tests are special tests for analyzing delimiters between tokens\n" +
+       "\n" +
+       "    postDelim test considers input delimiter characters after the matched token\n" +
+       "    preDelim test considers input delimiter characters before the matched token\n" +
+       "    delim test configuration elements are:\n" +
+       "        <repeatCheck type='ignore|test|fail'>integer-range-expression</repeatCheck>\n" +
+       "            configures the delim test for application at specific zero-based state repeat numbers\n" +
+       "            the 'type' attribute controls behavior at the repeat numbers: (note: only last one of each type is kept)\n" +
+       "                ignore -- the test will always return true\n" +
+       "                test -- execute the test normally\n" +
+       "                fail -- the test will always return false\n" +
+       "            this enables defining applicability for the test e.g. after the first repeating instance\n" +
+       "            integer-range-expression has comma-separated terms like:\n" +
+       "                A -- a single 0-based repeat number, A\n" +
+       "                A-B -- the range of integers from A to B\n" +
+       "                (A-B) -- the range of integers from A (exclusive) to B (exclusive)\n" +
+       "                (A-B] -- the range of integers from A (exclusive) to B (inclusive)\n" +
+       "                [A-B] -- the range of integers from A (inclusive) to B (inclusive)\n" +
+       "                [A-B) -- the range of integers from A (inclusive) to B (exclusive)\n" +
+       "                A- -- the range of integers from A (inclusive) to infinity\n" +
+       "            if absent, behaves as 'test' for all state repeat values.\n" +
+       "        <disallowall />\n" +
+       "            when encountered, denotes that any delimiter will cause the test to fail\n" +
+       "            subsequent configuration elements will override this effect\n" +
+       "                one strategy for identifying pertinent delimiters would be to first disallow all and then allow specific delimiters\n" +
+       "        <allowall />\n" +
+       "            when encountered, denotes that no delimiter will cause the test to fail\n" +
+       "            subsequent configuration elements will override this effect\n" +
+       "        <allow type='substr|exact'>...delims-to-allow...</allow>\n" +
+       "            when encountered, denotes to allow specific delimiters represented by the node's text\n" +
+       "                note that allowing specific delimiters has no effect unless other delimiters are disallowed\n" +
+       "                    consequently, if \"allow\" is encountered before either \"allowall\" or \"disallowall\", then \"disallowall\" will be assumed\n" +
+       "            if type='exact', then the test succeeds only when the delims-to-allow text equals the token's (pre- or post-) delims\n" +
+       "            if type='substr', then the test succeeds when the token's delims are a substring of the delims-to-allow\n" +
+       "                note: a token's delims are the non-trimmed delimiters either before (when \"pre\") or after (when \"post\") the token\n" +
+       "        <disallow type='substr|exact'>...delims-to-disallow...</disallow>\n" +
+       "            when encountered, denotes to disallow specific delimiters represented by the node's test\n" +
+       "                note that disallowing specific delimiters has no effect unless other delimiters are allowed\n" +
+       "                    consequently, if \"disallow\" is encountered before either \"allowall\" or \"disallowall\", then \"allowall\" will be assumed\n" +
+       "            type of 'exact' and 'substr' operates the same as described above for 'allow'.\n" +
+       "        <require type='substr|exact'>...delims-to-require...</require>\n" +
+       "            when encountered, denotes that the identified delimiters *must* be present for the test to pass.\n" +
+       "            type of 'exact' and 'substr' operates the same as described above for 'allow'."
+  )
 public class DelimTest implements AtnRuleStepTest {
   
   private boolean isPre;

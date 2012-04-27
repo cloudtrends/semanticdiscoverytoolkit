@@ -36,6 +36,7 @@ import org.sd.token.Features;
 import org.sd.token.LiteralTokenizer;
 import org.sd.token.Token;
 import org.sd.token.Tokenizer;
+import org.sd.util.Usage;
 import org.sd.io.Publishable;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
@@ -45,6 +46,7 @@ import org.sd.xml.DomElement;
  * <p>
  * @author Spence Koehler
  */
+@Usage(notes = "Container for the persistable distillation of a parse.")
 public class Parse implements Publishable, Serializable {
   
   // (Literal)Tokenizer containing just the portion of the string that was parsed

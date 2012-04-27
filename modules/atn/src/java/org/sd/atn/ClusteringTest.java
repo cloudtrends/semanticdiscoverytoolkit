@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import org.sd.token.Token;
+import org.sd.util.Usage;
 import org.sd.util.tree.Tree;
 
 /**
@@ -46,6 +47,26 @@ import org.sd.util.tree.Tree;
  * 
  * @author Spence Koehler
  */
+@Usage(notes =
+       "An org.sd.atn.AtnRuleStepTest for ensuring that category matches are\n" +
+       "clustered within a constituent.\n" +
+       "\n" +
+       "This test helps to limit \"spurious\" parses in cases where constituents\n" +
+       "with a repeating category are repeated grammatically, but consecutive\n" +
+       "categorical matches should remain in a single constituent.\n" +
+       "\n" +
+       "For example, consider the sequence \"C C C\" and the grammar:\n" +
+       "    A <- B+\n" +
+       "    B <- C+\n" +
+       "\n" +
+       "Then potential parses are:\n" +
+       "  1: (A (B C C C))\n" +
+       "  2: (A (B C) (B C C))\n" +
+       "  3: (A (B C) (B C) (B C))\n" +
+       "  4: (A (B C C) (B C))\n" +
+       "\n" +
+       "This test ensures that only parse #1 is valid when interpreting \"C C C\"."
+  )
 public class ClusteringTest implements AtnRuleStepTest {
   
   public ClusteringTest() {
