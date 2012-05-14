@@ -79,7 +79,7 @@ public class PostOffice implements Shutdownable {
       senderString = config.getUser() + " " + senderString;
     }
 
-    this.batchSenderString = senderString + " <no-reply@semanticdiscovery.com>";
+    this.batchSenderString = senderString + " <no-reply@loopback>";
     this.disabled = false;
   }
 

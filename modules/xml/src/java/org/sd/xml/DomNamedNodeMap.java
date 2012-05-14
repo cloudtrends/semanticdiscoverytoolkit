@@ -19,7 +19,6 @@
 package org.sd.xml;
 
 
-import java.util.HashMap;
 import java.util.Map;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
