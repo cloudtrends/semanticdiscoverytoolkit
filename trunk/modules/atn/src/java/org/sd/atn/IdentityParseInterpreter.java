@@ -99,7 +99,9 @@ public class IdentityParseInterpreter implements ParseInterpreter {
     Tree<XmlLite.Data> curInterpNode = null;
 
     if (isTag) {
-      curInterpNode = XmlLite.createTagNode(parseTree.getData());
+      String nodeText = parseTree.getData();
+      if ("?".equals(nodeText)) nodeText = "_UNK_";
+      curInterpNode = XmlLite.createTagNode(nodeText);
 
       // add attributes
       if (parseTree.hasAttributes()) {

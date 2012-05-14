@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
 public class ClusterLogVisitor implements LogVisitor {
   
   public static final String LOG_SETTINGS_FILENAME = "log-visitor.txt";
-  private static final String EMAIL_FROM = "ClusterNotification <no-reply@semanticdiscovery.com>";
+  private static final String EMAIL_FROM = "ClusterNotification <no-reply@loopback>";
 
 
 // This class's behavior is controlled by a resource file:

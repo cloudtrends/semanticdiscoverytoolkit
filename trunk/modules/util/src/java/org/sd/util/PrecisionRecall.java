@@ -46,6 +46,9 @@ public class PrecisionRecall {
     this.trueCount = trueCount;
     this.generatedCount = generatedCount;
     this.alignedCount = alignedCount;
+
+    this.precision = -1.0;
+    this.recall = -1.0;
   }
 
   public int getTrueCount() {

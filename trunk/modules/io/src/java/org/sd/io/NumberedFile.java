@@ -33,9 +33,9 @@ import java.util.regex.Pattern;
  */
 public class NumberedFile {
 
-  private File dir;  // directory containing numbered files
-  private String namePrefix;  // name of files before number
-  private String nameSuffix;  // name of files after number
+  public final File dir;  // directory containing numbered files
+  public final String namePrefix;  // name of files before number
+  public final String nameSuffix;  // name of files after number
 
   private Pattern namePattern;  // pattern for matching numbered files
 

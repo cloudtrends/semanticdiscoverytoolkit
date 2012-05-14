@@ -161,11 +161,12 @@ public class XmlStringBuilder {
     tag.append('<').append(tagName);
     for(Map.Entry<String,String> entry : tagAttrs.entrySet())
     {
-      tag.append(' ')
-         .append(entry.getKey())
-         .append("=\"")
-         .append(entry.getValue())
-         .append('"');
+      tag.
+        append(' ').
+        append(entry.getKey()).
+        append("=\"").
+        append(StringEscapeUtils.escapeXml(entry.getValue())).
+        append('"');
     }
     tag.append('>');
     return addXml(tag.toString());
