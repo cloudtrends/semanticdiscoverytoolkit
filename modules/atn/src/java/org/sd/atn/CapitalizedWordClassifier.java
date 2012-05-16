@@ -37,13 +37,26 @@ import org.w3c.dom.NodeList;
  * @author Spence Koehler
  */
 @Usage(notes =
-       "Simple org.sd.atn.RoteListClassifier that recognizes\n" +
-       "capitalized words."
+       "Simple org.sd.atn.RoteListClassifier that recognizes capitalized words\n" +
+       "with the following options:\n" +
+       "  allCapsMinLen -- (default=2) minimum length to be considered as allCaps\n" +
+       "  excludeAllCaps -- (default=false) true to reject all-caps words;\n" +
+       "                    Note that a single capital letter is not 'all-caps'.\n" +
+       "  singleLetter -- (default=true) true to accept a single capital letter;\n" +
+       "                  false to reject single capital letter\n" +
+       "  lowerCaseInitial -- (default=true) true to accept a single lower- (or\n" +
+       "                      upper-) case letter followed by a '.', regardless\n" +
+       "                      of the 'singleLetter' option.\n" +
+       "  acceptDash -- (default=true) true to accept a word containing an\n" +
+       "                embedded dash"
   )
 public class CapitalizedWordClassifier extends RoteListClassifier {
   
+  private int allCapsMinLen;
   private boolean excludeAllCaps;
+  private boolean singleLetter;
   private boolean lowerCaseInitial;
+  private boolean acceptDash;
 
   public CapitalizedWordClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
     super(classifierIdElement, resourceManager, id2Normalizer);
@@ -51,19 +64,35 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     // ignore any maxWordCount specified by the element and set to 1
     super.setMaxWordCount(1);
 
-    this.lowerCaseInitial = true;
+    this.allCapsMinLen = 1;
     this.excludeAllCaps = false;
+    this.singleLetter = true;
+    this.lowerCaseInitial = true;
+    this.acceptDash = true;
 
     doMySupplement(classifierIdElement);
   }
 
   private final void doMySupplement(DomNode classifierIdElement) {
-    // attribute to accept 'lowerCaseInitial' (default=true)
-    this.lowerCaseInitial = classifierIdElement.getAttributeBoolean("lowerCaseInitial", this.lowerCaseInitial);
+    this.allCapsMinLen = classifierIdElement.getAttributeInt("allCapsMinLen", 2);
 
     // iff <excludeAllCaps>true</excludeAllCaps>, then don't treat all caps words as capitalized
     final DomElement eacNode = (DomElement)classifierIdElement.selectSingleNode("excludeAllCaps");
-    this.excludeAllCaps = eacNode != null ? "true".equalsIgnoreCase(eacNode.getTextContent()) : this.excludeAllCaps;
+    if (eacNode != null) {
+      this.excludeAllCaps = "true".equalsIgnoreCase(eacNode.getTextContent());
+    }
+    else {
+      this.excludeAllCaps = classifierIdElement.getAttributeBoolean("excludeAllCaps", this.excludeAllCaps);
+    }
+
+    // if singleLetter, then accept a single capital letter
+    this.singleLetter = classifierIdElement.getAttributeBoolean("singleLetter", this.singleLetter);
+
+    // attribute to accept 'lowerCaseInitial' (default=true)
+    this.lowerCaseInitial = classifierIdElement.getAttributeBoolean("lowerCaseInitial", this.lowerCaseInitial);
+
+    // if acceptDash, then accept a word containing an embedded dash
+    this.acceptDash = classifierIdElement.getAttributeBoolean("acceptDash", this.acceptDash);
 
     // NOTE: super loads acceptable non-capitalized words and stopwords
     super.doSupplement(classifierIdElement);
@@ -77,12 +106,44 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     doMySupplement(supplementNode);
   }
 
+  public void setAllCapsMinLen(int allCapsMinLen) {
+    this.allCapsMinLen = allCapsMinLen;
+  }
+
+  public int getAllCapsMinLen() {
+    return allCapsMinLen;
+  }
+
+  public void setExcludeAllCaps(boolean excludeAllCaps) {
+    this.excludeAllCaps = excludeAllCaps;
+  }
+
+  public boolean getExcludeAllCaps() {
+    return excludeAllCaps;
+  }
+
+  public void setSingleLetter(boolean singleLetter) {
+    this.singleLetter = singleLetter;
+  }
+
+  public boolean getSingleLetter() {
+    return singleLetter;
+  }
+
   public void setLowerCaseInitial(boolean lowerCaseInitial) {
     this.lowerCaseInitial = lowerCaseInitial;
   }
 
   public boolean getLowerCaseInitial() {
     return lowerCaseInitial;
+  }
+
+  public void setAcceptDash(boolean acceptDash) {
+    this.acceptDash = acceptDash;
+  }
+
+  public boolean getAcceptDash() {
+    return acceptDash;
   }
 
   public boolean doClassify(Token token) {
@@ -99,21 +160,32 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     boolean result = super.doClassifyTerm(token);
 
     if (!result) {
+      // check capital first letter
       result = Character.isUpperCase(tokenText.codePointAt(0));
 
-      if (result && excludeAllCaps && StringUtil.allCaps(tokenText)) {
+      // check exclude all caps
+      if (result && excludeAllCaps && len >= allCapsMinLen && StringUtil.allCaps(tokenText)) {
+        result = false;
+      }
+
+      // check singleLetter
+      if (result && !singleLetter && len == 1) {
         result = false;
       }
     }
 
-    if (!result) {
-      // accept a single letter followed by a '.', even if not capitalized.
-      if (!result && lowerCaseInitial && len == 1) {
-        final String postDelim = token.getPostDelim();
-        if (postDelim.length() > 0 && postDelim.charAt(0) == '.') {
-          result = true;
-        }
+    // check lowerCaseInitial:
+    //   accept a single letter followed by a '.', even if not capitalized.
+    if (!result && lowerCaseInitial && len == 1) {
+      final String postDelim = token.getPostDelim();
+      if (postDelim.length() > 0 && postDelim.charAt(0) == '.') {
+        result = true;
       }
+    }
+
+    // check for embedded dash
+    if (result && len > 1 && !acceptDash) {
+      result = (tokenText.indexOf('-') < 0);
     }
 
     if (result) {

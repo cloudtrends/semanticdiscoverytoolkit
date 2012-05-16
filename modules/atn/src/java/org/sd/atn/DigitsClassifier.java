@@ -44,6 +44,8 @@ import org.sd.xml.DomElement;
  *                         true digits</li>
  * <li>minLength -- (optional, default=0 [unbounded]) specifies the minimum
  *                  acceptable input text length (e.g. at least 2 digits).
+ * <li>ignoreLetters -- (optional, default=false) specifies whether to ignore
+ *                      letters and accept any digits found.
  * </ul>
  *
  * @author Spence Koehler
@@ -64,7 +66,9 @@ import org.sd.xml.DomElement;
        "                      letters that look like digits without finding any\n" +
        "                      true digits\n" +
        "  minLength -- (optional, default=0 [unbounded]) specifies the minimum\n" +
-       "               acceptable input text length (e.g. at least 2 digits)."
+       "               acceptable input text length (e.g. at least 2 digits).\n" +
+       "  ignoreLetters -- (optional, default=false) specifies whether to ignore\n" +
+       "                   letters and accept any digits found."
   )
 public class DigitsClassifier extends AbstractAtnStateTokenClassifier {
 
@@ -73,6 +77,7 @@ public class DigitsClassifier extends AbstractAtnStateTokenClassifier {
   private boolean acceptUnknowns;
   private boolean requireTrueDigit;
   private int minLength;
+  private boolean ignoreLetters;
 
   public DigitsClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
     super(classifierIdElement, id2Normalizer);
@@ -92,6 +97,8 @@ public class DigitsClassifier extends AbstractAtnStateTokenClassifier {
     this.requireTrueDigit = classifierIdElement.getAttributeBoolean("requireTrueDigit", true);
 
     this.minLength = classifierIdElement.getAttributeInt("minLength", 0);
+
+    this.ignoreLetters = classifierIdElement.getAttributeBoolean("ignoreLetters", false);
   }
   
   public boolean doClassify(Token token) {
@@ -109,7 +116,7 @@ public class DigitsClassifier extends AbstractAtnStateTokenClassifier {
         }
       }
     
-      if (result) {
+      if (result && featureName != null && !"".equals(featureName)) {
         token.setFeature(featureName, text, this);
       }
     }
@@ -122,10 +129,23 @@ public class DigitsClassifier extends AbstractAtnStateTokenClassifier {
 
     final int[] intValue = new int[]{0};
 
-    if (text != null && !"".equals(text) && isDigits(text, intValue, requireTrueDigit)) {
+    if (text != null && !"".equals(text) && verifyDigits(text, intValue)) {
       if (range == null || range.includes(intValue[0])) {
         result = true;
       }
+    }
+
+    return result;
+  }
+
+  private final boolean verifyDigits(String text, int[] intValue) {
+    boolean result = false;
+
+    if (!ignoreLetters) {
+      result = isDigits(text, intValue, requireTrueDigit);
+    }
+    else {
+      result = hasDigits(text, intValue, requireTrueDigit);
     }
 
     return result;

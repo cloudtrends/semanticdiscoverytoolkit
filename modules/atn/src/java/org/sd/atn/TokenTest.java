@@ -56,7 +56,7 @@ import org.w3c.dom.NodeList;
        " - when onlyFirstToken='true', only test against a \"first\" constituent token\n" +
        " - when onlyLastToken='true', only test against a \"last\" constituent token\n" +
        " \n" +
-       " <test reverse='true|false' next='true|false' revise='true|false'>\n" +
+       " <test reverse='true|false' next='true|false' revise='true|false' verbose='true|false'>\n" +
        "   <jclass>org.sd.atn.TokenTest</jclass>\n" +
        "   <terms caseSensitive='true|false'>\n" +
        "     <term>...</term>\n" +
@@ -66,27 +66,55 @@ import org.w3c.dom.NodeList;
        "     <regex type='...' groupN='...'>...</regex>\n" +
        "   </regexes>\n" +
        "   <classifier cat='...'/>\n" +
+       "\n" +
+       "   <!-- NOTE: delims are applied only if something else succeeds -->\n" +
+       "   <predelim>...</predelim>\n" +
+       "   <postdelim>...</postdelim>\n" +
        " </test>"
   )
 public class TokenTest extends BaseClassifierTest {
   
+  private boolean verbose;
   private boolean next;
   private boolean revise;
   private List<String> classifiers;
+  private List<DelimTest> delimTests;
 
   public TokenTest(DomNode testNode, ResourceManager resourceManager) {
     super(testNode, resourceManager);
 
+    this.verbose = testNode.getAttributeBoolean("verbose", false);
     this.next = testNode.getAttributeBoolean("next", false);
     this.revise = testNode.getAttributeBoolean("revise", false);
 
     final NodeList classifierNodes = testNode.selectNodes("classifier");
-    if (classifierNodes != null) {
+    if (classifierNodes != null && classifierNodes.getLength() > 0) {
       this.classifiers = new ArrayList<String>();
       for (int nodeNum = 0; nodeNum < classifierNodes.getLength(); ++nodeNum) {
         final DomElement classifierElement = (DomElement)classifierNodes.item(nodeNum);
         final String cat = classifierElement.getAttributeValue("cat");
         classifiers.add(cat);
+      }
+    }
+
+    final NodeList preDelimNodes = testNode.selectNodes("predelim");
+    if (preDelimNodes != null && preDelimNodes.getLength() > 0) {
+      for (int nodeNum = 0; nodeNum < preDelimNodes.getLength(); ++nodeNum) {
+        final DomElement delimElement = (DomElement)preDelimNodes.item(nodeNum);
+        final DelimTest delimTest = new DelimTest(true, delimElement);
+        if (delimTests == null) delimTests = new ArrayList<DelimTest>();
+        delimTests.add(delimTest);
+      }
+    }
+
+    final NodeList postDelimNodes = testNode.selectNodes("postdelim");
+    if (postDelimNodes != null && postDelimNodes.getLength() > 0) {
+      for (int nodeNum = 0; nodeNum < postDelimNodes.getLength(); ++nodeNum) {
+        final DomElement delimElement = (DomElement)postDelimNodes.item(nodeNum);
+        final DelimTest delimTest = new DelimTest(false, delimElement);
+        if (delimTests == null) delimTests = new ArrayList<DelimTest>();
+        delimTests.add(delimTest);
+        delimTest.setIgnoreConstituents(true);
       }
     }
 
@@ -112,6 +140,10 @@ public class TokenTest extends BaseClassifierTest {
     //     <regex type='...' groupN='...'>...</regex>
     //   </regexes>
     //   <classifier cat='...'/>
+    //
+    //   <!-- NOTE: delims are applied only if something else succeeds -->
+    //   <predelim>...</predelim>
+    //   <postdelim>...</postdelim>
     // </test>
 
   }
@@ -120,16 +152,32 @@ public class TokenTest extends BaseClassifierTest {
     boolean result = false;
 
     if (next) {
+      if (verbose) {
+        System.out.println("TokenTest token=" + token);
+      }
+
       token = token.getNextToken();
+
+      if (verbose) {
+        System.out.println("\tnext token=" + token);
+      }
     }
 
-    for (; !result && token != null; token = revise ? token.getRevisedToken() : null) {
+    for (; token != null; token = revise ? token.getRevisedToken() : null) {
       if (!result && roteListClassifier != null) {
         result = roteListClassifier.doClassify(token);
+
+        if (result && verbose) {
+          System.out.println("\troteListClassifier.classify=true");
+        }
       }
 
       if (!result && regexClassifier != null) {
         result = regexClassifier.doClassify(token);
+
+        if (result && verbose) {
+          System.out.println("\tregexClassifier.classify=true");
+        }
       }
 
       if (!result && classifiers != null) {
@@ -140,6 +188,11 @@ public class TokenTest extends BaseClassifierTest {
             for (AtnStateTokenClassifier tokenClassifier : tokenClassifiers) {
               final MatchResult matchResult = tokenClassifier.classify(token, curState);
               if (matchResult.matched()) {
+
+                if (verbose) {
+                  System.out.println("\tclassifier(" + cat + ").classify=true");
+                }
+
                 result = true;
                 break;
               }
@@ -150,14 +203,37 @@ public class TokenTest extends BaseClassifierTest {
             if (!grammar.getCat2Rules().containsKey(cat)) {
               // use an "identity" classifier for literal grammar tokens
               result = cat.equals(token.getText());
+
+              if (result && verbose) {
+                System.out.println("\tgrammarRule(" + cat + ").classify=true");
+              }
             }
 
             // check for a token feature that matches the category
             if (!result) {
               result = token.getFeature(cat, null) != null;
+
+              if (result && verbose) {
+                System.out.println("\ttokenFeature(" + cat + "," + token.getFeature(cat, null) + ").classify=true");
+              }
             }
           }
           if (result) break;
+        }
+      }
+
+      if (result) break;
+    }
+
+    if (result && delimTests != null && token != null) {
+      for (DelimTest delimTest : delimTests) {
+        result = delimTest.accept(token, curState);
+        if (!result) {
+          if (verbose) {
+            System.out.println("\tdelimTest(pre=" + delimTest.isPre() + ") FAILED! token=" + token + " delims=" +
+                               (delimTest.isPre() ? token.getPreDelim() : token.getPostDelim()));
+          }
+          break;
         }
       }
     }

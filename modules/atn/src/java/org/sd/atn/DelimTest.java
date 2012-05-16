@@ -120,6 +120,17 @@ public class DelimTest implements AtnRuleStepTest {
     return failRepeatRange;
   }
 
+  private IntegerRange testRepeatRange;
+  IntegerRange getTestRepeatRange() {
+    return testRepeatRange;
+  }
+
+  // used only in conjunction with postDelim
+  private boolean remainingText;
+  boolean getRemainingText() {
+    return remainingText;
+  }
+
   private boolean ignoreConstituents;
 
 
@@ -131,7 +142,10 @@ public class DelimTest implements AtnRuleStepTest {
     this.requiredDelimStrings = null;
     this.ignoreRepeatRange = null;
     this.failRepeatRange = null;
+    this.testRepeatRange = null;
     this.ignoreConstituents = false;
+
+    this.remainingText = delimNode.getAttributeBoolean("remainingText", false);
 
     // under delim node, setup allowed and disallowed delims
     //
@@ -160,6 +174,9 @@ public class DelimTest implements AtnRuleStepTest {
           }
           else if ("fail".equalsIgnoreCase(rcType)) {
             failRepeatRange = new IntegerRange(childNode.getTextContent().trim());
+          }
+          else {
+            testRepeatRange = new IntegerRange(childNode.getTextContent().trim());
           }
         }
         else {
@@ -200,17 +217,22 @@ public class DelimTest implements AtnRuleStepTest {
   public boolean accept(Token token, AtnState curState) {
     final String delim = getDelim(token, curState);
 
-    if (ignoreRepeatRange != null || failRepeatRange != null) {
+    if (ignoreRepeatRange != null || failRepeatRange != null || testRepeatRange != null) {
       final int repeat = curState.getRepeatNum();
+
+      if (failRepeatRange != null && failRepeatRange.includes(repeat)) {
+        return false;
+      }
 
       if (ignoreRepeatRange != null && ignoreRepeatRange.includes(repeat)) {
         return true;
       }
 
-      if (failRepeatRange != null && failRepeatRange.includes(repeat)) {
-        return false;
+      if (testRepeatRange != null && !testRepeatRange.includes(repeat)) {
+        return true;
       }
     }
+
 
     if (!meetsRequiredConstraints(delim)) return false;
     else if (delimStrings.size() == 0) return true;
@@ -287,6 +309,9 @@ public class DelimTest implements AtnRuleStepTest {
     }
     else {  // postdelim
       delim = token.getPostDelim();
+      if (remainingText) {
+        delim += token.getTokenizer().getNextText(token);
+      }
     }
 
     return delim;

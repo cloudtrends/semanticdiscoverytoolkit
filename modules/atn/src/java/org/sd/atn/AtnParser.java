@@ -114,17 +114,17 @@ public class AtnParser {
                                   DataProperties overrides, AtomicBoolean die) {
     if (firstToken == null) return null;
 
-    //NOTE: when seeking, must be able to leave unconsumed text.
-    if (options.getConsumeAllText()) {
-      // make a copy w/out consume all text
-      options = new AtnParseOptions(options);
-      options.setConsumeAllText(false);
-    }
+    // //NOTE: when seeking, must be able to leave unconsumed text.
+    // if (options.getConsumeAllText()) {
+    //   // make a copy w/out consume all text
+    //   options = new AtnParseOptions(options);
+    //   options.setConsumeAllText(false);
+    // }
 
     AtnParseResult result = new AtnParseResult(grammar, firstToken, options, stopList, overrides, die);
     result.continueParsing();
 
-    while (result.getNumParses() == 0) {
+    while (result.getNumParses() == 0 && !options.getConsumeAllText()) {
       firstToken = firstToken.getTokenizer().getSmallestToken(firstToken.getStartIndex()).getNextToken();
       if (firstToken == null) break;
 
@@ -140,7 +140,10 @@ public class AtnParser {
    */
   public AtnParseResult seekNextParse(AtnParse lastParse, AtnParseOptions options, Set<Integer> stopList,
                                       DataProperties overrides, AtomicBoolean die) {
-    return (lastParse.getNextToken() != null) ? seekParse(lastParse.getNextToken(), options, stopList, overrides, die) : null;
+    return
+      (!options.getConsumeAllText() && lastParse.getNextToken() != null) ?
+      seekParse(lastParse.getNextToken(), options, stopList, overrides, die) :
+      null;
   }
 
   /**
