@@ -127,7 +127,7 @@ public class AtnParseOptions {
   /**
    * Default constructor.
    * 
-   * ConsumeAllText = true;          (a parse is only successful if all text is consumed)
+   * ConsumeAllText = false;         (a parse is only successful if all text is consumed)
    * SkipTokenLimit = 0;             (doesn't allow for any skipped tokens)
    * FirstParseOnly = false;         (exhaust all parses)
    * AdjustInputForTokens = false;   (don't adjust input granularity)
@@ -137,7 +137,7 @@ public class AtnParseOptions {
    */
   public AtnParseOptions(ResourceManager resourceManager) {
     this.resourceManager = resourceManager;
-    this.consumeAllText = true;
+    this.consumeAllText = false;
     this.skipTokenLimit = 0;
     this.firstParseOnly = false;
     this.adjustInputForTokens = false;
@@ -149,7 +149,7 @@ public class AtnParseOptions {
    * Construct based on options specified in the given xml element.
    * 
    * <parseOptions>
-   *   <consumeAllText>true</consumeAllText>
+   *   <consumeAllText>false</consumeAllText>
    *   <skipTokenLimit>0</skipTokenLimit>
    *   <firstParseOnly>false</firstParseOnly>
    *   <adjustInputForTokens>false</adjustInputForTokens>
@@ -168,7 +168,7 @@ public class AtnParseOptions {
   /**
    * Construct based on the options specified in DataProperties.
    * 
-   * consumeAllText (default=true)
+   * consumeAllText (default=false)
    * skipTokenLimit (default=0)
    * firstParseOnly (default=false)
    * adjustInputForTokens (default=false)
@@ -198,7 +198,7 @@ public class AtnParseOptions {
   private final void init(DataProperties options) {
     //
     // <parseOptions>
-    //   <consumeAllText>true</consumeAllText>
+    //   <consumeAllText>false</consumeAllText>
     //   <skipTokenLimit>0</skipTokenLimit>
     //   <firstParseOnly>false</firstParseOnly>
     //   <adjustInputForTokens>false</adjustInputForTokens>
@@ -215,7 +215,7 @@ public class AtnParseOptions {
     //
 
     this.options = options;
-    this.consumeAllText = options.getBoolean("consumeAllText", true);
+    this.consumeAllText = options.getBoolean("consumeAllText", false);
     this.skipTokenLimit = options.getInt("skipTokenLimit", 0);
     this.firstParseOnly = options.getBoolean("firstParseOnly", false);
     this.adjustInputForTokens = options.getBoolean("adjustInputForTokens", false);

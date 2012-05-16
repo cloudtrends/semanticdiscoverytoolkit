@@ -62,6 +62,10 @@ public class AtnParseTest {
       new AtnParseOptions(resourceManager) :
       new AtnParseOptions(AtnParseTest.stringToXml(parseOptionsXml, false), resourceManager);
 
+    if (parseOptionsXml == null) {
+      parseOptions.setConsumeAllText(true);
+    }
+
     return parseOptions;
   }
 

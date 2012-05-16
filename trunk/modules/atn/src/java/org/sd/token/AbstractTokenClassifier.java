@@ -85,19 +85,59 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
       }
       else {
         // check for OCR-like digits
-        final int lc = Character.toLowerCase(c);
-        if (lc == 'o') {
-          digit = 0;
-        }
-        else if (lc == 'l' || lc == 'i') {
-          digit = 1;
-        }
-        else if (lc == 'b') {
-          digit = 8;
+        final Integer ocrDigit = interpretMistakenDigit(c);
+        if (ocrDigit != null) {
+          digit = ocrDigit;
         }
         else {
           result = false;
           break;
+        }
+      }
+
+      if (digit > 0) value += (digit * tens);
+      tens *= 10;
+    }
+
+    // only accept OCR-like errors if there was a true digit in the mix
+    if (!hasTrueDigit) result = false;
+
+    if (result) asInt[0] = value;
+
+    return result;
+  }
+
+  /**
+   * Classification utility to identify digits in text.
+   * <p>
+   * If true, the asInt[0] will be the numerical value of the digits.
+   */
+  public static boolean hasDigits(String text, int[] asInt) {
+    return hasDigits(text, asInt, true);
+  }
+
+  public static boolean hasDigits(String text, int[] asInt, boolean requireTrueDigit) {
+    boolean result = false;
+
+    int value = 0;
+    int tens = 1;
+    boolean hasTrueDigit = !requireTrueDigit;
+
+    // scan from right to left, building the integer value
+    for (int textIndex = text.length() - 1; textIndex >= 0; --textIndex) {
+      int c = text.codePointAt(textIndex);
+      int digit = 0;
+
+      if (c >= '0' && c <= '9') {
+        digit = (int)(c - '0');
+        result = hasTrueDigit = true;
+      }
+      else {
+        // check for OCR-like digits
+        final Integer ocrDigit = interpretMistakenDigit(c);
+        if (ocrDigit != null) {
+          digit = ocrDigit;
+          result = true;
         }
       }
 
@@ -162,6 +202,30 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
    */
   protected void addFeature(Token token, String type, String value, double p) {
     token.getFeatures().add(new Feature(type, value, p, this));
+  }
+
+  public static Integer interpretMistakenDigit(int c) {
+    Integer digit = null;
+
+    // check for OCR-like digits
+    final int lc = Character.toLowerCase(c);
+    if (lc == 'o') {
+      digit = 0;
+    }
+    else if (lc == 'l' || lc == 'i') {
+      digit = 1;
+    }
+    else if (c == 'B') {
+      digit = 8;
+    }
+    else if (lc == 'b') {
+      digit = 6;
+    }
+    else if (lc == 's') {
+      digit = 5;
+    }
+
+    return digit;
   }
 
   /**
