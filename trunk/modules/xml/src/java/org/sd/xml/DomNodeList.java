@@ -18,7 +18,7 @@
 */
 package org.sd.xml;
 
-
+import java.util.Iterator;
 import java.util.List;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -28,8 +28,9 @@ import org.w3c.dom.NodeList;
  * <p>
  * @author Spence Koehler
  */
-public class DomNodeList implements NodeList {
-  
+public class DomNodeList 
+  implements NodeList, Iterable<DomNode>
+{
   private List<DomNode> domNodes;
 
   DomNodeList(List<DomNode> domNodes) {
@@ -48,5 +49,9 @@ public class DomNodeList implements NodeList {
     }
 
     return result;
+  }
+
+  public Iterator<DomNode> iterator() { 
+    return this.domNodes.iterator();
   }
 }
