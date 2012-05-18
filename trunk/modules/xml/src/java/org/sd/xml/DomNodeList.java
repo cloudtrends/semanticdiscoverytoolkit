@@ -52,6 +52,9 @@ public class DomNodeList
   }
 
   public Iterator<DomNode> iterator() { 
-    return this.domNodes.iterator();
+    if(domNodes == null)
+      return null;
+    else
+      return domNodes.iterator();
   }
 }
