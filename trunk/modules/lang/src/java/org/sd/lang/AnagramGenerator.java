@@ -118,11 +118,10 @@ public class AnagramGenerator {
   }
 
 
-  public static void main(String[] args) {
-    final AnagramGenerator agen = new AnagramGenerator();
-
-    for (String arg : args) {
-      final Map<Integer, Set<String>> allAnagrams = agen.getAnagrams(arg, Math.min(arg.length(), 3));
+  public void doMain(String[] args, int startIdx) {
+    for (int i = startIdx; i < args.length; ++i) {
+      final String arg = args[i];
+      final Map<Integer, Set<String>> allAnagrams = getAnagrams(arg, Math.min(arg.length(), 3));
 
       System.out.println("\nAnagrams for '" + arg + "'");
 
@@ -136,5 +135,10 @@ public class AnagramGenerator {
         }
       }
     }
+  }
+
+  public static void main(String[] args) {
+    final AnagramGenerator agen = new AnagramGenerator();
+    agen.doMain(args, 0);
   }
 }

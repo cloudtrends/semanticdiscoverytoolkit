@@ -20,6 +20,7 @@ package org.sd.xml;
 
 
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
@@ -155,6 +156,37 @@ public class DomElement extends DomNode implements Element {
       _attributes = new DomNamedNodeMap(this);
     }
     return _attributes;
+  }
+
+  /**
+   * Special utility for getting a string representing this element's node name
+   * and attributes, suitable for use in, e.g. XmlStringBuilder.
+   */
+  public String getTagAndAttributeString() {
+    return getTagAndAttributeString(null);
+  }
+
+  /**
+   * Special utility for getting a string representing this element's attributes
+   * and a new node name, suitable for use in, e.g. XmlStringBuilder.
+   */
+  public String getTagAndAttributeString(String newNodeName) {
+    final StringBuilder result = new StringBuilder();
+    if (newNodeName == null || "".equals(newNodeName)) newNodeName = getNodeName();
+    
+    result.append(newNodeName);
+    if (hasAttributes()) {
+      for (Map.Entry<String, String> entry : getDomAttributes().getAttributes().entrySet()) {
+        result.
+          append(' ').
+          append(entry.getKey()).
+          append("=\"").
+          append(StringEscapeUtils.escapeXml(entry.getValue())).
+          append('"');
+      }
+    }
+
+    return result.toString();
   }
 
   public String getLocalName() {
