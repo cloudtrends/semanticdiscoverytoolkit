@@ -30,24 +30,68 @@ import java.util.regex.Pattern;
 public class Regex {
 
   /**
-   * Usage: java org.....Regex pattern input
+   * Usage: java org.....Regex [-F|-M|-L] pattern input
    * i.e. java -ea Regex "(.+?)\s+(.+)" "this is a test"
    *      java -ea Regex "(.+)\s+(.+)" "this is a test"
    */
   public static void main(String[] args) {
-    final Pattern p = Pattern.compile(args[0]);
+    char mode = 'M';
+    int argNum = 0;
 
-    for (int argNum = 1; argNum < args.length; ++argNum) {
+    if (args[argNum].charAt(0) == '-') {
+      mode = args[argNum].charAt(1);
+      ++argNum;
+    }
+
+    final Pattern p = Pattern.compile(args[argNum++]);
+
+    System.out.println("Mode=" + mode);
+
+    for (; argNum < args.length; ++argNum) {
       final Matcher m = p.matcher(args[argNum]);
 
-      if (m.matches()) {
-        System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + args[0] + "\":");
-        for (int i = 0; i <= m.groupCount(); i++) {
-          System.out.println("group[" + i + "]='" + m.group(i) + "'");
-        }
-      }
-      else {
-        System.out.println("string \"" + args[argNum] + "\" does not match pattern: \"" + args[0] + '"');
+      switch (mode) {
+        case 'M' :
+        case 'm' :
+
+          if (m.matches()) {
+            System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + args[0] + "\":");
+            for (int i = 0; i <= m.groupCount(); i++) {
+              System.out.println("group[" + i + "]='" + m.group(i) + "'");
+            }
+          }
+          else {
+            System.out.println("string \"" + args[argNum] + "\" does not match pattern: \"" + args[0] + '"');
+          }
+          
+          break;
+
+        case 'L' :
+        case 'l' :
+
+          if (m.lookingAt()) {
+            System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + args[0] + "\":");
+            for (int i = 0; i <= m.groupCount(); i++) {
+              System.out.println("group[" + i + "]='" + m.group(i) + "'");
+            }
+          }
+          else {
+            System.out.println("string \"" + args[argNum] + "\" does not match pattern: \"" + args[0] + '"');
+          }
+          
+          break;
+
+        case 'F' :
+        case 'f' :
+
+          while (m.find()) {
+            System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + args[0] + "\":");
+            for (int i = 0; i <= m.groupCount(); i++) {
+              System.out.println("group[" + i + "]='" + m.group(i) + "'");
+            }
+          }
+          
+          break;
       }
     }
   }

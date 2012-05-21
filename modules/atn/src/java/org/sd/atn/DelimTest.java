@@ -143,8 +143,8 @@ public class DelimTest implements AtnRuleStepTest {
     this.ignoreRepeatRange = null;
     this.failRepeatRange = null;
     this.testRepeatRange = null;
-    this.ignoreConstituents = false;
 
+    this.ignoreConstituents = delimNode.getAttributeBoolean("ignoreConstituents", false);
     this.remainingText = delimNode.getAttributeBoolean("remainingText", false);
 
     // under delim node, setup allowed and disallowed delims
