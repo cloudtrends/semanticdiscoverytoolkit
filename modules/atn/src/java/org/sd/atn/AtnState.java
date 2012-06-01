@@ -670,7 +670,7 @@ public class AtnState {
       if (grammar.getCat2Classifiers().containsKey(category)) {
         for (AtnStateTokenClassifier classifier : grammar.getCat2Classifiers().get(category)) {
           final MatchResult matchResult = classifier.classify(inputToken, this);
-          if (matchResult.matched() && ruleStep.verify(inputToken, this)) {
+          if (matchResult.matched() && applyTests()) {
             result = matchResult;
             break;
           }

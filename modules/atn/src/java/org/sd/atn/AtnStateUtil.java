@@ -181,7 +181,7 @@ public class AtnStateUtil {
    * Determine whether the state is the first in its constituent.
    */
   public static final boolean isFirstConstituentState(AtnState curState) {
-    return curState.getPushState() == curState.getParentState();
+    return (curState.getStepNum() == 0 && curState.getRepeatNum() == 0) || curState.getPushState() == curState.getParentState();
   }
 
   /**

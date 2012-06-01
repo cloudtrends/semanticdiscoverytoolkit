@@ -85,6 +85,11 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     this.onlyLastToken = testNode.getAttributeBoolean("onlyLastToken", false);
     this.reverse = testNode.getAttributeBoolean("reverse", false);
 
+    //NOTE: "reverse" isn't checked here directly because this test will be wrapped within
+    //      a ReversedAtnRuleStepTest on load through the AtnRuleStep and the reversal
+    //      logic will be applied there; however, in cases where the test is "ignored" or
+    //      to have no effect, the later "reverse" logic needs to be counteracted.
+
     // under token node, setup allowed and disallowed tokens
     //
     // options:
@@ -113,8 +118,7 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
 
   public final boolean accept(Token token, AtnState curState) {
     boolean result = false;
-
-//    boolean isApplicable = false;
+    boolean applyTest = true;
 
     if (ignoreLastToken && token.getNextToken() == null) {
       if (verbose) {
@@ -122,46 +126,44 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
                            ") skipping test on lastToken '" + token + "'! state=" +
                            curState);
       }
-      // isApplicable = true;
-      // result = doAccept(token, curState);
-
+      applyTest = false;
       result = !reverse;
     }
-    else if (ignoreFirstToken && token.getStartIndex() == 0) {
-      if (verbose) {
-        System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
-                           ") skipping test on firstToken '" + token + "'! state=" +
-                           curState);
+    else if (ignoreFirstToken) {
+      if (token.getStartIndex() == 0 || AtnStateUtil.isFirstConstituentState(curState)) {
+        if (verbose) {
+          System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
+                             ") skipping test on firstToken '" + token + "'! state=" +
+                             curState);
+        }
+        applyTest = false;
+        result = !reverse;
       }
-      // isApplicable = true;
-      // result = doAccept(token, curState);
-
-      result = !reverse;
     }
-    else if (onlyFirstToken && (token.getStartIndex() == 0 || AtnStateUtil.isFirstConstituentState(curState))) {
-      if (verbose) {
-        System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
-                           ") applying test on firstToken '" + token + "! state=" +
-                           curState);
+    else if (onlyFirstToken) {
+      if ((token.getStartIndex() == 0 || AtnStateUtil.isFirstConstituentState(curState))) {
+        // is first token
+        if (verbose) {
+          System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
+                             ") applying test on firstToken '" + token + "! state=" +
+                             curState);
+        }
       }
-      // isApplicable = true;
-      // result = doAccept(token, curState);
-
-      result = !reverse;
+      else {
+        // not a first token
+        applyTest = false;
+        result = !reverse;
+      }
     }
-    else {
-      // isApplicable = true;
+
+    if (applyTest) {
       result = doAccept(token, curState);
-    }
 
-    // if (isApplicable) {
-    //   if (reverse) {
-    //     result = !result;
-    //   }
-    // }
-    // else {
-    //   result = true;
-    // }
+      if (verbose) {
+        System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
+                           ") doAccept(" + token + ", " + curState + ")=" + result);
+      }
+    }
 
     return result;
   }

@@ -16,7 +16,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.sd.atn;
+package org.sd.atn.interp;
 
 
 import java.util.ArrayList;
@@ -29,6 +29,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Feature;
+import org.sd.atn.Parse;
+import org.sd.atn.ParseInterpretation;
+import org.sd.atn.ResourceManager;
 import org.sd.util.Usage;
 import org.sd.util.tree.NodePath;
 import org.sd.util.tree.Tree;
@@ -44,7 +47,7 @@ import org.w3c.dom.NodeList;
  * @author Spence Koehler
  */
 @Usage(notes =
-       "An org.sd.atn.TemplateParseInterpreter implementation\n" +
+       "An org.sd.atn.interp..TemplateParseInterpreter implementation\n" +
        "intended for use as a 'generic' parse interpreter."
   )
 public class RecordParseInterpreter extends TemplateParseInterpreter {
