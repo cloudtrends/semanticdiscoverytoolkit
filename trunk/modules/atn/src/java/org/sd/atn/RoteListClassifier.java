@@ -724,8 +724,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
     public boolean isEmpty() {
       return
-        (caseSensitiveTerms != null && !caseSensitiveTerms.isEmpty()) ||
-        (caseInsensitiveTerms != null && !caseInsensitiveTerms.isEmpty());
+        (caseSensitiveTerms == null || caseSensitiveTerms.isEmpty()) &&
+        (caseInsensitiveTerms == null || caseInsensitiveTerms.isEmpty());
     }
 
     public boolean doClassify(Token token) {
