@@ -270,6 +270,10 @@ public class AtnGrammar {
       result = startRules;
     }
 
+    if (result == null || result.size() == 0) {
+      System.out.println("***WARNING: No startRules found or specified!");
+    }
+
     return result;
   }
 
