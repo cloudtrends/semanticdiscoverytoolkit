@@ -274,8 +274,11 @@ public class ParseInterpretation implements Publishable, Serializable {
     if (!result && o instanceof ParseInterpretation) {
       final ParseInterpretation other = (ParseInterpretation)o;
 
-      result = this.classification.equals(other.getClassification()) &&
-        this.interpretation.equals(other.getInterpretation());
+      result =
+        (this.classification == other.getClassification() ||
+         (this.classification != null && this.classification.equals(other.getClassification()))) &&
+        (this.interpretation == other.getInterpretation() ||
+         (this.interpretation != null && this.interpretation.equals(other.getInterpretation())));
     }
 
     return result;

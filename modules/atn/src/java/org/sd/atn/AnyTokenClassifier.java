@@ -37,7 +37,7 @@ import org.sd.xml.DomElement;
  * @author Spence Koehler
  */
 @Usage(notes =
-       "org.sd.atn.AbstractAtnStateTokenClassifier for classifying any token\n" +
+       "org.sd.atn.RoteListClassifier for classifying any token\n" +
        "(as a grab bag or explicit unknown, for example).\n" +
        "\n" +
        "Attributes:\n" +
@@ -47,16 +47,29 @@ import org.sd.xml.DomElement;
        "  minLength -- (optional, default=0 [unbounded]) specifies the minimum\n" +
        "               acceptable input text length (e.g. at least 2 digits).\n" +
        "  maxLength -- (optional, default=0 [unbounded]) specifies the maximum\n" +
-       "               acceptable input text length (e.g. at most 10 digits)."
+       "               acceptable input text length (e.g. at most 10 digits)." +
+       "<tokenType feature='optionalFeatureOnMatch' minLength='A' maxLength='B'>\n" +
+       "  <jclass>org.sd.atn.AnyTokenClassifier</jclass>\n" +
+       "  <stopwords>\n" +
+       "    <terms.../>\n" +
+       "    ...\n" +
+       "    <textfile.../>\n" +
+       "    ...\n" +
+       "    <regexes.../>\n" +
+       "    ...\n" +
+       "    <classifier>...</classifier>\n" +
+       "    ...\n" +
+       "  </stopwords>\n" +
+       "</tokenType>"
   )
-public class AnyTokenClassifier extends AbstractAtnStateTokenClassifier {
+public class AnyTokenClassifier extends RoteListClassifier {
   
   private String featureName;
   private int minLength;
   private int maxLength;
 
   public AnyTokenClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
-    super(classifierIdElement, id2Normalizer);
+    super(classifierIdElement, resourceManager, id2Normalizer);
 
     // ignore any maxWordCount specified by the element and set to 1
     super.setMaxWordCount(1);
@@ -76,6 +89,9 @@ public class AnyTokenClassifier extends AbstractAtnStateTokenClassifier {
 
       if ((minLength > 0 && textLen < minLength) ||
           (maxLength > 0 && textLen > maxLength)) {
+        result = false;
+      }
+      else if (doClassifyStopword(token)) {
         result = false;
       }
     }

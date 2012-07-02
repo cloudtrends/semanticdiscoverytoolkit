@@ -42,6 +42,8 @@ import org.w3c.dom.NodeList;
        "  allCapsMinLen -- (default=2) minimum length to be considered as allCaps\n" +
        "  excludeAllCaps -- (default=false) true to reject all-caps words;\n" +
        "                    Note that a single capital letter is not 'all-caps'.\n" +
+       "  excludeProperCase -- (default=false) true to reject proper-cased words;\n" +
+       "                       Note that a single capital letter is not 'proper-case'.\n" +
        "  singleLetter -- (default=true) true to accept a single capital letter;\n" +
        "                  false to reject single capital letter\n" +
        "  lowerCaseInitial -- (default=true) true to accept a single lower- (or\n" +
@@ -54,6 +56,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
   
   private int allCapsMinLen;
   private boolean excludeAllCaps;
+  private boolean excludeProperCase;
   private boolean singleLetter;
   private boolean lowerCaseInitial;
   private boolean acceptDash;
@@ -66,6 +69,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
 
     this.allCapsMinLen = 1;
     this.excludeAllCaps = false;
+    this.excludeProperCase = false;
     this.singleLetter = true;
     this.lowerCaseInitial = true;
     this.acceptDash = true;
@@ -83,6 +87,15 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     }
     else {
       this.excludeAllCaps = classifierIdElement.getAttributeBoolean("excludeAllCaps", this.excludeAllCaps);
+    }
+
+    // iff <excludeProperCase>true</excludeProperCase>, then don't treat all caps words as capitalized
+    final DomElement epcNode = (DomElement)classifierIdElement.selectSingleNode("excludeProperCase");
+    if (epcNode != null) {
+      this.excludeProperCase = "true".equalsIgnoreCase(epcNode.getTextContent());
+    }
+    else {
+      this.excludeProperCase = classifierIdElement.getAttributeBoolean("excludeProperCase", this.excludeProperCase);
     }
 
     // if singleLetter, then accept a single capital letter
@@ -120,6 +133,14 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
 
   public boolean getExcludeAllCaps() {
     return excludeAllCaps;
+  }
+
+  public void setExcludeProperCase(boolean excludeProperCase) {
+    this.excludeProperCase = excludeProperCase;
+  }
+
+  public boolean getExcludeProperCase() {
+    return excludeProperCase;
   }
 
   public void setSingleLetter(boolean singleLetter) {
@@ -165,6 +186,11 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
 
       // check exclude all caps
       if (result && excludeAllCaps && len >= allCapsMinLen && StringUtil.allCaps(tokenText)) {
+        result = false;
+      }
+
+      // check exclude proper case
+      if (result && excludeProperCase && len >= 2 && Character.isLowerCase(tokenText.charAt(1))) {
         result = false;
       }
 

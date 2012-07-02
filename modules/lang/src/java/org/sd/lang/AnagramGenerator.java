@@ -119,18 +119,43 @@ public class AnagramGenerator {
 
 
   public void doMain(String[] args, int startIdx) {
-    for (int i = startIdx; i < args.length; ++i) {
-      final String arg = args[i];
-      final Map<Integer, Set<String>> allAnagrams = getAnagrams(arg, Math.min(arg.length(), 3));
+    // arg0 : letters for anagrams
+    // arg1 : (optional) range start
+    // arg2 : (optional) range end
 
-      System.out.println("\nAnagrams for '" + arg + "'");
+    final String letters = args[startIdx];
+    final String rangeStart = (args.length > startIdx + 1) ? args[startIdx + 1] : null;
+    final String rangeEnd = (args.length > startIdx + 2) ? args[startIdx + 2] : null;
 
-      for (Map.Entry<Integer, Set<String>> entry : allAnagrams.entrySet()) {
-        final int numLetters = entry.getKey();
-        final Set<String> anagrams = entry.getValue();
+    final Map<Integer, Set<String>> allAnagrams = getAnagrams(letters, Math.min(letters.length(), 3));
 
-        System.out.println("\n\tFound " + anagrams.size() + " with " + numLetters + " letters:");
-        for (String anagram : anagrams) {
+    System.out.println("\nAnagrams for '" + letters + "'");
+
+    for (Map.Entry<Integer, Set<String>> entry : allAnagrams.entrySet()) {
+      final int numLetters = entry.getKey();
+      final Set<String> anagrams = entry.getValue();
+
+      if (rangeStart != null && numLetters < rangeStart.length()) {
+        continue;
+      }
+
+      if (rangeEnd != null && numLetters > rangeEnd.length()) {
+        continue;
+      }
+
+      System.out.println("\n\tFound " + anagrams.size() + " with " + numLetters + " letters:");
+      for (String anagram : anagrams) {
+        boolean show = true;
+
+        if (show && rangeStart != null && anagram.compareTo(rangeStart) < 0) {
+          show = false;
+        }
+
+        if (show && rangeEnd != null && anagram.compareTo(rangeEnd) > 0) {
+          show = false;
+        }
+
+        if (show) {
           System.out.println("\t\t" + anagram);
         }
       }
