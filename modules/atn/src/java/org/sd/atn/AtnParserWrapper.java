@@ -19,6 +19,7 @@
 package org.sd.atn;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,6 +64,14 @@ public class AtnParserWrapper {
     return parseOptions;
   }
 
+  private AtnParsePrequalifier prequalifier;
+  public AtnParsePrequalifier getPrequalifier() {
+    return prequalifier;
+  }
+  public void setPrequalifier(AtnParsePrequalifier prequalifier) {
+    this.prequalifier = prequalifier;
+  }
+
   private AtnParseSelector parseSelector;
   public AtnParseSelector getParseSelector() {
     return parseSelector;
@@ -84,6 +93,11 @@ public class AtnParserWrapper {
   private DomElement parserElement;
   public DomElement getParserElement() {
     return parserElement;
+  }
+
+  private DomElement prequalifierElement;
+  public DomElement getPrequalifierElement() {
+    return prequalifierElement;
   }
 
   private DomElement parseSelectorElement;
@@ -117,6 +131,9 @@ public class AtnParserWrapper {
 
     this.parser = new AtnParser(grammarElement, resourceManager);
 
+    this.prequalifierElement = (DomElement)parserElement.selectSingleNode("prequalifier");
+    this.prequalifier = (prequalifierElement != null) ? (AtnParsePrequalifier)resourceManager.getResource(prequalifierElement) : null;
+
     this.parseSelectorElement = (DomElement)parserElement.selectSingleNode("parseSelector");
     this.parseSelector = (parseSelectorElement != null) ? (AtnParseSelector)resourceManager.getResource(parseSelectorElement) : null;
 
@@ -149,18 +166,27 @@ public class AtnParserWrapper {
 
   public List<AtnParseResult> seekAll(AtnParseBasedTokenizer tokenizer, Set<Integer> stopList,
                                       DataProperties overrides, AtomicBoolean die) {
+
+    List<AtnParseResult> parseResults = null;
     tokenizer.setTokenizerOptions(tokenizerOptions);
+    final boolean qualified = (prequalifier == null) ? true : prequalifier.prequalify(tokenizer);
 
-    final List<AtnParseResult> parseResults = parser.seekAll(tokenizer, parseOptions, stopList, overrides, die);
+    if (qualified) {
+      parseResults = parser.seekAll(tokenizer, parseOptions, stopList, overrides, die);
 
-    if (parseSelector != null && parseResults != null && parseResults.size() > 0) {
-      for (AtnParseResult parseResult : parseResults) {
-        parseSelector.selectParses(parseResult);
+      if (parseSelector != null && parseResults != null && parseResults.size() > 0) {
+        for (AtnParseResult parseResult : parseResults) {
+          parseSelector.selectParses(parseResult);
+        }
       }
-    }
 
-    // Add the parse results as tokens
-    tokenizer.add(parseResults);
+      // Add the parse results as tokens
+      tokenizer.add(parseResults);
+    }
+    else {
+      // return empty list when input not (pre)qualified for this parser
+      parseResults = new ArrayList<AtnParseResult>();
+    }
 
     return parseResults;
   }
