@@ -121,12 +121,20 @@ public class AtnParser {
     //   options.setConsumeAllText(false);
     // }
 
+    if (AtnState.getTraceFlow()) {
+      System.out.println("\tAtnParser seeking from firstToken=" + firstToken);
+    }
+
     AtnParseResult result = new AtnParseResult(grammar, firstToken, options, stopList, overrides, die);
     result.continueParsing();
 
     while (result.getNumParses() == 0 && !options.getConsumeAllText()) {
       firstToken = firstToken.getTokenizer().getSmallestToken(firstToken.getStartIndex()).getNextToken();
       if (firstToken == null) break;
+
+      if (AtnState.getTraceFlow()) {
+        System.out.println("\tAtnParser re-seeking from firstToken=" + firstToken);
+      }
 
       result = new AtnParseResult(grammar, firstToken, options, stopList, overrides, die);
       result.continueParsing();

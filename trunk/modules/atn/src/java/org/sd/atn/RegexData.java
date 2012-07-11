@@ -40,7 +40,7 @@ public class RegexData {
   public enum MatchType { MATCHES, LOOKING_AT, FIND };
 
 
-  private static final Map<String, String> EMPTY_ATTRIBUTES = new HashMap<String, String>();
+  static final Map<String, String> EMPTY_ATTRIBUTES = new HashMap<String, String>();
 
 
   //
@@ -48,6 +48,8 @@ public class RegexData {
   //   type='matches/lookingat/find'
   //   ldelim='true/false'
   //   rdelim='true/false'
+  //   reverse='true/false'
+  //   require='true/false'
   //   groupN='classification'>...regular expression...</regex>
   //
   //  regex element
@@ -56,6 +58,8 @@ public class RegexData {
   //  - type -- "matches" (default), "lookingat", or "find" to specify type of regex match
   //  - ldelim -- "false" (default), or "true" to specify whether pre-token delims are included (post normalization) in matching
   //  - rdelim -- "false" (default), or "true" to specify whether post-token delims are included (post normalization) in matching
+  //  - reverse -- "false" (default), or "true" to specify success when regex match fails
+  //  - require -- "false" (default), or "true" to specify success only when this regex matches (or fails to match when reverse=true)
   //  - groupN -- where N is a valid group integer for specifying a classification for the matched group
   //
   //  text content:
@@ -89,6 +93,8 @@ public class RegexData {
   private Map<Integer, String> group2attr;
   private boolean ldelim;
   private boolean rdelim;
+  private boolean reverse;
+  private boolean require;
 
   /**
    * Load from a regex element having the form:
@@ -97,6 +103,8 @@ public class RegexData {
    *   type='matches/lookingat/find'
    *   ldelim='true/false'
    *   rdelim='true/false'
+   *   reverse='true/false'
+   *   require='true/false'
    *   groupN='classification'&gt;...regular expression...&lt;/regex&gt;
    * <p>
    * Where
@@ -104,6 +112,8 @@ public class RegexData {
    * <li>'type' is the type of regex match to perform;</li>
    * <li>when 'ldelim' is true, token predelims are included in the match text;</li>
    * <li>when 'rdelim' is true, token postdelims are included in the match text;</li>
+   * <li>when 'reverse' is true, the match succeeds when the regex fails to match;</li>
+   * <li>when 'require' is true, the regex match is mandatory for success;</li>
    * <li>a token feature name 'classification' is assigned the text of matched 'groupN' for the token;</li>
    * <li>element text is the regular expression.</li>
    * </ul>
@@ -119,6 +129,10 @@ public class RegexData {
     // ldelim, rdelim
     this.ldelim = regexElement.getAttributeBoolean("ldelim", false);
     this.rdelim = regexElement.getAttributeBoolean("rdelim", false);
+
+    // reverse, require
+    this.reverse = regexElement.getAttributeBoolean("reverse", false);
+    this.require = regexElement.getAttributeBoolean("require", false);
 
     // group2attr
     final Map<String, String> attrs = regexElement.getDomAttributes().getAttributes();
@@ -141,12 +155,15 @@ public class RegexData {
     }
   }
 
+  public boolean isRequired() {
+    return require;
+  }
+
   public boolean matches(String text, Token token) {
     return matches(text, token, true);
   }
 
   public boolean matches(String text, Token token, boolean addTokenFeature) {
-    boolean result = false;
 
     if (token != null && (ldelim || rdelim)) {
       final StringBuilder delimText = new StringBuilder(text);
@@ -159,6 +176,47 @@ public class RegexData {
       text = delimText.toString();
     }
 
+    final MatchResult matches = patternMatches(text);
+
+    if (matches.m.matches() && token != null && addTokenFeature) {
+      for (Map.Entry<Integer, String> entry : group2attr.entrySet()) {
+        final Integer group = entry.getKey();
+
+        final String value = matches.m.group(group);
+        if (value != null) {
+          final String attr = entry.getValue();
+          token.setFeature(attr, value, this);
+        }
+      }
+    }
+
+    return matches.matches;
+  }
+
+  /**
+   * If the text matches, return a non-null result populated with features.
+   */
+  public Map<String, String> matches(String text) {
+    return matches(text, (Map<String, String>)null, true);
+  }
+
+  /**
+   * If the text matches, populate result with features.
+   */
+  public Map<String, String> matches(String text, Map<String, String> result, boolean guaranteeNonNullResult) {
+
+    final MatchResult matches = patternMatches(text);
+
+    if (matches.matches) {
+      result = matches.getAttributes(result);
+      if (result == null && guaranteeNonNullResult) result = EMPTY_ATTRIBUTES;
+    }
+
+    return result;
+  }
+
+  public MatchResult patternMatches(String text) {
+    boolean result = false;
     final Matcher m = pattern.matcher(text);
 
     switch (matchType) {
@@ -170,55 +228,41 @@ public class RegexData {
       result = m.matches();
     }
 
-    if (result && token != null && addTokenFeature) {
-      for (Map.Entry<Integer, String> entry : group2attr.entrySet()) {
-        final Integer group = entry.getKey();
-
-        final String value = m.group(group);
-        if (value != null) {
-          final String attr = entry.getValue();
-          token.setFeature(attr, value, this);
-        }
-      }
+    if (reverse) {
+      result = !result;
     }
 
-    return result;
+    return new MatchResult(m, result, group2attr);
   }
 
-  /**
-   * If the text matches, return a non-null result populated with features.
-   */
-  public Map<String, String> matches(String text) {
-    Map<String, String> result = null;
+  public static final class MatchResult {
+    public final Matcher m;
+    public final boolean matches;
+    private Map<Integer, String> group2attr;
 
-    boolean matches = false;
-
-    final Matcher m = pattern.matcher(text);
-
-    switch (matchType) {
-    case LOOKING_AT :
-      matches = m.lookingAt(); break;
-    case FIND :
-      matches = m.find(); break;
-    default :
-      matches = m.matches();
+    public MatchResult(Matcher m, boolean matches, Map<Integer, String> group2attr) {
+      this.m = m;
+      this.matches = matches;
+      this.group2attr = group2attr;
     }
 
-    if (matches) {
-      for (Map.Entry<Integer, String> entry : group2attr.entrySet()) {
-        final Integer group = entry.getKey();
+    /**
+     * Extract the matcher's attributes if it matched.
+     */
+    public Map<String, String> getAttributes(Map<String, String> result) {
+      if (m.matches() && group2attr != null) {
+        for (Map.Entry<Integer, String> entry : group2attr.entrySet()) {
+          final Integer group = entry.getKey();
 
-        final String value = m.group(group);
-        if (value != null) {
-          final String attr = entry.getValue();
-          if (result == null) result = new HashMap<String, String>();
-          result.put(attr, value);
+          final String value = m.group(group);
+          if (value != null) {
+            final String attr = entry.getValue();
+            if (result == null) result = new HashMap<String, String>();
+            result.put(attr, value);
+          }
         }
       }
-
-      if (result == null) result = EMPTY_ATTRIBUTES;
+      return result;
     }
-
-    return result;
   }
 }

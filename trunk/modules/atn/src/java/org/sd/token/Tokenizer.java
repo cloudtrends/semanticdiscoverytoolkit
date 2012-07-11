@@ -103,6 +103,12 @@ public interface Tokenizer {
   public int getWordCount();
 
   /**
+   * Count the number of words encompassed from the start of the startToken
+   * to the end of the endToken.
+   */
+  public int computeWordCount(Token startToken, Token endToken);
+
+  /**
    * Get the full text after the given token if possible.
    *
    * @returns The full following text, possibly empty but not null.
