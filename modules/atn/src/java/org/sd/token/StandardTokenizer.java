@@ -517,6 +517,10 @@ public class StandardTokenizer implements Tokenizer {
     return result;
   }
 
+  public int computeWordCount(Token startToken, Token endToken) {
+    return computeWordCount(startToken.getStartIndex(), endToken.getEndIndex());
+  }
+
 
   private int computeWordCount(int startIndex, int endIndex) {
     int result = 0;

@@ -43,9 +43,10 @@ public class Regex {
       ++argNum;
     }
 
-    final Pattern p = Pattern.compile(args[argNum++]);
+    final String patternString = args[argNum++];
+    final Pattern p = Pattern.compile(patternString);
 
-    System.out.println("Mode=" + mode);
+    System.out.println("Mode=" + mode + ", Pattern=" + patternString);
 
     for (; argNum < args.length; ++argNum) {
       final Matcher m = p.matcher(args[argNum]);
@@ -55,13 +56,13 @@ public class Regex {
         case 'm' :
 
           if (m.matches()) {
-            System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + args[0] + "\":");
+            System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + patternString + "\":");
             for (int i = 0; i <= m.groupCount(); i++) {
               System.out.println("group[" + i + "]='" + m.group(i) + "'");
             }
           }
           else {
-            System.out.println("string \"" + args[argNum] + "\" does not match pattern: \"" + args[0] + '"');
+            System.out.println("string \"" + args[argNum] + "\" does not match pattern: \"" + patternString + '"');
           }
           
           break;
@@ -70,13 +71,13 @@ public class Regex {
         case 'l' :
 
           if (m.lookingAt()) {
-            System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + args[0] + "\":");
+            System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + patternString + "\":");
             for (int i = 0; i <= m.groupCount(); i++) {
               System.out.println("group[" + i + "]='" + m.group(i) + "'");
             }
           }
           else {
-            System.out.println("string \"" + args[argNum] + "\" does not match pattern: \"" + args[0] + '"');
+            System.out.println("string \"" + args[argNum] + "\" does not match pattern: \"" + patternString + '"');
           }
           
           break;
@@ -84,11 +85,16 @@ public class Regex {
         case 'F' :
         case 'f' :
 
+          boolean gotOne = false;
           while (m.find()) {
-            System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + args[0] + "\":");
+            gotOne = true;
+            System.out.println("string \"" + args[argNum] + "\" matches pattern: \"" + patternString + "\":");
             for (int i = 0; i <= m.groupCount(); i++) {
               System.out.println("group[" + i + "]='" + m.group(i) + "'");
             }
+          }
+          if (!gotOne) {
+            System.out.println("string \"" + args[argNum] + "\" not matched by pattern: \"" + patternString + '"');
           }
           
           break;

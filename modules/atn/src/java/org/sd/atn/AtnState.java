@@ -1212,6 +1212,10 @@ public class AtnState {
     traceflow = traceflowValue;
   }
 
+  public static final boolean getTraceFlow() {
+    return traceflow;
+  }
+
   public static final void setStepThruDebugging(String ruleId, String ruleStep, String text) {
     stepThruFlag = (ruleId != null && ruleStep != null && text != null);
     stepThruRuleId = ruleId;
@@ -1296,6 +1300,10 @@ public class AtnState {
 
       success = addNextStates(grammar, states, skipStates, curstate, nextStateNode,
                               false, matches, stopList, meetsRequirements);
+
+      if (traceflow && (states.size() + skipStates.size() == 0)) {
+        System.out.println("traceflow--AtnState EXHAUSTED at " + curstate.toString());
+      }
     }
 
     return result;

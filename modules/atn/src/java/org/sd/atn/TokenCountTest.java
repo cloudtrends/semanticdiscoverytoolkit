@@ -63,19 +63,21 @@ public class TokenCountTest extends BaseClassifierTest {
   protected boolean doAccept(Token token, AtnState curState) {
     boolean result = false;
 
-    int numTokens = token.getSequenceNumber();
-    int numWords = token.getWordCount();
+    int numTokens = token.getSequenceNumber() + 1;
 
-    if (!globalCount) {
-      final AtnState startState = curState.getPushState();
-      if (startState != null) {
-        final Token startToken = startState.getInputToken();
-        numTokens -= startToken.getSequenceNumber();
-        numWords -= startToken.getWordCount();
-      }
+    final Token refToken =
+      globalCount ?
+      AtnStateUtil.getParseStartState(curState).getInputToken() :
+      AtnStateUtil.getConstituentStartState(curState).getInputToken();
+
+    numTokens -= refToken.getSequenceNumber();
+
+    int curValue = numTokens;
+
+    if (countWords) {
+      curValue = token.getTokenizer().computeWordCount(refToken, curState.getInputToken());
     }
 
-    final int curValue = countWords ? numWords : numTokens;
     result = range.includes(curValue);
 
     if (verbose) {

@@ -20,7 +20,7 @@ package org.sd.atn;
 
 
 import java.util.List;
-import org.sd.atn.ResourceManager;
+import org.sd.token.TokenWordPattern;
 import org.sd.token.Tokenizer;
 import org.sd.util.Usage;
 import org.sd.xml.DomElement;
@@ -29,53 +29,36 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * A general AtnParsePrequalifier implementation.
+ * Auxiliary class for managing TokenWordPattern data.
  * <p>
  * @author Spence Koehler
  */
-@Usage(notes =
-       "An org.sd.atn.AtnParsePrequalifier implementation that\n" +
-       "qualifies input for submission to a parser.\n" +
-       "Definition format is of the form:\n" +
-       "\n" +
-       "  <prequalifier>\n" +
-       "    <jclass>org.sd.atn.InputPrequalifier</jclass>\n" +
-       "    <regexes>\n" +
-       "      <regex type='find'>:</regex>\n" +
-       "    </regexes>\n" +
-       "      <wordPattern keyLabels='' labelChars='' squashFlags=''>\n" +
-       "        <regexes>\n" +
-       "          <regex type='find'>...</regex>\n" +
-       "        </regexes>\n" +
-       "      </wordPattern>\n" +
-       "  </prequalifier>"
-  )
-public class InputPrequalifier implements AtnParsePrequalifier {
-  
-  private boolean verbose;
-  private RegexDataContainer regexes;
-  private TokenWordPatternData wordPatternData;
+public class TokenWordPatternData {
 
-  //
-  //  <prequalifier>
-  //    <jclass>org.sd.atn.InputPrequalifier</jclass>
-  //    <regexes>
-  //      <regex type='find'>:</regex>
-  //    </regexes>
   //    <wordPattern keyLabels="" labelChars="" squashFlags="">
   //      <regexes>
   //        <regex type='find'>...</regex>
   //      </regexes>
   //    </wordPattern>
-  //  </prequalifier>
-  //
 
-  public InputPrequalifier(DomNode domNode, ResourceManager resourceManager) {
+  private boolean verbose;
+  private String squashFlags;
+  private TokenWordPattern.PatternKey patternKey;
+  private RegexDataContainer regexes;
+
+  public TokenWordPatternData(DomNode domNode) {
     final DomElement domElement = (DomElement)domNode;
 
     this.verbose = domElement.getAttributeBoolean("verbose", false);
+    this.squashFlags = domElement.getAttributeValue("squashFlags", null);
+    this.patternKey = null;
     this.regexes = null;
-    this.wordPatternData = null;
+
+    final String keyLabels = domElement.getAttributeValue("keyLabels", null);
+    final String labelChars = domElement.getAttributeValue("labelChars", null);
+    if (keyLabels != null && labelChars != null) {
+      this.patternKey = new TokenWordPattern.PatternKey(keyLabels, labelChars);
+    }
 
     final NodeList childNodes = domElement.getChildNodes();
     final int numChildNodes = childNodes.getLength();
@@ -89,46 +72,25 @@ public class InputPrequalifier implements AtnParsePrequalifier {
       if ("regexes".equalsIgnoreCase(childNodeName)) {
         this.regexes = new RegexDataContainer(childElement);
       }
-      else if ("wordPattern".equals(childNodeName)) {
-        this.wordPatternData = new TokenWordPatternData(childElement);
-      }
     }
   }
-
-  public RegexDataContainer getRegexes() {
-    return regexes;
-  }
-
-  public TokenWordPatternData getWordPatternData() {
-    return wordPatternData;
-  }
-
+  
   public boolean prequalify(Tokenizer tokenizer) {
     boolean result = false;
 
-    final String input = tokenizer.getText();
+    String text = null;
 
-    if (!result && regexes != null) {
-      if (regexes.matches(input) != null) {
+    if (regexes != null) {
+      final TokenWordPattern wordPattern = new TokenWordPattern(tokenizer, patternKey);
+      text = wordPattern.getPattern(squashFlags);
+
+      if (regexes.matches(text) != null) {
         result = true;
-
-        if (verbose) {
-          System.out.println("InputPrequalifier regexes matched '" + input + "'");
-        }
-      }
-      else {
-        if (verbose) {
-          System.out.println("InputPrequalifier regexes don't match '" + input + "'");
-        }
       }
     }
 
-    if (!result && wordPatternData != null) {
-      result = wordPatternData.prequalify(tokenizer);
-    }
-
-    if (verbose) {
-      System.out.println("InputPrequalifier " + (result ? "allowing" : "disallowing") + " '" + input + "'");
+    if (verbose && !result) {
+      System.out.println("TokenWordPatternData disallowing '" + tokenizer.getText() + "'/" + text);
     }
 
     return result;

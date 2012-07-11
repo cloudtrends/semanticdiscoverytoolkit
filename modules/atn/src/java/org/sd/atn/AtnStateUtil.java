@@ -200,6 +200,20 @@ public class AtnStateUtil {
   }
 
   /**
+   * Get the first state of the parse.
+   */
+  public static final AtnState getParseStartState(AtnState curState) {
+    AtnState result = curState;
+
+    if (curState.getParentStateNode() != null) {
+      //NOTE: root has null data and single child for the true first state
+      result = curState.getParentStateNode().getRoot().getChildren().get(0).getData();
+    }
+
+    return result;
+  }
+
+  /**
    * Get the 'match' states for the constituent ending at endState.
    */
   public static final LinkedList<AtnState> getConstituentMatchStates(AtnState endState) {

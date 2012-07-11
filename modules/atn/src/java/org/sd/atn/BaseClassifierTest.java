@@ -127,7 +127,7 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
                            curState);
       }
       applyTest = false;
-      result = !reverse;
+      result = !reverse;  //NOTE: wrapper will "un-reverse"
     }
     else if (ignoreFirstToken) {
       if (token.getStartIndex() == 0 || AtnStateUtil.isFirstConstituentState(curState)) {
@@ -137,7 +137,7 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
                              curState);
         }
         applyTest = false;
-        result = !reverse;
+        result = !reverse;  //NOTE: wrapper will "un-reverse"
       }
     }
     else if (onlyFirstToken) {
@@ -152,7 +152,7 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
       else {
         // not a first token
         applyTest = false;
-        result = !reverse;
+        result = !reverse;  //NOTE: wrapper will "un-reverse"
       }
     }
 

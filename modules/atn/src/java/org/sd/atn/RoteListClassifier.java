@@ -384,7 +384,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private String classFeature;
     private boolean isStopwords;
     private Map<String, Map<String, String>> term2attributes;
-    private List<RegexData> regexes;
+    private RegexDataContainer regexes;
     private List<RoteListClassifier> classifiers;
     private boolean trace;
 
@@ -419,7 +419,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       return term2attributes;
     }
 
-    public List<RegexData> getRegexes() {
+    public RegexDataContainer getRegexes() {
       return regexes;
     }
 
@@ -470,15 +470,12 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       }
 
       if (!result && regexes != null) {
-        for (RegexData regexData : regexes) {
-          if (regexData.matches(key, token, !isStopwords)) {
-            if (trace) {
-              System.out.println("\tfound '" + key + "' in regexData");
-            }
-
-            result = true;
-            break;
+        if (regexes.matches(key, token, !isStopwords)) {
+          if (trace) {
+            System.out.println("\tfound '" + key + "' in regexData");
           }
+
+          result = true;
         }
       }
 
@@ -524,12 +521,9 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       }
 
       if (!matched && regexes != null) {
-        for (RegexData regexData : regexes) {
-          result = regexData.matches(key);
-          if (result != null) {
-            matched = true;
-            break;
-          }
+        result = regexes.matches(key);
+        if (result != null) {
+          matched = true;
         }
       }
 
@@ -657,7 +651,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     }
 
     protected final void loadRegexes(DomElement regexesElement) {
-      this.regexes = RegexData.load(regexesElement);
+      this.regexes = new RegexDataContainer(regexesElement);
     }
 
     protected final void loadClassifiers(DomElement classifiersElement, ResourceManager resourceManager) {
