@@ -112,6 +112,7 @@ public class CompoundParser {
 
   private DataProperties config;
   private DomElement outputNode;
+  private ResourceManager resourceManager;
 
   public CompoundParser(DomElement configElement, ResourceManager resourceManager) {
     final DataProperties config = new DataProperties(configElement);
@@ -189,6 +190,7 @@ public class CompoundParser {
 
     this.config = config;
     this.id = config.getString("id");
+    this.resourceManager = resourceManager;
 
     this.minNumTokens = 1;
     this.parserWrappers = new LinkedHashMap<String, AtnParserWrapper>();
@@ -267,9 +269,14 @@ public class CompoundParser {
 
     boolean gotResults = false;
     AtnParseBasedTokenizer currentTokenizer = null;
+    AtnParserWrapper parserWrapper = null;
+
+    if (!output.hasInputContext()) {
+      output.setInputContext(input);
+    }
 
     for (String id : flow) {
-      final AtnParserWrapper parserWrapper = parserWrappers.get(id);
+      parserWrapper = parserWrappers.get(id);
 
       if (parserWrapper == null) {
         throw new IllegalArgumentException("Can't find parserWrapper id=" + id + " in compoundParser=" + getId());
@@ -337,6 +344,11 @@ public class CompoundParser {
       }
     }
 
+    if (parserWrapper != null && currentTokenizer != null && gotResults) {
+      currentTokenizer = getCurrentTokenizer(currentTokenizer, output, input, parserWrapper);
+      output.setOutputTokenizer(currentTokenizer);
+    }
+
     if (!gotResults && verbose) System.out.print(" No results.");
   }
 
@@ -345,11 +357,11 @@ public class CompoundParser {
     final DomElement tokenizerConfig = parserWrapper.getTokenizerOverride();
 
     if (currentTokenizer == null) {
-      currentTokenizer = new AtnParseBasedTokenizer(tokenizerConfig, output.getParseResults(), input, parserWrapper.getTokenizerOptions());
+      currentTokenizer = new AtnParseBasedTokenizer(resourceManager, tokenizerConfig, output.getParseResults(), input, parserWrapper.getTokenizerOptions());
     }
     else {
       if (!currentTokenizer.getOptions().equals(parserWrapper.getTokenizerOptions())) {
-        currentTokenizer = new AtnParseBasedTokenizer(tokenizerConfig, output.getParseResults(), input, parserWrapper.getTokenizerOptions());
+        currentTokenizer = new AtnParseBasedTokenizer(resourceManager, tokenizerConfig, output.getParseResults(), input, parserWrapper.getTokenizerOptions());
       }
     }
     

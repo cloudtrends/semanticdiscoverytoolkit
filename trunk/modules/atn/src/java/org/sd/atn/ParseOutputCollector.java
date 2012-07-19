@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import org.sd.atn.extract.Extraction;
 import org.sd.atn.extract.ExtractionFactory;
+import org.sd.token.Tokenizer;
 import org.sd.util.InputContext;
 import org.sd.util.InputContextComparison;
 import org.sd.util.tree.Tree;
@@ -58,12 +59,17 @@ public class ParseOutputCollector {
   public List<AtnParseResult> getParseResults() {
     return parseResults;
   }
+  public boolean hasParseResults() {
+    return parseResults != null && parseResults.size() > 0;
+  }
 
   private LinkedList<ParseInfo> topParseInfos;
 
   private String defaultStyle;
   private String interpretedStyle;
   private boolean hideUninterpreted;
+  private InputContext inputContext;
+  private Tokenizer outputTokenizer;
 
   private ParseSourceInfo parseSourceInfo;
 
@@ -71,6 +77,8 @@ public class ParseOutputCollector {
     this.domDocuments = null;
     this.parseResults = null;
     this.topParseInfos = new LinkedList<ParseInfo>();
+    this.inputContext = null;
+    this.outputTokenizer = null;
 
     final DataProperties config = outputsElement == null ? new DataProperties() : new DataProperties(outputsElement);
     init(config);
@@ -120,6 +128,48 @@ public class ParseOutputCollector {
     this.hideUninterpreted = config.getBoolean("markup/hideUninterpreted", false);
   }
 
+
+  /**
+   * Determine whether the input context is present.
+   */
+  public boolean hasInputContext() {
+    return inputContext != null;
+  }
+
+  /**
+   * Set the context used as input for this instance.
+   */
+  public void setInputContext(InputContext inputContext) {
+    this.inputContext = inputContext;
+  }
+
+  /**
+   * Get the context used as input for this instance.
+   */
+  public InputContext getInputContext() {
+    return inputContext;
+  }
+
+  /**
+   * Determine whether the output tokenizer is present.
+   */
+  public boolean hasOutputTokenizer() {
+    return outputTokenizer != null;
+  }
+
+  /**
+   * Set the tokenizer used as output for this instance.
+   */
+  public void setOutputTokenizer(Tokenizer outputTokenizer) {
+    this.outputTokenizer = outputTokenizer;
+  }
+
+  /**
+   * Get the tokenizer used as output for this instance.
+   */
+  public Tokenizer getOutputTokenizer() {
+    return outputTokenizer;
+  }
 
   /**
    * Get source information, empty if unset.

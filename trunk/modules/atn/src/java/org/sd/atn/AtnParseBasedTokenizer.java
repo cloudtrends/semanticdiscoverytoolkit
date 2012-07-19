@@ -50,14 +50,14 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
   private Map<Integer, TokenInfoContainer> pos2tokenInfoContainer;
 
   public AtnParseBasedTokenizer(InputContext inputContext, StandardTokenizerOptions tokenizerOptions) {
-    this(null, null, inputContext, tokenizerOptions);
+    this(null, null, null, inputContext, tokenizerOptions);
   }
 
   public AtnParseBasedTokenizer(List<AtnParseResult> parseResults, InputContext inputContext, StandardTokenizerOptions tokenizerOptions) {
-    this(null, parseResults, inputContext, tokenizerOptions);
+    this(null, null, parseResults, inputContext, tokenizerOptions);
   }
 
-  public AtnParseBasedTokenizer(DomElement tokenizerConfig, List<AtnParseResult> parseResults, InputContext inputContext, StandardTokenizerOptions tokenizerOptions) {
+  public AtnParseBasedTokenizer(ResourceManager resourceManager, DomElement tokenizerConfig, List<AtnParseResult> parseResults, InputContext inputContext, StandardTokenizerOptions tokenizerOptions) {
     super(inputContext.getText(), tokenizerOptions);
 
     NodeList tokenNodes = null;
@@ -65,10 +65,10 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
       tokenNodes = tokenizerConfig.selectNodes("tokens/token");
     }
 
-    init(inputContext, parseResults, tokenNodes);
+    init(resourceManager, inputContext, parseResults, tokenNodes);
   }
 
-  private void init(InputContext inputContext, List<AtnParseResult> parseResults, NodeList tokenNodes) {
+  private void init(ResourceManager resourceManager, InputContext inputContext, List<AtnParseResult> parseResults, NodeList tokenNodes) {
     super.setInputContext(inputContext);
     this.pos2tokenInfoContainer = new HashMap<Integer, TokenInfoContainer>();
 
@@ -177,61 +177,6 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     return result;
   }
 
-  private void clearBreaks(Map<Integer, Break> result, int startPos, int endPos) {
-    for (int breakIndex = startPos; breakIndex < endPos; ++breakIndex) {
-      result.remove(breakIndex);
-    }
-  }
-
-  private void setBreak(Map<Integer, Break> result, int pos, boolean goLeft, boolean setHard) {
-    if (pos >= text.length()) return;
-
-    final Break curBreak = result.containsKey(pos) ? result.get(pos) : null;
-    Break theBreak = setHard ? Break.SINGLE_WIDTH_HARD_BREAK : Break.SINGLE_WIDTH_SOFT_BREAK;
-
-    if (curBreak != null && curBreak.breaks() && curBreak.getBWidth() == 0) {
-      theBreak = setHard ? Break.ZERO_WIDTH_HARD_BREAK : Break.ZERO_WIDTH_SOFT_BREAK;
-    }
-    else if (goLeft) --pos;
-
-    if (pos < 0) return;
-
-    result.put(pos, theBreak);
-  }
-
-
-
-  public Token getToken(int startPosition) {
-    final Token result = super.getToken(startPosition);
-    addParseCategoryFeature(result);
-    return result;
-  }
-
-  public Token getSmallestToken(int startPosition) {
-    final Token result = super.getSmallestToken(startPosition);
-    addParseCategoryFeature(result);
-    return result;
-  }
-
-  public Token revise(Token token) {
-    final Token result = super.revise(token);
-    addParseCategoryFeature(result);
-    return result;
-  }
-
-  public Token getNextToken(Token token) {
-    final Token result = super.getNextToken(token);
-    addParseCategoryFeature(result);
-    return result;
-  }
-
-  public Token getPriorToken(Token token) {
-    final Token result = super.getPriorToken(token);
-    addParseCategoryFeature(result);
-    return result;
-  }
-
-
   // /**
   //  * A feature constraint for locating parse category features on tokens
   //  * <p>
@@ -260,7 +205,8 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     return result;
   }
 
-  private void addParseCategoryFeature(Token token) {
+  // adds parse category features to token
+  protected void addTokenFeatures(Token token) {
     if (token != null) {
       final TokenInfoContainer tic = pos2tokenInfoContainer.get(token.getStartIndex());
       if (tic != null) {
