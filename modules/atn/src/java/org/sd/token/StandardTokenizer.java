@@ -262,6 +262,28 @@ public class StandardTokenizer implements Tokenizer {
     return result;
   }
 
+  protected void clearBreaks(Map<Integer, Break> result, int startPos, int endPos) {
+    for (int breakIndex = startPos; breakIndex < endPos; ++breakIndex) {
+      result.remove(breakIndex);
+    }
+  }
+
+  protected void setBreak(Map<Integer, Break> result, int pos, boolean goLeft, boolean setHard) {
+    if (pos >= text.length()) return;
+
+    final Break curBreak = result.containsKey(pos) ? result.get(pos) : null;
+    Break theBreak = setHard ? Break.SINGLE_WIDTH_HARD_BREAK : Break.SINGLE_WIDTH_SOFT_BREAK;
+
+    if (curBreak != null && curBreak.breaks() && curBreak.getBWidth() == 0) {
+      theBreak = setHard ? Break.ZERO_WIDTH_HARD_BREAK : Break.ZERO_WIDTH_SOFT_BREAK;
+    }
+    else if (goLeft) --pos;
+
+    if (pos < 0) return;
+
+    result.put(pos, theBreak);
+  }
+
 
   public static final boolean isPunctuation(int codePoint) {
     boolean result = false;
@@ -362,19 +384,29 @@ public class StandardTokenizer implements Tokenizer {
   }
 
 
+  protected void addTokenFeatures(Token token) {
+    // placeholder for extending classes to add features to newly built tokens
+  }
+
   public Token getToken(int startPosition) {
     startPosition = skipImmediateBreaks(startPosition);
-    return doGetToken(options.getRevisionStrategy(), startPosition, 0);
+    final Token result = doGetToken(options.getRevisionStrategy(), startPosition, 0);
+    addTokenFeatures(result);
+    return result;
   }
 
   public Token getNextSmallestToken(Token token) {
     int startPosition = findEndBreakForward(token.getEndIndex(), false);
     if (startPosition < 0) startPosition = token.getEndIndex();
-    return getSmallestToken(startPosition);
+    final Token result = getSmallestToken(startPosition);
+    addTokenFeatures(result);
+    return result;
   }
 
   public Token getSmallestToken(int startPosition) {
-    return doGetNextToken(startPosition, BreakType.SOFT, options.getRevisionStrategy(), 0, 0);
+    final Token result = doGetNextToken(startPosition, BreakType.SOFT, options.getRevisionStrategy(), 0, 0);
+    addTokenFeatures(result);
+    return result;
   }
 
   public String getPostDelim(Token token) {
@@ -470,16 +502,23 @@ public class StandardTokenizer implements Tokenizer {
       result = null;
     }
 
+    if (result != null) {
+      addTokenFeatures(result);
+    }
+
     return result;
   }
 
   public Token getNextToken(Token token) {
     int startPosition = findEndBreakForward(token.getEndIndex(), false);
     if (startPosition < 0) startPosition = token.getEndIndex();
-    return doGetToken(token.getRevisionStrategy(), startPosition, token.getSequenceNumber() + 1);
+    final Token result = doGetToken(token.getRevisionStrategy(), startPosition, token.getSequenceNumber() + 1);
+    addTokenFeatures(result);
+    return result;
   }
 
   public Token getPriorToken(Token token) {
+    //addTokenFeatures(result);
     throw new UnsupportedOperationException("Implement when needed.");
   }
 

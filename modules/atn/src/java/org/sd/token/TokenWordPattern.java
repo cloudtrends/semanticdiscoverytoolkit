@@ -21,7 +21,6 @@ package org.sd.token;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
 
 /**
  * Generator and container for the token word pattern from a tokenizer.
@@ -92,21 +91,35 @@ public class TokenWordPattern {
 
       final StringBuilder builder = new StringBuilder();
       final int inputLen = input.length();
-      final Stack<Character> startBlock = new Stack<Character>();
+
+      BlockRecognizer blockRecognizer = null;
+
+      if (flags.squashBlocks()) {
+        blockRecognizer = new BlockRecognizer(new char[][]{});
+        if (flags.squashQuotes()) {
+          blockRecognizer.addBlockChars('"', '"');
+          blockRecognizer.addBlockChars('\'', '\'');
+        }
+        if (flags.squashParens()) {
+          blockRecognizer.addBlockChars('(', ')');
+        }
+      }
+
+      //TODO: we need to ignore "block start/end" chars that aren't at the
+      //      ends of words. For example, internal apostrophe's are not
+      //      begin/end quotes, but they will be recognized as such in the
+      //      current implementation. Use Word-Based SegmentPointerIterator here?
+      //      If so, move SegmentPointer classes to token package.
+
       for (int cPos = 0; cPos < inputLen; ++cPos) {
         final char c = input.charAt(cPos);
         boolean addC = true;
 
-        if (flags.squashBlocks() && !startBlock.empty()) {
-          addC = false;
-          if (isBlockEnd(c, startBlock.peek(), flags)) {
-            startBlock.pop();
+        if (addC && flags.squashBlocks()) {
+          final boolean updated = blockRecognizer.updateStack(c);
+          if (!blockRecognizer.stackIsEmpty() || updated) {
+            addC = false;
           }
-        }
-
-        if (addC && flags.squashBlocks() && isBlockStart(c, flags)) {
-          startBlock.push(c);
-          addC = false;
         }
 
         if (addC && flags.squashWhite() && Character.isWhitespace(c)) {
@@ -141,40 +154,6 @@ public class TokenWordPattern {
   }
 
 
-  private static final Map<Character, Character> blockChars = new HashMap<Character, Character>();
-  static {
-    blockChars.put('"', '"');
-    blockChars.put('\'', '\'');
-    blockChars.put('(', ')');
-  }
-
-  private static final boolean isBlockStart(char possibleStart, SquashFlags flags) {
-    boolean result = false;
-
-    final Character endChar = blockChars.get(possibleStart);
-    if (endChar != null) {
-      result = true;
-
-      switch (possibleStart) {
-        case '"' :
-        case '\'' :
-          if (!flags.squashQuotes()) result = false;
-          break;
-        case '(' :
-          if (!flags.squashParens()) result = false;
-          break;
-      }
-    }
-
-    return result;
-  }
-
-  private static final boolean isBlockEnd(char possibleEnd, char blockStart, SquashFlags flags) {
-    final Character endChar = blockChars.get(blockStart);
-    return (endChar != null && endChar.equals(possibleEnd));
-  }
-
-
   private static final class TokenPattern {
     private String key;
 
@@ -200,60 +179,28 @@ public class TokenWordPattern {
     private final char buildKey(String text, PatternKey patternKey) {
       char result = getChar(patternKey, KeyLabel.Special);
 
-      boolean hasLower = false;
-      boolean hasUpper = false;
-      boolean hasDigit = false;
-      boolean firstIsLower = false;
-      boolean firstIsUpper = false;
-      boolean laterIsUpper = false;
-      boolean hasOther = false;
+      final WordCharacteristics wc = new WordCharacteristics(text);
 
-      final int len = text.length();
-      for (int i = 0; i < len; ++i) {
-        final char c = text.charAt(i);
-
-        if (Character.isLetterOrDigit(c)) {
-          if (Character.isDigit(c)) {
-            hasDigit = true;
-          }
-          else if (Character.isLowerCase(c)) {
-            hasLower = true;
-            if (i == 0) firstIsLower = true;
-          }
-          else if (Character.isUpperCase(c)) {
-            hasUpper = true;
-            if (i == 0) firstIsUpper = true;
-            else laterIsUpper = true;
-          }
-          else {
-            hasOther = true;
-          }
-        }
-        else {
-          hasOther = true;
-        }
-      }
-
-      if (hasDigit) {
-        if (hasLower || hasUpper || hasOther) {
+      if (wc.hasDigit()) {
+        if (wc.hasLower() || wc.hasUpper() || wc.hasOther()) {
           result = getChar(patternKey, KeyLabel.MixedNumber);
         }
         else {
           result = getChar(patternKey, KeyLabel.Number);
         }
       }
-      else if (hasLower) {
-        if (len == 1) {
+      else if (wc.hasLower()) {
+        if (wc.len() == 1) {
           result = getChar(patternKey, KeyLabel.SingleLower);
         }
-        else if (!hasUpper) {
+        else if (!wc.hasUpper()) {
           result = getChar(patternKey, KeyLabel.AllLower);
         }
-        else if (firstIsLower) {
+        else if (wc.firstIsLower()) {
           result = getChar(patternKey, KeyLabel.LowerMixed);
         }
-        else if (firstIsUpper) {
-          if (!laterIsUpper) {
+        else if (wc.firstIsUpper()) {
+          if (!wc.laterIsUpper()) {
             result = getChar(patternKey, KeyLabel.Capitalized);
           }
           else {  // hasUpper && !firstIsLower && laterIsUpper
@@ -262,13 +209,13 @@ public class TokenWordPattern {
         }
         // otherwise, special
       }
-      else if (hasUpper) {
-        if (len == 1) {
+      else if (wc.hasUpper()) {
+        if (wc.len() == 1) {
           result = getChar(patternKey, KeyLabel.SingleUpper);
         }
 
         // NOTE: hasLower=false && hasDigit=false here
-        else if (!hasOther) {
+        else if (!wc.hasOther()) {
           result = getChar(patternKey, KeyLabel.AllCaps);
         }
         // otherwise, upper w/symbols is special

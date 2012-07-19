@@ -79,7 +79,7 @@ public class TestTokenWordPattern extends TestCase {
       final String expectedPattern = expectedPatterns[i];
 
       final String pattern = TokenWordPattern.squash(input, squashFlags);
-      assertEquals(expectedPattern, pattern);
+      assertEquals("i=" + i + ", squashFlags=" + squashFlags, expectedPattern, pattern);
     }
   }
 

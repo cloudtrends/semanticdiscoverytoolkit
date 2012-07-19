@@ -1,0 +1,267 @@
+/*
+    Copyright 2011 Semantic Discovery, Inc. (www.semanticdiscovery.com)
+
+    This file is part of the Semantic Discovery Toolkit.
+
+    The Semantic Discovery Toolkit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    The Semantic Discovery Toolkit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
+*/
+package org.sd.token;
+
+
+import java.util.HashMap;
+import java.util.TreeSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Container for word (token) characteristics.
+ * <p>
+ * @author Spence Koehler
+ */
+public class WordCharacteristics {
+
+  public enum Type { LOWER, UPPER, DIGIT, OTHER };
+
+
+  private String word;
+  private int len;
+  private Map<Integer, Type> pos2type;
+
+  private TreeSet<Integer> lowers;
+  private TreeSet<Integer> uppers;
+  private TreeSet<Integer> digits;
+  private TreeSet<Integer> others;
+
+  public WordCharacteristics(String word) {
+    this.word = word;
+    this.len = word.length();
+    this.pos2type = new HashMap<Integer, Type>();
+    this.lowers = null;
+    this.uppers = null;
+    this.digits = null;
+    this.others = null;
+
+    for (int i = 0; i < len; ++i) {
+      final char c = word.charAt(i);
+      boolean isOther = false;
+
+      if (Character.isLetterOrDigit(c)) {
+        if (Character.isDigit(c)) {
+          pos2type.put(i, Type.DIGIT);
+          if (digits == null) digits = new TreeSet<Integer>();
+          digits.add(i);
+        }
+        else if (Character.isLowerCase(c)) {
+          pos2type.put(i, Type.LOWER);
+          if (lowers == null) lowers = new TreeSet<Integer>();
+          lowers.add(i);
+        }
+        else if (Character.isUpperCase(c)) {
+          pos2type.put(i, Type.UPPER);
+          if (uppers == null) uppers = new TreeSet<Integer>();
+          uppers.add(i);
+        }
+        else {
+          isOther = true;
+        }
+      }
+      else {
+        isOther = true;
+      }
+
+      if (isOther) {
+        pos2type.put(i, Type.OTHER);
+        if (others ==  null) others = new TreeSet<Integer>();
+        others.add(i);
+      }
+    }
+  }
+
+  public int len() {
+    return len;
+  }
+
+  public Type getType(int pos) {
+    return pos2type.get(pos);
+  }
+
+  public Type getFirstType(boolean skipOthers) {
+    final int idx = skipOthers ? skip(Type.OTHER, 0) : 0;
+    return idx == len ? Type.OTHER : pos2type.get(idx);
+  }
+
+  public Type getLastType(boolean skipOthers) {
+    final int idx = skipOthers ? skipBack(Type.OTHER, len - 1) : len - 1;
+    return idx < 0 ? Type.OTHER : pos2type.get(idx);
+  }
+
+  public TreeSet<Integer> getLowers() {
+    return lowers;
+  }
+
+  public TreeSet<Integer> getUppers() {
+    return uppers;
+  }
+
+  public TreeSet<Integer> getDigits() {
+    return digits;
+  }
+
+  public TreeSet<Integer> getOthers() {
+    return others;
+  }
+
+  public boolean hasLower() {
+    return lowers != null;
+  }
+
+  public boolean hasUpper() {
+    return uppers != null;
+  }
+
+  public boolean hasDigit() {
+    return digits != null;
+  }
+
+  public boolean firstIsLower() {
+    return firstIsLower(false);
+  }
+
+  public boolean firstIsLower(boolean skipOthers) {
+    boolean result = false;
+
+    if (lowers != null) {
+      final int idx = skipOthers ? skip(Type.OTHER, 0) : 0;
+      result = lowers.contains(0);
+    }
+
+    return result;
+  }
+
+  public boolean firstIsUpper() {
+    return firstIsUpper(false);
+  }
+
+  public boolean firstIsUpper(boolean skipOthers) {
+    boolean result = false;
+
+    if (uppers != null) {
+      final int idx = skipOthers ? skip(Type.OTHER, 0) : 0;
+      result = uppers.contains(0);
+    }
+
+    return result;
+  }
+
+  /**
+   * Check to see if there is an upper after the first, regardless of whether
+   * the first is upper.
+   */
+  public boolean laterIsUpper() {
+    return laterIsUpper(false);
+  }
+
+  /**
+   * Check to see if there is an upper after the first, regardless of whether
+   * the first is upper.
+   */
+  public boolean laterIsUpper(boolean skipOthers) {
+    boolean result = false;
+
+    if (uppers != null) {
+      final int minSize = firstIsUpper(skipOthers) ? 2 : 1;
+      result =uppers.size() >= minSize;
+    }
+
+    return result;
+  }
+
+  public boolean hasOther() {
+    return others != null;
+  }
+
+  /**
+   * Find the index of characters after all of the given type from the given
+   * start index.
+   * <p>
+   * Note that if the type does not apply at the startIdx, then startIdx will be returned.
+   */
+  public int skip(Type type, int startIdx) {
+    while (startIdx < len && pos2type.get(startIdx) == type) {
+      ++startIdx;
+    }
+    return startIdx;
+  }
+
+  /**
+   * Find the index of characters before all of the given type from input's end.
+   * <p>
+   * Note that if the type does not apply at the endIdx, then endIdx will be
+   * returned and if the type never changes, -1 will be returned.
+   */
+  public int skipBack(Type type) {
+    return skipBack(type, len - 1);
+  }
+
+  /**
+   * Find the index of characters before all of the given type from the given
+   * end index.
+   * <p>
+   * Note that if the type does not apply at the endIdx, then endIdx will be
+   * returned and if the type never changes, -1 will be returned.
+   */
+  public int skipBack(Type type, int endIdx) {
+    if (endIdx > len - 1) endIdx = len - 1;
+    while (endIdx >= 0 && pos2type.get(endIdx) == type) {
+      --endIdx;
+    }
+    return endIdx;
+  }
+
+  /**
+   * Find the first index that has the given type from startIdx.
+   * <p>
+   * @return the index at which the type occurs or 'len' if it doesn't.
+   */
+  public int skipUntil(Type type, int startIdx) {
+    while (startIdx < len && pos2type.get(startIdx) != type) {
+      ++startIdx;
+    }
+    return startIdx;
+  }
+
+  /**
+   * Find the index of characters at or before input's end that has the
+   * given type.
+   * <p>
+   * @return the index at which the type occurs or -1 if it doesn't.
+   */
+  public int skipBackUntil(Type type) {
+    return skipBackUntil(type, len - 1);
+  }
+
+  /**
+   * Find the index of characters at or before the given endIdx that has the
+   * given type.
+   * <p>
+   * @return the index at which the type occurs or -1 if it doesn't.
+   */
+  public int skipBackUntil(Type type, int endIdx) {
+    if (endIdx > len - 1) endIdx = len - 1;
+    while (endIdx >= 0 && pos2type.get(endIdx) != type) {
+      --endIdx;
+    }
+    return endIdx;
+  }
+}
