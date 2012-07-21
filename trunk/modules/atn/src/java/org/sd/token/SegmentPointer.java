@@ -56,8 +56,16 @@ public class SegmentPointer implements Serializable {
     return startPtr;
   }
 
+  public void setStartPtr(int startPtr) {
+    this.startPtr = startPtr;
+  }
+
   public int getEndPtr() {
     return endPtr;
+  }
+
+  public void setEntPtr(int endPtr) {
+    this.endPtr = endPtr;
   }
 
   public String getText() {
