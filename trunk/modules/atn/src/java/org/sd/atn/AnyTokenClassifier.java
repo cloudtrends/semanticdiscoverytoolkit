@@ -57,8 +57,10 @@ import org.sd.xml.DomElement;
        "    ...\n" +
        "    <regexes.../>\n" +
        "    ...\n" +
-       "    <classifier>...</classifier>\n" +
-       "    ...\n" +
+       "    <classifiers>\n" +
+       "      <classifier>...</classifier>\n" +
+       "      ...\n" +
+       "    </classifiers>\n" +
        "  </stopwords>\n" +
        "</tokenType>"
   )
