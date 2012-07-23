@@ -678,7 +678,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     }
 
     protected final void loadClassifiers(DomElement classifiersElement, ResourceManager resourceManager) {
-      final NodeList classifierNodes = classifiersElement.selectNodes("classifier");
+      final NodeList classifierNodes = classifiersElement.getChildNodes();
       for (int i = 0; i < classifierNodes.getLength(); ++i) {
         final Node curNode = classifierNodes.item(i);
         if (curNode.getNodeType() != Node.ELEMENT_NODE) continue;
