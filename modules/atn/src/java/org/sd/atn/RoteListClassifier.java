@@ -124,8 +124,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   //     ...
   //     <regexes.../>
   //     ...
-  //     <classifier>...</classifier>
-  //     ...
+  //     <classifiers>
+  //       <classifier>...</classifier>
+  //       ...
+  //     </classifiers>
   //   </stopwords>
   // </roteListType>
   //
@@ -386,6 +388,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private Map<String, Map<String, String>> term2attributes;
     private RegexDataContainer regexes;
     private List<RoteListClassifier> classifiers;
+    private List<String> features;
     private boolean trace;
 
     public Terms(boolean caseSensitive, String classFeature, boolean isStopwords) {
@@ -395,6 +398,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       this.term2attributes = new HashMap<String, Map<String, String>>();
       this.regexes = null;
       this.classifiers = null;
+      this.features = null;
       this.trace = false;
     }
 
@@ -406,13 +410,15 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       if (term2attributes != null) term2attributes.clear();
       this.regexes = null;
       this.classifiers = null;
+      this.features = null;
     }
 
     public boolean isEmpty() {
       return
         (term2attributes == null || term2attributes.size() == 0) &&
         (this.regexes == null || this.regexes.size() == 0) &&
-        (this.classifiers == null || this.classifiers.size() == 0);
+        (this.classifiers == null || this.classifiers.size() == 0) &&
+        (this.features == null || this.features.size() == 0);
     }
 
     public Map<String, Map<String, String>> getTerm2Attributes() {
@@ -425,6 +431,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
     public List<RoteListClassifier> getClassifiers() {
       return classifiers;
+    }
+
+    public List<String> getFeatures() {
+      return features;
     }
 
     public boolean isCaseSensitive() {
@@ -492,6 +502,17 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         }
       }
 
+      if (!result && features != null) {
+        for (String feature : features) {
+          if (token.getFeatureValue(feature, null) != null) {
+            result = true;
+            if (trace) {
+              System.out.println("\tfound '" + feature + "' (value=" + token.getFeatureValue(feature, null) + ")");
+            }
+          }
+        }
+      }
+
       if (result && classFeature != null && !hasClassAttribute) {
         token.setFeature("class", classFeature, this);
       }
@@ -536,6 +557,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
           }
         }
       }
+
+      //NOTE: unable to match raw text against features
 
       if (matched && classFeature != null) {
         boolean hasClassAttribute = false;
@@ -659,22 +682,34 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       for (int i = 0; i < classifierNodes.getLength(); ++i) {
         final Node curNode = classifierNodes.item(i);
         if (curNode.getNodeType() != Node.ELEMENT_NODE) continue;
+
+        final String nodeName = curNode.getNodeName();
         final String classifierName = curNode.getTextContent();
 
-        final Object classifierObject = resourceManager.getResource(classifierName);
-        if (classifierObject == null) {
-          System.out.println(new Date() + ": WARNING : RoteListClassifier unknown classifier '" + classifierName + "'");
-        }
-        else {
-          if (classifierObject instanceof RoteListClassifier) {
-            if (this.classifiers == null) this.classifiers = new ArrayList<RoteListClassifier>();
-            this.classifiers.add((RoteListClassifier)classifierObject);
+        if ("classifier".equals(nodeName)) {
+          final Object classifierObject = resourceManager.getResource(classifierName);
+          if (classifierObject == null) {
+            System.out.println(new Date() + ": WARNING : RoteListClassifier unknown classifier '" + classifierName + "'");
           }
           else {
-            System.out.println(new Date() + ": WARNING : RoteListClassifier classifier '" +
-                               classifierName + "' is *NOT* an RoteListClassifier (" +
-                               classifierObject.getClass().getName() + ")");
+            if (classifierObject instanceof RoteListClassifier) {
+              if (this.classifiers == null) this.classifiers = new ArrayList<RoteListClassifier>();
+              this.classifiers.add((RoteListClassifier)classifierObject);
+            }
+            else {
+              System.out.println(new Date() + ": WARNING : RoteListClassifier classifier '" +
+                                 classifierName + "' is *NOT* an RoteListClassifier (" +
+                                 classifierObject.getClass().getName() + ")");
+            }
           }
+        }
+        else if ("feature".equals(nodeName)) {
+          if (this.features == null) this.features = new ArrayList<String>();
+          this.features.add(classifierName);
+        }
+        else {
+          System.out.println(new Date() + ": WARNING : Unrecognized 'classifiers' sub-element '" +
+                             nodeName + "'. Expecting 'classifier' or 'feature'.");
         }
       }
     }
