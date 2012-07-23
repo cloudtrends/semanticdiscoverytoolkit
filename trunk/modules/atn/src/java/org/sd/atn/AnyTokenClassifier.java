@@ -91,9 +91,10 @@ public class AnyTokenClassifier extends RoteListClassifier {
           (maxLength > 0 && textLen > maxLength)) {
         result = false;
       }
-      else if (doClassifyStopword(token)) {
-        result = false;
-      }
+    }
+
+    if (result && doClassifyStopword(token)) {
+      result = false;
     }
     
     if (result && featureName != null && !"".equals(featureName)) {
