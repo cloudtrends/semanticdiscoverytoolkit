@@ -54,7 +54,7 @@ public abstract class BaseSegmentPointerFinder implements SegmentPointerFinder {
     // set startPtr to first non-white char > endPtr
     for (; result < len; ++result) {
       final char c = input.charAt(result);
-      if (!Character.isWhitespace(c)) break;
+      if (!isWhitespace(c)) break;
     }
     
     return result;
@@ -70,9 +70,13 @@ public abstract class BaseSegmentPointerFinder implements SegmentPointerFinder {
     // set startPtr to first non-white char > endPtr
     for (; result < len; ++result) {
       final char c = input.charAt(result);
-      if (Character.isWhitespace(c)) break;
+      if (isWhitespace(c)) break;
     }
     
     return result;
+  }
+
+  protected boolean isWhitespace(char c) {
+    return Character.isWhitespace(c);
   }
 }

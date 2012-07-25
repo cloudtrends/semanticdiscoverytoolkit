@@ -20,6 +20,8 @@ package org.sd.token;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Container for a pointer into a segment.
@@ -34,8 +36,11 @@ public class SegmentPointer implements Serializable {
   private int startPtr;
   private int endPtr;
   private int numWords;
+  private List<InnerSegment> innerSegments;
   private String _text;
   private WordCharacteristics _wc;
+  private Integer _textStart;
+  private Integer _textEnd;
 
   public SegmentPointer(String input, String label, int seqNum, int startPtr, int endPtr) {
     this.input = input;
@@ -44,16 +49,33 @@ public class SegmentPointer implements Serializable {
     this.startPtr = startPtr;
     this.endPtr = endPtr;
     this.numWords = -1;
+    this.innerSegments = null;
     this._text = null;
     this._wc = null;
+    this._textStart = null;
+    this._textEnd = null;
   }
 
   public String getInput() {
     return input;
   }
 
+  public char getChar(int idx) {
+    return input.charAt(idx);
+  }
+
   public int getStartPtr() {
     return startPtr;
+  }
+
+  /**
+   * Get the startPtr, incrementing over symbols if necessary.
+   */
+  public int getTextStart() {
+    if (_textStart == null) {
+      _textStart = startPtr + getWordCharacteristics().skip(WordCharacteristics.Type.OTHER, 0);
+    }
+    return _textStart;
   }
 
   public void setStartPtr(int startPtr) {
@@ -62,6 +84,22 @@ public class SegmentPointer implements Serializable {
 
   public int getEndPtr() {
     return endPtr;
+  }
+
+  /**
+   * Get the endPtr, decrementing over symbols if necessary.
+   */
+  public int getTextEnd() {
+    if (_textEnd == null) {
+      final WordCharacteristics wc = getWordCharacteristics();
+      if (wc.hasEndDelims()) {
+        _textEnd = startPtr + wc.skipBack(WordCharacteristics.Type.OTHER) + 1;
+      }
+      else {
+        _textEnd = endPtr;
+      }
+    }
+    return _textEnd;
   }
 
   public void setEntPtr(int endPtr) {
@@ -109,12 +147,43 @@ public class SegmentPointer implements Serializable {
     this.numWords = numWords;
   }
 
+  public boolean hasInnerSegments() {
+    return innerSegments != null && innerSegments.size() > 0;
+  }
+
+  public List<InnerSegment> getInnerSegments() {
+    return innerSegments;
+  }
+
+  public void addInnerSegment(int startPtr, int endPtr) {
+    addInnerSegment(new InnerSegment(startPtr, endPtr));
+  }
+
+  public void addInnerSegment(InnerSegment innerSegment) {
+    if (innerSegments == null) innerSegments = new ArrayList<InnerSegment>();
+    innerSegments.add(innerSegment);
+  }
+
+  public void setInnerSegments(List<InnerSegment> innerSegments) {
+    this.innerSegments = innerSegments;
+  }
+
+  public String getText(InnerSegment innerSegment) {
+    return input.substring(innerSegment.getStartPtr(), innerSegment.getEndPtr());
+  }
+
   public String toString() {
     final StringBuilder result = new StringBuilder();
 
     result.
       append('(').append(seqNum).append(") ").
       append(label).append(": " ).append(getText());
+
+    if (innerSegments != null) {
+      for (InnerSegment innerSegment : innerSegments) {
+        result.append("\n\t\t").append(getText(innerSegment));
+      }
+    }
 
     return result.toString();
   }
@@ -137,5 +206,36 @@ public class SegmentPointer implements Serializable {
     }
 
     return result;
+  }
+
+
+  public static class InnerSegment {
+    private int startPtr;
+    private int endPtr;
+
+    public InnerSegment(int startPtr, int endPtr) {
+      this.startPtr = startPtr;
+      this.endPtr = endPtr;
+    }
+
+    /** Get the inner segment's start pointer relative to the full input */
+    public int getStartPtr() {
+      return startPtr;
+    }
+
+    /** Set the inner segment's start pointer relative to the full input */
+    public void setStartPtr(int startPtr) {
+      this.startPtr = startPtr;
+    }
+
+    /** Get the inner segment's end pointer relative to the full input */
+    public int getEndPtr() {
+      return endPtr;
+    }
+
+    /** Set the inner segment's end pointer relative to the full input */
+    public void setEndPtr(int endPtr) {
+      this.endPtr = endPtr;
+    }
   }
 }
