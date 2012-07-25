@@ -120,7 +120,17 @@ public class SegmentTokenizer extends StandardTokenizer {
         if (ptrs != null) {
           for (SegmentPointer ptr : ptrs) {
             // clear breaks within segment
-            clearBreaks(result, ptr.getStartPtr() + 1, ptr.getEndPtr());
+            if (!ptr.hasInnerSegments()) {
+              clearBreaks(result, ptr.getStartPtr() + 1, ptr.getEndPtr());
+            }
+            else {
+              for (SegmentPointer.InnerSegment innerSegment : ptr.getInnerSegments()) {
+                // Set LHS, RHS breaks as Hard
+                setBreak(result, innerSegment.getStartPtr(), true, true);
+                setBreak(result, innerSegment.getEndPtr(), false, true);
+                clearBreaks(result, innerSegment.getStartPtr() + 1, innerSegment.getEndPtr());
+              }
+            }
           }
         }
       }

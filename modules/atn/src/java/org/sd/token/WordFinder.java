@@ -75,4 +75,8 @@ public class WordFinder extends BaseSegmentPointerFinder {
 
     return result;
   }
+
+  protected boolean isWhitespace(char c) {
+    return c == '-' || Character.isWhitespace(c);
+  }
 }

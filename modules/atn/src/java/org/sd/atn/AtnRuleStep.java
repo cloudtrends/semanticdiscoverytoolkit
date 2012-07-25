@@ -96,6 +96,11 @@ public class AtnRuleStep {
     return isTerminal;
   }
 
+  private boolean isNonTerminal;
+  public boolean isNonTerminal() {
+    return isNonTerminal;
+  }
+
   private DelimTest postDelim;
   DelimTest getPostDelim() {
     return postDelim;
@@ -147,6 +152,7 @@ public class AtnRuleStep {
     this.repeats = stepElement.getAttributeBoolean("repeats", false);
     this.repeatLimit = stepElement.getAttributeInt("repeatLimit", 0);
     this.isTerminal = stepElement.getAttributeBoolean("terminal", false);
+    this.isNonTerminal = stepElement.getAttributeBoolean("nonTerminal", false); // force nonTerminal
     this.consumeToken = stepElement.getAttributeBoolean("consumeToken", true);
     this.ignoreToken = stepElement.getAttributeBoolean("ignoreToken", false);
     this.skip = stepElement.getAttributeInt("skip", 0);
@@ -212,7 +218,9 @@ public class AtnRuleStep {
   }
 
   void setIsTerminal(boolean isTerminal) {
-    this.isTerminal = isTerminal;
+    if (!isNonTerminal) {
+      this.isTerminal = isTerminal;
+    }
   }
 
   public String toString() {

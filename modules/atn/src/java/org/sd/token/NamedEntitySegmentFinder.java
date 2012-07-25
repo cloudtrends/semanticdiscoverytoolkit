@@ -19,6 +19,9 @@
 package org.sd.token;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * A segment pointer finder for segmenting potential named entities in a single
  * sentence from non-named entities.
@@ -104,10 +107,13 @@ public class NamedEntitySegmentFinder extends WordFinder {
     SegmentType priorType = null;
     String label = NON_ENTITY_LABEL;
     int entityCount = 0;
+    NamedEntityCollector collector = null;
 
     for (SegmentPointer curWordSegment = super.findSegmentPointer(startPtr);
          curWordSegment != null;
          curWordSegment = super.findSegmentPointer(curWordSegment.getEndPtr() + 1)) {
+
+      //System.out.println("\tconsidering curWord: " + curWordSegment);
 
       final SegmentType curType = determineSegmentType(curWordSegment, blockRecognizer);
 
@@ -129,7 +135,11 @@ public class NamedEntitySegmentFinder extends WordFinder {
             case ENTITY : // switching from ENTITY
               switch (curType) {
                 case BLOCK :  // to BLOCK
-                  // nothing to do -- allows block to be part of entity, retaining priorType as ENTITY
+                  // block is to be part of entity, retaining priorType as ENTITY
+                  if (collector == null) {
+                    collector = new NamedEntityCollector(priorSegment);
+                  }
+                  collector.add(curWordSegment, true);
                   break;
 
                 case NON_ENTITY :
@@ -143,8 +153,8 @@ public class NamedEntitySegmentFinder extends WordFinder {
                     // switching from ENTITY to NON
                     endsWithPrior = true;
                     label = ENTITY_LABEL;
-                    break;
                   }
+                  break;
               }
               break;
 
@@ -182,6 +192,15 @@ public class NamedEntitySegmentFinder extends WordFinder {
             break;  // end scanning words
           }
         }
+        else {  // priorType == curType
+          if (priorType == SegmentType.ENTITY) {
+            // continuing entity -- detect inner segment boundaries
+            if (collector == null) {
+              collector = new NamedEntityCollector(priorSegment);
+            }
+            collector.add(curWordSegment);
+          }
+        }
       }
 
       priorSegment = curWordSegment;
@@ -189,6 +208,9 @@ public class NamedEntitySegmentFinder extends WordFinder {
     
     if (priorSegment != null) {
       result = new SegmentPointer(input, label, getSeqNum(), startPtr, priorSegment.getEndPtr());
+      if (collector != null) {
+        collector.setInnerSegments(result);
+      }
     }
 
     return result;

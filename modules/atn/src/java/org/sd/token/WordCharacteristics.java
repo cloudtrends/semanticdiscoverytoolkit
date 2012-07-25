@@ -43,6 +43,9 @@ public class WordCharacteristics {
   private TreeSet<Integer> digits;
   private TreeSet<Integer> others;
 
+  private String _startDelims;
+  private String _endDelims;
+
   public WordCharacteristics(String word) {
     this.word = word;
     this.len = word.length();
@@ -51,6 +54,8 @@ public class WordCharacteristics {
     this.uppers = null;
     this.digits = null;
     this.others = null;
+    this._startDelims = null;
+    this._endDelims = null;
 
     for (int i = 0; i < len; ++i) {
       final char c = word.charAt(i);
@@ -88,6 +93,10 @@ public class WordCharacteristics {
     }
   }
 
+  public String getWord() {
+    return word;
+  }
+
   public int len() {
     return len;
   }
@@ -120,6 +129,28 @@ public class WordCharacteristics {
 
   public TreeSet<Integer> getOthers() {
     return others;
+  }
+
+  public boolean hasStartDelims() {
+    return others != null && others.contains(0);
+  }
+
+  public String getStartDelims() {
+    if (_startDelims == null) {
+      _startDelims = buildStartDelims();
+    }
+    return _startDelims;
+  }
+
+  public boolean hasEndDelims() {
+    return others != null && others.contains(len - 1);
+  }
+
+  public String getEndDelims() {
+    if (_endDelims == null) {
+      _endDelims = buildEndDelims();
+    }
+    return _endDelims;
   }
 
   public boolean hasLower() {
@@ -189,6 +220,51 @@ public class WordCharacteristics {
 
   public boolean hasOther() {
     return others != null;
+  }
+
+  /**
+   * Determine whether the word appears to be all caps.
+   * <p>
+   * If tolerant, result is true if num uppers &gt; num lowers; otherwise
+   * must have uppers and no lowers.
+   */
+  public boolean isAllCaps(boolean tolerant) {
+    boolean result = uppers != null;
+
+    if (result && lowers != null) {
+      if (tolerant) {
+        result = uppers.size() > lowers.size();
+      }
+      else {
+        result = false;
+      }
+    }
+
+    return result;
+  }
+
+  public int getNumLetters() {
+    int numLetters = 0;
+
+    if (lowers != null) {
+      numLetters += lowers.size();
+    }
+
+    if (uppers != null) {
+      numLetters += uppers.size();
+    }
+
+    return numLetters;
+  }
+
+  public int getNumDigits() {
+    int numDigits = 0;
+
+    if (digits != null) {
+      numDigits += digits.size();
+    }
+
+    return numDigits;
   }
 
   /**
@@ -263,5 +339,27 @@ public class WordCharacteristics {
       --endIdx;
     }
     return endIdx;
+  }
+
+  private final String buildStartDelims() {
+    String result = null;
+
+    if (hasStartDelims()) {
+      final int nonOther = skip(Type.OTHER, 0);
+      result = word.substring(0, nonOther);
+    }
+
+    return result == null ? "" : result;
+  }
+
+  private final String buildEndDelims() {
+    String result = null;
+
+    if (hasEndDelims()) {
+      final int nonOther = skipBack(Type.OTHER);
+      result = word.substring(nonOther + 1);
+    }
+
+    return result == null ? "" : result;
   }
 }
