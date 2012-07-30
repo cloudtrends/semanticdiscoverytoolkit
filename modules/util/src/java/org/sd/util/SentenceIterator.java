@@ -31,13 +31,14 @@ import java.util.Locale;
 public class SentenceIterator extends BaseTextIterator {
   
   private boolean detectAbbrev;
+  private boolean greedy;
 
   /**
    * Construct with the string whose words are to be iterated over
    * using the default locale.
    */
   public SentenceIterator(String string) {
-    this(string, false);
+    this(string, false, true);
   }
 
   /**
@@ -45,8 +46,13 @@ public class SentenceIterator extends BaseTextIterator {
    * using the default locale.
    */
   public SentenceIterator(String string, boolean detectAbbrev) {
+    this(string, detectAbbrev, true);
+  }
+
+  public SentenceIterator(String string, boolean detectAbbrev, boolean greedy) {
     super(BreakIterator.getSentenceInstance(), false);
     this.detectAbbrev = detectAbbrev;
+    this.greedy = greedy;
     setText(string);
   }
 
@@ -74,6 +80,20 @@ public class SentenceIterator extends BaseTextIterator {
    */
   public boolean detectAbbrev() {
     return detectAbbrev;
+  }
+
+  public SentenceIterator setDetectAbbrev(boolean detectAbbrev) {
+    this.detectAbbrev = detectAbbrev;
+    return this;
+  }
+
+  public boolean isGreedy() {
+    return greedy;
+  }
+
+  public SentenceIterator setGreedy(boolean greedy) {
+    this.greedy = greedy;
+    return this;
   }
 
   /**
@@ -129,11 +149,17 @@ public class SentenceIterator extends BaseTextIterator {
 
           // skip forward over letters, failing if first non-letter isn't whitespace
           if (result) {
+            final int startPtr = ptr;
             for (ptr = ptr + 1; ptr < len; ++ptr) {
               final char curC = text.charAt(ptr);
               if (!Character.isLetter(curC) && curC != '-') {
                 if (!Character.isWhitespace(curC)) {
-                  result = false;
+                  if (greedy ||
+                      (curC == '.' &&
+                       Character.isUpperCase(text.charAt(startPtr)) &&
+                       StringUtil.isLikelyAbbreviation(text.substring(startPtr, ptr)))) {
+                    result = false;
+                  }
                 }
                 break;
               }

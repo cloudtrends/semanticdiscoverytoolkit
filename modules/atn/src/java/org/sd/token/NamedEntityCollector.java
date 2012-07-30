@@ -63,8 +63,7 @@ public class NamedEntityCollector {
   private static final class NamedEntityGroup {
     private List<SegmentPointer> words;
     private SegmentPointer lastWord;
-    private SegmentPointer lastNonBlockWord;
-    private int numNonBlockWords;
+    private Boolean isAllCaps;
     private boolean lastWasBlock;
     private boolean isClosed;
     private boolean waitingForEndSingleQuote;
@@ -73,8 +72,7 @@ public class NamedEntityCollector {
       this.words = new ArrayList<SegmentPointer>();
       this.words.add(firstWord);
       this.lastWord = firstWord;
-      this.lastNonBlockWord = isBlock ? null : firstWord;
-      this.numNonBlockWords = isBlock ? 0 : 1;
+      this.isAllCaps = isBlock ? null : isCapsWord(firstWord);
       this.lastWasBlock = isBlock;
 
       // if group consists of a single block, then don't add any more to this group
@@ -122,10 +120,10 @@ public class NamedEntityCollector {
           }
         }
 
-        if (result && numNonBlockWords > 1) {
+        if (result) {
           // if changing from Caps/Capitalized to Capitalized/Caps and group has more than one word,
           // then don't add to this group
-          if (hasCapsChange(lastNonBlockWord, nextWord)) {
+          if (hasCapsChange(nextWord)) {
             result = false;
           }
         }
@@ -137,8 +135,6 @@ public class NamedEntityCollector {
         this.lastWasBlock = isBlock;
         this.isClosed = hasDefinitiveEnd(nextWord);
         if (!isBlock) {
-          this.lastNonBlockWord = nextWord;
-          this.numNonBlockWords++;
           if (this.waitingForEndSingleQuote) {
             if (nextHasEndSingleQuote) {
               this.waitingForEndSingleQuote = false;
@@ -217,16 +213,30 @@ public class NamedEntityCollector {
       return result;
     }
 
-    private final boolean hasCapsChange(SegmentPointer priorWord, SegmentPointer nextWord) {
-      final WordCharacteristics priorWC = priorWord.getWordCharacteristics();
-      final WordCharacteristics nextWC = nextWord.getWordCharacteristics();
+    private final Boolean isCapsWord(SegmentPointer word) {
+      Boolean result = null;
 
-      if (priorWC.getNumLetters() == 1 || nextWC.getNumLetters() == 1) return false;
+      final WordCharacteristics wc = word.getWordCharacteristics();
+      if (wc.getNumLetters() > 1) {
+        result = wc.isAllCaps(true);
+      }
 
-      final boolean priorIsAllCaps = priorWC.isAllCaps(true);
-      final boolean nextIsAllCaps = nextWC.isAllCaps(true);
+      return result;
+    }
 
-      return (priorIsAllCaps && !nextIsAllCaps) || (!priorIsAllCaps && nextIsAllCaps);
+    private final boolean hasCapsChange(SegmentPointer nextWord) {
+      boolean result = false;
+
+      final Boolean curIsCaps = isCapsWord(nextWord);
+
+      if (isAllCaps == null) {
+        isAllCaps = curIsCaps;
+      }
+      else if (curIsCaps != null) {
+        result = !isAllCaps.equals(curIsCaps);
+      }
+
+      return result;
     }
   }
 }

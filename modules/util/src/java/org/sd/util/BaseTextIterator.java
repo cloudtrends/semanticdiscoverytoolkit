@@ -39,12 +39,15 @@ public class BaseTextIterator implements TextIterator {
   private int lastStart;
   private int lastEnd;
 
+  private boolean initialized;
+
   /**
    * Construct with the string whose text is to be iterated over.
    */
   public BaseTextIterator(BreakIterator breakIterator, boolean canSkip) {
     this.breakIterator = breakIterator;
     this.canSkip = canSkip;
+    this.initialized = false;
   }
 
   /**
@@ -55,14 +58,20 @@ public class BaseTextIterator implements TextIterator {
     this.text = text;
     this.start = 0;
     this.end = 0;
+    this.initialized = false;
+  }
 
-    if (text != null && !"".equals(text)) {
-      breakIterator.setText(text);
-      computeNext(true);
-    }
-    else {
-      this.next = null;
-      this.end = BreakIterator.DONE;
+  private final void init() {
+    if (!initialized) {
+      if (text != null && !"".equals(text)) {
+        breakIterator.setText(text);
+        computeNext(true);
+      }
+      else {
+        this.next = null;
+        this.end = BreakIterator.DONE;
+      }
+      initialized = true;
     }
   }
 
@@ -93,6 +102,8 @@ public class BaseTextIterator implements TextIterator {
    * Get the next text.
    */
   public String next() {
+    init();
+
     final String result = next;
     lastStart = start;
     lastEnd = end;
@@ -105,6 +116,7 @@ public class BaseTextIterator implements TextIterator {
    * Determine whether there is a next text.
    */
   public boolean hasNext() {
+    init();
     return text != null && !"".equals(text) && next != null;
   }
 
