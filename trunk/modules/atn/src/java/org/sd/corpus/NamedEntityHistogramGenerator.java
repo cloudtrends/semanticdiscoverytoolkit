@@ -61,6 +61,7 @@ public class NamedEntityHistogramGenerator extends CorpusHistogramGenerator {
   //   nextWord -- (default=false) true to include next word after entity
   //   firstEntityWord -- (default=false) true to include the entity's first word (replaces/overrides fullEntity)
   //   lastEntityWord -- (default=false) true to include entity's last word (replaces/overrides fullEntity)
+  //   minEntityWords -- (default=2) specifies the min number of words necessary to include an entity
   //
   //   prefixOnly -- (default=false) true to setup for just entity prefix unigrams
   //   suffixOnly -- (default=false) true to setup for just entity suffix unigrams
@@ -76,6 +77,7 @@ public class NamedEntityHistogramGenerator extends CorpusHistogramGenerator {
   private boolean nextWord;
   private boolean firstEntityWord;
   private boolean lastEntityWord;
+  private int minEntityWords;
 
   public NamedEntityHistogramGenerator(DataProperties topOptions, File histogramGeneratorConfig) throws IOException {
     super(histogramGeneratorConfig);
@@ -87,6 +89,7 @@ public class NamedEntityHistogramGenerator extends CorpusHistogramGenerator {
     this.nextWord = topOptions.getBoolean("nextWord", false);
     this.firstEntityWord = topOptions.getBoolean("firstEntityWord", false);
     this.lastEntityWord = topOptions.getBoolean("lastEntityWord", false);
+    this.minEntityWords = topOptions.getInt("minEntityWords", 2);
 
     if (topOptions.getBoolean("prefixOnly", false)) {
       this.fullEntity = false;
@@ -141,12 +144,22 @@ public class NamedEntityHistogramGenerator extends CorpusHistogramGenerator {
 
   protected boolean isEntity(Token token) {
     boolean result = false;
-    if (token.hasFeatures()) {
+    if (token.hasFeatures() && numWords(token.getText()) >= minEntityWords) {
       final Object value = token.getFeatureValue(NamedEntitySegmentFinder.ENTITY_LABEL, null);
       if (value != null) {
         result = true;
       }
     }
+    return result;
+  }
+
+  protected int numWords(String text) {
+    int result = 1;
+
+    for (int spacePos = text.indexOf(' '); spacePos >= 0; spacePos = text.indexOf(' ', spacePos + 1)) {
+      ++result;
+    }
+
     return result;
   }
 

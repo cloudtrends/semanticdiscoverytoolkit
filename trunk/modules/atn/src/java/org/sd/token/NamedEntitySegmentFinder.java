@@ -52,7 +52,7 @@ public class NamedEntitySegmentFinder extends WordFinder {
     DEFAULT_TOKENIZER_OPTIONS.setDigitLowerBreak(Break.ZERO_WIDTH_SOFT_BREAK);
     DEFAULT_TOKENIZER_OPTIONS.setNonEmbeddedDoubleDashBreak(Break.SINGLE_WIDTH_HARD_BREAK);
     DEFAULT_TOKENIZER_OPTIONS.setEmbeddedDoubleDashBreak(Break.SINGLE_WIDTH_HARD_BREAK);
-    DEFAULT_TOKENIZER_OPTIONS.setEmbeddedDashBreak(Break.NO_BREAK);
+    DEFAULT_TOKENIZER_OPTIONS.setEmbeddedDashBreak(Break.SINGLE_WIDTH_SOFT_BREAK);
     DEFAULT_TOKENIZER_OPTIONS.setLeftBorderedDashBreak(Break.SINGLE_WIDTH_HARD_BREAK);
     DEFAULT_TOKENIZER_OPTIONS.setRightBorderedDashBreak(Break.SINGLE_WIDTH_HARD_BREAK);
     DEFAULT_TOKENIZER_OPTIONS.setFreeStandingDashBreak(Break.SINGLE_WIDTH_HARD_BREAK);
@@ -111,11 +111,11 @@ public class NamedEntitySegmentFinder extends WordFinder {
 
     for (SegmentPointer curWordSegment = super.findSegmentPointer(startPtr);
          curWordSegment != null;
-         curWordSegment = super.findSegmentPointer(curWordSegment.getEndPtr() + 1)) {
-
-      //System.out.println("\tconsidering curWord: " + curWordSegment);
+         curWordSegment = super.findSegmentPointer(skipToNonWhite(curWordSegment.getEndPtr() + 1))) {
 
       final SegmentType curType = determineSegmentType(curWordSegment, blockRecognizer);
+
+//System.out.println("\tconsidering curWord: " + curWordSegment + " curType=" + curType + " priorType=" + priorType);
 
       if (curType == SegmentType.ENTITY) {
         ++entityCount;
@@ -226,14 +226,22 @@ public class NamedEntitySegmentFinder extends WordFinder {
     final String word = wordSegment.getText();
     final WordCharacteristics wc = wordSegment.getWordCharacteristics();
     boolean inBlock = !blockRecognizer.stackIsEmpty();
+    int numOthers = wc.len() - wc.getNumLetters();
 
     // record potential start block chars from front of word
     WordCharacteristics.Type frontType = wc.getFirstType(false);
     if (frontType == WordCharacteristics.Type.OTHER) {
       final int max = wc.skip(WordCharacteristics.Type.OTHER, 0);
+      numOthers += max;
       for (int idx = 0; idx < max; ++idx) {
         final char c = word.charAt(idx);
-        blockRecognizer.updateStack(c, true, false);
+        if (blockRecognizer.isPushCandidate(c)) {
+          // check for corresponding end
+          if (blockRecognizer.hasPopCandidate(wordSegment.getInput(), wordSegment.getStartPtr() + idx, c)) {
+            blockRecognizer.push(c);
+            --numOthers;
+          }
+        }
       }
       frontType = wc.getFirstType(true);
     }
@@ -245,7 +253,9 @@ public class NamedEntitySegmentFinder extends WordFinder {
       final int min = wc.skipBack(WordCharacteristics.Type.OTHER);
       for (int idx = min + 1; idx < wc.len(); ++idx) {
         final char c = word.charAt(idx);
-        blockRecognizer.updateStack(c, false, true);
+        if (blockRecognizer.updateStack(c, false, true)) {
+          --numOthers;
+        }
       }
     }
 
@@ -253,7 +263,7 @@ public class NamedEntitySegmentFinder extends WordFinder {
       result = SegmentType.BLOCK;
     }
     else {
-      if (frontType == WordCharacteristics.Type.UPPER) {
+      if (frontType == WordCharacteristics.Type.UPPER && numOthers < 2) {
         result = SegmentType.ENTITY;
       }
     }

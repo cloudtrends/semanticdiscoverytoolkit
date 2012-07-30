@@ -156,7 +156,9 @@ public class SegmentPointer implements Serializable {
   }
 
   public void addInnerSegment(int startPtr, int endPtr) {
-    addInnerSegment(new InnerSegment(startPtr, endPtr));
+    if (startPtr < endPtr && startPtr >= 0) {
+      addInnerSegment(new InnerSegment(startPtr, endPtr));
+    }
   }
 
   public void addInnerSegment(InnerSegment innerSegment) {

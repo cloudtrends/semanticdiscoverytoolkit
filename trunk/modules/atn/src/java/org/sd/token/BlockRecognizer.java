@@ -115,10 +115,48 @@ public class BlockRecognizer {
 
     // check for hitting a start block character
     if (!result && checkStart) {
-      final Character blockEnd = blockChars.get(curChar);
-      if (blockEnd != null) {
+      if (isPushCandidate(curChar)) {
         startBlockStack.push(curChar);
         result = true;
+      }
+    }
+
+    return result;
+  }
+
+  public void push(char c) {
+    startBlockStack.push(c);
+  }
+
+  public boolean isPushCandidate(char curChar) {
+    boolean result = false;
+
+    // check for hitting a start block character
+    final Character blockEnd = blockChars.get(curChar);
+    if (blockEnd != null) {
+      result = true;
+    }
+
+    return result;
+  }
+
+  public boolean hasPopCandidate(String text, int pushCandidatePos, char pushCandidate) {
+    boolean result = false;
+
+    final Character endChar = blockChars.get(pushCandidate);
+    if (endChar != null) {
+      final int idx = text.indexOf(endChar, pushCandidatePos + 1);
+      if (idx >= 0) {
+        result = true;
+        if (idx < text.length() - 1) {
+          // only valid if a non char/digit follows
+          final char nextChar = text.charAt(idx + 1);
+//          result = Character.isLetterOrDigit(nextChar);
+          // NOTE: this uses isWhitespace instead of isLetterOrDigit because
+          //       the expected input comes from word finder output, which is
+          //       purely whitespace delimited.
+          result = Character.isWhitespace(nextChar);
+        }
       }
     }
 

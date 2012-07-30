@@ -37,7 +37,7 @@ public class SequenceSegmenter {
     final List<SegmentPointer> result = new ArrayList<SegmentPointer>();
 
     int seqNum = 0;
-    for (SentenceIterator iter = new SentenceIterator(input, true); iter.hasNext(); ) {
+    for (SentenceIterator iter = new SentenceIterator(input).setDetectAbbrev(true).setGreedy(false); iter.hasNext(); ) {
       final String sentence = iter.next();
 
       final SegmentPointerFinder ptrFinder = ptrFactory.getSegmentPointerFinder(sentence);
