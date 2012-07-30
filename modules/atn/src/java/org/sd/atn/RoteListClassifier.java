@@ -489,15 +489,15 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         }
       }
 
-      if (!result && classifiers != null) {
+      if ((classifiers != null) && (!isStopwords || !result)) {
         for (RoteListClassifier classifier : classifiers) {
-          result = classifier.doClassify(token);
-          if (result) {
+          final boolean curResult = classifier.doClassify(token);
+          if (curResult) {
             if (trace) {
               System.out.println("\tfound '" + key + "' in classifier '" + classifier.getName() + "'");
             }
-
-            break;
+            result = true;
+            // keep going to add features from further matches
           }
         }
       }
@@ -548,12 +548,18 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         }
       }
 
-      if (!matched && classifiers != null) {
+      if ((classifiers != null) && (!isStopwords || !matched)) {
         for (RoteListClassifier classifier : classifiers) {
-          result = classifier.doClassify(key);
-          if (result != null) {
+          final Map<String, String> curResult = classifier.doClassify(key);
+          if (curResult != null) {
+            if (result == null) {
+              result = curResult;
+            }
+            else {
+              result.putAll(curResult);
+            }
             matched = true;
-            break;
+            //keep going to add features from further matches
           }
         }
       }
@@ -580,7 +586,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
     protected final void loadTerms(DomElement termsElement) {
 
-      // get global attributes to apply to each term (ignoring 'caseSensitive" attribute)
+      // get global attributes to apply to each term (ignoring 'caseSensitive' attribute)
       Map<String, String> globalAttributes = null;
       if (termsElement.hasAttributes()) {
         final Map<String, String> termsElementAttributes = termsElement.getDomAttributes().getAttributes();
@@ -622,8 +628,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
             termAttributes = new HashMap<String, String>(globalAttributes);
           }
         }
-
-        term2attributes.put(term, termAttributes);
+        addTermAttributes(term, termAttributes);
       }
     }
 
@@ -662,7 +667,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
                 }
               }
             }
-            term2attributes.put(term, termAttributes);
+            addTermAttributes(term, termAttributes);
           }
         }
 
@@ -710,6 +715,18 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         else {
           System.out.println(new Date() + ": WARNING : Unrecognized 'classifiers' sub-element '" +
                              nodeName + "'. Expecting 'classifier' or 'feature'.");
+        }
+      }
+    }
+
+    private final void addTermAttributes(String term, Map<String, String> attributes) {
+      Map<String, String> curAttributes = term2attributes.get(term);
+      if (curAttributes == null) {
+        term2attributes.put(term, attributes);
+      }
+      else {
+        if (attributes != null) {
+          curAttributes.putAll(attributes);
         }
       }
     }
@@ -764,8 +781,9 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         result = caseSensitiveTerms.doClassify(token);
       }
 
-      if (!result && caseInsensitiveTerms != null) {
-        result = caseInsensitiveTerms.doClassify(token);
+      if ((caseInsensitiveTerms != null) && (!isStopwords || !result)) {
+        // even if prior result succeeded, try again here to get any new token features (unless stopwords)
+        result |= caseInsensitiveTerms.doClassify(token);
       }
 
       return result;
@@ -778,8 +796,17 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         result = caseSensitiveTerms.doClassify(text);
       }
 
-      if (result == null && caseInsensitiveTerms != null) {
-        result = caseInsensitiveTerms.doClassify(text);
+      if ((caseInsensitiveTerms != null) && (!isStopwords || result == null)) {
+        // even if prior result succeeded, try again here to get any new token features (unless stopwords)
+        final Map<String, String> ciResult = caseInsensitiveTerms.doClassify(text);
+        if (result == null) {
+          result = ciResult;
+        }
+        else {
+          if (ciResult != null) {
+            result.putAll(ciResult);
+          }
+        }
       }
 
       return result;
