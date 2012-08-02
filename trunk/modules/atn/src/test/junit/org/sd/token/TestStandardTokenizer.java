@@ -45,7 +45,7 @@ public class TestStandardTokenizer extends TestCase {
                        { new String[] { "John", "John Jacob", "John Jacob Jingleheimer" },
                          new String[] { "His", "His name", "His name is", "His name is my", "His name is my name" } });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void testDefaultTokenizerOptions_CamelCase1() {
@@ -58,7 +58,7 @@ public class TestStandardTokenizer extends TestCase {
                        { new String[] { "John", "JohnJacob", "JohnJacobJingleheimer" },
                          new String[] { "His", "His name", "His name is", "His name is my", "His name is my name" } });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void testDefaultTokenizerOptions_CamelCase2() {
@@ -71,7 +71,7 @@ public class TestStandardTokenizer extends TestCase {
                                         new String[] {"His", "His name", "His name is", "His name is my", "His name is my name" },
                                         new String[] {} });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_LS_Strategy_Normal() {
@@ -85,7 +85,7 @@ public class TestStandardTokenizer extends TestCase {
                        { new String[] { "John Jacob Jingleheimer", "John Jacob", "John" },
                          new String[] { "His name is my name", "His name is my", "His name is", "His name", "His" } });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_LS_Strategy_CamelCase1() {
@@ -99,7 +99,7 @@ public class TestStandardTokenizer extends TestCase {
                        { new String[] { "JohnJacobJingleheimer", "JohnJacob", "John" },
                          new String[] { "His name is my name", "His name is my", "His name is", "His name", "His" } });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_LS_Strategy_CamelCase2() {
@@ -113,7 +113,7 @@ public class TestStandardTokenizer extends TestCase {
                                         new String[] { "His name is my", "His name is", "His name", "His" },
                                         new String[] { } });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_LS_Strategy_CamelCase3() {
@@ -127,7 +127,7 @@ public class TestStandardTokenizer extends TestCase {
                                         new String[] { "born 10Oct", "born" },
                                         new String[] { "died 28Feb", "died" } });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_SL_Strategy_Normal() {
@@ -149,7 +149,7 @@ public class TestStandardTokenizer extends TestCase {
 													 new String[] { "name too" },
 													 new String[] {} } );
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_SL_Strategy_CamelCase1() {
@@ -171,7 +171,7 @@ public class TestStandardTokenizer extends TestCase {
 													 new String[] { "name too" },
 													 new String[] {} } );
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_SL_Strategy_CamelCase2() {
@@ -194,7 +194,7 @@ public class TestStandardTokenizer extends TestCase {
 													 new String[] {},
 													 new String[] {} } );
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_SO_Strategy_Normal() {
@@ -216,7 +216,7 @@ public class TestStandardTokenizer extends TestCase {
 													 new String[] {},
 													 new String[] {} });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_SO_Strategy_CamelCase1() {
@@ -238,7 +238,7 @@ public class TestStandardTokenizer extends TestCase {
 													 new String[] {},
 													 new String[] {} });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_LO_Strategy_Normal() {
@@ -252,7 +252,7 @@ public class TestStandardTokenizer extends TestCase {
 												 { new String[] {},
 													 new String[] {} });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void test_LO_Strategy_CamelCase1() {
@@ -266,7 +266,7 @@ public class TestStandardTokenizer extends TestCase {
 												 { new String[] {},
 													 new String[] {} });
 
-    tokenizeTest.runTest();
+    assertTrue(tokenizeTest.runTest());
   }
 
   public void testTextWithDelims1() {
@@ -306,46 +306,6 @@ public class TestStandardTokenizer extends TestCase {
     final Token token = tokenizer.getToken(0);
     assertEquals("Smith", token.getText());
     assertEquals("/Smith/", token.getTextWithDelims());
-  }
-
-
-  private final class TokenizeTest {
-
-    private String name;
-    private String text;
-    private StandardTokenizerOptions options;
-    private String[] expectedPrimaryTokens;
-    private String[][] expectedSecondaryTokens;
-
-    public TokenizeTest(String name, String text, StandardTokenizerOptions options, String[] expectedPrimaryTokens, String[][] expectedSecondaryTokens) {
-      this.name = name;
-      this.text = text;
-      this.options = options;
-      this.expectedPrimaryTokens = expectedPrimaryTokens;
-      this.expectedSecondaryTokens = expectedSecondaryTokens;
-    }
-
-    public void runTest() {
-      final StandardTokenizer tokenizer = StandardTokenizerFactory.getTokenizer(text, options);
-
-      int numPrimaryTokens = 0;
-      for (Token primaryToken = tokenizer.getToken(0); primaryToken != null; primaryToken = tokenizer.getNextToken(primaryToken)) {
-        assertEquals(name + ": Primary token #" + numPrimaryTokens + " mismatch.",
-                     expectedPrimaryTokens[numPrimaryTokens], primaryToken.getText());
-
-        int numRevisedTokens = 0;
-        for (Token revisedToken = tokenizer.revise(primaryToken); revisedToken != null; revisedToken = tokenizer.revise(revisedToken)) {
-          assertEquals(name + ": Secondary token #" + numPrimaryTokens + "/" + numRevisedTokens + " mismatch.",
-                       expectedSecondaryTokens[numPrimaryTokens][numRevisedTokens], revisedToken.getText());
-          ++numRevisedTokens;
-        }
-
-        ++numPrimaryTokens;
-      }
-      
-      assertEquals(name + ": Primary token count mismatch.",
-                   expectedPrimaryTokens.length, numPrimaryTokens);
-    }
   }
 
 

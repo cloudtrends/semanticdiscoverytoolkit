@@ -21,6 +21,7 @@ package org.sd.token;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.sd.xml.DataProperties;
 
 /**
  * A segment pointer finder for segmenting potential named entities in a single
@@ -74,6 +75,10 @@ public class NamedEntitySegmentFinder extends WordFinder {
 
   public static SegmentPointerFinderFactory getFactory() {
     return NAMED_ENTITY_SEGMENT_FINDER_FACTORY;
+  }
+
+  public static SegmentTokenizer getSegmentTokenizer(String input, DataProperties dataProperties) {
+    return new SegmentTokenizer(new NamedEntitySegmentFinder(input), DEFAULT_TOKENIZER_OPTIONS, dataProperties);
   }
 
 

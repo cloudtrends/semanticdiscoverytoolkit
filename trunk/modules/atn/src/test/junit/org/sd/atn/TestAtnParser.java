@@ -1458,6 +1458,205 @@ public class TestAtnParser extends TestCase {
                  });
   }
 
+  public void testPermutedRules1() throws IOException {
+    //
+    // Test when low-level (token matching) rules are permuted
+    //
+    // A <- B+
+    // B! <- C+ D? E
+    //
+    // C E
+    // C D E
+    // E C
+    // E C C
+    // E D C
+    // C E D
+    //
+    // D C (fail -- no E)
+    // C D (fail -- no E)
+    // C E C (fail -- split C or 2nd B's C has no E)
+
+    final AtnParser test22_Parser = AtnParseTest.buildParser("<grammar><rules><A start='true'><B repeats='true'/></A><B permuted='true'><C repeats='true' cluster='true'/><D optional='true'/><E/></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer22a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C E");
+
+    runParseTest("parserTest_22a",
+                 test22_Parser,
+                 tokenizer22a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B C E))",
+                   });
+
+    final StandardTokenizer tokenizer22b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C D E");
+    runParseTest("parserTest_22b",
+                 test22_Parser,
+                 tokenizer22b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B C D E))",
+                   });
+
+    final StandardTokenizer tokenizer22c = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "E C");
+    runParseTest("parserTest_22c",
+                 test22_Parser,
+                 tokenizer22c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B E C))",
+                   });
+
+    final StandardTokenizer tokenizer22d = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "E C C");
+    runParseTest("parserTest_22d",
+                 test22_Parser,
+                 tokenizer22d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B E C C))",
+                   });
+
+    final StandardTokenizer tokenizer22e = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "E D C");
+    runParseTest("parserTest_22e",
+                 test22_Parser,
+                 tokenizer22e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B E D C))",
+                   });
+
+    final StandardTokenizer tokenizer22f = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C E D");
+    runParseTest("parserTest_22f",
+                 test22_Parser,
+                 tokenizer22f,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B C E D))",
+                   });
+
+    final StandardTokenizer tokenizer22g = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "D C");
+    runParseTest("parserTest_22g",
+                 test22_Parser,
+                 tokenizer22g,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer22h = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C D");
+    runParseTest("parserTest_22h",
+                 test22_Parser,
+                 tokenizer22h,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer22i = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C E C");
+    runParseTest("parserTest_22i",
+                 test22_Parser,
+                 tokenizer22i,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 null);
+
+    final StandardTokenizer tokenizer22j = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "C E C E");
+    runParseTest("parserTest_22j",
+                 test22_Parser,
+                 tokenizer22j,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B C E) (B C E))",
+                 });
+  }
+
+  public void testPermutedRules2() throws IOException {
+    //
+    // Test when the start rule/higher-order rules are permuted
+    //
+    // A! <- e? B+ C* D?
+    // B <- b+
+    // C <- c+
+    // D <- d+
+    //
+    // b
+    // b c d
+    // d b
+    // d c b
+    // c b d
+    // 
+    // e c b d
+    // b c e d
+    // b d c e
+
+    final AtnParser test23_Parser = AtnParseTest.buildParser("<grammar><rules><A start='true' permuted='true'><e optional='true'/><B repeats='true'/><C optional='true' repeats='true'/><D optional='true'/></A><B><b repeats='true'/></B><C><c repeats='true'/></C><D><d repeats='true'/></D></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer23a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "b");
+    runParseTest("parserTest_23a",
+                 test23_Parser,
+                 tokenizer23a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B b))",
+                   });
+
+    final StandardTokenizer tokenizer23b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "b c d");
+    runParseTest("parserTest_23b",
+                 test23_Parser,
+                 tokenizer23b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B b) (C c) (D d))",
+                   });
+
+    final StandardTokenizer tokenizer23c = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d b");
+    runParseTest("parserTest_23c",
+                 test23_Parser,
+                 tokenizer23c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (D d) (B b))",
+                   });
+
+    final StandardTokenizer tokenizer23d = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d c b");
+    runParseTest("parserTest_23d",
+                 test23_Parser,
+                 tokenizer23d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (D d) (C c) (B b))",
+                   });
+
+    final StandardTokenizer tokenizer23e = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c b d");
+    runParseTest("parserTest_23e",
+                 test23_Parser,
+                 tokenizer23e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (C c) (B b) (D d))",
+                   });
+
+    final StandardTokenizer tokenizer23f = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "e c b d");
+    runParseTest("parserTest_23f",
+                 test23_Parser,
+                 tokenizer23f,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A e (C c) (B b) (D d))",
+                   });
+
+    final StandardTokenizer tokenizer23g = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "b c e d");
+    runParseTest("parserTest_23g",
+                 test23_Parser,
+                 tokenizer23g,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B b) (C c) e (D d))",
+                   });
+
+    final StandardTokenizer tokenizer23h = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "b d c e");
+    runParseTest("parserTest_23h",
+                 test23_Parser,
+                 tokenizer23h,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(A (B b) (D d) (C c) e)",
+                   });
+  }
 
   private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings) throws IOException {
     runParseTest(name, parser, tokenizer, parseOptionsXml, expectedTreeStrings, null, false);
@@ -1523,7 +1722,7 @@ public class TestAtnParser extends TestCase {
           }
         }
 
-        assertNull(name + ": Got parse '" + (parse == null ? "<NULL>" : parseTree.toString()) + "(and " + (parseResult.getNumParses() - 1) + " others) where none was expected.",
+        assertNull(name + ": Got parse '" + (parse == null ? "<NULL>" : parseTree.toString()) + "' (and " + (parseResult.getNumParses() - 1) + " others) where none was expected.",
                    parse);
       }
       else {

@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -223,6 +224,21 @@ public class AtnStateUtil {
     for (AtnState curState = endState; curState != null; curState = curState.getParentState()) {
       if (curState.getMatched()) {
         result.add(0, curState);
+      }
+      final AtnState curPush = curState.getPushState();
+      if (curPush == refPush && curPush == curState.getParentState()) break;
+    }
+
+    return result;
+  }
+
+  public static final Set<Integer> getConstituentMatchedSteps(AtnState endState) {
+    final Set<Integer> result = new HashSet<Integer>();
+
+    final AtnState refPush = endState.getPushState();
+    for (AtnState curState = endState; curState != null; curState = curState.getParentState()) {
+      if (curState.getPushState() == refPush) {
+        result.add(curState.getStepNum());
       }
       final AtnState curPush = curState.getPushState();
       if (curPush == refPush && curPush == curState.getParentState()) break;

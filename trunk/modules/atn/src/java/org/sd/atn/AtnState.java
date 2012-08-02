@@ -353,6 +353,33 @@ public class AtnState {
     return result;
   }
 
+  List<AtnState> getPermutedNextStepStates(Tree<AtnState> curStateNode, boolean incToken, Set<Integer> stopList) {
+    List<AtnState> result = null;
+
+    //NOTE: assume rule.isPermuted() if we've called this
+    if (incToken && !getRuleStep().consumeToken()) incToken = false;
+    final Token nextToken = incToken ? getNextToken(stopList) : this.inputToken;
+    if (nextToken != null) {
+      final int numSteps = rule.getNumSteps();
+
+      final Set<Integer> matchedSteps = AtnStateUtil.getConstituentMatchedSteps(this);  //todo: make sure 'this' is properly hooked in
+      matchedSteps.add(stepNum);  // add this stepNum
+
+      for (int n = 0; n < numSteps; ++n) {
+        if (!matchedSteps.contains(n)) {
+          final AtnState nextState =
+            new AtnState(
+              nextToken, rule, n,
+              curStateNode, parseOptions, 0, 0, pushState);
+          if (result == null)  result = new ArrayList<AtnState>();
+          result.add(nextState);
+        }
+      }
+    }
+
+    return result;
+  }
+
   /**
    * Get the next state for retrying this info's step with a revised
    * input token.
@@ -1323,9 +1350,20 @@ public class AtnState {
         addState(grammar, states, skipStates, nextstate, stopList);
       }
 
-      nextstate = curstate.getNextStepState(nextStateNode, inc, stopList);
-      if (nextstate != null) {
-        addState(grammar, states, skipStates, nextstate, stopList);
+      if (curstate.getRule().isPermuted()) {
+        // next step states are all steps not matched in cur state history (and excluding current)
+        final List<AtnState> nextStates = curstate.getPermutedNextStepStates(nextStateNode, inc, stopList);
+        if (nextStates != null) {
+          for (AtnState nextState : nextStates) {
+            addState(grammar, states, skipStates, nextState, stopList);
+          }
+        }
+      }
+      else {
+        nextstate = curstate.getNextStepState(nextStateNode, inc, stopList);
+        if (nextstate != null) {
+          addState(grammar, states, skipStates, nextstate, stopList);
+        }
       }
 
       // revise token
@@ -1345,12 +1383,14 @@ public class AtnState {
       foundOne = true;
     }
 
-    // account for optional step.
-    if (curstate.getRuleStep().isOptional() && !curstate.isRepeat()) {
-      nextstate = curstate.getSkipOptionalState();
-      if (nextstate != null) {
-        addState(grammar, states, skipStates, nextstate, stopList);
-        foundOne = true;
+    if (!curstate.getRule().isPermuted()) {
+      // account for optional step. (only if rule is not permuted which will already have added other step states)
+      if (curstate.getRuleStep().isOptional() && !curstate.isRepeat()) {
+        nextstate = curstate.getSkipOptionalState();
+        if (nextstate != null) {
+          addState(grammar, states, skipStates, nextstate, stopList);
+          foundOne = true;
+        }
       }
     }
 
@@ -1361,11 +1401,21 @@ public class AtnState {
         foundOne = true;
 
         for (AtnRule rule : grammar.getCat2Rules().get(category)) {
-          AtnState pushState = new AtnState(curstate.getInputToken(), rule, 0, nextStateNode, curstate.parseOptions, 0, 0, curstate);
 
-          // add push state and states skipping initial optional steps after push
-          for (; pushState != null; pushState = pushState.getSkipOptionalState()) {
-            addState(grammar, states, skipStates, pushState, stopList);
+          if (rule.isPermuted()) {
+            // add a push state for all steps
+            final int numSteps = rule.getNumSteps();
+            for (int stepNum = 0; stepNum < numSteps; ++stepNum) {
+              AtnState pushState = new AtnState(curstate.getInputToken(), rule, stepNum, nextStateNode, curstate.parseOptions, 0, 0, curstate);
+              addState(grammar, states, skipStates, pushState, stopList);
+            }
+          }
+          else {
+            // add push state and states skipping initial optional steps after push
+            AtnState pushState = new AtnState(curstate.getInputToken(), rule, 0, nextStateNode, curstate.parseOptions, 0, 0, curstate);
+            for (; pushState != null; pushState = pushState.getSkipOptionalState()) {
+              addState(grammar, states, skipStates, pushState, stopList);
+            }
           }
         }
 

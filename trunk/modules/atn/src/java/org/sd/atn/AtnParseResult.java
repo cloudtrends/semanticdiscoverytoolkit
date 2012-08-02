@@ -260,7 +260,16 @@ public class AtnParseResult {
 
         if (startRule.fromFirstTokenOnly() && firstToken.getSequenceNumber() > 0) return false;
 
-        states.addLast(new AtnState(firstToken, startRule, 0, parse, options, 0, 0, null));
+        if (startRule.isPermuted()) {
+          // add all step states, not just first
+          final int numSteps = startRule.getNumSteps();
+          for (int stepNum = 0; stepNum < numSteps; ++stepNum) {
+            states.addLast(new AtnState(firstToken, startRule, stepNum, parse, options, 0, 0, null));
+          }
+        }
+        else {
+          states.addLast(new AtnState(firstToken, startRule, 0, parse, options, 0, 0, null));
+        }
         ++startRuleIndex;
       }
 
