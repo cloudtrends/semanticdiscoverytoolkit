@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import org.sd.token.Token;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
@@ -54,6 +55,9 @@ public class AtnRule {
   LinkedList<AtnRuleStep> getSteps() {
     return steps;
   }
+  public int getNumSteps() {
+    return (steps == null) ? 0 : steps.size();
+  }
 
   private boolean isStart;
   boolean isStart() {
@@ -75,6 +79,11 @@ public class AtnRule {
     return fromFirstTokenOnly;
   }
 
+  private boolean permuted;
+  public boolean isPermuted() {
+    return permuted;
+  }
+
   private List<AtnRuleStep> popSteps;
   List<AtnRuleStep> getPopSteps() {
     return popSteps;
@@ -94,11 +103,12 @@ public class AtnRule {
     this.tokenFilterId = ruleElement.getAttributeValue("tokenFilter", null);
     this.tokenLimit = ruleElement.getAttributeInt("tokenLimit", 0);
     this.fromFirstTokenOnly = ruleElement.getAttributeBoolean("fromFirstTokenOnly", false);
+    this.permuted = ruleElement.getAttributeBoolean("permuted", false);
 
     //
     // RuleElement is of the form:
     //
-    // <ruleName start='' tokenFilter='tokenFilterId' id='ruleId' tokenLimit='' fromFirstTokenOnly=''>
+    // <ruleName start='' tokenFilter='tokenFilterId' id='ruleId' tokenLimit='' fromFirstTokenOnly='' permuted='true|false'>
     //   <ruleStep require='' unless='' optional='' repeats='' terminal='' skip='' repeatLimit=''>
     //     <postdelim><disallowall|allowall|disallow|allow /></postdelim>
     //     <predelim><disallowall|allowall|disallow|allow /></predelim>
@@ -147,7 +157,7 @@ public class AtnRule {
   }
 
   boolean isTerminal(int stepNum) {
-    return isLast(stepNum) || steps.get(stepNum).isTerminal();
+    return isLast(stepNum) || steps.get(stepNum).isTerminal() || permuted;
   }
 
   AtnRuleStep getStep(int stepNum) {
@@ -163,7 +173,11 @@ public class AtnRule {
   boolean verifyPop(Token token, AtnState curState) {
     boolean result = true;
 
-    if (popSteps != null) {
+    if (permuted) {
+      result = verifyPermutedPop(token, curState);
+    }
+
+    if (result && popSteps != null) {
       for (AtnRuleStep popStep : popSteps) {
         result = popStep.verify(token, curState);
         if (!result) {
@@ -185,6 +199,28 @@ public class AtnRule {
       final DomElement childElement = (DomElement)curNode;
       result.add(childElement);
     }
+
+    return result;
+  }
+
+  private final boolean verifyPermutedPop(Token token, AtnState curState) {
+    boolean result = true;
+
+    // need to verify that required steps have been matched
+    final Set<Integer> matchedSteps = AtnStateUtil.getConstituentMatchedSteps(curState);
+    matchedSteps.add(curState.getStepNum());
+
+    final int numSteps = steps.size();
+    for (int stepNum = 0; stepNum < numSteps; ++stepNum) {
+      final AtnRuleStep step = steps.get(stepNum);
+      if (!step.isOptional()) {
+        if (!matchedSteps.contains(stepNum)) {
+          result = false;
+          break;
+        }
+      }
+    }
+    //TODO: also verify "require" and "unless" constraints?
 
     return result;
   }
