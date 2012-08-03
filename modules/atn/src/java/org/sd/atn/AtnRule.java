@@ -157,7 +157,16 @@ public class AtnRule {
   }
 
   boolean isTerminal(int stepNum) {
-    return isLast(stepNum) || steps.get(stepNum).isTerminal() || permuted;
+    boolean result = isLast(stepNum);
+
+    if (!result) {
+      final AtnRuleStep step = steps.get(stepNum);
+      if (!step.isNonTerminal()) {
+        result = step.isTerminal() || this.permuted;
+      }
+    }
+
+    return result;
   }
 
   AtnRuleStep getStep(int stepNum) {
