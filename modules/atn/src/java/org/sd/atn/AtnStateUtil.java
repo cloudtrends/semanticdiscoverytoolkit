@@ -406,8 +406,13 @@ public class AtnStateUtil {
       final CategorizedToken cToken = (CategorizedToken)deepParseTree.getAttributes().get(AtnStateUtil.TOKEN_KEY);
       if (cToken != null && cToken.token.getTokenizer() != baseToken.getTokenizer()) {
         final int baseStart = baseToken.getStartIndex();
-        final int startIndex = baseStart + cToken.token.getStartIndex();
-        final int endIndex = baseStart + cToken.token.getEndIndex();
+        int startIndex = cToken.token.getStartIndex();
+        int endIndex = cToken.token.getEndIndex();
+        if (cToken.token.getTokenizer().getText() != baseToken.getTokenizer().getText()) {
+          // yes, we're using "!=" instead of "!.equals" here!
+          startIndex += baseStart;
+          endIndex += baseStart;
+        }
         final Token reconciledToken = baseToken.getTokenizer().buildToken(startIndex, endIndex);
         deepParseTree.getAttributes().put(AtnStateUtil.TOKEN_KEY, new CategorizedToken(reconciledToken, cToken.category));
       }
