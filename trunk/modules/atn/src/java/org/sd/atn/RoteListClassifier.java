@@ -212,7 +212,13 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       }
     }
 
-    if (this.terms != null) this.terms.setTrace(trace);
+    if (this.terms != null) {
+      this.terms.setTrace(trace);
+      // adjust user-defined down to finite observed if warranted
+      final int maxWordCount = terms.getMaxWordCount();
+      final int curMaxWordCount = super.getMaxWordCount();
+      super.setMaxWordCount(adjustMaxWordCount(maxWordCount, curMaxWordCount));
+    }
     if (this.stopwords != null) this.stopwords.setTrace(trace);
   }
 
@@ -376,6 +382,19 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     return termsBundle;
   }
 
+  public static final int adjustMaxWordCount(int localMaxWordCount, int globalMaxWordCount) {
+    int result = globalMaxWordCount;
+
+    if (localMaxWordCount > 0) {
+      // bring max down to finite observed if warranted
+      if (result == 0 || result > localMaxWordCount) {
+        result = localMaxWordCount;
+      }
+    }
+
+    return result;
+  }
+
 
   /**
    * Container for a set of case sensitive or case insensitive terms
@@ -385,21 +404,34 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private boolean caseSensitive;
     private String classFeature;
     private boolean isStopwords;
+    private int userDefinedMaxWordCount;
+    private int maxWordCount;
     private Map<String, Map<String, String>> term2attributes;
     private RegexDataContainer regexes;
     private List<RoteListClassifier> classifiers;
     private List<String> features;
     private boolean trace;
 
-    public Terms(boolean caseSensitive, String classFeature, boolean isStopwords) {
+    public Terms(boolean caseSensitive, String classFeature, boolean isStopwords, int userDefinedMaxWordCount) {
       this.caseSensitive = caseSensitive;
       this.classFeature = "".equals(classFeature) ? null : classFeature;
       this.isStopwords = isStopwords;
+      this.userDefinedMaxWordCount = userDefinedMaxWordCount;
+      this.maxWordCount = 0;
       this.term2attributes = new HashMap<String, Map<String, String>>();
       this.regexes = null;
       this.classifiers = null;
       this.features = null;
       this.trace = false;
+    }
+
+    public void setMaxWordCount(int maxWordCount) {
+      this.maxWordCount = maxWordCount;
+    }
+
+    public int getMaxWordCount() {
+      // adjust user-defined down to finite observed if warranted
+      return adjustMaxWordCount(maxWordCount, userDefinedMaxWordCount);
     }
 
     void setTrace(boolean trace) {
@@ -451,6 +483,11 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
     public boolean doClassify(Token token) {
       boolean result = false;
+
+      if (maxWordCount > 0 && token.getWordCount() > maxWordCount) {
+        // local maxWordCount may be stricter than global
+        return result;
+      }
 
       boolean hasClassAttribute = false;
       String key = token.getText();
@@ -739,16 +776,22 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private boolean isStopwords;
     private Terms caseSensitiveTerms;
     private Terms caseInsensitiveTerms;
+    private int maxWordCount;
 
     public TermsBundle(boolean isStopwords) {
       this.isStopwords = isStopwords;
       this.caseSensitiveTerms = null;
       this.caseInsensitiveTerms = null;
+      this.maxWordCount = 0;
     }
 
     void setTrace(boolean trace) {
       if (caseSensitiveTerms != null) caseSensitiveTerms.setTrace(trace);
       if (caseInsensitiveTerms != null) caseInsensitiveTerms.setTrace(trace);
+    }
+
+    public int getMaxWordCount() {
+      return maxWordCount;
     }
 
     public void reset() {
@@ -815,21 +858,32 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     protected final void loadTerms(DomElement termsElement, boolean defaultCaseSensitivity, String classFeature) {
       final Terms theTerms = getTheTerms(termsElement, defaultCaseSensitivity, classFeature);
       theTerms.loadTerms(termsElement);
+      adjustMaxWordCount(theTerms.getMaxWordCount());
     }
 
     protected final void loadTextFile(DomElement textfileElement, boolean defaultCaseSensitivity, String classFeature, ResourceManager resourceManager, String classifierName) {
       final Terms theTerms = getTheTerms(textfileElement, defaultCaseSensitivity, classFeature);
       theTerms.loadTextFile(textfileElement, resourceManager, classifierName);
+      adjustMaxWordCount(theTerms.getMaxWordCount());
     }
 
     protected final void loadRegexes(DomElement regexesElement, boolean defaultCaseSensitivity, String classFeature) {
       final Terms theTerms = getTheTerms(regexesElement, defaultCaseSensitivity, classFeature);
       theTerms.loadRegexes(regexesElement);
+      adjustMaxWordCount(theTerms.getMaxWordCount());
     }
 
     protected final void loadClassifiers(DomElement classifiersElement, boolean defaultCaseSensitivity, String classFeature, ResourceManager resourceManager) {
       final Terms theTerms = getTheTerms(classifiersElement, defaultCaseSensitivity, classFeature);
       theTerms.loadClassifiers(classifiersElement, resourceManager);
+      adjustMaxWordCount(theTerms.getMaxWordCount());
+    }
+
+    private final void adjustMaxWordCount(int termsMaxWordCount) {
+      // for a bundle, we want to preserve the "largest" maxWordCount
+      if (termsMaxWordCount > 0 && termsMaxWordCount > this.maxWordCount) {
+        this.maxWordCount = termsMaxWordCount;
+      }
     }
 
     /** Get the correct (case -sensitive or -insensitive) terms */
@@ -838,14 +892,15 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
       final boolean caseSensitive = theElement.getAttributeBoolean("caseSensitive", defaultCaseSensitivity);
       final String classFeature = theElement.getAttributeValue("classFeature", defaultClassFeature);
+      final int maxWordCount = theElement.getAttributeInt("maxWordCount", 0);
 
       // Get a handle on theTerms based on case sensitivity
       if (caseSensitive) {
-        if (this.caseSensitiveTerms == null) this.caseSensitiveTerms = new Terms(true, classFeature, isStopwords);
+        if (this.caseSensitiveTerms == null) this.caseSensitiveTerms = new Terms(true, classFeature, isStopwords, maxWordCount);
         theTerms = this.caseSensitiveTerms;
       }
       else {
-        if (this.caseInsensitiveTerms == null) this.caseInsensitiveTerms = new Terms(false, classFeature, isStopwords);
+        if (this.caseInsensitiveTerms == null) this.caseInsensitiveTerms = new Terms(false, classFeature, isStopwords, maxWordCount);
         theTerms = this.caseInsensitiveTerms;
       }
 
