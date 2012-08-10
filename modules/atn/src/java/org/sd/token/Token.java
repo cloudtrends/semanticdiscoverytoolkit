@@ -166,10 +166,15 @@ public class Token {
     return wordCount;
   }
 
+  private int breakCount;
+  public int getBreakCount() {
+    return breakCount;
+  }
+
   /**
    * Construct a new token with the given text. Usually constructed by a Tokenizer.
    */
-  Token(Tokenizer tokenizer, String text, int startIndex, TokenRevisionStrategy revisionStrategy, int revisionNumber, int sequenceNumber, int wordCount) {
+  Token(Tokenizer tokenizer, String text, int startIndex, TokenRevisionStrategy revisionStrategy, int revisionNumber, int sequenceNumber, int wordCount, int breakCount) {
 			this.tokenizer = tokenizer;
 			this.features = null;
 			this.text = text;
@@ -178,6 +183,7 @@ public class Token {
 			this.revisionNumber = revisionNumber;
 			this.sequenceNumber = sequenceNumber;
 			this.wordCount = wordCount;
+      this.breakCount = breakCount;
 
       this._preDelim = tokenizer.initializing() ? null : tokenizer.getPreDelim(this);
       this._postDelim = tokenizer.initializing() ? null : tokenizer.getPostDelim(this);
@@ -308,6 +314,8 @@ public class Token {
       append(getEndIndex()).
       append('{').
       append(getWordCount()).
+      append('|').
+      append(getBreakCount()).
       append("}](").
       append(getSequenceNumber()).
       append('.').

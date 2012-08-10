@@ -308,6 +308,36 @@ public class TestStandardTokenizer extends TestCase {
     assertEquals("/Smith/", token.getTextWithDelims());
   }
 
+  public void testTokenBreakLimit1() {
+    final StandardTokenizerOptions options = new StandardTokenizerOptions();
+    options.setTokenBreakLimit(1);
+
+    final TokenizeTest tokenizeTest =
+      new TokenizeTest("TokenBreakLimit(1)", "John Jacob Jingleheimer Schmidt: His name is my name too!", options,
+                       new String[] { "John", "Jacob", "Jingleheimer", "Schmidt", "His", "name", "is", "my", "name", "too" },
+                       new String[][]
+                       { new String[] {},
+                         new String[] {} });
+
+    assertTrue(tokenizeTest.runTest());
+  }
+
+  public void testTokenBreakLimit3() {
+    final StandardTokenizerOptions options = new StandardTokenizerOptions();
+    options.setTokenBreakLimit(3);
+
+    final TokenizeTest tokenizeTest =
+      new TokenizeTest("TokenBreakLimit(3)", "John Jacob Jingleheimer Schmidt: His name is my name too!", options,
+                       new String[] { "John Jacob Jingleheimer", "Schmidt", "His name is", "my name too" },
+                       new String[][] {
+                         new String[] { "John", "John Jacob" },
+                         new String[] {},
+                         new String[] { "His", "His name" },
+                         new String[] { "my", "my name" } });
+
+    assertTrue(tokenizeTest.runTest());
+  }
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestStandardTokenizer.class);

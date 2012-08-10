@@ -33,6 +33,9 @@ import org.sd.xml.XmlStringBuilder;
  */
 public class StandardTokenizerOptions {
   
+  public static final int DEFAULT_TOKEN_BREAK_LIMIT = 0;
+
+
   private DataProperties options;
 
   private TokenRevisionStrategy revisionStrategy;
@@ -41,6 +44,25 @@ public class StandardTokenizerOptions {
   }
   public void setRevisionStrategy(TokenRevisionStrategy revisionStrategy) {
     this.revisionStrategy = revisionStrategy;
+  }
+
+  /**
+   * Specifies the maximum number of soft breaks that may comprise a token (e.g.,
+   * whie looking for a hard break or revising.)
+   */
+  private int tokenBreakLimit;
+  /**
+   * Get the maximum number of soft breaks that may comprise a token (e.g.,
+   * whie looking for a hard break or revising.)
+   */
+  public int getTokenBreakLimit() {
+    return tokenBreakLimit;
+  }
+  public void setTokenBreakLimit(int tokenBreakLimit) {
+    this.tokenBreakLimit = tokenBreakLimit;
+  }
+  public boolean hitsTokenBreakLimit(int count) {
+    return tokenBreakLimit != 0 && count >= tokenBreakLimit;
   }
 
   /**
@@ -339,6 +361,7 @@ public class StandardTokenizerOptions {
    */
   public StandardTokenizerOptions() {
     this.revisionStrategy = TokenRevisionStrategy.LSL;
+    this.tokenBreakLimit = DEFAULT_TOKEN_BREAK_LIMIT;
 
     this.lowerUpperBreak = Break.ZERO_WIDTH_SOFT_BREAK;
     this.upperLowerBreak = Break.NO_BREAK;
@@ -366,6 +389,42 @@ public class StandardTokenizerOptions {
     this.symbolDigitsCodePoints = null;
     this.symbolUppersCodePoints = null;
     this.symbolLowersCodePoints = null;
+  }
+
+  /**
+   * Copy constructor
+   */
+  public StandardTokenizerOptions(StandardTokenizerOptions other) {
+    this.options = other.options;
+    this.revisionStrategy = other.revisionStrategy;
+    this.tokenBreakLimit = other.tokenBreakLimit;
+
+    this.lowerUpperBreak = other.lowerUpperBreak;
+    this.upperLowerBreak = other.upperLowerBreak;
+    this.upperDigitBreak = other.upperDigitBreak;
+    this.lowerDigitBreak = other.lowerDigitBreak;
+    this.digitUpperBreak = other.digitUpperBreak;
+    this.digitLowerBreak = other.digitLowerBreak;
+
+    this.nonEmbeddedDoubleDashBreak = other.nonEmbeddedDoubleDashBreak;
+    this.embeddedDoubleDashBreak = other.embeddedDoubleDashBreak;
+    this.embeddedDashBreak = other.embeddedDashBreak;
+    this.leftBorderedDashBreak = other.leftBorderedDashBreak;
+    this.rightBorderedDashBreak = other.rightBorderedDashBreak;
+    this.freeStandingDashBreak = other.freeStandingDashBreak;
+    this.whitespaceBreak = other.whitespaceBreak;
+    this.quoteAndParenBreak = other.quoteAndParenBreak;
+    this.symbolBreak = other.symbolBreak;
+    this.slashBreak = other.slashBreak;
+    this.embeddedApostropheBreak = other.embeddedApostropheBreak;
+    this.embeddedPunctuationBreak = other.embeddedPunctuationBreak;
+
+    this.symbolDigits = other.symbolDigits;
+    this.symbolUppers = other.symbolUppers;
+    this.symbolLowers = other.symbolLowers;
+    this.symbolDigitsCodePoints = other.symbolDigitsCodePoints;
+    this.symbolUppersCodePoints = other.symbolUppersCodePoints;
+    this.symbolLowersCodePoints = other.symbolLowersCodePoints;
   }
 
   /**
@@ -420,6 +479,7 @@ public class StandardTokenizerOptions {
 
     // set RevisionStrategy
     this.revisionStrategy = translateRevisionStrategy(revisionStrategy);
+    this.tokenBreakLimit = options.getInt("tokenBreakLimit", 0);
 
     // set Breaks
     this.lowerUpperBreak = translateBreak(lowerUpperBreak);
@@ -581,6 +641,7 @@ public class StandardTokenizerOptions {
     final XmlStringBuilder result = new XmlStringBuilder("tokenizerOptions");
 
     result.addTagAndText("revisionStrategy", revisionStrategy.toString());
+    result.addTagAndText("tokenBreakLimit", Integer.toString(tokenBreakLimit));
     result.addTagAndText("lowerUpperBreak", lowerUpperBreak.getBLongName());
     result.addTagAndText("upperLowerBreak", upperLowerBreak.getBLongName());
     result.addTagAndText("upperDigitBreak", upperDigitBreak.getBLongName());
@@ -616,6 +677,7 @@ public class StandardTokenizerOptions {
 
       result =
         this.revisionStrategy == other.revisionStrategy &&
+        this.tokenBreakLimit == other.tokenBreakLimit &&
 
         this.lowerUpperBreak == other.lowerUpperBreak &&
         this.upperDigitBreak == other.upperDigitBreak &&
@@ -644,6 +706,7 @@ public class StandardTokenizerOptions {
     int result = 1;
 
     result = result * 17 + this.revisionStrategy.hashCode();
+    result = result * 17 + this.tokenBreakLimit;
 
     result = result * 17 + this.lowerUpperBreak.hashCode();
     result = result * 17 + this.upperDigitBreak.hashCode();

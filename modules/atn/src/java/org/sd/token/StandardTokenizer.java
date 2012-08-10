@@ -467,30 +467,35 @@ public class StandardTokenizer implements Tokenizer {
 
       if (token.getRevisionStrategy() == TokenRevisionStrategy.LSL && token.getRevisionNumber() == 0) {
         // get shortest token
-        final int endPosition = findNextBreak(token.getStartIndex() + 1, BreakType.SOFT);
+        final int[] nextBreak = findNextBreak(token.getStartIndex() + 1, BreakType.SOFT, 0);
+        final int endPosition = nextBreak[0];
         if (endPosition < token.getEndIndex()) {
-          result = buildToken(token.getStartIndex(), endPosition, token.getRevisionStrategy(), nextRevisionNumber, token.getSequenceNumber(), 1);
+          result = buildToken(token.getStartIndex(), endPosition, token.getRevisionStrategy(), nextRevisionNumber, token.getSequenceNumber(), 1, nextBreak[1]);
         }
       }
       else if (token.getRevisionStrategy() == TokenRevisionStrategy.LS) {
         // get shorter token
         int endPosition = findPriorBreak(token.getEndIndex());
         if (endPosition > token.getStartIndex() && endPosition < token.getEndIndex()) {
-          result = buildToken(token.getStartIndex(), endPosition, token.getRevisionStrategy(), nextRevisionNumber, token.getSequenceNumber(), token.getWordCount() - 1);
+          result = buildToken(token.getStartIndex(), endPosition, token.getRevisionStrategy(), nextRevisionNumber, token.getSequenceNumber(), token.getWordCount() - 1, token.getBreakCount() - 1);
         }
       }
       else {
         // get longer token
         final Break curBreak = getBreak(token.getEndIndex());
-        if (!curBreak.isHard()) {
+        int breakCount = token.getBreakCount();
+        if (!curBreak.isHard() && !options.hitsTokenBreakLimit(breakCount)) {
           // can go longer as long as we don't revisit the longest when using LSL strategy
           // and as long as there isn't a hard break directly following the soft(s).
-          int endBreakPos = findEndBreakForward(token.getEndIndex(), true);
+          final int[] endBreak = findEndBreakForwardWithBreakCount(token.getEndIndex(), true);
+          int endBreakPos = endBreak[0];
+          breakCount += endBreak[1];
           if (endBreakPos >= 0) {
             if (curBreak.getBWidth() == 0) ++endBreakPos;
-            final int endPosition = findNextBreak(endBreakPos, BreakType.SOFT);
+            final int[] nextBreak = findNextBreak(endBreakPos, BreakType.SOFT, breakCount);
+            final int endPosition = nextBreak[0];
             if (!(token.getRevisionStrategy() == TokenRevisionStrategy.LSL && findEndBreakForward(endPosition, true) == -1)) {
-              result = buildToken(token.getStartIndex(), endPosition, token.getRevisionStrategy(), nextRevisionNumber, token.getSequenceNumber(), token.getWordCount() + 1);
+              result = buildToken(token.getStartIndex(), endPosition, token.getRevisionStrategy(), nextRevisionNumber, token.getSequenceNumber(), token.getWordCount() + 1, nextBreak[1]);
             }
           }
         }
@@ -534,6 +539,10 @@ public class StandardTokenizer implements Tokenizer {
     return _wordCount;
   }
 
+  public int getBreakCount() {
+    return getPos2Break().size();
+  }
+
   public String getNextText(Token token) {
     int startPos = findEndBreakForward(token.getEndIndex(), false);
     if (startPos < 0) startPos = token.getEndIndex();
@@ -550,22 +559,23 @@ public class StandardTokenizer implements Tokenizer {
 
     if (startPosition >= 0 && endPosition <= text.length()) {
       result = buildToken(startPosition, endPosition, options.getRevisionStrategy(),
-                          0, -1, computeWordCount(startPosition, endPosition));
+                          0, -1, computeWordCount(startPosition, endPosition),
+                          computeBreakCount(startPosition, endPosition));
     }
 
     return result;
   }
 
-  public int computeWordCount(Token startToken, Token endToken) {
+  public final int computeWordCount(Token startToken, Token endToken) {
     return computeWordCount(startToken.getStartIndex(), endToken.getEndIndex());
   }
 
 
-  private int computeWordCount(int startIndex, int endIndex) {
+  private final int computeWordCount(int startIndex, int endIndex) {
     int result = 0;
 
     int priorBreakPos = startIndex;
-    int breakPos = findNextBreak(startIndex, BreakType.SOFT);
+    int breakPos = findNextBreak(startIndex, BreakType.SOFT, -1)[0];
     while (breakPos <= endIndex) {
       if (breakPos > priorBreakPos) ++result;
 
@@ -573,7 +583,29 @@ public class StandardTokenizer implements Tokenizer {
 
       breakPos = findEndBreakForward(breakPos, false);
       priorBreakPos = breakPos;
-      breakPos = findNextBreak(breakPos + 1, BreakType.SOFT);
+      breakPos = findNextBreak(breakPos + 1, BreakType.SOFT, -1)[0];
+    }
+
+    return result;
+  }
+
+  private final int computeBreakCount(Token startToken, Token endToken) {
+    return computeBreakCount(startToken.getStartIndex(), endToken.getEndIndex());
+  }
+
+  private final int computeBreakCount(int startIndex, int endIndex) {
+    int result = 0;
+
+    final Map<Integer, Break> pos2break = getPos2Break();
+    if (endIndex > text.length()) endIndex = text.length();
+    for (int pos = startIndex; pos < endIndex; ++pos) {
+      final Break posBreak = pos2break.get(pos);
+      if (posBreak != null) {
+        ++result;
+        if (posBreak.getBWidth() > 1) {
+          pos += posBreak.getBWidth() - 1;
+        }
+      }
     }
 
     return result;
@@ -603,24 +635,26 @@ public class StandardTokenizer implements Tokenizer {
   private Token doGetNextToken(int startPosition, BreakType breakToFind, TokenRevisionStrategy revisionStrategy, int revisionNumber, int sequenceNumber) {
     Token result = null;
 
-    int endPosition = findNextBreak(startPosition + 1, breakToFind);
+    final int[] nextBreak = findNextBreak(startPosition + 1, breakToFind, 0);
+    int endPosition = nextBreak[0];
+    final int breakCount = nextBreak[1];
 
     // verify that if breakToFind is hard, we back up over any immediate soft breaks
     if (breakToFind == BreakType.HARD) {
       endPosition = findEndBreakReverse(endPosition);
     }
 
-    result = buildToken(startPosition, endPosition, revisionStrategy, revisionNumber, sequenceNumber, computeWordCount(startPosition, endPosition));
+    result = buildToken(startPosition, endPosition, revisionStrategy, revisionNumber, sequenceNumber, computeWordCount(startPosition, endPosition), breakCount);
 
     return result;
   }
 
-  private Token buildToken(int startPosition, int endPosition, TokenRevisionStrategy revisionStrategy, int revisionNumber, int sequenceNumber, int wordCount) {
+  private Token buildToken(int startPosition, int endPosition, TokenRevisionStrategy revisionStrategy, int revisionNumber, int sequenceNumber, int wordCount, int breakCount) {
     Token result = null;
 
     if (endPosition > startPosition) {
       final String tokenText = text.substring(startPosition, endPosition);
-      result = new Token(this, tokenText, startPosition, revisionStrategy, revisionNumber, sequenceNumber, wordCount);
+      result = new Token(this, tokenText, startPosition, revisionStrategy, revisionNumber, sequenceNumber, wordCount, breakCount);
     }
 
     return result;
@@ -629,22 +663,30 @@ public class StandardTokenizer implements Tokenizer {
   /**
    * Find the next break position at or after startPosition that agrees with
    * the given breakToFind.
+   *
+   * @return {nextBreakPos, totalBreakCount}
    */
-  private int findNextBreak(int startPosition, BreakType breakTypeToFind) {
+  private int[] findNextBreak(int startPosition, BreakType breakTypeToFind, int breakCount) {
     int result = text.length();
+
+    final boolean enforceBreakLimit = (breakCount >= 0);
+    if (!enforceBreakLimit) {
+      breakCount = 0;
+    }
 
     final Map<Integer, Break> pos2break = getPos2Break();
     for (int pos = startPosition; pos < text.length(); ++pos) {
       final Break posBreak = pos2break.get(pos);
       if (posBreak != null) {
-        if (posBreak.agreesWith(breakTypeToFind)) {
+        ++breakCount;
+        if (posBreak.agreesWith(breakTypeToFind) || (enforceBreakLimit && options.hitsTokenBreakLimit(breakCount))) {
           result = pos;
           break;
         }
       }
     }
 
-    return result;
+    return new int[]{result, breakCount};
   }
 
   private int findPriorBreak(int endPosition) {
@@ -717,6 +759,38 @@ public class StandardTokenizer implements Tokenizer {
 
     return result;
   }
+
+  private final int[] findEndBreakForwardWithBreakCount(int startPosition, boolean softOnly) {
+    int result = startPosition;
+    final Map<Integer, Break> pos2break = getPos2Break();
+    if (pos2break == null) return new int[]{result, 0};  // still initializing
+
+    int breakCount = 0;
+
+    while (result < text.length()) {
+      final Break posBreak = pos2break.get(result);
+
+      if (posBreak != null) {
+        if (posBreak.breaks()) {
+          ++breakCount;
+          if (softOnly && posBreak.isHard()) {
+            result = -1;
+            break;
+          }
+          else if (posBreak.getBWidth() > 0) {
+            result += posBreak.getBWidth();
+          }
+          else break;
+        }
+        else break;
+      }
+      else break;
+    }
+
+
+    return new int[]{result, breakCount};
+  }
+
 
   /**
    * Find the position of the start of breaks ending before startPosition.

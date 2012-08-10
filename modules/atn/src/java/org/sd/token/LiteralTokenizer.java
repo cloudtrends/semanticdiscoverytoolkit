@@ -276,7 +276,7 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
     }
 
     public Token asToken(Tokenizer tokenizer) {
-      final Token result = new Token(tokenizer, text, startIndex, TokenRevisionStrategy.SO, revisionNumber, sequenceNumber, wordCount);
+      final Token result = new Token(tokenizer, text, startIndex, TokenRevisionStrategy.SO, revisionNumber, sequenceNumber, wordCount, 1);
       return result;
     }
 

@@ -39,4 +39,8 @@ public interface AtnStateTokenClassifier {
    */
   public void supplement(DomNode supplementNode);
 
+  /**
+   * Get the maximum word count (0 for infinite) for token classification.
+   */
+  public int getMaxWordCount();
 }
