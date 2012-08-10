@@ -301,6 +301,22 @@ public class AtnGrammar {
     return result;
   }
 
+  /**
+   * Compute the largest (non-zero) maximum word count across all classifiers.
+   */
+  public int computeMaxWordCount() {
+    int result = 0;
+
+    for (List<AtnStateTokenClassifier> cList : cat2Classifiers.values()) {
+      for (AtnStateTokenClassifier classifier : cList) {
+        final int curMaxWordCount = classifier.getMaxWordCount();
+        result = Math.max(result, curMaxWordCount);
+      }
+    }
+    
+    return result;
+  }
+
   Token getAcceptedToken(String tokenFilterId, Token token, boolean isRevised, Token prevToken, boolean doRevise, boolean doGetNext, AtnState curState) {
     Token result = token;
 

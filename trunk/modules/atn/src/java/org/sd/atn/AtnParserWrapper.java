@@ -119,6 +119,11 @@ public class AtnParserWrapper {
     return minNumTokens;
   }
 
+  private int maxWordCount;
+  public int getMaxWordCount() {
+    return maxWordCount;
+  }
+
   private DomElement parserElement;
   public DomElement getParserElement() {
     return parserElement;
@@ -178,6 +183,14 @@ public class AtnParserWrapper {
     this.parseOptions = parseOptionsElement == null ? new AtnParseOptions(resourceManager) : new AtnParseOptions(parseOptionsElement, resourceManager);
 
     this.minNumTokens = this.parseOptions.getAdjustInputForTokens() ? this.parser.getGrammar().computeMinNumTokens(this.parseOptions) : 1;
+    this.maxWordCount = this.parser.getGrammar().computeMaxWordCount();
+
+    // reconcile maxWordCount with tokenBreakLimit, which is considered to set a minimum for this when non-zero
+    //todo: currently using maxWordCount as an estimate for tokenBreakLimit. Fix if/when this becomes a problem.
+    final int tokenBreakLimit = tokenizerOptions.getTokenBreakLimit();
+    if ((tokenBreakLimit == 0 && maxWordCount > 0) || (this.maxWordCount > tokenBreakLimit)) {
+      tokenizerOptions.setTokenBreakLimit(maxWordCount);
+    }
   }
 
   /**

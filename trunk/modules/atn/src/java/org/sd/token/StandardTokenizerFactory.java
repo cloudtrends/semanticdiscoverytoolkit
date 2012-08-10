@@ -109,7 +109,7 @@ public class StandardTokenizerFactory {
   public static Tree<Token> fullTokenization(String text, StandardTokenizerOptions options) {
     final StandardTokenizer tokenizer = getTokenizer(text, options);
 
-    final Tree<Token> result = new Tree<Token>(new Token(tokenizer, text, 0, options.getRevisionStrategy(), 0, 0, tokenizer.getWordCount()));
+    final Tree<Token> result = new Tree<Token>(new Token(tokenizer, text, 0, options.getRevisionStrategy(), 0, 0, tokenizer.getWordCount(), -1));
 
     for (Token primaryToken = tokenizer.getToken(0); primaryToken != null; primaryToken = tokenizer.getNextToken(primaryToken)) {
       final Tree<Token> primaryTokenNode = result.addChild(primaryToken);
