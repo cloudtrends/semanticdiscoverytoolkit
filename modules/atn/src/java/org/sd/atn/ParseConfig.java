@@ -218,12 +218,20 @@ public class ParseConfig {
 
     this.id2CompoundParser = new LinkedHashMap<String, CompoundParser>();
     final NodeList cparserNodes = properties.getDomElement().selectNodes("compoundParser");
-    if (cparserNodes != null) {
+    if (cparserNodes != null && cparserNodes.getLength() > 0) {
       for (int i = 0; i < cparserNodes.getLength(); ++i) {
         final Node curNode = cparserNodes.item(i);
         if (curNode.getNodeType() != DomElement.ELEMENT_NODE) continue;
         final DomElement cparserNode = (DomElement)curNode;
         final CompoundParser cparser = new CompoundParser(cparserNode, resourceManager);
+        this.id2CompoundParser.put(cparser.getId(), cparser);
+      }
+    }
+    else {
+      final DomElement parseNode = properties.getDomElement();
+      if ("parser".equals(parseNode.getLocalName())) {
+        final AtnParserWrapper parserWrapper = AtnParserWrapper.buildInstance(parseNode, resourceManager);
+        final CompoundParser cparser = new CompoundParser(parserWrapper, resourceManager);
         this.id2CompoundParser.put(cparser.getId(), cparser);
       }
     }

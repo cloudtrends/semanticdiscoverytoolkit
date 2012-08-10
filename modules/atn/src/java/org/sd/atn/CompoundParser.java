@@ -19,10 +19,7 @@
 package org.sd.atn;
 
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,7 +33,6 @@ import org.sd.util.Usage;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
-import org.sd.xml.XmlFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -123,6 +119,16 @@ public class CompoundParser {
     init(config, resourceManager);
   }
 
+  public CompoundParser(AtnParserWrapper parserWrapper, ResourceManager resourceManager) {
+    this.config = null;
+    this.id = parserWrapper.getId();
+    this.resourceManager = resourceManager;
+    this.minNumTokens = Math.max(1, parserWrapper.getMinNumTokens());
+    this.parserWrappers = new LinkedHashMap<String, AtnParserWrapper>();
+    parserWrappers.put(parserWrapper.getId(), parserWrapper);
+    this.outputNode = null;
+  }
+
   private void init(DataProperties config, ResourceManager resourceManager) {
     //
     // expected format:
@@ -187,6 +193,7 @@ public class CompoundParser {
     //   </compoundParser>
     //
 
+//TODO: I'm here... need to construct a CompoundParser instance w/a single AtnParserWrapper
 
     this.config = config;
     this.id = config.getString("id");
@@ -197,26 +204,7 @@ public class CompoundParser {
     final NodeList parserNodes = config.getDomElement().selectNodes("parser");
     for (int parserNodeIndex = 0; parserNodeIndex < parserNodes.getLength(); ++parserNodeIndex) {
       DomElement parserElement = (DomElement)parserNodes.item(parserNodeIndex);
-      final String parserFileName = parserElement.getAttributeValue("file", null);
-      if (parserFileName != null) {
-        final File parserFile = resourceManager.getOptions().getWorkingFile(parserFileName, "workingDir");
-        System.out.println(new Date() + ": CompoundParser loading parserFile '" + parserFile.getAbsolutePath() + "'.");
-        if (parserFile.exists()) {
-          try {
-            parserElement = (DomElement)XmlFactory.loadDocument(parserFile, false, resourceManager.getOptions()).getDocumentElement();
-          }
-          catch (IOException e) {
-            throw new IllegalStateException(e);
-          }
-        }
-        else {
-          throw new IllegalStateException(new Date() +
-                                          ": ERROR can't find parser file in CompoundParser: '" +
-                                          parserFile.getAbsolutePath() + "'");
-        }
-      }
-
-      final AtnParserWrapper parserWrapper = new AtnParserWrapper(parserElement, resourceManager);
+      final AtnParserWrapper parserWrapper = AtnParserWrapper.buildInstance(parserElement, resourceManager);
       parserWrappers.put(parserWrapper.getId(), parserWrapper);
       if (parserWrapper.getMinNumTokens() > this.minNumTokens) this.minNumTokens = parserWrapper.getMinNumTokens();
     }

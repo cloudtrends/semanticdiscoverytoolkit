@@ -19,7 +19,10 @@
 package org.sd.atn;
 
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +30,7 @@ import org.sd.token.StandardTokenizerOptions;
 import org.sd.util.Usage;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
+import org.sd.xml.XmlFactory;
 
 /**
  * A container for an ATN Parser with its options and strategies.
@@ -36,6 +40,31 @@ import org.sd.xml.DomElement;
 @Usage(notes = "A container for an org.sd.atn.AtnParser with its options and strategies.")
 public class AtnParserWrapper {
   
+  public static AtnParserWrapper buildInstance(DomElement parserElement, ResourceManager resourceManager) {
+    final String parserFileName = parserElement.getAttributeValue("file", null);
+    if (parserFileName != null) {
+      final File parserFile = resourceManager.getOptions().getWorkingFile(parserFileName, "workingDir");
+      System.out.println(new Date() + ": CompoundParser loading parserFile '" + parserFile.getAbsolutePath() + "'.");
+      if (parserFile.exists()) {
+        try {
+          parserElement = (DomElement)XmlFactory.loadDocument(parserFile, false, resourceManager.getOptions()).getDocumentElement();
+        }
+        catch (IOException e) {
+          throw new IllegalStateException(e);
+        }
+      }
+      else {
+        throw new IllegalStateException(new Date() +
+                                        ": ERROR can't find parser file in CompoundParser: '" +
+                                        parserFile.getAbsolutePath() + "'");
+      }
+    }
+
+    final AtnParserWrapper parserWrapper = new AtnParserWrapper(parserElement, resourceManager);
+    return parserWrapper;
+  }
+
+
   private String id;
   public String getId() {
     return id;
