@@ -766,6 +766,23 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
           curAttributes.putAll(attributes);
         }
       }
+
+      // update max word count
+      final int curWordCount = computeWordCount(term);
+      if (curWordCount > maxWordCount) {
+        maxWordCount = curWordCount;
+      }
+    }
+
+    private final int computeWordCount(String term) {
+      //NOTE: we don't have a tokenizer to use for this here, so we're just counting spaces.
+      int result = 1;
+      
+      for (int spos = term.indexOf(' '); spos >= 0; spos = term.indexOf(' ', spos + 1)) {
+        ++result;
+      }
+
+      return result;
     }
   }
 

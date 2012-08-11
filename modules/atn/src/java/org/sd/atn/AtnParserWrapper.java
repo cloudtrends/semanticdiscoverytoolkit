@@ -44,7 +44,7 @@ public class AtnParserWrapper {
     final String parserFileName = parserElement.getAttributeValue("file", null);
     if (parserFileName != null) {
       final File parserFile = resourceManager.getOptions().getWorkingFile(parserFileName, "workingDir");
-      System.out.println(new Date() + ": CompoundParser loading parserFile '" + parserFile.getAbsolutePath() + "'.");
+      System.out.println(new Date() + ": AtnParserWrapper loading parserFile '" + parserFile.getAbsolutePath() + "'.");
       if (parserFile.exists()) {
         try {
           parserElement = (DomElement)XmlFactory.loadDocument(parserFile, false, resourceManager.getOptions()).getDocumentElement();
@@ -189,6 +189,7 @@ public class AtnParserWrapper {
     //todo: currently using maxWordCount as an estimate for tokenBreakLimit. Fix if/when this becomes a problem.
     final int tokenBreakLimit = tokenizerOptions.getTokenBreakLimit();
     if ((tokenBreakLimit == 0 && maxWordCount > 0) || (this.maxWordCount > tokenBreakLimit)) {
+      System.out.println(new Date() + ": AtnParserWrapper (" + id + ") setting tokenBreakLimit " + maxWordCount);
       tokenizerOptions.setTokenBreakLimit(maxWordCount);
     }
   }
