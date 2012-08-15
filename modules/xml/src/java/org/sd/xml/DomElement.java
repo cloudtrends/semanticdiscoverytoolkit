@@ -138,6 +138,16 @@ public class DomElement extends DomNode implements Element {
     else {
       final XmlLite.Text text = xmlTree.getData().asText();
       if (text != null) {
+        // add a space between e.g., consecutive text nodes
+        final int resultLen = result.length();
+        if (resultLen > 0) {
+          final char lastc = result.charAt(resultLen - 1);
+          if (lastc != '>' && lastc != ' ') {
+            result.append(' ');
+          }
+        }
+
+        // add the node's text
         result.append(StringEscapeUtils.escapeXml(text.text));
       }
     }
