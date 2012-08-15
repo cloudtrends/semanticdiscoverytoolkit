@@ -137,6 +137,49 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     tokenInfoContainer.add(tokenInfo, startPosition);
   }
 
+  /**
+   * Access this data for results analysis.
+   */
+  public Map<Integer, TokenInfoContainer> getPos2tokenInfoContainer() {
+    return pos2tokenInfoContainer;
+  }
+
+  /**
+   * Scan this tokenizer's token's for Parses, collecting those that are most
+   * inclusive.
+   */
+  public List<AtnParse> getParses() {
+    final List<AtnParse> result = new ArrayList<AtnParse>();
+
+    final int textlen = text.length();
+    for (int i = 0; i < textlen; ++i) {
+      final TokenInfoContainer tic = pos2tokenInfoContainer.get(i);
+      if (tic != null) {
+        // get the longest parse's entry
+        final Map.Entry<Integer, List<TokenInfo>> lastEntry = tic.getTokenInfoList().lastEntry();
+
+        // keep the most "complex" parse
+        TokenInfo ti = null;
+        AtnParse parse = null;
+        int complexity = 0;
+        for (TokenInfo curti : lastEntry.getValue()) {
+          final AtnParse curParse = curti.getParse();
+          final int curComplexity = curParse.getParseTree().countNodes();
+          if (ti == null || curComplexity > complexity) {
+            ti = curti;
+            complexity = curComplexity;
+          }
+        }
+        if (ti != null) {
+          result.add(ti.getParse());
+          i = ti.getTokenEnd();
+        }
+      }
+    }
+
+    return result;
+  }
+
   public void setTokenizerOptions(StandardTokenizerOptions tokenizerOptions) {
     super.setOptions(tokenizerOptions);
   }
@@ -248,7 +291,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     }
   }
 
-  class TokenInfo {
+  public class TokenInfo {
 
     private int tokenStart;
     public int getTokenStart() {
@@ -286,7 +329,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     }
   }
 
-  class TokenInfoContainer {
+  public class TokenInfoContainer {
 
     private TreeMap<Integer, List<TokenInfo>> tokenInfoList;
     public TreeMap<Integer, List<TokenInfo>> getTokenInfoList() {

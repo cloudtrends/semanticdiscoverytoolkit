@@ -633,6 +633,21 @@ public class Tree<T> {
   }
 
   /**
+   * Count the number of nodes in the tree where this node is root, including
+   * this node.
+   */
+  public int countNodes() {
+    int result = 1;
+
+    for (Iterator<Tree<T>> it = iterator(Traversal.DEPTH_FIRST); it.hasNext(); ) {
+      final Tree<T> node = it.next();
+      ++result;
+    }
+
+    return result;
+  }
+
+  /**
    * Prune this node from its tree.
    */
   public void prune() {

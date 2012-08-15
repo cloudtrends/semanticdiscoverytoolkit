@@ -261,8 +261,15 @@ public class ParseInterpretation implements Publishable, Serializable {
         result = interpretation.toString();
       }
       else {
-        result = super.toString();
+        final Tree<XmlLite.Data> interpTree = getInterpTree();
+        if (interpTree != null) {
+          result = interpTree.getData().asDomNode().toString();
+        }
       }
+    }
+
+    if (result == null) {
+      result = super.toString();
     }
 
     return result;
