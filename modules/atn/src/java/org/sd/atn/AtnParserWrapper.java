@@ -189,9 +189,9 @@ public class AtnParserWrapper {
     //todo: currently using maxWordCount as an estimate for tokenBreakLimit. Fix if/when this becomes a problem.
     final int tokenBreakLimit = tokenizerOptions.getTokenBreakLimit();
     if ((tokenBreakLimit == 0 && maxWordCount > 0) || (this.maxWordCount > tokenBreakLimit)) {
-      System.out.println(new Date() + ": AtnParserWrapper (" + id + ") setting tokenBreakLimit " + maxWordCount);
       tokenizerOptions.setTokenBreakLimit(maxWordCount);
     }
+    System.out.println(new Date() + ": AtnParserWrapper (" + id + ") tokenBreakLimit=" + tokenizerOptions.getTokenBreakLimit());
   }
 
   /**
