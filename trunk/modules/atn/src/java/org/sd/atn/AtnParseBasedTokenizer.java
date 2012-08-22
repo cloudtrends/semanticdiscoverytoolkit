@@ -192,7 +192,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     for (Map.Entry<Integer, TokenInfoContainer> mapEntry : pos2tokenInfoContainer.entrySet()) {
       final int pos = mapEntry.getKey();
       final TokenInfoContainer tic = mapEntry.getValue();
-      parseSpans.add(pos, tic.getTokenInfoList().lastKey(), true);
+      parseSpans.add(pos + 1, tic.getTokenInfoList().lastKey() - 1, true);
     }
 
     // turn boundaries between parses into hard breaks; within parse alternatives as soft breaks; clearing other breaks
