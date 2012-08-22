@@ -20,7 +20,6 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -30,6 +29,7 @@ import org.sd.token.Token;
 import org.sd.token.StandardTokenizer;
 import org.sd.token.StandardTokenizerOptions;
 import org.sd.util.InputContext;
+import org.sd.util.range.IntegerRange;
 import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
@@ -70,7 +70,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
 
   private void init(ResourceManager resourceManager, InputContext inputContext, List<AtnParseResult> parseResults, NodeList tokenNodes) {
     super.setInputContext(inputContext);
-    this.pos2tokenInfoContainer = new HashMap<Integer, TokenInfoContainer>();
+    this.pos2tokenInfoContainer = new TreeMap<Integer, TokenInfoContainer>();
 
     add(parseResults);
     add(tokenNodes);
@@ -187,13 +187,22 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
   protected Map<Integer, Break> createBreaks() {
     final Map<Integer, Break> result = super.createBreaks();
 
+    // get the ranges covered by parses
+    final IntegerRange parseSpans = new IntegerRange();
+    for (Map.Entry<Integer, TokenInfoContainer> mapEntry : pos2tokenInfoContainer.entrySet()) {
+      final int pos = mapEntry.getKey();
+      final TokenInfoContainer tic = mapEntry.getValue();
+      parseSpans.add(pos, tic.getTokenInfoList().lastKey(), true);
+    }
+
     // turn boundaries between parses into hard breaks; within parse alternatives as soft breaks; clearing other breaks
     for (Map.Entry<Integer, TokenInfoContainer> mapEntry : pos2tokenInfoContainer.entrySet()) {
       int pos = mapEntry.getKey();
       final TokenInfoContainer tic = mapEntry.getValue();
 
-      // Set LHS break as Hard
-      setBreak(result, pos, true, true);
+      // Set LHS break as Hard (or soft if contained w/in another parse)
+      final boolean isHard = !parseSpans.includes(pos);
+      setBreak(result, pos, true, isHard);
 
       // Set parse boundaries as Soft
       int tokenInfoListIndex = 0;
@@ -212,9 +221,9 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
         ++tokenInfoListIndex;
       }
 
-      // Set RHS break as Hard
+      // Set RHS break as Hard (or soft if contained w/in another parse)
       clearBreaks(result, pos + 1, lastEndPos);
-      setBreak(result, lastEndPos, false, true);
+      setBreak(result, lastEndPos, false, !parseSpans.includes(lastEndPos));
     }
 
     return result;
