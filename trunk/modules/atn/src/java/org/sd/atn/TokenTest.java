@@ -101,7 +101,7 @@ public class TokenTest extends BaseClassifierTest {
     if (preDelimNodes != null && preDelimNodes.getLength() > 0) {
       for (int nodeNum = 0; nodeNum < preDelimNodes.getLength(); ++nodeNum) {
         final DomElement delimElement = (DomElement)preDelimNodes.item(nodeNum);
-        final DelimTest delimTest = new DelimTest(true, delimElement);
+        final DelimTest delimTest = new DelimTest(true, delimElement, resourceManager);
         if (delimTests == null) delimTests = new ArrayList<DelimTest>();
         delimTests.add(delimTest);
       }
@@ -111,7 +111,7 @@ public class TokenTest extends BaseClassifierTest {
     if (postDelimNodes != null && postDelimNodes.getLength() > 0) {
       for (int nodeNum = 0; nodeNum < postDelimNodes.getLength(); ++nodeNum) {
         final DomElement delimElement = (DomElement)postDelimNodes.item(nodeNum);
-        final DelimTest delimTest = new DelimTest(false, delimElement);
+        final DelimTest delimTest = new DelimTest(false, delimElement, resourceManager);
         if (delimTests == null) delimTests = new ArrayList<DelimTest>();
         delimTests.add(delimTest);
         delimTest.setIgnoreConstituents(true);

@@ -52,7 +52,7 @@ public class TestDelimTest extends TestCase {
       "</predelim>";
     
     final DomNode delimNode = XmlFactory.buildDomNode(delimConfig, false);
-    final DelimTest delimTest = new DelimTest(true, delimNode);
+    final DelimTest delimTest = new DelimTest(true, delimNode, new ResourceManager());
 
     final StandardTokenizerOptions tokenizerOptions = new StandardTokenizerOptions();
     tokenizerOptions.setRevisionStrategy(TokenRevisionStrategy.SO);
@@ -77,7 +77,7 @@ public class TestDelimTest extends TestCase {
       "</predelim>";
     
     final DomNode delimNode = XmlFactory.buildDomNode(delimConfig, false);
-    final DelimTest delimTest = new DelimTest(true, delimNode);
+    final DelimTest delimTest = new DelimTest(true, delimNode, new ResourceManager());
 
     final StandardTokenizerOptions tokenizerOptions = new StandardTokenizerOptions();
     tokenizerOptions.setRevisionStrategy(TokenRevisionStrategy.SO);

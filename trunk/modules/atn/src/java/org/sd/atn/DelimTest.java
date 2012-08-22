@@ -79,7 +79,7 @@ import org.w3c.dom.NodeList;
        "            when encountered, denotes that the identified delimiters *must* be present for the test to pass.\n" +
        "            type of 'exact' and 'substr' operates the same as described above for 'allow'."
   )
-public class DelimTest implements AtnRuleStepTest {
+public class DelimTest extends BaseClassifierTest {
   
   private boolean isPre;
   boolean isPre() {
@@ -134,7 +134,9 @@ public class DelimTest implements AtnRuleStepTest {
   private boolean ignoreConstituents;
 
 
-  DelimTest(boolean isPre, DomNode delimNode) {
+  DelimTest(boolean isPre, DomNode delimNode, ResourceManager resourceManager) {
+    super(delimNode, resourceManager);
+
     this.isPre = isPre;
     this.allowAll = false;
     this.disallowAll = false;
@@ -214,7 +216,7 @@ public class DelimTest implements AtnRuleStepTest {
     this.ignoreConstituents = ignoreConstituents;
   }
 
-  public boolean accept(Token token, AtnState curState) {
+  protected boolean doAccept(Token token, AtnState curState) {
     final String delim = getDelim(token, curState);
 
     if (ignoreRepeatRange != null || failRepeatRange != null || testRepeatRange != null) {

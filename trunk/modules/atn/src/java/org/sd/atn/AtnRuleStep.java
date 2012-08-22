@@ -159,10 +159,10 @@ public class AtnRuleStep {
     this.clusterFlag = stepElement.getAttributeBoolean("cluster", false);
 
     final DomElement postDelimElement = (DomElement)stepElement.selectSingleNode("postdelim");
-    this.postDelim = (postDelimElement != null) ? new DelimTest(false, postDelimElement) : null;
+    this.postDelim = (postDelimElement != null) ? new DelimTest(false, postDelimElement, resourceManager) : null;
 
     final DomElement preDelimElement = (DomElement)stepElement.selectSingleNode("predelim");
-    this.preDelim = (preDelimElement != null) ? new DelimTest(true, preDelimElement) : null;
+    this.preDelim = (preDelimElement != null) ? new DelimTest(true, preDelimElement, resourceManager) : null;
 
     // load test(s)
     this.test = null;
