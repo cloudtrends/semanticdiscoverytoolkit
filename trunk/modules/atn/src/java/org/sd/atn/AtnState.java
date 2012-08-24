@@ -280,23 +280,51 @@ public class AtnState {
     return result;
   }
 
-  boolean reachedTokenLimit() {
+  boolean reachedTokenRepeatLimit() {
     boolean result = false;
 
     if (!result) {
       final AtnRuleStep ruleStep = getRuleStep();
       final int stepRepeatLimit = ruleStep.getRepeatLimit();
       if (stepRepeatLimit > 0) {
-        result = getRepeatNum() >= stepRepeatLimit;
+//        final int repeatNum = AtnStateUtil.countRepeats(this);
+        result = (repeatNum + 1) >= stepRepeatLimit;
+
+        if (traceflow) {
+          System.out.println("traceflow--AtnState repeatNum=" + repeatNum + " (" + this.repeatNum + ") " + this.toString());
+        }
+
+        if (result) {
+          if (traceflow) {
+            System.out.println("traceflow--AtnState reachedRepeatLimit " + this.toString());
+          }
+        }
       }
     }
+
+    if (!result) {
+      result = reachedTokenLimit();
+    }
+
+    return result;
+  }
+
+  boolean reachedTokenLimit() {
+    boolean result = false;
 
     if (!result) {
       final AtnRule rule = getRule();
       final int ruleTokenLimit = rule.getTokenLimit();
       if (ruleTokenLimit > 0) {
-        final int constituentTokenCount = AtnStateUtil.countConstituentTokens(this);
+//        final int constituentTokenCount = AtnStateUtil.countConstituentTokens(this);
+        final int constituentTokenCount = AtnStateUtil.countConstituentSteps(this);
         result = constituentTokenCount >= ruleTokenLimit;
+
+        if (result) {
+          if (traceflow) {
+            System.out.println("traceflow--AtnState reachedTokenLimit " + this.toString());
+          }
+        }
       }
     }
 
@@ -312,7 +340,7 @@ public class AtnState {
 
     if (referenceState == null) referenceState = this;
 
-    if (referenceState.getRuleStep().repeats() && !referenceState.reachedTokenLimit()) {
+    if (referenceState.getRuleStep().repeats() && !referenceState.reachedTokenRepeatLimit()) {
       if (incToken && !getRuleStep().consumeToken()) incToken = false;
 
       final Token nextToken = incToken ? getNextToken(stopList) : this.inputToken;
@@ -340,12 +368,14 @@ public class AtnState {
 
         if (incToken && !getRuleStep().consumeToken()) incToken = false;
 
-        final Token nextToken = incToken ? getNextToken(stopList) : this.inputToken;
-        if (nextToken != null) {
-          result =
-            new AtnState(
-              nextToken, rule, nextStepNum,
-              curStateNode, parseOptions, 0, 0, pushState);
+        if (!incToken || !reachedTokenLimit()) {
+          final Token nextToken = incToken ? getNextToken(stopList) : this.inputToken;
+          if (nextToken != null) {
+            result =
+              new AtnState(
+                nextToken, rule, nextStepNum,
+                curStateNode, parseOptions, 0, 0, pushState);
+          }
         }
       }
     }
@@ -358,21 +388,23 @@ public class AtnState {
 
     //NOTE: assume rule.isPermuted() if we've called this
     if (incToken && !getRuleStep().consumeToken()) incToken = false;
-    final Token nextToken = incToken ? getNextToken(stopList) : this.inputToken;
-    if (nextToken != null) {
-      final int numSteps = rule.getNumSteps();
+    if (!incToken || !reachedTokenLimit()) {
+      final Token nextToken = incToken ? getNextToken(stopList) : this.inputToken;
+      if (nextToken != null) {
+        final int numSteps = rule.getNumSteps();
 
-      final Set<Integer> matchedSteps = AtnStateUtil.getConstituentMatchedSteps(this);  //todo: make sure 'this' is properly hooked in
-      matchedSteps.add(stepNum);  // add this stepNum
+        final Set<Integer> matchedSteps = AtnStateUtil.getConstituentMatchedSteps(this);  //todo: make sure 'this' is properly hooked in
+        matchedSteps.add(stepNum);  // add this stepNum
 
-      for (int n = 0; n < numSteps; ++n) {
-        if (!matchedSteps.contains(n)) {
-          final AtnState nextState =
-            new AtnState(
-              nextToken, rule, n,
-              curStateNode, parseOptions, 0, 0, pushState);
-          if (result == null)  result = new ArrayList<AtnState>();
-          result.add(nextState);
+        for (int n = 0; n < numSteps; ++n) {
+          if (!matchedSteps.contains(n)) {
+            final AtnState nextState =
+              new AtnState(
+                nextToken, rule, n,
+                curStateNode, parseOptions, 0, 0, pushState);
+            if (result == null)  result = new ArrayList<AtnState>();
+            result.add(nextState);
+          }
         }
       }
     }
@@ -1394,8 +1426,14 @@ public class AtnState {
       }
     }
 
+    final boolean reachedTokenLimit = curstate.reachedTokenLimit();
+
+    if (traceflow && reachedTokenLimit) {
+      System.out.println("traceflow--AtnState reachedTokenLimit at " + curstate.toString() + " (not adding pushes or skips)");
+    }
+
     // apply (push) rules
-    if (meetsRequirements) {
+    if (meetsRequirements && !reachedTokenLimit) {
       final String category = curstate.getRuleStep().getCategory();
       if (grammar.getCat2Rules().containsKey(category)) {
         foundOne = true;
@@ -1434,7 +1472,7 @@ public class AtnState {
     }
 
     // skip tokens
-    if (!foundOne) {
+    if (!foundOne && !reachedTokenLimit) {
       nextstate = curstate.getNextSkippedState(nextStateNode, stopList);
       if (nextstate != null) addState(skipStates, nextstate);
     }

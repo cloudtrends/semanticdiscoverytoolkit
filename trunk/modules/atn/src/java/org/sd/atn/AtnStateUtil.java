@@ -178,6 +178,68 @@ public class AtnStateUtil {
     return result;
   }
 
+/*
+  public static final int countConstituentSteps(AtnState refState) {
+    int result = 0;
+
+    final AtnState refPush = refState.getPushState();
+    Token refToken = refState.getInputToken();
+    for (AtnState curState = refState; curState != null; curState = curState.getParentState()) {
+      final Token curToken = curState.getInputToken();
+      final AtnState curPush = curState.getPushState();
+      if (curPush == refPush) {
+        if (refToken != curToken) {
+          if (!curState.isPoppedState()) {
+            ++result;
+          }
+          refToken = curToken;
+        }
+        if (curPush == curState.getParentState()) break;
+      }
+    }
+
+    return result;
+  }
+*/
+
+  public static final int countConstituentSteps(AtnState refState) {
+    int result = 0;
+
+    final AtnState refPush = refState.getPushState();
+    for (AtnState curState = refState; curState != null; curState = curState.getParentState()) {
+      final AtnState curPush = curState.getPushState();
+      if (curPush == refPush) {
+        if (curState.isPoppedState() || curState.getMatched()) {
+          ++result;
+        }
+        if (curPush == curState.getParentState()) break;
+      }
+    }
+
+    return result;
+  }
+
+  public static final int countRepeats(AtnState refState) {
+    int result = 0;
+
+    final AtnState refPush = refState.getPushState();
+    final int refStepNum = refState.getStepNum();
+    for (AtnState curState = refState; curState != null; curState = curState.getParentState()) {
+      final AtnState curPush = curState.getPushState();
+      if (curPush == refPush) {
+        if ((curState.isPoppedState() || curState.getMatched())) {
+          if (curState.getStepNum() == refStepNum) {
+            ++result;
+          }
+          else break;
+        }
+        if (curPush == curState.getParentState()) break;
+      }
+    }
+
+    return result;
+  }
+
   /**
    * Determine whether the state is the first in its constituent.
    */

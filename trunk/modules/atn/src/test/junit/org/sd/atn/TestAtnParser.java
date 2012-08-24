@@ -1658,6 +1658,86 @@ public class TestAtnParser extends TestCase {
                    });
   }
 
+  public void testTokenLimit1() throws IOException {
+    //
+    // Z <- X+        (tokenLimit=4, repeatLimit=4)
+    // X <- a* Y+ b*  (tokenLimit=4, repeatLimit(Y)=2)
+    // Y <- c* d+     (tokenLimit=4, repeatLimit(d)=3)
+    //
+    // a c d c d b      PASS  1:a 2:Y 3:Y 4:b
+    // c d c d c d b    PASS, but multiple Z's
+    // a a c d b        PASS  1:a 2:a 3:Y 4:b
+    // d d d            PASS
+    // d d d d          FAIL (too many d's)
+    // a a a c d c d b  FAIL (a's repeatLimit)
+    // a c d c d c d b  FAIL (X's tokenLimit)
+    // 
+
+    final AtnParser test24_Parser = AtnParseTest.buildParser("<grammar><rules><Z start='true' tokenLimit='4'><X repeats='true' repeatLimit='4' /></Z><X tokenLimit='4'><a optional='true' repeats='true'/><Y repeats='true' cluster='true' repeatLimit='2'/><b optional='true' repeats='true'/></X><Y tokenLimit='4'><c optional='true' repeats='true'/><d repeats='true' repeatLimit='3' cluster='true'/></Y></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer24a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d c d b");
+    runParseTest("parserTest_24a",
+                 test24_Parser,
+                 tokenizer24a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X a (Y c d) (Y c d) b))",
+                 });
+
+    final StandardTokenizer tokenizer24b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d c d c d b");
+    runParseTest("parserTest_24b",
+                 test24_Parser,
+                 tokenizer24b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   //NOTE: fails due to Y-repeatLimit=2
+                   //"(Z (X (Y c d) (Y c d) (Y c d) b))",
+                 });
+
+    final StandardTokenizer tokenizer24c = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a a c d b");
+    runParseTest("parserTest_24c",
+                 test24_Parser,
+                 tokenizer24c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X a a (Y c d) b))",
+                 });
+
+    final StandardTokenizer tokenizer24d = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d d d");
+    runParseTest("parserTest_24d",
+                 test24_Parser,
+                 tokenizer24d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y d d d)))",
+                 });
+
+    final StandardTokenizer tokenizer24e = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d d d d");
+    runParseTest("parserTest_24e",
+                 test24_Parser,
+                 tokenizer24e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 });
+
+    final StandardTokenizer tokenizer24f = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a a a c d c d b");
+    runParseTest("parserTest_24f",
+                 test24_Parser,
+                 tokenizer24f,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 });
+
+    final StandardTokenizer tokenizer24g = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d c d c d b");
+    runParseTest("parserTest_24g",
+                 test24_Parser,
+                 tokenizer24g,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 });
+  }
+
+
   private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings) throws IOException {
     runParseTest(name, parser, tokenizer, parseOptionsXml, expectedTreeStrings, null, false);
   }
