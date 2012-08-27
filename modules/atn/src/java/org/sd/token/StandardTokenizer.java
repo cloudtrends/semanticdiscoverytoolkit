@@ -675,14 +675,19 @@ public class StandardTokenizer implements Tokenizer {
     }
 
     final Map<Integer, Break> pos2break = getPos2Break();
+    int priorBreakPos = -1;
     for (int pos = startPosition; pos < text.length(); ++pos) {
       final Break posBreak = pos2break.get(pos);
       if (posBreak != null) {
-        ++breakCount;
+        if (pos > priorBreakPos + 1) {
+          // only count non-consecutive breaks toward breakLimit
+          ++breakCount;
+        }
         if (posBreak.agreesWith(breakTypeToFind) || (enforceBreakLimit && options.hitsTokenBreakLimit(breakCount))) {
           result = pos;
           break;
         }
+        priorBreakPos = pos;
       }
     }
 
