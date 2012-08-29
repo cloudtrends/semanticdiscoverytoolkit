@@ -1393,7 +1393,7 @@ public class AtnState {
       }
       else {
         // even when matched, skip optional as if not matched
-        if (curstate.getRuleStep().isOptional() && !curstate.isRepeat()) {
+        if (curstate.getStepNum() == 0 && curstate.getRuleStep().isOptional() && !curstate.isRepeat()) {
           nextstate = curstate.getSkipOptionalState();
           if (nextstate != null) {
             addState(grammar, states, skipStates, nextstate, stopList);
