@@ -70,7 +70,7 @@ import org.sd.xml.DomElement;
        "  ignoreLetters -- (optional, default=false) specifies whether to ignore\n" +
        "                   letters and accept any digits found."
   )
-public class DigitsClassifier extends AbstractAtnStateTokenClassifier {
+public class DigitsClassifier extends RoteListClassifier /*AbstractAtnStateTokenClassifier*/ {
 
   private String featureName;
   private IntegerRange range;
@@ -80,7 +80,7 @@ public class DigitsClassifier extends AbstractAtnStateTokenClassifier {
   private boolean ignoreLetters;
 
   public DigitsClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
-    super(classifierIdElement, id2Normalizer);
+    super(classifierIdElement, resourceManager, id2Normalizer);
 
     // ignore any maxWordCount specified by the element and set to 1
     super.setMaxWordCount(1);

@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -260,9 +261,9 @@ public class AtnParseResult {
 
         if (startRule.fromFirstTokenOnly() && firstToken.getSequenceNumber() > 0) return false;
 
+        final int numSteps = startRule.getNumSteps();
         if (startRule.isPermuted()) {
           // add all step states, not just first
-          final int numSteps = startRule.getNumSteps();
           for (int stepNum = 0; stepNum < numSteps; ++stepNum) {
             states.addLast(new AtnState(firstToken, startRule, stepNum, parse, options, 0, 0, null));
           }

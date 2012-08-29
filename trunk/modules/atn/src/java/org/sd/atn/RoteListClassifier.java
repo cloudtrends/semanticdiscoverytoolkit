@@ -93,8 +93,10 @@ import org.w3c.dom.NodeList;
        "    ...\n" +
        "    <regexes.../>\n" +
        "    ...\n" +
-       "    <classifier>...</classifier>\n" +
-       "    ...\n" +
+       "    <classifiers>\n" +
+       "      <classifier>...</classifier>\n" +
+       "      ...\n" +
+       "    </classifiers>\n" +
        "  </stopwords>\n" +
        "</roteListType>"
   )
