@@ -19,6 +19,8 @@
 package org.sd.atn;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.sd.token.Token;
 import org.sd.xml.DomElement;
 import org.w3c.dom.NodeList;
@@ -101,14 +103,14 @@ public class AtnRuleStep {
     return isNonTerminal;
   }
 
-  private DelimTest postDelim;
-  DelimTest getPostDelim() {
-    return postDelim;
+  private List<DelimTest> postDelims;
+  List<DelimTest> getPostDelims() {
+    return postDelims;
   }
 
-  private DelimTest preDelim;
-  DelimTest getPreDelim() {
-    return preDelim;
+  private List<DelimTest> preDelims;
+  List<DelimTest> getPreDelims() {
+    return preDelims;
   }
 
   private boolean clusterFlag;  // greedy flag
@@ -158,11 +160,8 @@ public class AtnRuleStep {
     this.skip = stepElement.getAttributeInt("skip", 0);
     this.clusterFlag = stepElement.getAttributeBoolean("cluster", false);
 
-    final DomElement postDelimElement = (DomElement)stepElement.selectSingleNode("postdelim");
-    this.postDelim = (postDelimElement != null) ? new DelimTest(false, postDelimElement, resourceManager) : null;
-
-    final DomElement preDelimElement = (DomElement)stepElement.selectSingleNode("predelim");
-    this.preDelim = (preDelimElement != null) ? new DelimTest(true, preDelimElement, resourceManager) : null;
+    this.postDelims = loadDelimNodes(stepElement, false, resourceManager);
+    this.preDelims = loadDelimNodes(stepElement, true, resourceManager);
 
     // load test(s)
     this.test = null;
@@ -195,6 +194,25 @@ public class AtnRuleStep {
     return result;
   }
 
+  private final List<DelimTest> loadDelimNodes(DomElement stepElement, boolean isPreDelim, ResourceManager resourceManager) {
+    List<DelimTest> result = null;
+
+    final String delim = isPreDelim ? "predelim" : "postdelim";
+
+    final NodeList delimNodes = stepElement.selectNodes(delim);
+    if (delimNodes != null) {
+      final int num = delimNodes.getLength();
+      for (int idx = 0; idx < num; ++idx) {
+        final DomElement delimElement = (DomElement)delimNodes.item(idx);
+        final DelimTest delimTest = new DelimTest(isPreDelim, delimElement, resourceManager);
+        if (result == null) result = new ArrayList<DelimTest>();
+        result.add(delimTest);
+      }
+    }
+
+    return result;
+  }
+
   /**
    * Assuming this step's category applies to the token, verify
    * the postDelim and test constraints.
@@ -202,12 +220,18 @@ public class AtnRuleStep {
   boolean verify(Token token, AtnState curState) {
     boolean result = true;
 
-    if (result && postDelim != null) {
-      result = postDelim.accept(token, curState);
+    if (result && postDelims != null) {
+      for (DelimTest postDelim : postDelims) {
+        result = postDelim.accept(token, curState);
+        if (!result) break;
+      }
     }
 
-    if (result && preDelim != null) {
-      result = preDelim.accept(token, curState);
+    if (result && preDelims != null) {
+      for (DelimTest preDelim : preDelims) {
+        result = preDelim.accept(token, curState);
+        if (!result) break;
+      }
     }
 
     if (result && test != null) {

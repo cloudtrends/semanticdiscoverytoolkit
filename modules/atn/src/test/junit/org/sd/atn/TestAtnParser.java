@@ -390,7 +390,7 @@ public class TestAtnParser extends TestCase {
   }
 
   public void testStepRequireFlat() throws IOException {
-    // A <- B C? B?(rC) D
+    // A <- B? C? B?(rC) D
     final AtnParser test12_Parser = AtnParseTest.buildParser("<grammar><rules><A start='true'><B optional='true'/><C optional='true'/><B require='C' optional='true'/><D/></A></rules></grammar>", false);
 
     // no parses
@@ -574,7 +574,7 @@ public class TestAtnParser extends TestCase {
 
 //I'm here...
   public void testStepUnlessFlat() throws IOException {
-    // A <- B C? B?(uC) D
+    // A <- B? C? B?(uC) D
     final AtnParser test12_Parser = AtnParseTest.buildParser("<grammar><rules><A start='true'><B optional='true'/><C optional='true'/><B unless='C' optional='true'/><D/></A></rules></grammar>", false);
 
     // no parses
@@ -620,7 +620,8 @@ public class TestAtnParser extends TestCase {
                  tokenizer12e,
                  "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
                  new String[] {
-                   "(A B D)",
+                   "(A B D)",  // matches first optional B
+                   "(A B D)",  // matches second B after skipping first optional B
                  });
 
     // parse

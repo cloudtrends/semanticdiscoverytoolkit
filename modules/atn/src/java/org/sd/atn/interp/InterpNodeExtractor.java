@@ -27,6 +27,7 @@ import org.sd.atn.ParseInterpretationUtil;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
+import org.sd.xml.XPath;
 import org.sd.xml.XmlLite;
 
 /**
@@ -38,6 +39,8 @@ public class InterpNodeExtractor extends AbstractNodeExtractor {
   
   private String classification;
   private String subType;
+  private XPath xpath;
+  private String select;
 
   InterpNodeExtractor(FieldTemplate fieldTemplate, InnerResources resources, DomElement extractElement, String classification) {
     super(fieldTemplate, resources);
@@ -45,6 +48,16 @@ public class InterpNodeExtractor extends AbstractNodeExtractor {
 
     // subTypes 'tree' (default), 'toString' (future: attribute)
     this.subType = extractElement.getAttributeValue("subType", "tree");
+    this.xpath = null;
+    this.select = null;
+
+    if ("tree".equals(subType)) {
+      final String xpathText = extractElement.getAttributeValue("xpath", null);
+      if (xpathText != null) {
+        this.xpath = new XPath(xpathText);
+        this.select = extractElement.getAttributeValue("select", "first");
+      }
+    }
   }
 
   public List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode, DataProperties overrides, InterpretationController controller) {
@@ -76,6 +89,17 @@ public class InterpNodeExtractor extends AbstractNodeExtractor {
 
     if ("tree".equals(subType)) {
       result = interp.getInterpTree();
+
+      if (result != null && xpath != null) {
+        final List<Tree<XmlLite.Data>> matches = xpath.getNodes(result);
+        if (matches != null && matches.size() > 0) {
+          final int idx = ("first".equals(select)) ? 0 : matches.size() - 1;  // select first or last
+          result = matches.get(idx);
+        }
+        else {
+          result = null;
+        }
+      }
     }
     else {
       final String inputText = interp.getInputText();
