@@ -269,7 +269,11 @@ public class AtnParseResult {
           }
         }
         else {
-          states.addLast(new AtnState(firstToken, startRule, 0, parse, options, 0, 0, null));
+          for (AtnState firstState = new AtnState(firstToken, startRule, 0, parse, options, 0, 0, null);
+               firstState != null;
+               firstState = firstState.getSkipOptionalState()) {
+            states.addLast(firstState);
+          }
         }
         ++startRuleIndex;
       }

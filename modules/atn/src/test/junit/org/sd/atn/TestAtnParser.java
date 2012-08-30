@@ -1738,6 +1738,25 @@ public class TestAtnParser extends TestCase {
                  });
   }
 
+  public void testAddAllStarts() throws IOException {
+    //
+    // X <- ab* b+
+    //
+    // b
+    // 
+
+    final AtnParser test25_Parser = AtnParseTest.buildParser("<grammar><classifiers><ab><jclass>org.sd.atn.RoteListClassifier</jclass><terms caseSensitive='true'><term>a</term><term>b</term></terms></ab></classifiers><rules><X start='true'><ab optional='true' repeats='true'/><b/></X></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer25a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "b");
+    runParseTest("parserTest_25a",
+                 test25_Parser,
+                 tokenizer25a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(X b)",
+                 });
+  }
+
 
   private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings) throws IOException {
     runParseTest(name, parser, tokenizer, parseOptionsXml, expectedTreeStrings, null, false);
