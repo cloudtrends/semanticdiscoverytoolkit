@@ -48,6 +48,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
   public static final String SOURCE_PARSE = "_sourceParse";
 
   private Map<Integer, TokenInfoContainer> pos2tokenInfoContainer;
+  private IntegerRange _parseSpans;
 
   public AtnParseBasedTokenizer(InputContext inputContext, StandardTokenizerOptions tokenizerOptions) {
     this(null, null, null, inputContext, tokenizerOptions);
@@ -132,6 +133,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     if (tokenInfoContainer == null) {
       tokenInfoContainer = new TokenInfoContainer();
       pos2tokenInfoContainer.put(pos, tokenInfoContainer);
+      _parseSpans = null; // force recalculate
     }
 
     tokenInfoContainer.add(tokenInfo, startPosition);
@@ -184,16 +186,23 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     super.setOptions(tokenizerOptions);
   }
 
+  private IntegerRange getParseSpans() {
+    if (_parseSpans == null) {
+      _parseSpans = new IntegerRange();
+      for (Map.Entry<Integer, TokenInfoContainer> mapEntry : pos2tokenInfoContainer.entrySet()) {
+        final int pos = mapEntry.getKey();
+        final TokenInfoContainer tic = mapEntry.getValue();
+        _parseSpans.add(pos + 1, tic.getTokenInfoList().lastKey() - 1, true);
+      }
+    }
+    return _parseSpans;
+  }
+
   protected Map<Integer, Break> createBreaks() {
     final Map<Integer, Break> result = super.createBreaks();
 
     // get the ranges covered by parses
-    final IntegerRange parseSpans = new IntegerRange();
-    for (Map.Entry<Integer, TokenInfoContainer> mapEntry : pos2tokenInfoContainer.entrySet()) {
-      final int pos = mapEntry.getKey();
-      final TokenInfoContainer tic = mapEntry.getValue();
-      parseSpans.add(pos + 1, tic.getTokenInfoList().lastKey() - 1, true);
-    }
+    final IntegerRange parseSpans = getParseSpans();
 
     // turn boundaries between parses into hard breaks; within parse alternatives as soft breaks; clearing other breaks
     for (Map.Entry<Integer, TokenInfoContainer> mapEntry : pos2tokenInfoContainer.entrySet()) {
@@ -224,6 +233,19 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
       // Set RHS break as Hard (or soft if contained w/in another parse)
       clearBreaks(result, pos + 1, lastEndPos);
       setBreak(result, lastEndPos, false, !parseSpans.includes(lastEndPos));
+    }
+
+    return result;
+  }
+
+  protected boolean hitsTokenBreakLimit(int startIdx, int breakIdx, int curBreakCount) {
+    boolean result = super.hitsTokenBreakLimit(startIdx, breakIdx, curBreakCount);
+
+    if (result) {
+      final IntegerRange parseSpans = getParseSpans();
+      if (parseSpans.includes(breakIdx)) {
+        result = false;
+      }
     }
 
     return result;

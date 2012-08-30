@@ -284,6 +284,9 @@ public class StandardTokenizer implements Tokenizer {
     result.put(pos, theBreak);
   }
 
+  protected boolean hitsTokenBreakLimit(int startIdx, int breakIdx, int curBreakCount) {
+    return options.hitsTokenBreakLimit(curBreakCount);
+  }
 
   public static final boolean isPunctuation(int codePoint) {
     boolean result = false;
@@ -484,7 +487,7 @@ public class StandardTokenizer implements Tokenizer {
         // get longer token
         final Break curBreak = getBreak(token.getEndIndex());
         int breakCount = token.getBreakCount();
-        if (!curBreak.isHard() && !options.hitsTokenBreakLimit(breakCount)) {
+        if (!curBreak.isHard() && !hitsTokenBreakLimit(token.getStartIndex(), token.getEndIndex(), breakCount)) {
           // can go longer as long as we don't revisit the longest when using LSL strategy
           // and as long as there isn't a hard break directly following the soft(s).
           final int[] endBreak = findEndBreakForwardWithBreakCount(token.getEndIndex(), true);
@@ -683,7 +686,7 @@ public class StandardTokenizer implements Tokenizer {
           // only count non-consecutive breaks toward breakLimit
           ++breakCount;
         }
-        if (posBreak.agreesWith(breakTypeToFind) || (enforceBreakLimit && options.hitsTokenBreakLimit(breakCount))) {
+        if (posBreak.agreesWith(breakTypeToFind) || (enforceBreakLimit && hitsTokenBreakLimit(startPosition, pos, breakCount))) {
           result = pos;
           break;
         }
