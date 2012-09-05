@@ -237,7 +237,7 @@ public class DelimTest extends BaseClassifierTest {
 
 
     if (!meetsRequiredConstraints(delim)) return false;
-    else if (delimStrings.size() == 0) return true;
+    else if (delimStrings.size() == 0 && !disallowAll) return true;
 
     // ignore (always accept) purely whitespace (unless there are requiredDelimStrings)
     if ("".equals(delim.trim())) return true;
