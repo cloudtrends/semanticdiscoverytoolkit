@@ -216,6 +216,10 @@ public class DelimTest extends BaseClassifierTest {
     this.ignoreConstituents = ignoreConstituents;
   }
 
+  private final boolean hasRequiredDelimStrings() {
+    return requiredDelimStrings != null && requiredDelimStrings.size() > 0;
+  }
+
   protected boolean doAccept(Token token, AtnState curState) {
     final String delim = getDelim(token, curState);
 
@@ -235,12 +239,17 @@ public class DelimTest extends BaseClassifierTest {
       }
     }
 
+    final boolean onlyWhite = "".equals(delim.trim());
 
     if (!meetsRequiredConstraints(delim)) return false;
-    else if (delimStrings.size() == 0 && !disallowAll) return true;
+    else if (delimStrings.size() == 0) {
+      if (!disallowAll || onlyWhite || hasRequiredDelimStrings()) {
+        return true;
+      }
+    }
 
     // ignore (always accept) purely whitespace (unless there are requiredDelimStrings)
-    if ("".equals(delim.trim())) return true;
+    if (onlyWhite) return true;
 
     boolean result = allowAll;
 
