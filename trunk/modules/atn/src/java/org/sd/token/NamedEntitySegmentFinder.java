@@ -268,7 +268,7 @@ public class NamedEntitySegmentFinder extends WordFinder {
       result = SegmentType.BLOCK;
     }
     else {
-      if (frontType == WordCharacteristics.Type.UPPER && numOthers < 2) {
+      if (frontType == WordCharacteristics.Type.UPPER && numOthers < 3) {
         result = SegmentType.ENTITY;
       }
     }
