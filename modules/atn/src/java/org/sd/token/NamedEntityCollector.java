@@ -21,6 +21,7 @@ package org.sd.token;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.sd.util.StringUtil;
 
 /**
  * Collector for inner segmentation of named entity words.
@@ -29,16 +30,19 @@ import java.util.List;
  */
 public class NamedEntityCollector {
   
+  private boolean ignoreCapsChange;
   private List<NamedEntityGroup> groups;
   private NamedEntityGroup curGroup;
 
   public NamedEntityCollector(SegmentPointer firstWord) {
-    this(firstWord, false);
+    this(firstWord, false, false);
   }
-
-  public NamedEntityCollector(SegmentPointer firstWord, boolean isBlock) {
+  public NamedEntityCollector(SegmentPointer firstWord, 
+                              boolean isBlock,
+                              boolean ignoreCapsChange) 
+  {
     this.groups = new ArrayList<NamedEntityGroup>();
-    this.curGroup = new NamedEntityGroup(firstWord, isBlock);
+    this.curGroup = new NamedEntityGroup(firstWord, isBlock, ignoreCapsChange);
     groups.add(curGroup);
   }
 
@@ -48,7 +52,7 @@ public class NamedEntityCollector {
 
   public void add(SegmentPointer nextWord, boolean isBlock) {
     if (!curGroup.add(nextWord, isBlock)) {
-      curGroup = new NamedEntityGroup(nextWord, isBlock);
+      curGroup = new NamedEntityGroup(nextWord, isBlock, ignoreCapsChange);
       groups.add(curGroup);
     }
   }
@@ -67,13 +71,17 @@ public class NamedEntityCollector {
     private boolean lastWasBlock;
     private boolean isClosed;
     private boolean waitingForEndSingleQuote;
+    private boolean ignoreCapsChange;
 
-    public NamedEntityGroup(SegmentPointer firstWord, boolean isBlock) {
+    public NamedEntityGroup(SegmentPointer firstWord, 
+                            boolean isBlock, boolean ignoreCapsChange) 
+    {
       this.words = new ArrayList<SegmentPointer>();
       this.words.add(firstWord);
       this.lastWord = firstWord;
       this.isAllCaps = isBlock ? null : isCapsWord(firstWord);
       this.lastWasBlock = isBlock;
+      this.ignoreCapsChange = ignoreCapsChange;
 
       // if group consists of a single block, then don't add any more to this group
       // if group's last word ends with ':' or ';', then don't add any more to this group
@@ -123,7 +131,7 @@ public class NamedEntityCollector {
         if (result) {
           // if changing from Caps/Capitalized to Capitalized/Caps and group has more than one word,
           // then don't add to this group
-          if (hasCapsChange(nextWord)) {
+          if (!ignoreCapsChange && hasCapsChange(nextWord)) {
             result = false;
           }
         }
@@ -209,6 +217,12 @@ public class NamedEntityCollector {
       final WordCharacteristics wc = wordPtr.getWordCharacteristics();
       if (wc.hasEndDelims()) {
         result = wc.getEndDelims().indexOf(',') >= 0;
+
+        // end group if last word ends with '.' and is not an abbreviation
+        String wordText = wordPtr.getWordText();
+        if(!result && wc.getEndDelims().indexOf('.') >= 0 &&
+           !StringUtil.isLikelyAbbreviation(wordText))
+          result = true;
       }
       return result;
     }
