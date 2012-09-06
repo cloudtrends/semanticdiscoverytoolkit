@@ -38,6 +38,7 @@ public class SegmentPointer implements Serializable {
   private int numWords;
   private List<InnerSegment> innerSegments;
   private String _text;
+  private String _wordText;
   private WordCharacteristics _wc;
   private Integer _textStart;
   private Integer _textEnd;
@@ -51,6 +52,7 @@ public class SegmentPointer implements Serializable {
     this.numWords = -1;
     this.innerSegments = null;
     this._text = null;
+    this._wordText = null;
     this._wc = null;
     this._textStart = null;
     this._textEnd = null;
@@ -111,6 +113,12 @@ public class SegmentPointer implements Serializable {
       _text = input.substring(startPtr, endPtr);
     }
     return _text;
+  }
+  public String getWordText() {
+    if (_wordText == null) {
+      _wordText = input.substring(getTextStart(), getTextEnd());
+    }
+    return _wordText;
   }
 
   public WordCharacteristics getWordCharacteristics() {

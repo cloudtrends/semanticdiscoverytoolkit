@@ -65,25 +65,36 @@ public class NamedEntitySegmentFinder extends WordFinder {
     DEFAULT_TOKENIZER_OPTIONS.setEmbeddedPunctuationBreak(Break.SINGLE_WIDTH_HARD_BREAK);
   }
 
+  // segment finder factory with flag to turn off caps change triggering new entity
+  public static final 
+    SegmentPointerFinderFactory NAMED_ENTITY_SEGMENT_FINDER_FACTORY =
+    new NamedEntitySegmentFinderFactory(false);
+  public static final 
+    SegmentPointerFinderFactory NAMED_ENTITY_SEGMENT_FINDER_IGNORE_CAPS_CHANGE_FACTORY =
+    new NamedEntitySegmentFinderFactory(true);
 
-  public static final SegmentPointerFinderFactory NAMED_ENTITY_SEGMENT_FINDER_FACTORY =
-    new SegmentPointerFinderFactory() {
-      public SegmentPointerFinder getSegmentPointerFinder(String input) {
-        return new NamedEntitySegmentFinder(input);
-      }
-    };
-
-  public static SegmentPointerFinderFactory getFactory() {
-    return NAMED_ENTITY_SEGMENT_FINDER_FACTORY;
+  public static SegmentPointerFinderFactory getFactory() { return getFactory(false); }
+  public static SegmentPointerFinderFactory getFactory(boolean ignoreCapsChange) {
+    return (ignoreCapsChange ? 
+            NAMED_ENTITY_SEGMENT_FINDER_IGNORE_CAPS_CHANGE_FACTORY : 
+            NAMED_ENTITY_SEGMENT_FINDER_FACTORY);
   }
 
-  public static SegmentTokenizer getSegmentTokenizer(String input, DataProperties dataProperties) {
-    return new SegmentTokenizer(new NamedEntitySegmentFinder(input), DEFAULT_TOKENIZER_OPTIONS, dataProperties);
+  public static SegmentTokenizer getSegmentTokenizer(String input, 
+                                                     boolean ignoreCapsChange,
+                                                     DataProperties dataProperties) 
+  {
+    return new SegmentTokenizer(new NamedEntitySegmentFinder(input, ignoreCapsChange), 
+                                DEFAULT_TOKENIZER_OPTIONS, dataProperties);
   }
 
-
+  private final boolean ignoreCapsChange;
   public NamedEntitySegmentFinder(String input) {
+    this(input, false);
+  }
+  public NamedEntitySegmentFinder(String input, boolean ignoreCapsChange) {
     super(input);
+    this.ignoreCapsChange = ignoreCapsChange;
   }
 
   /**
@@ -142,7 +153,7 @@ public class NamedEntitySegmentFinder extends WordFinder {
                 case BLOCK :  // to BLOCK
                   // block is to be part of entity, retaining priorType as ENTITY
                   if (collector == null) {
-                    collector = new NamedEntityCollector(priorSegment);
+                    collector = new NamedEntityCollector(priorSegment, false, ignoreCapsChange);
                   }
                   collector.add(curWordSegment, true);
                   break;
@@ -201,7 +212,7 @@ public class NamedEntitySegmentFinder extends WordFinder {
           if (priorType == SegmentType.ENTITY) {
             // continuing entity -- detect inner segment boundaries
             if (collector == null) {
-              collector = new NamedEntityCollector(priorSegment);
+              collector = new NamedEntityCollector(priorSegment, false, ignoreCapsChange);
             }
             collector.add(curWordSegment);
           }
