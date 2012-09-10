@@ -300,6 +300,14 @@ public class StandardTokenizerOptions {
     this.symbolBreak = symbolBreak;
   }
 
+  private Break repeatingSymbolBreak;
+  public Break getRepeatingSymbolBreak() {
+    return repeatingSymbolBreak;
+  }
+  public void setRepeatingSymbolBreak(Break repeatingSymbolBreak) {
+    this.repeatingSymbolBreak = repeatingSymbolBreak;
+  }
+
   private Break slashBreak;
   public Break getSlashBreak() {
     return slashBreak;
@@ -379,6 +387,7 @@ public class StandardTokenizerOptions {
     this.whitespaceBreak = Break.SINGLE_WIDTH_SOFT_BREAK;
     this.quoteAndParenBreak = Break.SINGLE_WIDTH_HARD_BREAK;
     this.symbolBreak = Break.NO_BREAK;
+    this.repeatingSymbolBreak = Break.SINGLE_WIDTH_HARD_BREAK;
     this.slashBreak = Break.SINGLE_WIDTH_HARD_BREAK;
     this.embeddedApostropheBreak = Break.NO_BREAK;
     this.embeddedPunctuationBreak = Break.NO_BREAK;
@@ -415,6 +424,7 @@ public class StandardTokenizerOptions {
     this.whitespaceBreak = other.whitespaceBreak;
     this.quoteAndParenBreak = other.quoteAndParenBreak;
     this.symbolBreak = other.symbolBreak;
+    this.repeatingSymbolBreak = other.repeatingSymbolBreak;
     this.slashBreak = other.slashBreak;
     this.embeddedApostropheBreak = other.embeddedApostropheBreak;
     this.embeddedPunctuationBreak = other.embeddedPunctuationBreak;
@@ -465,6 +475,7 @@ public class StandardTokenizerOptions {
     String whitespaceBreak = options.getString("whitespaceBreak", "SINGLE_WIDTH_SOFT_BREAK");
     String quoteAndParenBreak = options.getString("quoteAndParenBreak", "SINGLE_WIDTH_HARD_BREAK");
     String symbolBreak = options.getString("symbolBreak", "NO_BREAK");
+    String repeatingSymbolBreak = options.getString("repeatingSymbolBreak", "SINGLE_WIDTH_HARD_BREAK");
     String slashBreak = options.getString("slashBreak", "SINGLE_WIDTH_HARD_BREAK");
     String embeddedApostropheBreak = options.getString("embeddedApostropheBreak", "NO_BREAK");
     String embeddedPunctuationBreak = options.getString("embeddedPunctuationBreak", "NO_BREAK");
@@ -498,6 +509,7 @@ public class StandardTokenizerOptions {
     this.whitespaceBreak = translateBreak(whitespaceBreak);
     this.quoteAndParenBreak = translateBreak(quoteAndParenBreak);
     this.symbolBreak = translateBreak(symbolBreak);
+    this.repeatingSymbolBreak = translateBreak(repeatingSymbolBreak);
     this.slashBreak = translateBreak(slashBreak);
     this.embeddedApostropheBreak = translateBreak(embeddedApostropheBreak);
     this.embeddedPunctuationBreak = translateBreak(embeddedPunctuationBreak);
@@ -658,6 +670,7 @@ public class StandardTokenizerOptions {
     result.addTagAndText("whitespaceBreak", whitespaceBreak.getBLongName());
     result.addTagAndText("quoteAndParenBreak", quoteAndParenBreak.getBLongName());
     result.addTagAndText("symbolBreak", symbolBreak.getBLongName());
+    result.addTagAndText("repeatingSymbolBreak", repeatingSymbolBreak.getBLongName());
     result.addTagAndText("slashBreak", slashBreak.getBLongName());
     result.addTagAndText("embeddedApostropheBreak", embeddedApostropheBreak.getBLongName());
     result.addTagAndText("embeddedPunctuationBreak", embeddedPunctuationBreak.getBLongName());
@@ -694,6 +707,7 @@ public class StandardTokenizerOptions {
         this.whitespaceBreak == other.whitespaceBreak &&
         this.quoteAndParenBreak == other.quoteAndParenBreak &&
         this.symbolBreak == other.symbolBreak &&
+        this.repeatingSymbolBreak == other.repeatingSymbolBreak &&
         this.slashBreak == other.slashBreak &&
         this.embeddedApostropheBreak == other.embeddedApostropheBreak &&
         this.embeddedPunctuationBreak == other.embeddedPunctuationBreak;
@@ -723,6 +737,7 @@ public class StandardTokenizerOptions {
     result = result * 17 + this.whitespaceBreak.hashCode();
     result = result * 17 + this.quoteAndParenBreak.hashCode();
     result = result * 17 + this.symbolBreak.hashCode();
+    result = result * 17 + this.repeatingSymbolBreak.hashCode();
     result = result * 17 + this.slashBreak.hashCode();
     result = result * 17 + this.embeddedApostropheBreak.hashCode();
     result = result * 17 + this.embeddedPunctuationBreak.hashCode();
