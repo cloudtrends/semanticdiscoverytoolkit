@@ -149,10 +149,12 @@ public class StandardTokenizer implements Tokenizer {
         }
       }
       else {
-
         // char is punctuation or a symbol
+
+        final int nextChar = (charPos + 1 < text.length()) ? text.codePointAt(charPos + 1) : 0;
+
         if (curChar == '-') {
-          if (charPos + 1 < text.length() && text.codePointAt(charPos + 1) == '-') {
+          if (nextChar == '-') {
             // there is more than one consecutive dash
 
             // check for 3+ dashes, treat all as hard breaks
@@ -185,7 +187,7 @@ public class StandardTokenizer implements Tokenizer {
           else {
             // this is a single dash
             if (charPos > 0 && !options.isWhitespace(text.codePointAt(charPos - 1))) {
-              if (charPos + 1 < text.length() && !options.isWhitespace(text.codePointAt(charPos + 1))) {
+              if (nextChar > 0 && !options.isWhitespace(nextChar)) {
                 // embedded dash
                 curBreak = options.getEmbeddedDashBreak();
               }
@@ -194,7 +196,7 @@ public class StandardTokenizer implements Tokenizer {
                 curBreak = options.getLeftBorderedDashBreak();
               }
             }
-            else if (charPos + 1 < text.length() && !options.isWhitespace(text.codePointAt(charPos + 1))) {
+            else if (nextChar > 0 && !options.isWhitespace(nextChar)) {
               // right-bordered dash
               curBreak = options.getRightBorderedDashBreak();
             }
@@ -204,7 +206,18 @@ public class StandardTokenizer implements Tokenizer {
             }
           }
         }
-        else if (charPos + 1 < text.length() && options.isLetterOrDigit(text.codePointAt(charPos + 1))) {
+        else if (nextChar == curChar) {
+          // punctuation/symbol repeats consecutively
+
+          curBreak = options.getRepeatingSymbolBreak();
+
+          // set this break on all consecutive repeats
+          while (charPos + increment < text.length() && text.codePointAt(charPos + increment) == curChar) {
+            setBreak(result, charPos + increment, curBreak);
+            ++increment;
+          }
+        }
+        else if (nextChar > 0 && options.isLetterOrDigit(nextChar)) {
           // symbol immediately precedes a non-white, non-symbol char as part of a token
 
           if (charPos > 0 && options.isLetterOrDigit(text.codePointAt(charPos - 1)) && curChar != '/' && curChar != '\\') {
