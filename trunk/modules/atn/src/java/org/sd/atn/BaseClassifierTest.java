@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.List;
 import org.sd.token.Token;
+import org.sd.util.range.IntegerRange;
 import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
@@ -42,8 +43,9 @@ import org.sd.xml.DomNode;
        " - when ignoreFirstToken='true', always succeed on first (full input) token\n" +
        " - when onlyFirstToken='true', only test against a \"first\" constituent token\n" +
        " - when onlyLastToken='true', only test against a \"last\" (full input) token\n" +
+       " - when validTokenLength is specified, only succeed when the token's length is within the specified integer range\n" +
        " \n" +
-       " <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false'>\n" +
+       " <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false' validTokenLength='integerRangeExpression'>\n" +
        "   <jclass>org.sd.atn.*Test</jclass>\n" +
        "   <terms caseSensitive='true|false'>\n" +
        "     <term>...</term>\n" +
@@ -64,6 +66,7 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
   protected boolean ignoreFirstToken;
   protected boolean onlyFirstToken;
   protected boolean onlyLastToken;
+  protected IntegerRange validTokenLength;
   private boolean reverse;
 
   private static int nextAutoId = 0;
@@ -85,6 +88,12 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     this.onlyLastToken = testNode.getAttributeBoolean("onlyLastToken", false);
     this.reverse = testNode.getAttributeBoolean("reverse", false);
 
+    this.validTokenLength = null;
+    final String vtlString = testNode.getAttributeValue("validTokenLength", null);
+    if (vtlString != null && !"".equals(vtlString)) {
+      this.validTokenLength = new IntegerRange(vtlString);
+    }
+
     //NOTE: "reverse" isn't checked here directly because this test will be wrapped within
     //      a ReversedAtnRuleStepTest on load through the AtnRuleStep and the reversal
     //      logic will be applied there; however, in cases where the test is "ignored" or
@@ -98,8 +107,9 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     // - when ignoreFirstToken='true', always succeed on first (full input) token
     // - when onlyFirstToken='true', only test against a "first" constituent token
     // - when onlyLastToken='true', only test against a "last" (full input) token
+    // - when validTokenLength is specified, only succeed when the token's length is within the specified integer range
     //
-    // <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false'>
+    // <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false' validTokenLength='integerRangeExpression'>
     //   <jclass>org.sd.atn.*Test</jclass>
     //   <terms caseSensitive='true|false'>
     //     <term>...</term>
@@ -153,6 +163,17 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
         // not a first token
         applyTest = false;
         result = !reverse;  //NOTE: wrapper will "un-reverse"
+      }
+    }
+
+    if (validTokenLength != null && !validTokenLength.includes(token.getLength())) {
+      applyTest = false;
+      result = false;
+
+      if (verbose) {
+        System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
+                           ") doAccept(" + token + ", " + curState + ")=" + result +
+                           " tokenLen=" + token.getLength());
       }
     }
 
