@@ -21,6 +21,7 @@ package org.sd.token;
 
 import java.util.Map;
 import org.sd.token.Token;
+import org.sd.util.range.IntegerRange;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.sd.xml.DomUtil;
@@ -55,6 +56,21 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
   }
   protected void setMaxWordCount(int maxWordCount) {
     this.maxWordCount = maxWordCount;
+  }
+
+  /**
+   * Valid range for length of a token to be considered for classification.
+   * (Unlimited if null.)
+   */
+  private IntegerRange validTokenLength;
+  public IntegerRange getValidTokenLength() {
+    return validTokenLength;
+  }
+  protected void setValidTokenLength(IntegerRange validTokenLength) {
+    this.validTokenLength = validTokenLength;
+  }
+  public boolean lengthIsInRange(Token token) {
+    return validTokenLength == null || validTokenLength.includes(token.getLength());
   }
 
 
@@ -178,16 +194,31 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
     init(normalizer, maxWordCount);
   }
 
+  //
+  // <classifierId validTokenLength='rangeExpr'>
+  //   <maxWordCount>N</maxWordCount>
+  //   <normalizer>...</normalizer>
+  //   <jclass>...classifier class...</jclass>
+  //   ...config elts for classifier class...
+  // </classifierId>
+  //
+
   protected AbstractTokenClassifier(DomElement classifierIdElement, Map<String, Normalizer> id2Normalizer) {
     final Normalizer normalizer = loadNormalizer((DomNode)classifierIdElement.selectSingleNode("normalizer"), id2Normalizer);
     final int maxWordCount = DomUtil.getSelectedNodeInt(classifierIdElement, "maxWordCount", 0);
 
     init(normalizer, maxWordCount);
+
+    final String vtlString = classifierIdElement.getAttributeValue("validTokenLength", null);
+    if (vtlString != null && !"".equals(vtlString)) {
+      this.validTokenLength = new IntegerRange(vtlString);
+    }
   }
 
   private void init(Normalizer normalizer, int maxWordCount) {
     this.normalizer = normalizer;
     this.maxWordCount = maxWordCount;
+    this.validTokenLength = null;
   }
 
   /**
