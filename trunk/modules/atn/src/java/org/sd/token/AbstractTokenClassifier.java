@@ -179,7 +179,8 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
   public boolean classify(Token token) {
     boolean result = false;
 
-    if (maxWordCount == 0 || token.getWordCount() <= maxWordCount) {
+    if ((maxWordCount == 0 || token.getWordCount() <= maxWordCount) &&
+        lengthIsInRange(token)) {
       result = doClassify(token);
     }
 
