@@ -57,7 +57,7 @@ public class RecordParseInterpreter extends TemplateParseInterpreter {
   }
 
   protected InterpretationController buildInterpretationController() {
-    return new RecordInterpretationController();
+    return new RecordInterpretationController(getTrace());
   }
 
   private static final class RecordInterpretationController implements InterpretationController {
@@ -67,7 +67,9 @@ public class RecordParseInterpreter extends TemplateParseInterpreter {
     private List<RecordTemplate> topTemplates;
     private boolean trace;
 
-    public RecordInterpretationController() {}
+    public RecordInterpretationController(boolean trace) {
+      this.trace = trace;
+    }
 
     /**
      * @return true to execute recordTemplate.interpret(parse); otherwise, false.
@@ -97,7 +99,9 @@ public class RecordParseInterpreter extends TemplateParseInterpreter {
                                                    Tree<String> parseNode, Tree<XmlLite.Data> parentNode,
                                                    String fieldName, RecordTemplate recordTemplate,
                                                    boolean start, DataProperties overrides) {
-      if (trace) trace("record", recordNode, fieldName, start);
+      if (trace) {
+        trace("record", recordNode, fieldName, start);
+      }
 
       return recordNode;
     }
@@ -113,7 +117,9 @@ public class RecordParseInterpreter extends TemplateParseInterpreter {
     public Tree<XmlLite.Data> interpFieldNodeHook(Tree<XmlLite.Data> fieldNode, Parse parse,
                                                   Tree<String> selectedNode, Tree<XmlLite.Data> parentNode,
                                                   FieldTemplate fieldTemplate, DataProperties overrides) {
-      if (trace) trace("field", fieldNode, fieldTemplate.getName(), null);
+      if (trace) {
+        trace("field", fieldNode, fieldTemplate.getName(), null);
+      }
 
       return fieldNode;
     }

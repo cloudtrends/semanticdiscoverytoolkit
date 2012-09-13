@@ -77,6 +77,7 @@ public class FieldTemplate {
   private NodeExtractor extractor;
   private String ifOption;
   private String unlessOption;
+  private boolean verbose;
 
   private NodeSelector nameSelector;
   private NodeExtractor nameExtractor;
@@ -89,6 +90,7 @@ public class FieldTemplate {
     this.collapse = fieldElement.getAttributeBoolean("collapse", false);
     this.ifOption = fieldElement.getAttributeValue("if", null);
     this.unlessOption = fieldElement.getAttributeValue("unless", null);
+    this.verbose = fieldElement.getAttributeBoolean("verbose", false);
 
     // select
     final DomElement selectNode = (DomElement)fieldElement.selectSingleNode("select");
@@ -120,7 +122,13 @@ public class FieldTemplate {
   }
 
   List<Tree<String>> select(Parse parse, Tree<String> parseNode) {
-    return selector.select(parse, parseNode);
+    final List<Tree<String>> result = selector.select(parse, parseNode);
+
+    if (verbose) {
+      System.out.println("FieldTemplate (" + name + ") select " + ((result == null) ? "FAIL" : "SUCCESS"));
+    }
+
+    return result;
   }
 
   List<Tree<XmlLite.Data>> extract(Parse parse, Tree<String> parseNode, DataProperties overrides, InterpretationController controller) {
@@ -139,6 +147,14 @@ public class FieldTemplate {
 
     if (doExtract) {
       result = extractor.extract(parse, parseNode, overrides, controller);
+
+      if (verbose) {
+        System.out.println("FieldTemplate (" + name + ") extract " + ((result == null) ? "FAIL" : "SUCCESS"));
+
+        if (result == null) {
+          System.out.println("\t" + parseNode + " [attributes:" + parseNode.getAttributes() + "]");
+        }
+      }
     }
 
     return result;
