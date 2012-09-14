@@ -299,13 +299,14 @@ public class CompoundParser {
 
       for (AtnParseResult parseResult : parseResults) {
         parseResult.generateParses(0);
+        parseResult.setId(this.getId(), id);
         
         if (verbose) System.out.println("   ParseResult #" + parseResultNum + ": (" + parseResult.getNumParses() + " parses)");
         
         for (int parsit = 0; parsit < parseResult.getNumParses(); ++parsit) {
           final AtnParse parse = parseResult.getParse(parsit);
-          final String asterisk = parse.getSelected() ? "*" : " ";
           if (verbose) {
+            final String asterisk = parse.getSelected() ? "*" : " ";
             final String ruleId = parse.getStartRule().getRuleId();
             final String ruleText = (ruleId == null) ? "" : "  [" + ruleId + "]";
             System.out.println("   " + asterisk + " Parse #" + (parsit + 1) +

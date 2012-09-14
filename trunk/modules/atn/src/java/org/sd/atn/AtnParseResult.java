@@ -55,6 +55,25 @@ public class AtnParseResult {
     this.options = options;
   }
 
+  // the compoundParserId that generated this result
+  private String compoundParserId;
+  public String getCompoundParserId() {
+    return compoundParserId;
+  }
+
+  // the parserId that generated this result
+  private String parserId;
+  public String getParserId() {
+    return parserId;
+  }
+
+  /** Set the IDs of the parser that generated this result. */
+  public void setId(String compoundParserId, String parserId) {
+    this.compoundParserId = compoundParserId;
+    this.parserId = parserId;
+  }
+
+
   private Tree<AtnState> parse;
   private LinkedList<AtnState> states;
   private LinkedList<AtnState> skipStates;
