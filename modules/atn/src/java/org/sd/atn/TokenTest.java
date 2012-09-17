@@ -50,13 +50,14 @@ import org.w3c.dom.NodeList;
        " options:\n" +
        " - when reverse='true', fail on match (handled elsewhere)\n" +
        " - when next='true', test against the next token\n" +
+       " - when prev='true', test against the prior token (taken as smallest prior if not available through state)\n" +
        " - when revise='true', test against token revisions\n" +
        " - when ignoreLastToken='true', always accept the last token\n" +
        " - when ignoreFirstToken='true', always accept the first token\n" +
        " - when onlyFirstToken='true', only test against a \"first\" constituent token\n" +
        " - when onlyLastToken='true', only test against a \"last\" constituent token\n" +
        " \n" +
-       " <test reverse='true|false' next='true|false' revise='true|false' verbose='true|false'>\n" +
+       " <test reverse='true|false' next='true|false' prev='true|false' revise='true|false' verbose='true|false'>\n" +
        "   <jclass>org.sd.atn.TokenTest</jclass>\n" +
        "   <terms caseSensitive='true|false'>\n" +
        "     <term>...</term>\n" +
@@ -76,6 +77,7 @@ public class TokenTest extends BaseClassifierTest {
   
   private boolean verbose;
   private boolean next;
+  private boolean prev;
   private boolean revise;
   private List<String> classifiers;
   private List<DelimTest> delimTests;
@@ -85,6 +87,7 @@ public class TokenTest extends BaseClassifierTest {
 
     this.verbose = testNode.getAttributeBoolean("verbose", false);
     this.next = testNode.getAttributeBoolean("next", false);
+    this.prev = testNode.getAttributeBoolean("prev", false);
     this.revise = testNode.getAttributeBoolean("revise", false);
 
     final NodeList classifierNodes = testNode.selectNodes("classifier");
@@ -124,6 +127,7 @@ public class TokenTest extends BaseClassifierTest {
     // options:
     // - when reverse='true', fail on match (handled elsewhere)
     // - when next='true', test against the next token
+    // - when prev='true', test against the prior token (taken as smallest prior if not available through state)\n" +
     // - when revise='true', test against token revisions
     // - when ignoreLastToken='true', always accept the last token
     // - when ignoreFirstToken='true', always accept the first token
@@ -160,6 +164,17 @@ public class TokenTest extends BaseClassifierTest {
 
       if (verbose) {
         System.out.println("\tnext token=" + token);
+      }
+    }
+    else if (prev) {
+      if (verbose) {
+        System.out.println("TokenTest token=" + token);
+      }
+
+      token = getPrevToken(token, curState);
+
+      if (verbose) {
+        System.out.println("\tprev token=" + token);
       }
     }
 
@@ -235,6 +250,23 @@ public class TokenTest extends BaseClassifierTest {
           }
           break;
         }
+      }
+    }
+
+    return result;
+  }
+
+  private final Token getPrevToken(Token token, AtnState curState) {
+    Token result = null;
+
+    if (token.getStartIndex() == 0) return result;  // there is no prev token
+
+    try {
+      result = token.getPrevToken();
+    }
+    catch (Exception e) {
+      if (verbose) {
+        System.out.println("Can't compute prevToken(" + token + ")! " + e);
       }
     }
 
