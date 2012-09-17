@@ -70,9 +70,9 @@ public class InterpNodeExtractor extends AbstractNodeExtractor {
 
       result = new ArrayList<Tree<XmlLite.Data>>();
       for (ParseInterpretation interp : interps) {
-        final Tree<XmlLite.Data> content = getContent(interp);
+        final List<Tree<XmlLite.Data>> content = getContent(interp);
         if (content != null) {
-          result.add(content);
+          result.addAll(content);
         }
       }
     }
@@ -84,20 +84,28 @@ public class InterpNodeExtractor extends AbstractNodeExtractor {
     return null;
   }
 
-  private final Tree<XmlLite.Data> getContent(ParseInterpretation interp) {
-    Tree<XmlLite.Data> result = null;
+  private final List<Tree<XmlLite.Data>> getContent(ParseInterpretation interp) {
+    List<Tree<XmlLite.Data>> result = null;
+    Tree<XmlLite.Data> singleResult = null;
 
     if ("tree".equals(subType)) {
-      result = interp.getInterpTree();
+      singleResult = interp.getInterpTree();
 
-      if (result != null && xpath != null) {
-        final List<Tree<XmlLite.Data>> matches = xpath.getNodes(result);
+      if (singleResult != null && xpath != null) {
+        final List<Tree<XmlLite.Data>> matches = xpath.getNodes(singleResult);
         if (matches != null && matches.size() > 0) {
-          final int idx = ("first".equals(select)) ? 0 : matches.size() - 1;  // select first or last
-          result = matches.get(idx);
+          if ("first".equals(select)) {
+            singleResult = matches.get(0);
+          }
+          else if ("last".equals(select)) {
+            singleResult = matches.get(matches.size() - 1);
+          }
+          else {
+            result = matches;
+          }
         }
         else {
-          result = null;
+          singleResult = null;
         }
       }
     }
@@ -106,21 +114,26 @@ public class InterpNodeExtractor extends AbstractNodeExtractor {
       final String toString = interp.toString();
 
       if ("toString".equals(subType)) {
-        result = XmlLite.createTagNode(interp.getClassification());
-        result.addChild(XmlLite.createTextNode(toString));
+        singleResult = XmlLite.createTagNode(interp.getClassification());
+        singleResult.addChild(XmlLite.createTextNode(toString));
 
         if (inputText != null && !"".equals(inputText)) {
-          result.getData().asTag().setAttribute("altText", inputText);
+          singleResult.getData().asTag().setAttribute("altText", inputText);
         }
       }
       else if ("inputText".equals(subType)) {
-        result = XmlLite.createTagNode(interp.getClassification());
-        result.addChild(XmlLite.createTextNode(inputText));
+        singleResult = XmlLite.createTagNode(interp.getClassification());
+        singleResult.addChild(XmlLite.createTextNode(inputText));
 
         if (!"".equals(toString)) {
-          result.getData().asTag().setAttribute("altText", toString);
+          singleResult.getData().asTag().setAttribute("altText", toString);
         }
       }
+    }
+
+    if (result == null && singleResult != null) {
+      result = new ArrayList<Tree<XmlLite.Data>>();
+      result.add(singleResult);
     }
 
     return result;

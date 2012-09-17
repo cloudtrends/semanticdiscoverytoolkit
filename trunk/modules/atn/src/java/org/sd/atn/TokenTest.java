@@ -51,6 +51,7 @@ import org.w3c.dom.NodeList;
        " - when reverse='true', fail on match (handled elsewhere)\n" +
        " - when next='true', test against the next token\n" +
        " - when prev='true', test against the prior token (taken as smallest prior if not available through state)\n" +
+       " - when delimMatch='X', test against next or prev only succeeds if delims equal X\n" +
        " - when revise='true', test against token revisions\n" +
        " - when ignoreLastToken='true', always accept the last token\n" +
        " - when ignoreFirstToken='true', always accept the first token\n" +
@@ -78,6 +79,7 @@ public class TokenTest extends BaseClassifierTest {
   private boolean verbose;
   private boolean next;
   private boolean prev;
+  private String delimMatch;
   private boolean revise;
   private List<String> classifiers;
   private List<DelimTest> delimTests;
@@ -88,6 +90,7 @@ public class TokenTest extends BaseClassifierTest {
     this.verbose = testNode.getAttributeBoolean("verbose", false);
     this.next = testNode.getAttributeBoolean("next", false);
     this.prev = testNode.getAttributeBoolean("prev", false);
+    this.delimMatch = testNode.getAttributeValue("delimMatch", null);
     this.revise = testNode.getAttributeBoolean("revise", false);
 
     final NodeList classifierNodes = testNode.selectNodes("classifier");
@@ -127,7 +130,8 @@ public class TokenTest extends BaseClassifierTest {
     // options:
     // - when reverse='true', fail on match (handled elsewhere)
     // - when next='true', test against the next token
-    // - when prev='true', test against the prior token (taken as smallest prior if not available through state)\n" +
+    // - when prev='true', test against the prior token (taken as smallest prior if not available through state)
+    // - when delimMatch='X', test against next or prev only succeeds if delims equal X
     // - when revise='true', test against token revisions
     // - when ignoreLastToken='true', always accept the last token
     // - when ignoreFirstToken='true', always accept the first token
@@ -160,6 +164,14 @@ public class TokenTest extends BaseClassifierTest {
         System.out.println("TokenTest token=" + token);
       }
 
+      if (delimMatch != null) {
+        final String delims = token.getPostDelim();
+        if (!delimMatch.equals(delims)) {
+          // can't match against next token because delimMatch fails
+          return false;
+        }
+      }
+
       token = token.getNextToken();
 
       if (verbose) {
@@ -169,6 +181,14 @@ public class TokenTest extends BaseClassifierTest {
     else if (prev) {
       if (verbose) {
         System.out.println("TokenTest token=" + token);
+      }
+
+      if (delimMatch != null) {
+        final String delims = token.getPreDelim();
+        if (!delimMatch.equals(delims)) {
+          // can't match against next token because delimMatch fails
+          return false;
+        }
       }
 
       token = getPrevToken(token, curState);

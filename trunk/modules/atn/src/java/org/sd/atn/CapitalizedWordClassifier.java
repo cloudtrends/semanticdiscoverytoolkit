@@ -50,7 +50,8 @@ import org.w3c.dom.NodeList;
        "                      upper-) case letter followed by a '.', regardless\n" +
        "                      of the 'singleLetter' option.\n" +
        "  acceptDash -- (default=true) true to accept a word containing an\n" +
-       "                embedded dash"
+       "                embedded dash\n" +
+       "  rejectDigit -- (default=true) true to reject a word containing a digit"
   )
 public class CapitalizedWordClassifier extends RoteListClassifier {
   
@@ -60,6 +61,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
   private boolean singleLetter;
   private boolean lowerCaseInitial;
   private boolean acceptDash;
+  private boolean rejectDigit;
 
   public CapitalizedWordClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
     super(classifierIdElement, resourceManager, id2Normalizer);
@@ -73,6 +75,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     this.singleLetter = true;
     this.lowerCaseInitial = true;
     this.acceptDash = true;
+    this.rejectDigit = true;
 
     doMySupplement(classifierIdElement);
   }
@@ -106,6 +109,9 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
 
     // if acceptDash, then accept a word containing an embedded dash
     this.acceptDash = classifierIdElement.getAttributeBoolean("acceptDash", this.acceptDash);
+
+    // if rejectDigit, then reject a word containing an embedded digit
+    this.rejectDigit = classifierIdElement.getAttributeBoolean("rejectDigit", this.rejectDigit);
 
     // NOTE: super loads acceptable non-capitalized words and stopwords
     super.doSupplement(classifierIdElement);
@@ -167,6 +173,14 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     return acceptDash;
   }
 
+  public void setRejectDigit(boolean rejectDigit) {
+    this.rejectDigit = rejectDigit;
+  }
+
+  public boolean getRejectDigit() {
+    return rejectDigit;
+  }
+
   public boolean doClassify(Token token) {
     if (token.getWordCount() > 1) return false;  // just take one word at a time
 
@@ -174,7 +188,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     final int len = tokenText.length();
 
     // check lookups first so attributes get added
-    final boolean isStopword = len > 1 ? super.doClassifyStopword(token) : false;
+    final boolean isStopword = super.doClassifyStopword(token);
 
     if (isStopword) return false;
 
@@ -212,6 +226,16 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     // check for embedded dash
     if (result && len > 1 && !acceptDash) {
       result = (tokenText.indexOf('-') < 0);
+    }
+
+    // check for embedded digit
+    if (result && len > 1 && rejectDigit) {
+      for (int i = 1; i < len; ++i) {
+        if (Character.isDigit(tokenText.charAt(i))) {
+          result = false;
+          break;
+        }
+      }
     }
 
     if (result) {
