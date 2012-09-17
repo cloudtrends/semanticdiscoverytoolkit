@@ -349,7 +349,7 @@ public class Token {
       _nextToken = tokenizer.getNextToken(this);
       computedNextToken = true;
 
-      if (_nextToken != null && !_nextToken.computedPrevToken) {
+      if (_nextToken != null) {
         _nextToken._prevToken = this;
         _nextToken.computedPrevToken = true;
       }
