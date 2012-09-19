@@ -19,7 +19,9 @@
 package org.sd.token;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.sd.util.InputContext;
 
@@ -243,6 +245,10 @@ public class StandardTokenizer implements Tokenizer {
           else if (curChar == '/' || curChar == '\\') {
             curBreak = options.getSlashBreak();
           }
+          // else if (isPunctuation(curChar)) {
+          //   // calling "non-char + punct + char" (right-bordered punctuation) embedded
+          //   curBreak = options.getEmbeddedPunctuationBreak();
+          // }
           else {
             // e.g. "$24.99"
             curBreak = options.getSymbolBreak();
@@ -257,6 +263,9 @@ public class StandardTokenizer implements Tokenizer {
         }
         else if (isPunctuation(curChar)) {
           //todo: apply other heuristics for recognizing a punctuation char as a part of a token
+
+          // calling char + punct + non-char (left-bordered punctuation) embedded
+
           curBreak = Break.SINGLE_WIDTH_HARD_BREAK;
         }
         else if (isSymbol(curChar)) {
@@ -582,10 +591,44 @@ public class StandardTokenizer implements Tokenizer {
     return result;
   }
 
+  /**
+   * Split the text from start to end position into words based on breaks.
+   */
+  public String[] getWords(int startPosition, int endPosition) {
+    final List<String> result = buildWords(startPosition, endPosition);
+    return result.toArray(new String[result.size()]);
+  }
+
+  private final List<String> buildWords(int startPosition, int endPosition) {
+    final List<String> result = new ArrayList<String>();
+
+    int curStart = skipImmediateBreaks(startPosition);
+    int curEnd = curStart + 1;
+    boolean hasText = true;
+
+    final Map<Integer, Break> pos2break = getPos2Break();
+    if (endPosition > text.length()) endPosition = text.length();
+    for (; curEnd < endPosition; ++curEnd) {
+      final Break posBreak = pos2break.get(curEnd);
+      if (posBreak != null) {
+        result.add(text.substring(curStart, curEnd));
+        curStart = curEnd = skipImmediateBreaks(curEnd);
+        hasText = false;
+      }
+      else {
+        hasText = true;
+      }
+    }
+    if (hasText && curStart < endPosition) {
+      result.add(text.substring(curStart, endPosition));
+    }
+
+    return result;
+  }
+
   public final int computeWordCount(Token startToken, Token endToken) {
     return computeWordCount(startToken.getStartIndex(), endToken.getEndIndex());
   }
-
 
   private final int computeWordCount(int startIndex, int endIndex) {
     int result = 0;

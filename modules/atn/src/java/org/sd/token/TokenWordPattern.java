@@ -158,7 +158,7 @@ public class TokenWordPattern {
     private String key;
 
     public TokenPattern(Token token, PatternKey patternKey) {
-      this.key = buildKey(token.getText().split("\\s+"), patternKey);
+      this.key = buildKey(token.getSoftWords(), patternKey);
     }
 
     public String getKey() {
@@ -177,50 +177,9 @@ public class TokenWordPattern {
     }
 
     private final char buildKey(String text, PatternKey patternKey) {
-      char result = getChar(patternKey, KeyLabel.Special);
-
       final WordCharacteristics wc = new WordCharacteristics(text);
-
-      if (wc.hasDigit()) {
-        if (wc.hasLower() || wc.hasUpper() || wc.hasOther()) {
-          result = getChar(patternKey, KeyLabel.MixedNumber);
-        }
-        else {
-          result = getChar(patternKey, KeyLabel.Number);
-        }
-      }
-      else if (wc.hasLower()) {
-        if (wc.len() == 1) {
-          result = getChar(patternKey, KeyLabel.SingleLower);
-        }
-        else if (!wc.hasUpper()) {
-          result = getChar(patternKey, KeyLabel.AllLower);
-        }
-        else if (wc.firstIsLower()) {
-          result = getChar(patternKey, KeyLabel.LowerMixed);
-        }
-        else if (wc.firstIsUpper()) {
-          if (!wc.laterIsUpper()) {
-            result = getChar(patternKey, KeyLabel.Capitalized);
-          }
-          else {  // hasUpper && !firstIsLower && laterIsUpper
-            result = getChar(patternKey, KeyLabel.UpperMixed);
-          }
-        }
-        // otherwise, special
-      }
-      else if (wc.hasUpper()) {
-        if (wc.len() == 1) {
-          result = getChar(patternKey, KeyLabel.SingleUpper);
-        }
-
-        // NOTE: hasLower=false && hasDigit=false here
-        else if (!wc.hasOther()) {
-          result = getChar(patternKey, KeyLabel.AllCaps);
-        }
-        // otherwise, upper w/symbols is special
-      }
-
+      final KeyLabel keyLabel = wc.getKeyLabel();
+      final char result = getChar(patternKey, keyLabel);
       return result;
     }
   }
@@ -295,29 +254,6 @@ public class TokenWordPattern {
     defaultKeyLabel.put(KeyLabel.MixedNumber.getDefaultChar(), KeyLabel.MixedNumber);
     defaultKeyLabel.put(KeyLabel.Special.getDefaultChar(), KeyLabel.Special);
   }
-
-  public enum KeyLabel {
-    AllLower('l'),
-    Capitalized('c'), 
-    AllCaps('C'), 
-    SingleLower('i'), 
-    SingleUpper('I'), 
-    LowerMixed('m'), 
-    UpperMixed('M'), 
-    Number('n'), 
-    MixedNumber('N'), 
-    Special('s');
-
-    private char defaultChar;
-
-    KeyLabel(char c) {
-      this.defaultChar = c;
-    }
-
-    public char getDefaultChar() {
-      return defaultChar;
-    }
-  };
 
   public static final class PatternKey {
 
