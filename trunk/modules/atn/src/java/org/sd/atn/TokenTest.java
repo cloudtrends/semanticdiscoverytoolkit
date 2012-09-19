@@ -21,6 +21,8 @@ package org.sd.atn;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.sd.token.KeyLabel;
+import org.sd.token.KeyLabelMatcher;
 import org.sd.token.Token;
 import org.sd.util.Usage;
 import org.sd.xml.DomElement;
@@ -72,7 +74,15 @@ import org.w3c.dom.NodeList;
        "   <!-- NOTE: delims are applied only if something else succeeds -->\n" +
        "   <predelim>...</predelim>\n" +
        "   <postdelim>...</postdelim>\n" +
-       " </test>"
+       "\n" +
+       "   <!-- Additional token-based tests -->\n" +
+       "   <wordPattern key='..........' onChange='fail|succeed' prevToken='true|false' curToken='true|false' nextToken='true|false'/>\n" +
+       "   <hardBreak onExists='fail|succeed' prevToken='true|false' nextToken='true|false'/>\n" +
+       " </test>\n" +
+       "\n" +
+       " - wordPattern clauses are based on a KeyLabelMatcher with a key that identifies equivalence classes between keyLabels for token words.\n" +
+       "   - it will test for pattern changes (or matches) between prevToken and curToken, curToken and nextToken, or prevToken and nextToken.\n" +
+       " - hardBreak clauses are based on finding tokenizer hard breaks between the prevToken and curToken and/or curToken and nextToken."
   )
 public class TokenTest extends BaseClassifierTest {
   
@@ -83,6 +93,7 @@ public class TokenTest extends BaseClassifierTest {
   private boolean revise;
   private List<String> classifiers;
   private List<DelimTest> delimTests;
+  private List<TokenClause> tokenClauses;
 
   public TokenTest(DomNode testNode, ResourceManager resourceManager) {
     super(testNode, resourceManager);
@@ -124,6 +135,26 @@ public class TokenTest extends BaseClassifierTest {
       }
     }
 
+    final NodeList wordPatternNodes = testNode.selectNodes("wordPattern");
+    if (wordPatternNodes != null && wordPatternNodes.getLength() > 0) {
+      for (int nodeNum = 0; nodeNum < wordPatternNodes.getLength(); ++nodeNum) {
+        final DomElement wpElt = (DomElement)wordPatternNodes.item(nodeNum);
+        final WordPatternClause wordPatternClause = new WordPatternClause(wpElt);
+        if (tokenClauses == null) tokenClauses = new ArrayList<TokenClause>();
+        tokenClauses.add(wordPatternClause);
+      }
+    }
+
+    final NodeList hardBreakNodes = testNode.selectNodes("hardBreak");
+    if (hardBreakNodes != null && hardBreakNodes.getLength() > 0) {
+      for (int nodeNum = 0; nodeNum < hardBreakNodes.getLength(); ++nodeNum) {
+        final DomElement hbElt = (DomElement)hardBreakNodes.item(nodeNum);
+        final HardBreakClause hardBreakClause = new HardBreakClause(hbElt);
+        if (tokenClauses == null) tokenClauses = new ArrayList<TokenClause>();
+        tokenClauses.add(hardBreakClause);
+      }
+    }
+
     //
     // under token node, setup allowed and disallowed tokens
     //
@@ -138,7 +169,7 @@ public class TokenTest extends BaseClassifierTest {
     // - when onlyFirstToken='true', only test against a "first" constituent token
     // - when onlyLastToken='true', only test against a "last" constituent token
     //
-    // <test reverse='true|false' next='true|false' revise='true|false'>
+    // <test reverse='true|false' next='true|false' prev='true|false' revise='true|false'>
     //   <jclass>org.sd.atn.TokenTest</jclass>
     //   <terms caseSensitive='true|false'>
     //     <term>...</term>
@@ -152,12 +183,23 @@ public class TokenTest extends BaseClassifierTest {
     //   <!-- NOTE: delims are applied only if something else succeeds -->
     //   <predelim>...</predelim>
     //   <postdelim>...</postdelim>
+    //
+    //   <!-- Additional token-based tests -->
+    //   <wordPattern key='..........' onChange='fail|succeed' prevToken='true|false' curToken='true|false' nextToken='true|false'/>
+    //   <hardBreak onExists='fail|succeed' prevToken='true|false' nextToken='true|false'/>
     // </test>
-
+    //
+    // - wordPattern clauses are based on a KeyLabelMatcher with a key that identifies equivalence classes between keyLabels for token words.
+    //   - it will test for pattern changes (or matches) between prevToken and curToken, curToken and nextToken, or prevToken and nextToken.
+    // - hardBreak clauses are based on finding tokenizer hard breaks between the prevToken and curToken and/or curToken and nextToken.
+    //
   }
 			
   protected boolean doAccept(Token token, AtnState curState) {
     boolean result = false;
+
+    boolean verifyAdditional = true;
+    Token orig = token;
 
     if (next) {
       if (verbose) {
@@ -172,7 +214,7 @@ public class TokenTest extends BaseClassifierTest {
         }
       }
 
-      token = token.getNextToken();
+      orig = token = token.getNextToken();
 
       if (verbose) {
         System.out.println("\tnext token=" + token);
@@ -191,7 +233,7 @@ public class TokenTest extends BaseClassifierTest {
         }
       }
 
-      token = getPrevToken(token, curState);
+      orig = token = getPrevToken(token);
 
       if (verbose) {
         System.out.println("\tprev token=" + token);
@@ -200,7 +242,7 @@ public class TokenTest extends BaseClassifierTest {
 
     for (; token != null; token = revise ? token.getRevisedToken() : null) {
       if (!result && roteListClassifier != null) {
-        result = roteListClassifier.doClassify(token);
+        verifyAdditional = result = roteListClassifier.doClassify(token);
 
         if (result && verbose) {
           System.out.println("\troteListClassifier.classify=true");
@@ -208,7 +250,7 @@ public class TokenTest extends BaseClassifierTest {
       }
 
       if (!result && regexClassifier != null) {
-        result = regexClassifier.doClassify(token);
+        verifyAdditional = result = regexClassifier.doClassify(token);
 
         if (result && verbose) {
           System.out.println("\tregexClassifier.classify=true");
@@ -228,7 +270,7 @@ public class TokenTest extends BaseClassifierTest {
                   System.out.println("\tclassifier(" + cat + ").classify=true");
                 }
 
-                result = true;
+                verifyAdditional = result = true;
                 break;
               }
             }
@@ -237,7 +279,7 @@ public class TokenTest extends BaseClassifierTest {
             // check for literal grammar token match
             if (!grammar.getCat2Rules().containsKey(cat)) {
               // use an "identity" classifier for literal grammar tokens
-              result = cat.equals(token.getText());
+              verifyAdditional = result = cat.equals(token.getText());
 
               if (result && verbose) {
                 System.out.println("\tgrammarRule(" + cat + ").classify=true");
@@ -246,7 +288,7 @@ public class TokenTest extends BaseClassifierTest {
 
             // check for a token feature that matches the category
             if (!result) {
-              result = token.getFeature(cat, null) != null;
+              verifyAdditional = result = token.getFeature(cat, null) != null;
 
               if (result && verbose) {
                 System.out.println("\ttokenFeature(" + cat + "," + token.getFeature(cat, null) + ").classify=true");
@@ -262,7 +304,7 @@ public class TokenTest extends BaseClassifierTest {
 
     if (result && delimTests != null && token != null) {
       for (DelimTest delimTest : delimTests) {
-        result = delimTest.accept(token, curState);
+        verifyAdditional = result = delimTest.accept(token, curState);
         if (!result) {
           if (verbose) {
             System.out.println("\tdelimTest(pre=" + delimTest.isPre() + ") FAILED! token=" + token + " delims=" +
@@ -273,10 +315,22 @@ public class TokenTest extends BaseClassifierTest {
       }
     }
 
+    if (verifyAdditional && tokenClauses != null) {
+      for (TokenClause tokenClause : tokenClauses) {
+        verifyAdditional = result = tokenClause.accept(orig);
+
+        if (result && verbose) {
+          System.out.println("\ttokenClause.accept(" + orig + ")=" + result);
+        }
+
+        if (result) break;
+      }
+    }
+
     return result;
   }
 
-  private final Token getPrevToken(Token token, AtnState curState) {
+  private static final Token getPrevToken(Token token) {
     Token result = null;
 
     if (token.getStartIndex() == 0) return result;  // there is no prev token
@@ -285,11 +339,88 @@ public class TokenTest extends BaseClassifierTest {
       result = token.getPrevToken();
     }
     catch (Exception e) {
-      if (verbose) {
-        System.out.println("Can't compute prevToken(" + token + ")! " + e);
-      }
+      // leave result as null
     }
 
     return result;
+  }
+
+
+  private static abstract class TokenClause {
+    
+    protected abstract boolean doCompare(Token token1, Token token2);
+
+
+    protected boolean succeedOnTest;
+    protected boolean prevToken;
+    protected boolean curToken;
+    protected boolean nextToken;
+
+    protected TokenClause(DomElement elt, String testAtt) {
+      this.succeedOnTest = elt.getAttributeValue(testAtt, "fail").equals("succeed");
+      this.prevToken = elt.getAttributeBoolean("prevToken", true);
+      this.curToken = elt.getAttributeBoolean("curToken", true);
+      this.nextToken = elt.getAttributeBoolean("nextToken", true);
+    }
+
+    public final boolean accept(Token token) {
+      boolean result = true;
+
+      if (token != null) {
+
+        final Token pToken = prevToken ? getPrevToken(token) : null;
+        final Token nToken = nextToken ? token.getNextToken() : null;
+
+        if (pToken != null) {
+          if (curToken) {
+            result = accept(pToken, token);
+          }
+          else if (nToken != null) {
+            result = accept(pToken, nToken);
+          }
+        }
+
+        if (result && nToken != null) {
+          result = accept(token, nToken);
+        }
+      }
+
+      return result;
+    }
+
+    private final boolean accept(Token token1, Token token2) {
+      final boolean accept = doCompare(token1, token2);
+      return (succeedOnTest && !accept) || (!succeedOnTest && accept);
+    }
+  }
+
+  private static final class WordPatternClause extends TokenClause {
+    
+    private KeyLabelMatcher matcher;
+
+    public WordPatternClause(DomElement wpElt) {
+      super(wpElt, "onChange");
+
+      final String pattern = wpElt.getAttributeValue("key");
+      this.matcher = new KeyLabelMatcher(pattern);
+    }
+
+    protected boolean doCompare(Token token1, Token token2) {
+      final KeyLabel[] labels1 = token1.getKeyLabels();
+      final KeyLabel[] labels2 = token2.getKeyLabels();
+      return matcher.matches(labels1, labels2);
+    }
+  }
+
+  private static final class HardBreakClause extends TokenClause {
+
+    public HardBreakClause(DomElement hbElt) {
+      super(hbElt, "onExists");
+      super.curToken = true;  // always compare against current
+    }
+
+    protected boolean doCompare(Token token1, Token token2) {
+      return token2.followsHardBreak();
+    }
   }
 }

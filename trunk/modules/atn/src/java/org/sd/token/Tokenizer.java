@@ -141,6 +141,11 @@ public interface Tokenizer {
   public Token buildToken(int startPosition, int endPosition);
 
   /**
+   * Split the text from start to end position into words based on breaks.
+   */
+  public String[] getWords(int startPosition, int endPosition);
+
+  /**
    * Determine whether this instance is still initializing.
    */
   public boolean initializing();

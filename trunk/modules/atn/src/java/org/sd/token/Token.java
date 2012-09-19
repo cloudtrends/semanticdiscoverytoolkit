@@ -56,6 +56,45 @@ public class Token {
     return text;
   }
 
+  private String[] _softWords;
+  /**
+   * Get this token's soft-break-delimited words.
+   */
+  public String[] getSoftWords() {
+    if (_softWords == null) {
+      _softWords = tokenizer.getWords(getStartIndex(), getEndIndex());
+    }
+    return _softWords;
+  }
+
+  private WordCharacteristics[] _wcs;
+  /**
+   * Get the word characteristics for this token, one for
+   * each of its "soft words".
+   */
+  public WordCharacteristics[] getWordCharacteristics() {
+    if (_wcs == null) {
+      final String[] softWords = getSoftWords();
+      _wcs = new WordCharacteristics[softWords.length];
+      for (int i = 0; i < softWords.length; ++i) {
+        _wcs[i] = new WordCharacteristics(softWords[i]);
+      }
+    }
+    return _wcs;
+  }
+
+  private KeyLabel[] _keyLabels;
+  public KeyLabel[] getKeyLabels() {
+    if (_keyLabels == null) {
+      final WordCharacteristics[] wcs = getWordCharacteristics();
+      _keyLabels = new KeyLabel[wcs.length];
+      for (int i = 0; i < wcs.length; ++i) {
+        _keyLabels[i] = wcs[i].getKeyLabel();
+      }
+    }
+    return _keyLabels;
+  }
+
   private String _preDelim;
   public String getPreDelim() {
     if (_preDelim == null) {

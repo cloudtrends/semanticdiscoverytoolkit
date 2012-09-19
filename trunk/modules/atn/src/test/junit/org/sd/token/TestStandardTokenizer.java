@@ -338,6 +338,105 @@ public class TestStandardTokenizer extends TestCase {
     assertTrue(tokenizeTest.runTest());
   }
 
+  public void testBuildWords() {
+    final StandardTokenizerOptions options = new StandardTokenizerOptions();
+    final StandardTokenizer tokenizer = new StandardTokenizer("This here -- is a shortButSweet *Test*!", options);
+
+    String[] words = null;
+
+    // normal token start to normal token end
+    words = tokenizer.getWords(0, 9);
+    assertEquals(2, words.length);
+    assertEquals("This", words[0]);
+    assertEquals("here", words[1]);
+
+    // beyond token start to before token end
+    words = tokenizer.getWords(1, 7);
+    assertEquals(2, words.length);
+    assertEquals("his", words[0]);
+    assertEquals("he", words[1]);
+
+    // normal over multi-char break
+    words = tokenizer.getWords(5, 15);
+    assertEquals(2, words.length);
+    assertEquals("here", words[0]);
+    assertEquals("is", words[1]);
+
+    // before token start to after token end
+    words = tokenizer.getWords(10, 16);
+    assertEquals(1, words.length);
+    assertEquals("is", words[0]);
+
+    // over zero-width breaks
+    words = tokenizer.getWords(5, 37);
+    assertEquals(7, words.length);
+    assertEquals("here", words[0]);
+    assertEquals("is", words[1]);
+    assertEquals("a", words[2]);
+    assertEquals("short", words[3]);
+    assertEquals("But", words[4]);
+    assertEquals("Sweet", words[5]);
+    assertEquals("*Test", words[6]);
+
+    // over no breaks
+    words = tokenizer.getWords(1, 3);
+    assertEquals(1, words.length);
+    assertEquals("hi", words[0]);
+
+    // over no words
+    words = tokenizer.getWords(0, 0);
+    assertEquals(0, words.length);
+  }
+
+  public void testTokenCharacteristicsCamel1() {
+    final StandardTokenizerOptions options = new StandardTokenizerOptions();
+    final StandardTokenizer tokenizer = new StandardTokenizer("CamelTest", options);
+
+    WordCharacteristics[] wcs = null;
+    Token token = null;
+
+    // first (longest token)
+    token = tokenizer.getToken(0);
+    wcs = token.getWordCharacteristics();
+    assertEquals(2, wcs.length);
+    assertEquals(KeyLabel.Capitalized, wcs[0].getKeyLabel());
+    assertEquals(KeyLabel.Capitalized, wcs[1].getKeyLabel());
+
+    // next (shortest token)
+    token = token.getRevisedToken();
+    wcs = token.getWordCharacteristics();
+    assertEquals(1, wcs.length);
+    assertEquals(KeyLabel.Capitalized, wcs[0].getKeyLabel());
+  }
+
+  public void testTokenCharacteristicsDash1() {
+    final StandardTokenizerOptions options = new StandardTokenizerOptions();
+    options.setEmbeddedDashBreak(Break.NO_BREAK);
+    final StandardTokenizer tokenizer = new StandardTokenizer("Dash-Test", options);
+
+    WordCharacteristics[] wcs = null;
+    Token token = null;
+
+    token = tokenizer.getToken(0);
+    wcs = token.getWordCharacteristics();
+    assertEquals(1, wcs.length);
+    assertEquals(KeyLabel.UpperMixed, wcs[0].getKeyLabel());
+  }
+
+  public void testTokenCharacteristicsDash2() {
+    final StandardTokenizerOptions options = new StandardTokenizerOptions();
+    options.setEmbeddedDashBreak(Break.NO_BREAK);
+    final StandardTokenizer tokenizer = new StandardTokenizer("Dash-test", options);
+
+    WordCharacteristics[] wcs = null;
+    Token token = null;
+
+    token = tokenizer.getToken(0);
+    wcs = token.getWordCharacteristics();
+    assertEquals(1, wcs.length);
+    assertEquals(KeyLabel.Capitalized, wcs[0].getKeyLabel());
+  }
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestStandardTokenizer.class);

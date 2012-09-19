@@ -41,13 +41,17 @@ import org.sd.xml.XmlFactory;
 public class AtnParserWrapper {
   
   public static AtnParserWrapper buildInstance(DomElement parserElement, ResourceManager resourceManager) {
+    DomElement parserSupplement = null;
     final String parserFileName = parserElement.getAttributeValue("file", null);
     if (parserFileName != null) {
       final File parserFile = resourceManager.getOptions().getWorkingFile(parserFileName, "workingDir");
       System.out.println(new Date() + ": AtnParserWrapper loading parserFile '" + parserFile.getAbsolutePath() + "'.");
       if (parserFile.exists()) {
         try {
-          parserElement = (DomElement)XmlFactory.loadDocument(parserFile, false, resourceManager.getOptions()).getDocumentElement();
+          final DomElement parserFileElement
+            = (DomElement)XmlFactory.loadDocument(parserFile, false, resourceManager.getOptions()).getDocumentElement();
+          parserSupplement = parserElement;  // parserElement becomes the supplement
+          parserElement = parserFileElement; // to the loaded config file
         }
         catch (IOException e) {
           throw new IllegalStateException(e);
@@ -61,6 +65,9 @@ public class AtnParserWrapper {
     }
 
     final AtnParserWrapper parserWrapper = new AtnParserWrapper(parserElement, resourceManager);
+    if (parserSupplement != null) parserWrapper.supplement(parserSupplement, resourceManager);
+    parserWrapper.validateInstance();
+
     return parserWrapper;
   }
 
@@ -146,52 +153,114 @@ public class AtnParserWrapper {
 
 
   AtnParserWrapper(DomElement parserElement, ResourceManager resourceManager) {
+    this.id = "<UNSPECIFIED>";
+    this.parser = null;
+    this.prequalifierElement = null;
+    this.prequalifier = null;
+    this.parseSelectorElement = null;
+    this.parseSelector = null;
+    this.ambiguityResolverElement = null;
+    this.ambiguityResolver = null;
+    this.tokenizerOverride = null;
+    this.tokenizerOptions = new StandardTokenizerOptions();
+    this.parseOptions = new AtnParseOptions(resourceManager);
+    this.maxWordCount = 0;
+
+    doSupplement(parserElement, resourceManager);
+  }
+
+  private final void doSupplement(DomElement parserElement, ResourceManager resourceManager) {
     this.parserElement = parserElement;
 
+    // Set ID
     final DomElement idElement = (DomElement)parserElement.selectSingleNode("id");
     if (idElement != null) {
       this.id = idElement.getTextContent();
     }
-    else {
-      this.id = "<UNSPECIFIED>";
-    }
 
+    // Load grammar (parser)
     final DomElement grammarFileElement = (DomElement)parserElement.selectSingleNode("grammar");
     final DomElement grammarElement = AtnGrammar.getGrammarElement(grammarFileElement);
-
-    if (grammarElement == null) {
-      throw new IllegalArgumentException("Parser element must have 'grammar' child!");
+    if (grammarElement != null) {
+      final boolean override = grammarElement.getAttributeBoolean("override", false);
+      if (parser != null && !override) {
+        parser.getGrammar().supplement(grammarElement);
+      }
+      else {
+        this.parser = new AtnParser(grammarElement, resourceManager);
+      }
     }
 
-    this.parser = new AtnParser(grammarElement, resourceManager);
-
-    this.prequalifierElement = (DomElement)parserElement.selectSingleNode("prequalifier");
-    this.prequalifier = (prequalifierElement != null) ? (AtnParsePrequalifier)resourceManager.getResource(prequalifierElement) : null;
-
-    this.parseSelectorElement = (DomElement)parserElement.selectSingleNode("parseSelector");
-    this.parseSelector = (parseSelectorElement != null) ? (AtnParseSelector)resourceManager.getResource(parseSelectorElement) : null;
-
-    this.ambiguityResolverElement = (DomElement)parserElement.selectSingleNode("ambiguityResolver");
-    this.ambiguityResolver = (ambiguityResolverElement != null) ? (AmbiguityResolver)resourceManager.getResource(ambiguityResolverElement) : null;
-
-    this.tokenizerOverride = (DomElement)parserElement.selectSingleNode("tokenizer");
-
-    final DomElement tokenizerOptionsElement = (DomElement)parserElement.selectSingleNode("tokenizerOptions");
-    this.tokenizerOptions = tokenizerOptionsElement == null ? new StandardTokenizerOptions() : new StandardTokenizerOptions(tokenizerOptionsElement);
-
-    final DomElement parseOptionsElement = (DomElement)parserElement.selectSingleNode("parseOptions");
-    this.parseOptions = parseOptionsElement == null ? new AtnParseOptions(resourceManager) : new AtnParseOptions(parseOptionsElement, resourceManager);
-
-    this.minNumTokens = this.parseOptions.getAdjustInputForTokens() ? this.parser.getGrammar().computeMinNumTokens(this.parseOptions) : 1;
-    this.maxWordCount = this.parser.getGrammar().computeMaxWordCount();
-
-    // reconcile maxWordCount with tokenBreakLimit, which is considered to set a minimum for this when non-zero
-    //todo: currently using maxWordCount as an estimate for tokenBreakLimit. Fix if/when this becomes a problem.
-    final int tokenBreakLimit = tokenizerOptions.getTokenBreakLimit();
-    if ((tokenBreakLimit == 0 && maxWordCount > 0) || (this.maxWordCount > tokenBreakLimit)) {
-      tokenizerOptions.setTokenBreakLimit(maxWordCount);
+    // Load prequalifier
+    final DomElement pqElt = (DomElement)parserElement.selectSingleNode("prequalifier");
+    if (pqElt != null) {
+      this.prequalifierElement = pqElt;
+      this.prequalifier = (AtnParsePrequalifier)resourceManager.getResource(prequalifierElement);
     }
-    System.out.println(new Date() + ": AtnParserWrapper (" + id + ") tokenBreakLimit=" + tokenizerOptions.getTokenBreakLimit());
+
+    // Load parse selector
+    final DomElement psElt = (DomElement)parserElement.selectSingleNode("parseSelector");
+    if (psElt != null) {
+      this.parseSelectorElement = psElt;
+      this.parseSelector = (AtnParseSelector)resourceManager.getResource(parseSelectorElement);
+    }
+
+    // Load ambiguity resolver
+    final DomElement arElt = (DomElement)parserElement.selectSingleNode("ambiguityResolver");
+    if (arElt != null) {
+      this.ambiguityResolverElement = arElt;
+      this.ambiguityResolver = (AmbiguityResolver)resourceManager.getResource(ambiguityResolverElement);
+    }
+
+    // Load tokenizer override
+    final DomElement tovElt = (DomElement)parserElement.selectSingleNode("tokenizer");
+    if (tovElt != null) {
+      this.tokenizerOverride = tovElt;
+    }
+
+    // Load tokenizer options
+    final DomElement topElt = (DomElement)parserElement.selectSingleNode("tokenizerOptions");
+    if (topElt != null) {
+      this.tokenizerOptions = new StandardTokenizerOptions(topElt);
+    }
+
+    // Load parse options
+    final DomElement poElt = (DomElement)parserElement.selectSingleNode("parseOptions");
+    if (poElt != null) {
+      this.parseOptions = new AtnParseOptions(poElt, resourceManager);
+    }
+
+    // Update min/max counts
+    if (parser != null) {
+      this.maxWordCount = this.parser.getGrammar().computeMaxWordCount();
+      if (parseOptions != null) {
+        this.minNumTokens = this.parseOptions.getAdjustInputForTokens() ? this.parser.getGrammar().computeMinNumTokens(this.parseOptions) : 1;
+      }
+    }
+
+    // Update token break limit
+    if (tokenizerOptions != null) {
+      // reconcile maxWordCount with tokenBreakLimit, which is considered to set a minimum for this when non-zero
+      //todo: currently using maxWordCount as an estimate for tokenBreakLimit. Fix if/when this becomes a problem.
+      final int tokenBreakLimit = tokenizerOptions.getTokenBreakLimit();
+      if ((tokenBreakLimit == 0 && maxWordCount > 0) || (this.maxWordCount > tokenBreakLimit)) {
+        tokenizerOptions.setTokenBreakLimit(maxWordCount);
+      }
+      System.out.println(new Date() + ": AtnParserWrapper (" + id + ") tokenBreakLimit=" + tokenizerOptions.getTokenBreakLimit());
+    }
+  }
+
+  public void supplement(DomElement supplementElement, ResourceManager resourceManager) {
+    doSupplement(supplementElement, resourceManager);
+  }
+
+  /**
+   * Make sure this instance has all necessary components defined.
+   */
+  public void validateInstance() {
+    if (parser == null) {
+      throw new IllegalArgumentException("No 'grammar' found in parser config!");
+    }
   }
 
   /**

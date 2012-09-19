@@ -43,8 +43,11 @@ public class WordCharacteristics {
   private TreeSet<Integer> digits;
   private TreeSet<Integer> others;
 
+  private KeyLabel _keyLabel;
   private String _startDelims;
   private String _endDelims;
+
+  private final Object keyLabelMutex = new Object();
 
   public WordCharacteristics(String word) {
     this.word = word;
@@ -99,6 +102,15 @@ public class WordCharacteristics {
 
   public int len() {
     return len;
+  }
+
+  public KeyLabel getKeyLabel() {
+    synchronized (keyLabelMutex) {
+      if (_keyLabel == null) {
+        _keyLabel = determineKeyLabel();
+      }
+    }
+    return _keyLabel;
   }
 
   public Type getType(int pos) {
@@ -339,6 +351,52 @@ public class WordCharacteristics {
       --endIdx;
     }
     return endIdx;
+  }
+
+  private final KeyLabel determineKeyLabel() {
+    KeyLabel result = KeyLabel.Special;
+
+    if (hasDigit()) {
+      if (hasLower() || hasUpper() || hasOther()) {
+        result = KeyLabel.MixedNumber;
+      }
+      else {
+        result = KeyLabel.Number;
+      }
+    }
+    else if (hasLower()) {
+      if (len() == 1) {
+        result = KeyLabel.SingleLower;
+      }
+      else if (!hasUpper()) {
+        result = KeyLabel.AllLower;
+      }
+      else if (firstIsLower()) {
+        result = KeyLabel.LowerMixed;
+      }
+      else if (firstIsUpper()) {
+        if (!laterIsUpper()) {
+          result = KeyLabel.Capitalized;
+        }
+        else {  // hasUpper && !firstIsLower && laterIsUpper
+          result = KeyLabel.UpperMixed;
+        }
+      }
+      // otherwise, special
+    }
+    else if (hasUpper()) {
+      if (len() == 1) {
+        result = KeyLabel.SingleUpper;
+      }
+
+      // NOTE: hasLower=false && hasDigit=false here
+      else if (!hasOther()) {
+        result = KeyLabel.AllCaps;
+      }
+      // otherwise, upper w/symbols is special
+    }
+
+    return result;
   }
 
   private final String buildStartDelims() {
