@@ -223,10 +223,12 @@ public class TestSentenceIterator extends TestCase {
 
     doTest(new SentenceIterator("Cowdrey Mary E. Mrs. h. 18 Talbot ave. N. B.", true, false),
            new String[] {
-             "Cowdrey Mary E. Mrs. h. 18 Talbot ave. N. B.",
+             "Cowdrey Mary E. Mrs. h. 18 Talbot ave.",
+             "N. B.",
            },
            new int[][] {
-             {0, 44},
+             {0, 39},
+             {39, 44},
            });
   }
 

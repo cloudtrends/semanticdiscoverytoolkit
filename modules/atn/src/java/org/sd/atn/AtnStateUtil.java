@@ -244,7 +244,18 @@ public class AtnStateUtil {
    * Determine whether the state is the first in its constituent.
    */
   public static final boolean isFirstConstituentState(AtnState curState) {
-    return (curState.getStepNum() == 0 && curState.getRepeatNum() == 0) || curState.getPushState() == curState.getParentState();
+    boolean result = (curState.getStepNum() == 0 && curState.getRepeatNum() == 0);
+
+    if (!result) {
+      if (curState.isPoppedState()) {
+        result = isFirstConstituentState(curState.getParentState());
+      }
+      else {
+        result = (curState.getPushState() == curState.getParentState());
+      }
+    }
+
+    return result;
   }
 
   /**
