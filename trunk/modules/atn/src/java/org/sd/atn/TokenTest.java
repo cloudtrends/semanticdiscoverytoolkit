@@ -21,12 +21,16 @@ package org.sd.atn;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.sd.token.Feature;
 import org.sd.token.KeyLabel;
 import org.sd.token.KeyLabelMatcher;
 import org.sd.token.Token;
 import org.sd.util.Usage;
+import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
+import org.sd.xml.XPath;
+import org.sd.xml.XmlLite;
 import org.w3c.dom.NodeList;
 
 /**
@@ -78,11 +82,13 @@ import org.w3c.dom.NodeList;
        "   <!-- Additional token-based tests -->\n" +
        "   <wordPattern key='..........' onChange='fail|succeed' prevToken='true|false' curToken='true|false' nextToken='true|false'/>\n" +
        "   <hardBreak onExists='fail|succeed' prevToken='true|false' nextToken='true|false'/>\n" +
+       "   <interp onExists='fail|succeed' type='featureKey' xpath='xpath'/>\n" +
        " </test>\n" +
        "\n" +
        " - wordPattern clauses are based on a KeyLabelMatcher with a key that identifies equivalence classes between keyLabels for token words.\n" +
        "   - it will test for pattern changes (or matches) between prevToken and curToken, curToken and nextToken, or prevToken and nextToken.\n" +
-       " - hardBreak clauses are based on finding tokenizer hard breaks between the prevToken and curToken and/or curToken and nextToken."
+       " - hardBreak clauses are based on finding tokenizer hard breaks between the prevToken and curToken and/or curToken and nextToken.\n" +
+       " - interp clauses are based on finding an interp with the given featureKey and, optionally, finding the given xpath in the interp on the curToken.\n"
   )
 public class TokenTest extends BaseClassifierTest {
   
@@ -155,6 +161,16 @@ public class TokenTest extends BaseClassifierTest {
       }
     }
 
+    final NodeList interpNodes = testNode.selectNodes("interp");
+    if (interpNodes != null && interpNodes.getLength() > 0) {
+      for (int nodeNum = 0; nodeNum < interpNodes.getLength(); ++nodeNum) {
+        final DomElement iElt = (DomElement)interpNodes.item(nodeNum);
+        final InterpClause interpClause = new InterpClause(iElt);
+        if (tokenClauses == null) tokenClauses = new ArrayList<TokenClause>();
+        tokenClauses.add(interpClause);
+      }
+    }
+
     //
     // under token node, setup allowed and disallowed tokens
     //
@@ -187,11 +203,13 @@ public class TokenTest extends BaseClassifierTest {
     //   <!-- Additional token-based tests -->
     //   <wordPattern key='..........' onChange='fail|succeed' prevToken='true|false' curToken='true|false' nextToken='true|false'/>
     //   <hardBreak onExists='fail|succeed' prevToken='true|false' nextToken='true|false'/>
+    //   <interp onExists='fail|succeed' type='featureKey' xpath='xpath'/>
     // </test>
     //
     // - wordPattern clauses are based on a KeyLabelMatcher with a key that identifies equivalence classes between keyLabels for token words.
     //   - it will test for pattern changes (or matches) between prevToken and curToken, curToken and nextToken, or prevToken and nextToken.
     // - hardBreak clauses are based on finding tokenizer hard breaks between the prevToken and curToken and/or curToken and nextToken.
+    // - interp clauses are based on finding an interp with the given featureKey and, optionally, finding the given xpath in the interp on the curToken.\n"
     //
   }
 			
@@ -317,7 +335,7 @@ public class TokenTest extends BaseClassifierTest {
 
     if (verifyAdditional && tokenClauses != null) {
       for (TokenClause tokenClause : tokenClauses) {
-        verifyAdditional = result = tokenClause.accept(orig);
+        verifyAdditional = result = tokenClause.accept(orig, verbose);
 
         if (result && verbose) {
           System.out.println("\ttokenClause.accept(" + orig + ")=" + result);
@@ -348,49 +366,57 @@ public class TokenTest extends BaseClassifierTest {
 
   private static abstract class TokenClause {
     
-    protected abstract boolean doCompare(Token token1, Token token2);
+    protected abstract boolean doCompare(Token token1, Token token2, boolean verbose);
 
 
     protected boolean succeedOnTest;
     protected boolean prevToken;
     protected boolean curToken;
     protected boolean nextToken;
+    protected boolean forwardLogic;
 
-    protected TokenClause(DomElement elt, String testAtt) {
+    protected TokenClause(DomElement elt, String testAtt, boolean forwardLogic) {
       this.succeedOnTest = elt.getAttributeValue(testAtt, "fail").equals("succeed");
       this.prevToken = elt.getAttributeBoolean("prevToken", true);
       this.curToken = elt.getAttributeBoolean("curToken", true);
       this.nextToken = elt.getAttributeBoolean("nextToken", true);
+      this.forwardLogic = forwardLogic;
     }
 
-    public final boolean accept(Token token) {
+    public final boolean accept(Token token, boolean verbose) {
       boolean result = true;
 
       if (token != null) {
 
-        final Token pToken = prevToken ? getPrevToken(token) : null;
-        final Token nToken = nextToken ? token.getNextToken() : null;
-
-        if (pToken != null) {
-          if (curToken) {
-            result = accept(pToken, token);
-          }
-          else if (nToken != null) {
-            result = accept(pToken, nToken);
-          }
+        if (!prevToken && !nextToken) {
+          result = accept(token, token, verbose);
         }
+        else {
+          final Token pToken = prevToken ? getPrevToken(token) : null;
+          final Token nToken = nextToken ? token.getNextToken() : null;
 
-        if (result && nToken != null) {
-          result = accept(token, nToken);
+          if (pToken != null) {
+            if (curToken) {
+              result = accept(pToken, token, verbose);
+            }
+            else if (nToken != null) {
+              result = accept(pToken, nToken, verbose);
+            }
+          }
+
+          if (result && nToken != null) {
+            result = accept(token, nToken, verbose);
+          }
         }
       }
 
       return result;
     }
 
-    private final boolean accept(Token token1, Token token2) {
-      final boolean accept = doCompare(token1, token2);
-      return (succeedOnTest && !accept) || (!succeedOnTest && accept);
+    private final boolean accept(Token token1, Token token2, boolean verbose) {
+      final boolean accept = doCompare(token1, token2, verbose);
+      //return (succeedOnTest && accept) || (!succeedOnTest && !accept);
+      return forwardLogic ? succeedOnTest == accept : succeedOnTest != accept;
     }
   }
 
@@ -399,28 +425,118 @@ public class TokenTest extends BaseClassifierTest {
     private KeyLabelMatcher matcher;
 
     public WordPatternClause(DomElement wpElt) {
-      super(wpElt, "onChange");
+      super(wpElt, "onChange", false);
 
       final String pattern = wpElt.getAttributeValue("key");
       this.matcher = new KeyLabelMatcher(pattern);
     }
 
-    protected boolean doCompare(Token token1, Token token2) {
+    protected boolean doCompare(Token token1, Token token2, boolean verbose) {
       final KeyLabel[] labels1 = token1.getKeyLabels();
       final KeyLabel[] labels2 = token2.getKeyLabels();
-      return matcher.matches(labels1, labels2);
+
+      // return true if there is a change
+      final boolean result = matcher.matches(labels1, labels2);
+
+      if (verbose) {
+        System.out.println("\t" + token1 + " " + asString(labels1));
+        System.out.println("\t" + token2 + " " + asString(labels2));
+      }
+
+      return result;
+    }
+
+    private final String asString(KeyLabel[] labels) {
+      final StringBuilder result = new StringBuilder();
+
+      result.append('{');
+      for (KeyLabel label : labels) {
+        result.append(label.getDefaultChar());
+      }
+      result.append('}');
+
+      return result.toString();
     }
   }
 
   private static final class HardBreakClause extends TokenClause {
 
     public HardBreakClause(DomElement hbElt) {
-      super(hbElt, "onExists");
+      super(hbElt, "onExists", false);
       super.curToken = true;  // always compare against current
     }
 
-    protected boolean doCompare(Token token1, Token token2) {
+    protected boolean doCompare(Token token1, Token token2, boolean verbose) {
+      // return true if a hard break exists
       return token2.followsHardBreak();
+    }
+  }
+
+  private static final class InterpClause extends TokenClause {
+
+    private String type;
+    private XPath xpath;
+
+    public InterpClause(DomElement iElt) {
+      super(iElt, "onExists", true);
+
+      this.type = iElt.getAttributeValue("type", null);
+      this.xpath = null;
+
+      final String xpathString = iElt.getAttributeValue("xpath", null);
+      if (xpathString != null) {
+        this.xpath = new XPath(xpathString);
+      }
+
+      super.prevToken = false;
+      super.curToken = true;  // always compare against current
+      super.nextToken = false;
+    }
+
+    protected boolean doCompare(Token token1, Token token2, boolean verbose) {
+      boolean result = false;
+
+      // return true if the interp (w/xpath) exists
+
+      if (type != null && token1.hasFeatures()) {
+        final List<Feature> features = token1.getFeatures(type, null, ParseInterpretation.class);
+        if (features != null) {
+          for (Feature feature : features) {
+            final ParseInterpretation interp = (ParseInterpretation)feature.getValue();
+            if (interp != null) {
+              if (xpath != null) {
+                final Tree<XmlLite.Data> interpTree = interp.getInterpTree();
+                if (interpTree != null) {
+                  final List<Tree<XmlLite.Data>> matches = xpath.getNodes(interpTree);
+
+                  if (verbose) {
+                    System.out.println("\t" + token1 + " '" + type + "' interp:\n" + interpTree);
+                    System.out.println("\t\tmatches:\n" + matches);
+                  }
+
+                  if (matches != null) {
+                    // has interp w/specified xpath
+                    result = true;
+                    break;
+                  }
+                }
+              }
+              else {
+                // has interp (no xpath specified)
+
+                if (verbose) {
+                  System.out.println("\t" + token1 + " '" + type + "' interp found.");
+                }
+
+                result = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      return result;
     }
   }
 }

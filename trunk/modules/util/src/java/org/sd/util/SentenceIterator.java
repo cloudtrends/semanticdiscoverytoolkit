@@ -148,16 +148,16 @@ public class SentenceIterator extends BaseTextIterator {
           }
 
           // skip forward over letters, failing if first non-letter isn't whitespace
-          if (result) {
+          if (result && greedy) {
             final int startPtr = ptr;
             for (ptr = ptr + 1; ptr < len; ++ptr) {
               final char curC = text.charAt(ptr);
               if (!Character.isLetter(curC) && curC != '-') {
                 if (!Character.isWhitespace(curC)) {
-                  if (greedy ||
+                  if (greedy /*||
                       (curC == '.' &&
                        Character.isUpperCase(text.charAt(startPtr)) &&
-                       StringUtil.isLikelyAbbreviation(text.substring(startPtr, ptr)))) {
+                       StringUtil.isLikelyAbbreviation(text.substring(startPtr, ptr)))*/) {
                     result = false;
                   }
                 }

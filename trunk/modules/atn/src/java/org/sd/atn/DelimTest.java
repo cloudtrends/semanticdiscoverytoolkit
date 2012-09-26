@@ -22,7 +22,6 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.List;
 import org.sd.token.Token;
-import org.sd.util.range.IntegerRange;
 import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
@@ -110,21 +109,6 @@ public class DelimTest extends BaseClassifierTest {
     return requiredDelimStrings;
   }
 
-  private IntegerRange ignoreRepeatRange;
-  IntegerRange getIgnoreRepeatRange() {
-    return ignoreRepeatRange;
-  }
-
-  private IntegerRange failRepeatRange;
-  IntegerRange getFailRepeatRange() {
-    return failRepeatRange;
-  }
-
-  private IntegerRange testRepeatRange;
-  IntegerRange getTestRepeatRange() {
-    return testRepeatRange;
-  }
-
   // used only in conjunction with postDelim
   private boolean remainingText;
   boolean getRemainingText() {
@@ -142,9 +126,6 @@ public class DelimTest extends BaseClassifierTest {
     this.disallowAll = false;
     this.delimStrings = new ArrayList<DelimString>();
     this.requiredDelimStrings = null;
-    this.ignoreRepeatRange = null;
-    this.failRepeatRange = null;
-    this.testRepeatRange = null;
 
     this.ignoreConstituents = delimNode.getAttributeBoolean("ignoreConstituents", false);
     this.remainingText = delimNode.getAttributeBoolean("remainingText", false);
@@ -169,19 +150,8 @@ public class DelimTest extends BaseClassifierTest {
         final DomElement childNode = (DomElement)curNode;
         final String childName = childNode.getLocalName();
 
-        if ("repeatcheck".equalsIgnoreCase(childName)) {
-          final String rcType = childNode.getAttributeValue("type", "test");
-          if ("ignore".equalsIgnoreCase(rcType)) {
-            ignoreRepeatRange = new IntegerRange(childNode.getTextContent().trim());
-          }
-          else if ("fail".equalsIgnoreCase(rcType)) {
-            failRepeatRange = new IntegerRange(childNode.getTextContent().trim());
-          }
-          else {
-            testRepeatRange = new IntegerRange(childNode.getTextContent().trim());
-          }
-        }
-        else {
+        // NOTE: repeatcheck is handled in super
+        if (!"repeatcheck".equalsIgnoreCase(childName)) {
 
           final boolean exact = "exact".equalsIgnoreCase(childNode.getAttributeValue("type", "substr"));
         
@@ -222,22 +192,6 @@ public class DelimTest extends BaseClassifierTest {
 
   protected boolean doAccept(Token token, AtnState curState) {
     final String delim = getDelim(token, curState);
-
-    if (ignoreRepeatRange != null || failRepeatRange != null || testRepeatRange != null) {
-      final int repeat = curState.getRepeatNum();
-
-      if (failRepeatRange != null && failRepeatRange.includes(repeat)) {
-        return false;
-      }
-
-      if (ignoreRepeatRange != null && ignoreRepeatRange.includes(repeat)) {
-        return true;
-      }
-
-      if (testRepeatRange != null && !testRepeatRange.includes(repeat)) {
-        return true;
-      }
-    }
 
     final boolean onlyWhite = "".equals(delim.trim());
 

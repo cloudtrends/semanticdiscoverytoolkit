@@ -26,6 +26,8 @@ import org.sd.util.range.IntegerRange;
 import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * A base rule step test that uses RoteList- and Regex- Classifiers.
@@ -44,8 +46,10 @@ import org.sd.xml.DomNode;
        " - when onlyFirstToken='true', only test against a \"first\" constituent token\n" +
        " - when onlyLastToken='true', only test against a \"last\" (full input) token\n" +
        " - when validTokenLength is specified, only succeed when the token's length is within the specified integer range\n" +
+       " - when repeatCheck is used, the test is only applied to the defined repeats\n" +
        " \n" +
        " <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false' validTokenLength='integerRangeExpression'>\n" +
+       "   <repeatCheck type='ignore|test|fail'>integer-range-expression</repeatCheck>\n" +
        "   <jclass>org.sd.atn.*Test</jclass>\n" +
        "   <terms caseSensitive='true|false'>\n" +
        "     <term>...</term>\n" +
@@ -68,6 +72,10 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
   protected boolean onlyLastToken;
   protected IntegerRange validTokenLength;
   private boolean reverse;
+
+  protected IntegerRange ignoreRepeatRange;
+  protected IntegerRange failRepeatRange;
+  protected IntegerRange testRepeatRange;
 
   private static int nextAutoId = 0;
 
@@ -94,6 +102,36 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
       this.validTokenLength = new IntegerRange(vtlString);
     }
 
+    // init repeat ranges
+    this.ignoreRepeatRange = null;
+    this.failRepeatRange = null;
+    this.testRepeatRange = null;
+
+    if (testNode.hasChildNodes()) {
+      final NodeList childNodes = testNode.getChildNodes();
+      for (int childIndex = 0; childIndex < childNodes.getLength(); ++childIndex) {
+        final Node curNode = childNodes.item(childIndex);
+        if (curNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
+
+        final DomElement childNode = (DomElement)curNode;
+        final String childName = childNode.getLocalName();
+
+        if ("repeatcheck".equalsIgnoreCase(childName)) {
+          final String rcType = childNode.getAttributeValue("type", "test");
+          if ("ignore".equalsIgnoreCase(rcType)) {
+            ignoreRepeatRange = new IntegerRange(childNode.getTextContent().trim());
+          }
+          else if ("fail".equalsIgnoreCase(rcType)) {
+            failRepeatRange = new IntegerRange(childNode.getTextContent().trim());
+          }
+          else {
+            testRepeatRange = new IntegerRange(childNode.getTextContent().trim());
+          }
+        }
+      }
+    }
+
+
     //NOTE: "reverse" isn't checked here directly because this test will be wrapped within
     //      a ReversedAtnRuleStepTest on load through the AtnRuleStep and the reversal
     //      logic will be applied there; however, in cases where the test is "ignored" or
@@ -108,8 +146,10 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     // - when onlyFirstToken='true', only test against a "first" constituent token
     // - when onlyLastToken='true', only test against a "last" (full input) token
     // - when validTokenLength is specified, only succeed when the token's length is within the specified integer range
+    // - when repeatCheck is used, the test is only applied to the defined repeats\n" +
     //
     // <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false' validTokenLength='integerRangeExpression'>
+    //   <repeatCheck type='ignore|test|fail'>integer-range-expression</repeatCheck>\n" +
     //   <jclass>org.sd.atn.*Test</jclass>
     //   <terms caseSensitive='true|false'>
     //     <term>...</term>
@@ -129,6 +169,24 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
   public final boolean accept(Token token, AtnState curState) {
     boolean result = false;
     boolean applyTest = true;
+
+    // first check the repeat range for applicability of this test
+    if (ignoreRepeatRange != null || failRepeatRange != null || testRepeatRange != null) {
+      final int repeat = curState.getRepeatNum();
+
+      if (failRepeatRange != null && failRepeatRange.includes(repeat)) {
+        return false;
+      }
+
+      if (ignoreRepeatRange != null && ignoreRepeatRange.includes(repeat)) {
+        return true;
+      }
+
+      if (testRepeatRange != null && !testRepeatRange.includes(repeat)) {
+        return true;
+      }
+    }
+
 
     if (ignoreLastToken && token.getNextToken() == null) {
       if (verbose) {
