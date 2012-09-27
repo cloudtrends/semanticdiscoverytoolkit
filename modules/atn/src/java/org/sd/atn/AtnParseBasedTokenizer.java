@@ -20,8 +20,10 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import org.sd.token.Break;
 import org.sd.token.FeatureConstraint;
@@ -198,8 +200,19 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     return _parseSpans;
   }
 
+  private final Set<Integer> getTokenEnds() {
+    final Set<Integer> result = new HashSet<Integer>();
+
+    for (TokenInfoContainer tic : pos2tokenInfoContainer.values()) {
+      result.addAll(tic.getTokenInfoList().keySet());
+    }
+
+    return result;
+  }
+
   protected Map<Integer, Break> createBreaks() {
     final Map<Integer, Break> result = super.createBreaks();
+    final Set<Integer> tokenEnds = getTokenEnds();
 
     // get the ranges covered by parses
     final IntegerRange parseSpans = getParseSpans();
@@ -223,7 +236,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
           break;
         }
 
-        clearBreaks(result, pos + 1, endPos);
+        doClearBreaks(result, pos + 1, endPos, tokenEnds);
         setBreak(result, endPos, false, false);
         pos = endPos;
 
@@ -231,11 +244,30 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
       }
 
       // Set RHS break as Hard (or soft if contained w/in another parse)
-      clearBreaks(result, pos + 1, lastEndPos);
+      doClearBreaks(result, pos + 1, lastEndPos, tokenEnds);
       setBreak(result, lastEndPos, false, !parseSpans.includes(lastEndPos));
     }
 
     return result;
+  }
+
+  /**
+   * Clear the breaks in the range, but preserve "tokenEnds" as soft.
+   */
+  private final void doClearBreaks(Map<Integer, Break> result, int startPos, int endPos, Set<Integer> tokenEnds) {
+    for (int breakIndex = startPos; breakIndex < endPos; ++breakIndex) {
+      if (tokenEnds.contains(breakIndex)) {
+        // keep tokenEnd break(s), but flip from hard to soft
+        int bWidth = 1;
+        if (result.containsKey(breakIndex)) {
+          bWidth = result.get(breakIndex).getBWidth();
+        }
+        result.put(breakIndex, bWidth == 0 ? Break.ZERO_WIDTH_SOFT_BREAK : Break.SINGLE_WIDTH_SOFT_BREAK);
+      }
+      else {
+        result.remove(breakIndex);
+      }
+    }
   }
 
   protected boolean hitsTokenBreakLimit(int startIdx, int breakIdx, int curBreakCount) {
