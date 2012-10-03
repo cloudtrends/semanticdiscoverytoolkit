@@ -80,6 +80,26 @@ import org.w3c.dom.NodeList;
   )
 public class DelimTest extends BaseClassifierTest {
   
+  public static final List<DelimTest> loadDelimNodes(DomElement containerElt, boolean isPreDelim, ResourceManager resourceManager) {
+    List<DelimTest> result = null;
+
+    final String delim = isPreDelim ? "predelim" : "postdelim";
+
+    final NodeList delimNodes = containerElt.selectNodes(delim);
+    if (delimNodes != null) {
+      final int num = delimNodes.getLength();
+      for (int idx = 0; idx < num; ++idx) {
+        final DomElement delimElement = (DomElement)delimNodes.item(idx);
+        final DelimTest delimTest = new DelimTest(isPreDelim, delimElement, resourceManager);
+        if (result == null) result = new ArrayList<DelimTest>();
+        result.add(delimTest);
+      }
+    }
+
+    return result;
+  }
+
+
   private boolean isPre;
   boolean isPre() {
     return isPre;
@@ -115,6 +135,7 @@ public class DelimTest extends BaseClassifierTest {
     return remainingText;
   }
 
+  private List<DelimTest> conditions;
   private boolean ignoreConstituents;
 
 
@@ -127,6 +148,7 @@ public class DelimTest extends BaseClassifierTest {
     this.delimStrings = new ArrayList<DelimString>();
     this.requiredDelimStrings = null;
 
+    this.conditions = loadConditions(delimNode, resourceManager);
     this.ignoreConstituents = delimNode.getAttributeBoolean("ignoreConstituents", false);
     this.remainingText = delimNode.getAttributeBoolean("remainingText", false);
 
@@ -139,6 +161,10 @@ public class DelimTest extends BaseClassifierTest {
     //   <allow type='substr|exact'>delims-to-allow</allow>
     //   <disallow type='substr|exact'>delims-to-disallow</disallow>
     //   <require type='substr|exact'>delims-to-require</require>
+    //   <condition>
+    //     <pre-or-post-delim>...</pre-or-post-delim>
+    //     ...
+    //   </condition>
     // </pre-and-or-post-delim>
 
     if (delimNode.hasChildNodes()) {
@@ -182,6 +208,30 @@ public class DelimTest extends BaseClassifierTest {
     }
   }
 			
+  private final List<DelimTest> loadConditions(DomNode delimNode, ResourceManager resourceManager) {
+    List<DelimTest> result = null;
+    final NodeList conditionNodes = ((DomElement)delimNode).selectNodes("condition");
+
+    if (conditionNodes != null) {
+      final int num = conditionNodes.getLength();
+      for (int idx = 0; idx < num; ++idx) {
+        final DomElement condElt = (DomElement)conditionNodes.item(idx);
+        List<DelimTest> delimTests = loadDelimNodes(condElt, true, resourceManager);
+        if (delimTests != null) {
+          if (result == null) result = new ArrayList<DelimTest>();
+          result.addAll(delimTests);
+        }
+        delimTests = loadDelimNodes(condElt, false, resourceManager);
+        if (delimTests != null) {
+          if (result == null) result = new ArrayList<DelimTest>();
+          result.addAll(delimTests);
+        }
+      }
+    }
+
+    return result;
+  }
+
   public void setIgnoreConstituents(boolean ignoreConstituents) {
     this.ignoreConstituents = ignoreConstituents;
   }
@@ -191,6 +241,17 @@ public class DelimTest extends BaseClassifierTest {
   }
 
   protected boolean doAccept(Token token, AtnState curState) {
+
+    // if conditions are not met test doesn't apply, so return true
+    if (conditions != null) {
+      for (DelimTest condition : conditions) {
+        if (!condition.accept(token, curState)) {
+          // condition not met 
+          return true;
+        }
+      }
+    }
+
     final String delim = getDelim(token, curState);
 
     final boolean onlyWhite = "".equals(delim.trim());

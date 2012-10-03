@@ -132,19 +132,30 @@ public class TextTest extends BaseClassifierTest {
       if (verbose) System.out.println("TextTest(" + text + ")=" + result);
     }
 
-    if (result && (!priorRegexClassifier.isEmpty() || !postRegexClassifier.isEmpty())) {
-      final Tokenizer tokenizer = token.getTokenizer();
+    if (roteListClassifier == null && regexClassifier == null) {
+      result = true;
+    }
 
+    if (result && (!priorRegexClassifier.isEmpty() || !postRegexClassifier.isEmpty())) {
       if (result && !priorRegexClassifier.isEmpty()) {
-        final String priorText = tokenizer.getPriorText(startToken);
-        result = priorRegexClassifier.doClassify(priorText);
-        if (verbose) System.out.println("TextTest.priorText(" + priorText + ")=" + result);
+        try {
+          final Token priorToken = startToken.getPrevToken();
+          if (priorToken != null) {
+            result = priorRegexClassifier.doClassify(priorToken);
+            if (verbose) System.out.println("TextTest.priorToken(" + priorToken + ")=" + result);
+          }
+        }
+        catch (Exception e) {
+          // there is no prior token to test.
+        }
       }
 
       if (result && !postRegexClassifier.isEmpty()) {
-        final String postText = tokenizer.getNextText(token);
-        result = postRegexClassifier.doClassify(postText);
-        if (verbose) System.out.println("TextTest.postText(" + postText + ")=" + result);
+        final Token postToken = token.getNextToken();
+        if (postToken != null) {
+          result = postRegexClassifier.doClassify(postToken);
+          if (verbose) System.out.println("TextTest.postToken(" + postToken + ")=" + result);
+        }
       }
     }
 
