@@ -160,8 +160,8 @@ public class AtnRuleStep {
     this.skip = stepElement.getAttributeInt("skip", 0);
     this.clusterFlag = stepElement.getAttributeBoolean("cluster", false);
 
-    this.postDelims = loadDelimNodes(stepElement, false, resourceManager);
-    this.preDelims = loadDelimNodes(stepElement, true, resourceManager);
+    this.postDelims = DelimTest.loadDelimNodes(stepElement, false, resourceManager);
+    this.preDelims = DelimTest.loadDelimNodes(stepElement, true, resourceManager);
 
     // load test(s)
     this.test = null;
@@ -189,25 +189,6 @@ public class AtnRuleStep {
     result = (AtnRuleStepTest)resourceManager.getResource(testElement);
     if (reverse) {
       result = new ReversedAtnRuleStepTest(result);
-    }
-
-    return result;
-  }
-
-  private final List<DelimTest> loadDelimNodes(DomElement stepElement, boolean isPreDelim, ResourceManager resourceManager) {
-    List<DelimTest> result = null;
-
-    final String delim = isPreDelim ? "predelim" : "postdelim";
-
-    final NodeList delimNodes = stepElement.selectNodes(delim);
-    if (delimNodes != null) {
-      final int num = delimNodes.getLength();
-      for (int idx = 0; idx < num; ++idx) {
-        final DomElement delimElement = (DomElement)delimNodes.item(idx);
-        final DelimTest delimTest = new DelimTest(isPreDelim, delimElement, resourceManager);
-        if (result == null) result = new ArrayList<DelimTest>();
-        result.add(delimTest);
-      }
     }
 
     return result;

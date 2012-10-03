@@ -411,7 +411,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private Map<String, Map<String, String>> term2attributes;
     private RegexDataContainer regexes;
     private List<RoteListClassifier> classifiers;
-    private List<String> features;
+    private Map<String, Class> features;
     private boolean trace;
 
     public Terms(boolean caseSensitive, String classFeature, boolean isStopwords, int userDefinedMaxWordCount) {
@@ -467,7 +467,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       return classifiers;
     }
 
-    public List<String> getFeatures() {
+    public Map<String, Class> getFeatures() {
       return features;
     }
 
@@ -486,67 +486,74 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     public boolean doClassify(Token token) {
       boolean result = false;
 
+      boolean exceedsMaxWordCount = false;
+
       if (maxWordCount > 0 && token.getWordCount() > maxWordCount) {
         // local maxWordCount may be stricter than global
-        return result;
+        exceedsMaxWordCount = true;
       }
 
       boolean hasClassAttribute = false;
       String key = token.getText();
 
-      if (!caseSensitive) {
-        key = key.toLowerCase();
-      }
-
-      if (term2attributes.containsKey(key)) {
-        result = true;
-
-        if (trace) {
-          System.out.println("\tfound '" + key + "' in term2attributes");
+      if (!exceedsMaxWordCount) {
+        if (!caseSensitive) {
+          key = key.toLowerCase();
         }
 
-        // only add token attributes for non stopwords
-        if (!isStopwords) {
-          final Map<String, String> attributes = term2attributes.get(key);
-
-          if (attributes != null) {
-            hasClassAttribute = attributes.containsKey("class");
-            for (Map.Entry<String, String> kvPair : attributes.entrySet()) {
-              token.setFeature(kvPair.getKey(), kvPair.getValue(), this);
-            }
-          }
-        }
-      }
-
-      if (!result && regexes != null) {
-        if (regexes.matches(key, token, !isStopwords)) {
-          if (trace) {
-            System.out.println("\tfound '" + key + "' in regexData");
-          }
-
+        if (term2attributes.containsKey(key)) {
           result = true;
-        }
-      }
 
-      if ((classifiers != null) && (!isStopwords || !result)) {
-        for (RoteListClassifier classifier : classifiers) {
-          final boolean curResult = classifier.doClassify(token);
-          if (curResult) {
-            if (trace) {
-              System.out.println("\tfound '" + key + "' in classifier '" + classifier.getName() + "'");
+          if (trace) {
+            System.out.println("\tfound '" + key + "' in term2attributes");
+          }
+
+          // only add token attributes for non stopwords
+          if (!isStopwords) {
+            final Map<String, String> attributes = term2attributes.get(key);
+
+            if (attributes != null) {
+              hasClassAttribute = attributes.containsKey("class");
+              for (Map.Entry<String, String> kvPair : attributes.entrySet()) {
+                token.setFeature(kvPair.getKey(), kvPair.getValue(), this);
+              }
             }
+          }
+        }
+
+        if (!result && regexes != null) {
+          if (regexes.matches(key, token, !isStopwords)) {
+            if (trace) {
+              System.out.println("\tfound '" + key + "' in regexData");
+            }
+
             result = true;
-            // keep going to add features from further matches
+          }
+        }
+
+        if ((classifiers != null) && (!isStopwords || !result)) {
+          for (RoteListClassifier classifier : classifiers) {
+            final boolean curResult = classifier.doClassify(token);
+            if (curResult) {
+              if (trace) {
+                System.out.println("\tfound '" + key + "' in classifier '" + classifier.getName() + "'");
+              }
+              result = true;
+              // keep going to add features from further matches
+            }
           }
         }
       }
 
       if (!result && features != null) {
-        for (String feature : features) {
-          if (token.getFeatureValue(feature, null) != null) {
+        for (Map.Entry<String, Class> featureEntry : features.entrySet()) {
+          final String feature = featureEntry.getKey();
+          final Class type = featureEntry.getValue();
+
+          if (token.getFeatureValue(feature, null, type) != null) {
             result = true;
             if (trace) {
-              System.out.println("\tfound '" + feature + "' (value=" + token.getFeatureValue(feature, null) + ")");
+              System.out.println("\tfound '" + feature + "' (value=" + token.getFeatureValue(feature, null, type) + ")");
             }
           }
         }
@@ -728,7 +735,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         if (curNode.getNodeType() != Node.ELEMENT_NODE) continue;
 
         final String nodeName = curNode.getNodeName();
-        final String classifierName = curNode.getTextContent();
+        final String classifierName = curNode.getTextContent().trim();
 
         if ("classifier".equals(nodeName)) {
           final Object classifierObject = resourceManager.getResource(classifierName);
@@ -748,8 +755,18 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
           }
         }
         else if ("feature".equals(nodeName)) {
-          if (this.features == null) this.features = new ArrayList<String>();
-          this.features.add(classifierName);
+          if (this.features == null) this.features = new HashMap<String, Class>();
+
+          Class type = null;
+          final String typeString = ((DomElement)curNode).getAttributeValue("type", null);
+          if (typeString != null) {
+            if ("interp".equals(typeString)) {
+              type = ParseInterpretation.class;
+            }
+          }
+
+          final String classifierNameString = "".equals(classifierName) ? null : classifierName;
+          this.features.put(classifierNameString, type);
         }
         else {
           System.out.println(new Date() + ": WARNING : Unrecognized 'classifiers' sub-element '" +
