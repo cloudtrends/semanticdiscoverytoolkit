@@ -175,15 +175,15 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
       final int repeat = curState.getRepeatNum();
 
       if (failRepeatRange != null && failRepeatRange.includes(repeat)) {
-        return false;
+        return reverse;
       }
 
       if (ignoreRepeatRange != null && ignoreRepeatRange.includes(repeat)) {
-        return true;
+        return !reverse;
       }
 
       if (testRepeatRange != null && !testRepeatRange.includes(repeat)) {
-        return true;
+        return !reverse;
       }
     }
 

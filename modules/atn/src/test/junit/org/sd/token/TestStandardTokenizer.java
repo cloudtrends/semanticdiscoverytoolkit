@@ -437,6 +437,28 @@ public class TestStandardTokenizer extends TestCase {
     assertEquals(KeyLabel.Capitalized, wcs[0].getKeyLabel());
   }
 
+  public void testGetPriorToken() {
+    final StandardTokenizerOptions options = new StandardTokenizerOptions();
+    final StandardTokenizer tokenizer = new StandardTokenizer("This is a test. Testing 1-2-3 get-prior-token.", options);
+
+    final String[] expectedPriors = new String[] {
+      "prior",
+      "get",
+      "3",
+      "2",
+      "1",
+      "Testing",
+      "This is a test",
+    };
+
+    final Token token = tokenizer.getToken(40);
+    int idx = 0;
+    for (Token priorToken = tokenizer.getPriorToken(token); priorToken != null; priorToken = tokenizer.getPriorToken(priorToken)) {
+      assertEquals("idx=" + idx, expectedPriors[idx], priorToken.getText());
+      ++idx;
+    }
+  }
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestStandardTokenizer.class);

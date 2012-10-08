@@ -463,17 +463,28 @@ public class StandardTokenizer implements Tokenizer {
   }
 
   public boolean followsHardBreak(Token token) {
+    return hasHardBreakBefore(token.getStartIndex());
+  }
+
+  /**
+   * Determine whether there is a hard break from startPos (incl) to endPos (incl).
+   */
+  public boolean hasHardBreakBefore(int pos) {
     boolean result = false;
 
-    final int endPos = token.getStartIndex();
-    final int startPos = findEndBreakReverse(endPos);
-
-    if (endPos > startPos && startPos >= 0) {
-      for (int curPos = startPos; curPos <= startPos; ++curPos) {
-        final Break curBreak = getBreak(curPos);
-        if (curBreak.isHard()) {
-          result = true;
-          break;
+    final int startPos = findEndBreakReverse(pos);
+    if (startPos <= 0) {
+      // consider beginning of string as a hard break
+      result = true;
+    }
+    else {
+      if (pos > startPos && startPos >= 0) {
+        for (int curPos = startPos; curPos <= pos; ++curPos) {
+          final Break curBreak = getBreak(curPos);
+          if (curBreak.isHard()) {
+            result = true;
+            break;
+          }
         }
       }
     }
@@ -548,8 +559,54 @@ public class StandardTokenizer implements Tokenizer {
   }
 
   public Token getPriorToken(Token token) {
-    //addTokenFeatures(result);
-    throw new UnsupportedOperationException("Implement when needed.");
+    Token result = null;
+
+    final int tokenStart = token.getStartIndex();
+    int breakCount = 0;
+
+    int[] tokenPos = getPriorSmallestTokenBoundaries(tokenStart);
+
+    if (tokenPos != null) {
+      final int endPosition = tokenPos[1];
+      int startPosition = tokenPos[0];
+      int priorStartPosition = tokenStart;
+
+      final TokenRevisionStrategy revStrategy = token.getRevisionStrategy();
+
+      if (startPosition > 0) {
+        // if strategy is for longest *and* we're just after a hard break
+        if ((revStrategy == TokenRevisionStrategy.LSL ||
+             revStrategy == TokenRevisionStrategy.LO ||
+             revStrategy == TokenRevisionStrategy.LS) &&
+            hasHardBreakBefore(tokenStart)) {
+          // then go back to the prior hard break, counting breaks and enforcing break limits
+          do {
+            // enforce break limit
+            if (options.hitsTokenBreakLimit(breakCount)) break;
+
+            tokenPos = getPriorSmallestTokenBoundaries(startPosition);
+            if (tokenPos != null) {
+              priorStartPosition = startPosition;
+              startPosition = tokenPos[0];
+              ++breakCount;
+            }
+            else break;
+          } while (!hasHardBreakBefore(priorStartPosition));
+        }
+        // otherwise, the first prior break is sufficient
+      }
+
+      if (startPosition < endPosition) {
+        result = buildToken(startPosition, endPosition, revStrategy, 0, Math.max(token.getSequenceNumber() - 1, 0),
+                            computeWordCount(startPosition, endPosition), breakCount);
+      }
+    }
+
+    if (result != null) {
+      addTokenFeatures(result);
+    }
+
+    return result;
   }
 
   public String getText() {
@@ -884,6 +941,28 @@ public class StandardTokenizer implements Tokenizer {
         // no longer at a breaking character. move forward to the break.
         if (result < startPosition)	++result;
         break;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Find the boundaries of the smallest token preceding tokenStart.
+   *
+   * @return {priorStart, priorEnd} or null.
+   */
+  private final int[] getPriorSmallestTokenBoundaries(int tokenStart) {
+    int[] result = null;
+
+    final int endPosition = tokenStart > 0 ? findEndBreakReverse(tokenStart) : 0;
+    if (endPosition > 0) {
+      final Map<Integer, Break> pos2break = getPos2Break();
+      int startPosition = endPosition;
+      while (startPosition > 0 && !pos2break.containsKey(startPosition - 1)) --startPosition;
+
+      if (startPosition >= 0 && startPosition < endPosition) {
+        result = new int[]{startPosition, endPosition};
       }
     }
 

@@ -102,23 +102,24 @@ public class DigitsClassifier extends RoteListClassifier /*AbstractAtnStateToken
   }
   
   public boolean doClassify(Token token) {
-    boolean result = false;
-
+    boolean result = super.doClassify(token);
     final String text = token.getText();
 
-    if (text.length() >= minLength) {
-      result = verify(text);
+    if (!result) {
+      if (text.length() >= minLength) {
+        result = verify(text);
 
-      if (!result && acceptUnknowns) {
-        final String unknownEnhancedText = enhanceUnknowns(text);
-        if (unknownEnhancedText != null) {
-          result = verify(unknownEnhancedText);
+        if (!result && acceptUnknowns) {
+          final String unknownEnhancedText = enhanceUnknowns(text);
+          if (unknownEnhancedText != null) {
+            result = verify(unknownEnhancedText);
+          }
         }
       }
-    
-      if (result && featureName != null && !"".equals(featureName)) {
-        token.setFeature(featureName, text, this);
-      }
+    }
+
+    if (result && featureName != null && !"".equals(featureName)) {
+      token.setFeature(featureName, text, this);
     }
 
     return result;
