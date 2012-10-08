@@ -213,6 +213,14 @@ public class TokenTest extends BaseClassifierTest {
     //
   }
 			
+  protected void setVerbose(boolean verbose) {
+    this.verbose = verbose;
+  }
+
+  protected boolean isVerbose() {
+    return verbose;
+  }
+
   protected boolean doAccept(Token token, AtnState curState) {
     boolean result = false;
 
@@ -317,6 +325,13 @@ public class TokenTest extends BaseClassifierTest {
         }
       }
 
+      if (verifyAdditional && hasAdditionalChecks()) {
+        verifyAdditional = result = doAdditionalChecks(token, curState);
+        if (verbose) {
+          System.out.println("\tTokenTest.doAdditionalCheck(" + token + ")=" + result);
+        }
+      }
+
       if (result) break;
     }
 
@@ -346,6 +361,24 @@ public class TokenTest extends BaseClassifierTest {
     }
 
     return result;
+  }
+
+  /**
+   * Method for overriding by extenders (pseudo-abstract).
+   * <p>
+   * If extending TokenTest and overriding doAdditionalChecks, this must return true.
+   */
+  protected boolean hasAdditionalChecks() {
+    return false;
+  }
+
+  /**
+   * Method for overriding by extenders (pseudo-abstract).
+   * <p>
+   * Extenders can put additional checks on the token(s) here.
+   */
+  protected boolean doAdditionalChecks(Token token, AtnState curState) {
+    return true;
   }
 
   private static final Token getPrevToken(Token token) {
