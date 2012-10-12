@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.sd.token.Token;
 import org.sd.xml.DomElement;
-import org.w3c.dom.NodeList;
 
 /**
  * Container for a rule step within a Rule.
@@ -103,24 +102,13 @@ public class AtnRuleStep {
     return isNonTerminal;
   }
 
-  private List<DelimTest> postDelims;
-  List<DelimTest> getPostDelims() {
-    return postDelims;
+  private StepTestContainer testContainer;
+  public StepTestContainer getTestContainer() {
+    return testContainer;
   }
-
-  private List<DelimTest> preDelims;
-  List<DelimTest> getPreDelims() {
-    return preDelims;
-  }
-
   private boolean clusterFlag;  // greedy flag
   boolean getClusterFlag() {
     return clusterFlag;
-  }
-
-  private AtnRuleStepTest test;
-  AtnRuleStepTest getTest() {
-    return test;
   }
 
   private boolean consumeToken;
@@ -160,38 +148,7 @@ public class AtnRuleStep {
     this.skip = stepElement.getAttributeInt("skip", 0);
     this.clusterFlag = stepElement.getAttributeBoolean("cluster", false);
 
-    this.postDelims = DelimTest.loadDelimNodes(stepElement, false, resourceManager);
-    this.preDelims = DelimTest.loadDelimNodes(stepElement, true, resourceManager);
-
-    // load test(s)
-    this.test = null;
-    final NodeList testNodes = stepElement.selectNodes("test");
-    if (testNodes.getLength() > 0) {
-      if (testNodes.getLength() == 1) {
-        final DomElement testElement = (DomElement)testNodes.item(0);
-        this.test = buildTest(testElement, resourceManager);
-      }
-      else {
-        final AtnRuleStepTestPipeline pipeline = new AtnRuleStepTestPipeline();
-        for (int nodeNum = 0; nodeNum < testNodes.getLength(); ++nodeNum) {
-          final DomElement testElement = (DomElement)testNodes.item(nodeNum);
-          pipeline.add(buildTest(testElement, resourceManager));
-        }
-        this.test = pipeline;
-      }
-    }
-  }
-
-  private final AtnRuleStepTest buildTest(DomElement testElement, ResourceManager resourceManager) {
-    AtnRuleStepTest result = null;
-
-    final boolean reverse = testElement.getAttributeBoolean("reverse", false);
-    result = (AtnRuleStepTest)resourceManager.getResource(testElement);
-    if (reverse) {
-      result = new ReversedAtnRuleStepTest(result);
-    }
-
-    return result;
+    this.testContainer = new StepTestContainer(stepElement, resourceManager);
   }
 
   /**
@@ -199,27 +156,7 @@ public class AtnRuleStep {
    * the postDelim and test constraints.
    */
   boolean verify(Token token, AtnState curState) {
-    boolean result = true;
-
-    if (result && postDelims != null) {
-      for (DelimTest postDelim : postDelims) {
-        result = postDelim.accept(token, curState);
-        if (!result) break;
-      }
-    }
-
-    if (result && preDelims != null) {
-      for (DelimTest preDelim : preDelims) {
-        result = preDelim.accept(token, curState);
-        if (!result) break;
-      }
-    }
-
-    if (result && test != null) {
-      result = test.accept(token, curState);
-    }
-
-    return result;
+    return testContainer.verify(token, curState).accept();
   }
 
   void setIsTerminal(boolean isTerminal) {

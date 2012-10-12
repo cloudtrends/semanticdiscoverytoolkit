@@ -38,7 +38,7 @@ public class ReversedAtnRuleStepTest implements AtnRuleStepTest {
     this.test = test;
   }
 
-  public boolean accept(Token token, AtnState curState) {
-    return !test.accept(token, curState);
+  public PassFail accept(Token token, AtnState curState) {
+    return test.accept(token, curState).reverse();
   }
 }

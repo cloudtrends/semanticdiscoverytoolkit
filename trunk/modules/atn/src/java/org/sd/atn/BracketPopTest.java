@@ -82,7 +82,7 @@ public class BracketPopTest implements AtnRuleStepTest {
     this.brackets = loadBrackets(testNode);
   }
 
-  public boolean accept(Token token, AtnState curState) {
+  public PassFail accept(Token token, AtnState curState) {
     boolean result = true;
 
     // only accept constituents that don't have (unbalanced) brackets within
@@ -161,7 +161,7 @@ public class BracketPopTest implements AtnRuleStepTest {
       }
     }
 
-    return result;
+    return PassFail.getInstance(result);
   }
 
   private List<Bracket> loadBrackets(DomNode grammarNode) {

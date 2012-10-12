@@ -74,7 +74,7 @@ public class ContiguousTokenFilter implements TokenFilter {
     }
 
     if (delimTest != null && result == TokenFilterResult.ACCEPT && prevToken != null) {
-      if (!delimTest.accept(token, curState)) {
+      if (!delimTest.accept(token, curState).accept()) {
         result = TokenFilterResult.HALT;
       }
     }

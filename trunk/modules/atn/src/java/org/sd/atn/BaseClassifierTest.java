@@ -62,9 +62,15 @@ import org.w3c.dom.NodeList;
   )
 public abstract class BaseClassifierTest implements AtnRuleStepTest {
   
+  public enum TestResult { SOFT_SUCCESS, SOFT_FAILURE, HARD_SUCCESS, HARD_FAILURE };
+
+
   protected String id;
   protected RoteListClassifier roteListClassifier;
   protected RegexClassifier regexClassifier;
+  protected boolean next;
+  protected boolean prev;
+  protected String delimMatch;
   protected boolean verbose;
   protected boolean ignoreLastToken;
   protected boolean ignoreFirstToken;
@@ -72,6 +78,8 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
   protected boolean onlyLastToken;
   protected IntegerRange validTokenLength;
   private boolean reverse;
+  private final boolean success;
+  private final boolean failure;
 
   protected IntegerRange ignoreRepeatRange;
   protected IntegerRange failRepeatRange;
@@ -88,6 +96,9 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     if (roteListClassifier.isEmpty()) roteListClassifier = null;
     if (regexClassifier.isEmpty()) regexClassifier = null;
 
+    this.next = testNode.getAttributeBoolean("next", false);
+    this.prev = testNode.getAttributeBoolean("prev", false);
+    this.delimMatch = testNode.getAttributeValue("delimMatch", null);
     this.verbose = testNode.getAttributeBoolean("verbose", false);
 
     this.ignoreLastToken = testNode.getAttributeBoolean("ignoreLastToken", false);
@@ -95,6 +106,11 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     this.onlyFirstToken = testNode.getAttributeBoolean("onlyFirstToken", false);
     this.onlyLastToken = testNode.getAttributeBoolean("onlyLastToken", false);
     this.reverse = testNode.getAttributeBoolean("reverse", false);
+
+    // return values to guarantee success/failure regardless of reversal.
+    // NOTE: wrapper will "un-reverse"
+    this.success = !reverse; 
+    this.failure = reverse;
 
     this.validTokenLength = null;
     final String vtlString = testNode.getAttributeValue("validTokenLength", null);
@@ -147,8 +163,11 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     // - when onlyLastToken='true', only test against a "last" (full input) token
     // - when validTokenLength is specified, only succeed when the token's length is within the specified integer range
     // - when repeatCheck is used, the test is only applied to the defined repeats\n" +
+    // - when next='true', test against the next token
+    // - when prev='true', test against the prior token (taken as smallest prior if not available through state)
+    // - when delimMatch='X', test against next or prev only succeeds if delims equal X
     //
-    // <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false' validTokenLength='integerRangeExpression'>
+    // <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false' validTokenLength='integerRangeExpression' next='true|false' prev='true|false' delimMatch="X">
     //   <repeatCheck type='ignore|test|fail'>integer-range-expression</repeatCheck>\n" +
     //   <jclass>org.sd.atn.*Test</jclass>
     //   <terms caseSensitive='true|false'>
@@ -163,10 +182,18 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
   }
 			
   // extenders of this abstract class  must implement 'doAccept':
+  // if "verify" is overridden, then doAccept may be a no-op.
   protected abstract boolean doAccept(Token token, AtnState curState);
 
+  // override this to return HARD successes/failures thru extender
+  protected TestResult verify(Token token, AtnState curState) {
+    final boolean verified = doAccept(token, curState);
+    final TestResult result = verified ? TestResult.SOFT_SUCCESS : TestResult.SOFT_FAILURE;
+    return result;
+  }
 
-  public final boolean accept(Token token, AtnState curState) {
+
+  public final PassFail accept(Token token, AtnState curState) {
     boolean result = false;
     boolean applyTest = true;
 
@@ -175,15 +202,24 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
       final int repeat = curState.getRepeatNum();
 
       if (failRepeatRange != null && failRepeatRange.includes(repeat)) {
-        return reverse;
+        if (verbose) {
+          System.out.println("***BaseClassifierTest HARD-FAILING due to failRepeatRange(" + repeat + "). " + curState);
+        }
+        return PassFail.FAIL;  //failure;
       }
 
       if (ignoreRepeatRange != null && ignoreRepeatRange.includes(repeat)) {
-        return !reverse;
+        if (verbose) {
+          System.out.println("***BaseClassifierTest SKIPPING due to ignoreRepeatRange(" + repeat + "). " + curState);
+        }
+        return PassFail.NOT_APPLICABLE;  //success;
       }
 
       if (testRepeatRange != null && !testRepeatRange.includes(repeat)) {
-        return !reverse;
+        if (verbose) {
+          System.out.println("***BaseClassifierTest SKIPPING by default due not in testRepeatRange(" + repeat + "). " + curState);
+        }
+        return PassFail.NOT_APPLICABLE;  //success;
       }
     }
 
@@ -191,21 +227,21 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     if (ignoreLastToken && token.getNextToken() == null) {
       if (verbose) {
         System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
-                           ") skipping test on lastToken '" + token + "'! state=" +
+                           ") SKIPPING test on lastToken '" + token + "'! state=" +
                            curState);
       }
       applyTest = false;
-      result = !reverse;  //NOTE: wrapper will "un-reverse"
+      result = success;
     }
     else if (ignoreFirstToken) {
       if (token.getStartIndex() == 0 || AtnStateUtil.isFirstConstituentState(curState)) {
         if (verbose) {
           System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
-                             ") skipping test on firstToken '" + token + "'! state=" +
+                             ") SKIPPING test on firstToken '" + token + "'! state=" +
                              curState);
         }
         applyTest = false;
-        result = !reverse;  //NOTE: wrapper will "un-reverse"
+        result = success;
       }
     }
     else if (onlyFirstToken) {
@@ -220,30 +256,115 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
       else {
         // not a first token
         applyTest = false;
-        result = !reverse;  //NOTE: wrapper will "un-reverse"
+        result = success;
+
+        if (verbose) {
+          System.out.println("***BaseClassifierTest SKIPPING non-firstToken state. " + curState);
+        }
       }
     }
 
-    if (validTokenLength != null && !validTokenLength.includes(token.getLength())) {
+
+    if (applyTest) {
+      // make the context switch here for applying the test to prev/next token
+      if (next) {
+        if (delimMatch != null) {
+          final String delims = token.getPostDelim();
+          if (!delimMatch.equals(delims)) {
+            // can't match against next token because delimMatch fails
+            if (verbose) {
+              System.out.println("***BaseClassifierTest failing due to POST delimMatch SOFT-FAIL (delims=" +
+                                 delims + ", state=" + curState + ")");
+            }
+
+            return PassFail.getInstance(false);  // reversible
+          }
+        }
+
+        token = token.getNextToken();
+
+        if (token == null) {
+          if (verbose) {
+            System.out.println("***BaseClassifierTest SKIPPING due to null (non-applicable) token (no next token).");
+          }
+          return PassFail.NOT_APPLICABLE;  // success;
+        }
+
+        if (verbose) {
+          System.out.println("***BaseClassifierTest considering nextToken=" + token + " (from state=" + curState + ")");
+        }
+      }
+      else if (prev) {
+        if (delimMatch != null) {
+          final String delims = token.getPreDelim();
+          if (!delimMatch.equals(delims)) {
+            // can't match against prev token because delimMatch fails
+            if (verbose) {
+              System.out.println("***BaseClassifierTest failing due to PRE delimMatch SOFT-FAIL (delims=" +
+                                 delims + ", state=" + curState + ")");
+            }
+
+            return PassFail.getInstance(false);  // reversible
+          }
+        }
+
+        token = token.getPrevToken();
+
+        if (token == null) {
+          if (verbose) {
+            System.out.println("***BaseClassifierTest SKIPPING due to null (non-applicable) token (no prev token).");
+          }
+          return PassFail.NOT_APPLICABLE;  // success;
+        }
+
+        if (verbose) {
+          System.out.println("***BaseClassifierTest considering prevToken=" + token + " (from state=" + curState + ")");
+        }
+      }
+      else {
+        if (verbose) {
+          System.out.println("***BaseClassifierTest considering token=" + token + " (from state=" + curState + ")");
+        }
+      }
+    }
+
+    if (applyTest && validTokenLength != null && !validTokenLength.includes(token.getLength())) {
       applyTest = false;
       result = false;
 
       if (verbose) {
         System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
-                           ") doAccept(" + token + ", " + curState + ")=" + result +
+                           ") verify(" + token + ", " + curState + ") SOFT-FAIL due to invalid token length" +
                            " tokenLen=" + token.getLength());
       }
     }
 
     if (applyTest) {
-      result = doAccept(token, curState);
+
+      final TestResult testResult = verify(token, curState);
+
+      switch (testResult) {
+        case SOFT_SUCCESS :
+          result = true;
+          break;
+        case SOFT_FAILURE :
+          result = false;
+          break;
+        case HARD_SUCCESS :
+          result = success;
+          break;
+        case HARD_FAILURE :
+          result = failure;
+          break;
+      }
 
       if (verbose) {
         System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
-                           ") doAccept(" + token + ", " + curState + ")=" + result);
+                           ") verify(" + token + ", " + curState + ")=" + testResult +
+                           " localResult=" + result);
       }
     }
 
-    return result;
+    return PassFail.getInstance(result, !applyTest);
   }
 }

@@ -72,7 +72,7 @@ public class ClusteringTest implements AtnRuleStepTest {
   public ClusteringTest() {
   }
 
-  public boolean accept(Token token, AtnState curState) {
+  public PassFail accept(Token token, AtnState curState) {
     boolean result = true;
 
     // Algorithm:
@@ -103,6 +103,6 @@ public class ClusteringTest implements AtnRuleStepTest {
       ++distance;
     }
 
-    return result;
+    return PassFail.getInstance(result);
   }
 }

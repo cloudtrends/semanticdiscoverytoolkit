@@ -1393,7 +1393,7 @@ public class TestAtnParser extends TestCase {
 
     final StandardTokenizer tokenizer19b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A (a A)");
 
-    runParseTest("parserTest_19a",
+    runParseTest("parserTest_19b",
                  test19_Parser,
                  tokenizer19b,
                  "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
@@ -1404,7 +1404,7 @@ public class TestAtnParser extends TestCase {
 
     final StandardTokenizer tokenizer19c = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A (A a)");
 
-    runParseTest("parserTest_19a",
+    runParseTest("parserTest_19c",
                  test19_Parser,
                  tokenizer19c,
                  "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
