@@ -46,16 +46,24 @@ public class AtnRuleStepTestPipeline implements AtnRuleStepTest {
    * This is called as a last check on whether a token matches for the current
    * state after its category has been matched to its containing rule step.
    */
-  public boolean accept(Token token, AtnState curState) {
+  public PassFail accept(Token token, AtnState curState) {
     boolean result = true;
 
+    boolean allAreNA = true;
     for (AtnRuleStepTest test : tests) {
-      if (!test.accept(token, curState)) {
-        result = false;
+      final PassFail passFail = test.accept(token, curState);
+      result = passFail.accept();
+
+      if (!result) {
         break;
+      }
+      else {
+        if (passFail != PassFail.NOT_APPLICABLE) {
+          allAreNA = false;
+        }
       }
     }
 
-    return result;
+    return PassFail.getInstance(result, allAreNA);
   }
 }

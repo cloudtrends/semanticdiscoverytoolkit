@@ -114,7 +114,7 @@ public class TokenInclusionTest implements AtnRuleStepTest {
    * This is called as a last check on whether a token matches for the current
    * state after its category has been matched to its containing rule step.
    */
-  public boolean accept(Token token, AtnState curState) {
+  public PassFail accept(Token token, AtnState curState) {
     boolean result = false;
 
     final AtnState stopState = curState.getPushState();
@@ -142,7 +142,7 @@ public class TokenInclusionTest implements AtnRuleStepTest {
       System.out.println("\nTokenInclusionTest ending w/result=" + result);
     }
 
-    return result;
+    return PassFail.getInstance(result);
   }
   
   private static final boolean isFinalResult(boolean curResult, boolean includeAll) {

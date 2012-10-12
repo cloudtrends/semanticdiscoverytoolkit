@@ -50,6 +50,6 @@ public interface AtnRuleStepTest {
    * This is called as a last check on whether a token matches for the current
    * state after its category has been matched to its containing rule step.
    */
-  public boolean accept(Token token, AtnState curState);
+  public PassFail accept(Token token, AtnState curState);
   
 }

@@ -157,7 +157,7 @@ public class TokenHistoryTest implements AtnRuleStepTest {
    * This is called as a last check on whether a token matches for the current
    * state after its category has been matched to its containing rule step.
    */
-  public boolean accept(Token token, AtnState curState) {
+  public PassFail accept(Token token, AtnState curState) {
     boolean result = true;
 
     final Set<String> categories = new HashSet<String>(cat2directives.keySet());
@@ -200,7 +200,7 @@ public class TokenHistoryTest implements AtnRuleStepTest {
       }
     }
 
-    return result;
+    return PassFail.getInstance(result);
   }
   
   private DirectiveResult applyDirectives(List<DirectiveData> directives, AtnState curState) {

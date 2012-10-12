@@ -45,11 +45,11 @@ public class DebugTest implements AtnRuleStepTest {
     this.result = testNode.getAttributeBoolean("result", true);
   }
 			
-  public boolean accept(Token token, AtnState curState) {
+  public PassFail accept(Token token, AtnState curState) {
     boolean result = this.result;
 
     final boolean stopHere = true;
 
-    return result;
+    return PassFail.getInstance(result);
   }
 }

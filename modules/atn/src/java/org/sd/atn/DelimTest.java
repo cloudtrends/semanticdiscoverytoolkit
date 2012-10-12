@@ -80,8 +80,9 @@ import org.w3c.dom.NodeList;
   )
 public class DelimTest extends BaseClassifierTest {
   
-  public static final List<DelimTest> loadDelimNodes(DomElement containerElt, boolean isPreDelim, ResourceManager resourceManager) {
-    List<DelimTest> result = null;
+/*
+  public static final List<AtnRuleStepTest> loadDelimNodes(DomElement containerElt, boolean isPreDelim, ResourceManager resourceManager) {
+    List<AtnRuleStepTest> result = null;
 
     final String delim = isPreDelim ? "predelim" : "postdelim";
 
@@ -90,14 +91,21 @@ public class DelimTest extends BaseClassifierTest {
       final int num = delimNodes.getLength();
       for (int idx = 0; idx < num; ++idx) {
         final DomElement delimElement = (DomElement)delimNodes.item(idx);
-        final DelimTest delimTest = new DelimTest(isPreDelim, delimElement, resourceManager);
-        if (result == null) result = new ArrayList<DelimTest>();
+        AtnRuleStepTest delimTest = new DelimTest(isPreDelim, delimElement, resourceManager);
+
+        final boolean reverse = delimElement.getAttributeBoolean("reverse", false);
+        if (reverse) {
+          delimTest = new ReversedAtnRuleStepTest(delimTest);
+        }
+
+        if (result == null) result = new ArrayList<AtnRuleStepTest>();
         result.add(delimTest);
       }
     }
 
     return result;
   }
+*/
 
 
   private boolean isPre;
@@ -135,7 +143,6 @@ public class DelimTest extends BaseClassifierTest {
     return remainingText;
   }
 
-  private List<DelimTest> conditions;
   private boolean ignoreConstituents;
 
 
@@ -148,7 +155,6 @@ public class DelimTest extends BaseClassifierTest {
     this.delimStrings = new ArrayList<DelimString>();
     this.requiredDelimStrings = null;
 
-    this.conditions = loadConditions(delimNode, resourceManager);
     this.ignoreConstituents = delimNode.getAttributeBoolean("ignoreConstituents", false);
     this.remainingText = delimNode.getAttributeBoolean("remainingText", false);
 
@@ -207,30 +213,6 @@ public class DelimTest extends BaseClassifierTest {
       }
     }
   }
-			
-  private final List<DelimTest> loadConditions(DomNode delimNode, ResourceManager resourceManager) {
-    List<DelimTest> result = null;
-    final NodeList conditionNodes = ((DomElement)delimNode).selectNodes("condition");
-
-    if (conditionNodes != null) {
-      final int num = conditionNodes.getLength();
-      for (int idx = 0; idx < num; ++idx) {
-        final DomElement condElt = (DomElement)conditionNodes.item(idx);
-        List<DelimTest> delimTests = loadDelimNodes(condElt, true, resourceManager);
-        if (delimTests != null) {
-          if (result == null) result = new ArrayList<DelimTest>();
-          result.addAll(delimTests);
-        }
-        delimTests = loadDelimNodes(condElt, false, resourceManager);
-        if (delimTests != null) {
-          if (result == null) result = new ArrayList<DelimTest>();
-          result.addAll(delimTests);
-        }
-      }
-    }
-
-    return result;
-  }
 
   public void setIgnoreConstituents(boolean ignoreConstituents) {
     this.ignoreConstituents = ignoreConstituents;
@@ -241,16 +223,6 @@ public class DelimTest extends BaseClassifierTest {
   }
 
   protected boolean doAccept(Token token, AtnState curState) {
-
-    // if conditions are not met test doesn't apply, so return true
-    if (conditions != null) {
-      for (DelimTest condition : conditions) {
-        if (!condition.accept(token, curState)) {
-          // condition not met 
-          return true;
-        }
-      }
-    }
 
     final String delim = getDelim(token, curState);
 

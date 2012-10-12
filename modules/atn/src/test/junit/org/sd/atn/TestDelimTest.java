@@ -59,12 +59,12 @@ public class TestDelimTest extends TestCase {
 
     Token firstToken = StandardTokenizerFactory.getFirstToken("Testing - 123", tokenizerOptions);
     Token secondToken = firstToken.getNextToken();
-    boolean accept = delimTest.accept(secondToken, null);
+    boolean accept = delimTest.accept(secondToken, null).accept();
     assertFalse(accept);
 
     firstToken = StandardTokenizerFactory.getFirstToken("Testing-123", tokenizerOptions);
     secondToken = firstToken.getNextToken();
-    accept = delimTest.accept(secondToken, null);
+    accept = delimTest.accept(secondToken, null).accept();
     assertTrue(accept);
   }
 
@@ -84,12 +84,12 @@ public class TestDelimTest extends TestCase {
 
     Token firstToken = StandardTokenizerFactory.getFirstToken("A. - Xyz", tokenizerOptions);
     Token secondToken = firstToken.getNextToken();
-    boolean accept = delimTest.accept(secondToken, null);
+    boolean accept = delimTest.accept(secondToken, null).accept();
     assertFalse(accept);
 
     firstToken = StandardTokenizerFactory.getFirstToken("A.-Xyz", tokenizerOptions);
     secondToken = firstToken.getNextToken();
-    accept = delimTest.accept(secondToken, null);
+    accept = delimTest.accept(secondToken, null).accept();
     assertFalse(accept);
   }
 
