@@ -43,7 +43,7 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
 
 
   private List<TokenData> tokenDatas;
-  private transient Map<Integer, Token> tokens;
+  private transient Map<Integer, TokenData> tokens;
 
 
   /**
@@ -86,7 +86,7 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
   protected Map<Integer, Break> createBreaks() {
     final Map<Integer, Break> result = new HashMap<Integer, Break>();
 
-    this.tokens = new HashMap<Integer, Token>();
+    this.tokens = new HashMap<Integer, TokenData>();
 
     if (tokenDatas != null) {
       int lastEnd = -1;
@@ -108,7 +108,7 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
         final int rightBreakWidth = tokenData.getRightBreakWidth();
         setBreak(result, tokenEnd, rightBreakWidth == 0 ? Break.ZERO_WIDTH_HARD_BREAK : Break.SINGLE_WIDTH_HARD_BREAK);
 
-        this.tokens.put(tokenStart, token);
+        this.tokens.put(tokenStart, tokenData);
 
         lastEnd = tokenEnd;
       }
@@ -118,7 +118,7 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
   }
 
   public Token getToken(int startPosition) {
-    Token result = this.tokens.get(startPosition);
+    Token result = doGetToken(startPosition);
 
     if (result == null) {
       result = super.getToken(startPosition);
@@ -138,11 +138,11 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
   public Token getNextToken(Token token) {
     Token result = null;
 
-    if (tokens.get(token.getStartIndex()) == token) {
+    if (doGetToken(token.getStartIndex()) == token) {
       int tokenIndex = token.getSequenceNumber();
 
       if (tokenIndex < tokens.size()) {
-        result = tokens.get(tokenIndex + 1);
+        result = doGetToken(tokenIndex + 1);
       }
     }
     else {
@@ -155,11 +155,11 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
   public Token getPriorToken(Token token) {
     Token result = null;
 
-    if (tokens.get(token.getStartIndex()) == token) {
+    if (doGetToken(token.getStartIndex()) == token) {
       int tokenIndex = token.getSequenceNumber();
 
       if (tokenIndex > 0) {
-        result = tokens.get(tokenIndex - 1);
+        result = doGetToken(tokenIndex - 1);
       }
     }
     else {
@@ -172,12 +172,40 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
   public Token buildToken(int startPosition, int endPosition) {
     Token result = null;
 
-    final Token token = this.tokens.get(startPosition);
+    final Token token = doGetToken(startPosition);
     if (token != null && token.getEndIndex() == endPosition) {
       result = token;
     }
     else {
       result = super.buildToken(startPosition, endPosition);
+    }
+
+    return result;
+  }
+
+  public String getPostDelim(Token token) {
+    String result = "";
+    final TokenData tokenData = this.tokens.get(token.getStartIndex());
+
+    if (tokenData != null && tokenData.length() == token.getLength()) {
+      result = tokenData.getPostDelim();
+    }
+    else {
+      final Token nextToken = getNextToken(token);
+      if (nextToken != null) {
+        result = nextToken.getPreDelim();
+      }
+    }
+
+    return result;
+  }
+
+  public String getPreDelim(Token token) {
+    String result = "";
+    final TokenData tokenData = this.tokens.get(token.getStartIndex());
+
+    if (tokenData != null) {
+      result = tokenData.getPreDelim();
     }
 
     return result;
@@ -228,6 +256,18 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
   }
 
 
+  private final Token doGetToken(int startPosition) {
+    Token result = null;
+    final TokenData tokenData = this.tokens.get(startPosition);
+
+    if (tokenData != null) {
+      result = tokenData.getToken();
+    }
+
+    return result;
+  }
+
+
   public static final class TokenData implements Publishable {
     private String text;
     private int startIndex;
@@ -236,6 +276,10 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
     private int wordCount;
     private int leftOffset;
     private int rightBreakWidth;
+    private String preDelim;
+    private String postDelim;
+
+    private Token _token;
 
     //NOTE: We could hold on to features here, writing and reading them, but
     //      we only hold the "low level" tokens here. Any manually built tokens
@@ -266,6 +310,10 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
       this.leftOffset = 0;
       this.rightBreakWidth = 1;
 
+      this.preDelim = token.getPreDelim();
+      this.postDelim = token.getPostDelim();
+      this._token = null;  //NOTE: initialized when "asToken" is called
+
       final StandardTokenizer tokenizer = (StandardTokenizer)token.getTokenizer();
 
       this.leftOffset = 0;
@@ -275,9 +323,30 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
       if (postBreak != null) this.rightBreakWidth = postBreak.getBWidth();
     }
 
+    public int length() {
+      return text.length();
+    }
+
     public Token asToken(Tokenizer tokenizer) {
       final Token result = new Token(tokenizer, text, startIndex, TokenRevisionStrategy.SO, revisionNumber, sequenceNumber, wordCount, 1);
+      this._token = result;
       return result;
+    }
+
+    public boolean hasToken() {
+      return _token != null;
+    }
+
+    public Token getToken() {
+      return _token;
+    }
+
+    public String getPreDelim() {
+      return preDelim;
+    }
+
+    public String getPostDelim() {
+      return postDelim;
     }
 
     public int getLeftOffset() {
@@ -302,6 +371,8 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
       dataOutput.writeInt(wordCount);
       dataOutput.writeInt(leftOffset);
       dataOutput.writeInt(rightBreakWidth);
+      MessageHelper.writeString(dataOutput, preDelim);
+      MessageHelper.writeString(dataOutput, postDelim);
     }
 
     /**
@@ -321,6 +392,8 @@ public class LiteralTokenizer extends StandardTokenizer implements Publishable {
       this.wordCount = dataInput.readInt();
       this.leftOffset = dataInput.readInt();
       this.rightBreakWidth = dataInput.readInt();
+      this.preDelim = MessageHelper.readString(dataInput);
+      this.postDelim = MessageHelper.readString(dataInput);
     }
   }
 }
