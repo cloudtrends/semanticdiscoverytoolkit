@@ -47,4 +47,34 @@ public enum KeyLabel {
   public char getDefaultChar() {
     return defaultChar;
   }
+
+  public static final KeyLabel getInstance(char c) {
+    KeyLabel result = KeyLabel.Special;
+
+    switch (c) {
+      case 'l' : result = KeyLabel.AllLower; break;
+      case 'c' : result = KeyLabel.Capitalized; break;
+      case 'C' : result = KeyLabel.AllCaps; break;
+      case 'i' : result = KeyLabel.SingleLower; break;
+      case 'I' : result = KeyLabel.SingleUpper; break;
+      case 'm' : result = KeyLabel.LowerMixed; break;
+      case 'M' : result = KeyLabel.UpperMixed; break;
+      case 'n' : result = KeyLabel.Number; break;
+      case 'N' : result = KeyLabel.MixedNumber; break;
+    }
+
+    return result;
+  }
+
+  public static final String asString(KeyLabel[] keyLabels) {
+    final StringBuilder result = new StringBuilder();
+
+    if (keyLabels != null) {
+      for (KeyLabel keyLabel : keyLabels) {
+        result.append(keyLabel.getDefaultChar());
+      }
+    }
+
+    return result.toString();
+  }
 }

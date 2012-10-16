@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.sd.token.CategorizedToken;
+import org.sd.token.Feature;
+import org.sd.token.KeyLabel;
 import org.sd.util.Usage;
 import org.sd.util.tree.Tree;
 import org.sd.xml.DataProperties;
@@ -112,7 +114,45 @@ public class IdentityParseInterpreter implements ParseInterpreter {
           final Object val = entry.getValue();
 
           if (val != null) {
-            tag.attributes.put(attr, val.toString());
+            if (val instanceof CategorizedToken) {
+              final CategorizedToken cToken = (CategorizedToken)val;
+
+              //NOTE: escaping of attribute values done within XmlLite.Tag
+
+              // tokPreDelim, tokPostDelim, tokKeyLabels
+              final String preDelim = cToken.token.getPreDelim();
+              final String postDelim = cToken.token.getPostDelim();
+              final String keyLabels = KeyLabel.asString(cToken.token.getKeyLabels());
+
+              if (!"".equals(preDelim)) {
+                tag.attributes.put("_tokPreDelim", preDelim);
+              }
+              tag.attributes.put("_tokText", cToken.token.getText());
+              if (!"".equals(postDelim)) {
+                tag.attributes.put("_tokPostDelim", postDelim);
+              }
+              if (!"".equals(keyLabels)) {
+                tag.attributes.put("_tokKeyLabels", keyLabels);
+              }
+
+              // add-in token features
+              if (cToken.token.hasFeatures()) {
+                for (Feature feature : cToken.token.getFeatures().getFeatures()) {
+                  final Object featureValue = feature.getValue();
+                  if (featureValue != null) {
+                    final String className = featureValue.getClass().getName();
+
+                    // just include "primitive" feature values
+                    if (className.startsWith("java.lang")) {
+                      tag.attributes.put(feature.getType(), featureValue.toString());
+                    }
+                  }
+                }
+              }
+            }
+            else {
+              tag.attributes.put(attr, val.toString());
+            }
           }
         }
       }
