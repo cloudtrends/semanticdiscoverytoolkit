@@ -98,12 +98,14 @@ public class IdentityParseInterpreter implements ParseInterpreter {
   private final Tree<XmlLite.Data> convertTree(Tree<String> parseTree, Tree<XmlLite.Data> parent, Set<Tree<String>> compressNodes) {
 
     boolean isTag = parseTree.hasChildren();
+    boolean recurse = isTag;
     Tree<XmlLite.Data> curInterpNode = null;
 
     if (isTag) {
       String nodeText = parseTree.getData();
       if ("?".equals(nodeText)) nodeText = "_UNK_";
       curInterpNode = XmlLite.createTagNode(nodeText);
+      ParseInterpretation parseInterp = null;
 
       // add attributes
       if (parseTree.hasAttributes()) {
@@ -146,6 +148,9 @@ public class IdentityParseInterpreter implements ParseInterpreter {
                     if (className.startsWith("java.lang")) {
                       tag.attributes.put(feature.getType(), featureValue.toString());
                     }
+                    else if (featureValue instanceof ParseInterpretation) {
+                      parseInterp = (ParseInterpretation)featureValue;
+                    }
                   }
                 }
               }
@@ -157,12 +162,17 @@ public class IdentityParseInterpreter implements ParseInterpreter {
         }
       }
 
+      if (parseInterp != null) {
+        curInterpNode = parseInterp.getInterpTree();
+        recurse = false;
+      }
+
       if (compressNodes != null && compressNodes.contains(parseTree)) {
         if (parent != null) {
           parent.addChild(curInterpNode);
         }
         parent = curInterpNode;
-        isTag = false;
+        isTag = recurse = false;
       }
     }
 
@@ -186,7 +196,7 @@ public class IdentityParseInterpreter implements ParseInterpreter {
     }
 
     // recurse
-    if (isTag) {
+    if (recurse) {
       // add children
       for (Tree<String> childTree : parseTree.getChildren()) {
         convertTree(childTree, curInterpNode, compressNodes);
