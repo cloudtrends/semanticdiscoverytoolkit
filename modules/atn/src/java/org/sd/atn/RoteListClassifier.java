@@ -208,7 +208,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
             this.stopwords = loadRegexes(this.stopwords, stopElement, true);
           }
           else if ("classifiers".equalsIgnoreCase(stopNodeName)) {
-            this.stopwords = loadClassifiers(this.stopwords, stopElement, true);
+            this.stopwords = loadClassifiers(this.stopwords, stopElement, true, (DomNode)classifierIdElement.getParentNode());
           }
         }
       }
@@ -376,11 +376,11 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     return termsBundle;
   }
 
-  protected final TermsBundle loadClassifiers(TermsBundle termsBundle, DomElement classifiersElement, boolean isStopwords) {
+  protected final TermsBundle loadClassifiers(TermsBundle termsBundle, DomElement classifiersElement, boolean isStopwords, DomNode classifiersParentNode) {
     if (classifiersElement == null) return termsBundle;
 
     if (termsBundle == null) termsBundle = new TermsBundle(isStopwords);
-    termsBundle.loadClassifiers(classifiersElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature, resourceManager);
+    termsBundle.loadClassifiers(classifiersElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature, resourceManager, classifiersParentNode);
     return termsBundle;
   }
 
@@ -728,7 +728,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       this.regexes = new RegexDataContainer(regexesElement);
     }
 
-    protected final void loadClassifiers(DomElement classifiersElement, ResourceManager resourceManager) {
+    protected final void loadClassifiers(DomElement classifiersElement, ResourceManager resourceManager, DomNode classifiersParentNode) {
       final NodeList classifierNodes = classifiersElement.getChildNodes();
       for (int i = 0; i < classifierNodes.getLength(); ++i) {
         final Node curNode = classifierNodes.item(i);
@@ -738,21 +738,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         final String classifierName = curNode.getTextContent().trim();
 
         if ("classifier".equals(nodeName)) {
-          final Object classifierObject = resourceManager.getResource(classifierName);
-          if (classifierObject == null) {
-            System.out.println(new Date() + ": WARNING : RoteListClassifier unknown classifier '" + classifierName + "'");
-          }
-          else {
-            if (classifierObject instanceof RoteListClassifier) {
-              if (this.classifiers == null) this.classifiers = new ArrayList<RoteListClassifier>();
-              this.classifiers.add((RoteListClassifier)classifierObject);
-            }
-            else {
-              System.out.println(new Date() + ": WARNING : RoteListClassifier classifier '" +
-                                 classifierName + "' is *NOT* an RoteListClassifier (" +
-                                 classifierObject.getClass().getName() + ")");
-            }
-          }
+          retrieveClassifier(classifierName, resourceManager);
         }
         else if ("feature".equals(nodeName)) {
           if (this.features == null) this.features = new HashMap<String, Class>();
@@ -768,9 +754,42 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
           final String classifierNameString = "".equals(classifierName) ? null : classifierName;
           this.features.put(classifierNameString, type);
         }
+        else if ("allNamedClassifiers".equals(nodeName)) {
+          // look at each classifiersParentNode child elts w/"name" attribute
+          final NodeList childNodes = classifiersParentNode.getChildNodes();
+          final int numChildNodes = childNodes.getLength();
+          for (int childNodeNum = 0; childNodeNum < numChildNodes; ++childNodeNum) {
+            final Node childNode = childNodes.item(childNodeNum);
+            if (childNode == classifiersElement ||
+                childNode.getNodeType() != Node.ELEMENT_NODE ||
+                !childNode.hasAttributes())
+              continue;
+
+            final String cName = ((DomElement)childNode).getAttributeValue("name", null);
+            retrieveClassifier(cName, resourceManager);
+          }
+        }
         else {
           System.out.println(new Date() + ": WARNING : Unrecognized 'classifiers' sub-element '" +
                              nodeName + "'. Expecting 'classifier' or 'feature'.");
+        }
+      }
+    }
+
+    private final void retrieveClassifier(String classifierName, ResourceManager resourceManager) {
+      final Object classifierObject = resourceManager.getResource(classifierName);
+      if (classifierObject == null) {
+        System.out.println(new Date() + ": WARNING : RoteListClassifier unknown classifier '" + classifierName + "'");
+      }
+      else {
+        if (classifierObject instanceof RoteListClassifier) {
+          if (this.classifiers == null) this.classifiers = new ArrayList<RoteListClassifier>();
+          this.classifiers.add((RoteListClassifier)classifierObject);
+        }
+        else {
+          System.out.println(new Date() + ": WARNING : RoteListClassifier classifier '" +
+                             classifierName + "' is *NOT* an RoteListClassifier (" +
+                             classifierObject.getClass().getName() + ")");
         }
       }
     }
@@ -909,9 +928,9 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       adjustMaxWordCount(theTerms.getMaxWordCount());
     }
 
-    protected final void loadClassifiers(DomElement classifiersElement, boolean defaultCaseSensitivity, String classFeature, ResourceManager resourceManager) {
+    protected final void loadClassifiers(DomElement classifiersElement, boolean defaultCaseSensitivity, String classFeature, ResourceManager resourceManager, DomNode classifiersParentNode) {
       final Terms theTerms = getTheTerms(classifiersElement, defaultCaseSensitivity, classFeature);
-      theTerms.loadClassifiers(classifiersElement, resourceManager);
+      theTerms.loadClassifiers(classifiersElement, resourceManager, classifiersParentNode);
       adjustMaxWordCount(theTerms.getMaxWordCount());
     }
 
