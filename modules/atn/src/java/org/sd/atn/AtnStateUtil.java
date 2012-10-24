@@ -44,6 +44,9 @@ public class AtnStateUtil {
   public static String RULE_ID_KEY = "_ruleID";  // -> ruleID:String (id'd constituents)
   public static String INTERP_KEY = "_interps";  // -> interps:ParseInterpretation[] (pre-parsed constituents)
 
+  private static final LongestParseSelector PARSE_SELECTOR = new LongestParseSelector(false, true);
+  private static final boolean RESOLVE_AMBIGUITY = false;
+
   /**
    * Convert the state (automaton) path to a parse tree.
    * <p>
@@ -454,16 +457,23 @@ public class AtnStateUtil {
       final List<Feature> parseFeatures = tokenFeatures.getFeatures(parseConstraint);
 
       if (parseFeatures != null) {
+        final AtnParseResult parseResult = new AtnParseResult(); // for selecting "longest" parse
+
         for (Feature parseFeature : parseFeatures) {
           final ParseInterpretation interp = (ParseInterpretation)parseFeature.getValue();
           final AtnParse atnParse = interp.getSourceParse();
           if (atnParse != null && atnParse.getSelected()) {
-            if (result == null) result = new ArrayList<Tree<String>>();
-            final Tree<String> deepParseTree = atnParse.getParse().getParseTree();
-            result.add(deepParseTree);
-
-            reconcileDeepTokens(token, deepParseTree);
+            parseResult.addParse(atnParse);
           }
+        }
+
+        final List<AtnParse> selected = RESOLVE_AMBIGUITY ? PARSE_SELECTOR.selectParses(parseResult) : parseResult.getParses();
+        for (AtnParse atnParse : selected) {
+          if (result == null) result = new ArrayList<Tree<String>>();
+          final Tree<String> deepParseTree = atnParse.getParse().getParseTree();
+          result.add(deepParseTree);
+          
+          reconcileDeepTokens(token, deepParseTree);
         }
       }
     }

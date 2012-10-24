@@ -69,6 +69,12 @@ public class LongestParseSelector implements AtnParseSelector {
     }
   }
 
+  LongestParseSelector(boolean simplest, boolean onlyfirst) {
+    this.simplest = simplest;
+    this.onlyfirst = onlyfirst;
+    this.weightPath = null;
+  }
+
   public List<AtnParse> selectParses(AtnParseResult parseResult) {
     final List<ParseData> parseDatas = new ArrayList<ParseData>();
 
