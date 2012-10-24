@@ -106,6 +106,7 @@ public class AtnParseResult {
     return firstToken.getTokenizer().getInputContext();
   }
 
+  /** Primary construtor */
   AtnParseResult(AtnGrammar grammar, Token firstToken, AtnParseOptions options,
                  Set<Integer> stopList, DataProperties overrides, AtomicBoolean die) {
     this.grammar = grammar;
@@ -122,6 +123,16 @@ public class AtnParseResult {
     this.startRuleIndex = 0;
 
     this._parses = null;
+  }
+
+  /** Manual build constructor */
+  AtnParseResult() {
+  }
+
+  /** Manually add a parse */
+  void addParse(AtnParse atnParse) {
+    if (this._parses == null) this._parses = new ArrayList<AtnParse>();
+    this._parses.add(atnParse);
   }
 
   public DataProperties getOverrides() {
@@ -191,7 +202,7 @@ public class AtnParseResult {
     return parse;
   }
 
-  private List<AtnParse> getParses() {
+  List<AtnParse> getParses() {
     if (_parses == null) {
       _parses = new ArrayList<AtnParse>();
 
@@ -219,10 +230,14 @@ public class AtnParseResult {
 
     for (Iterator<Tree<AtnState>> iter = parse.iterator(Tree.Traversal.DEPTH_FIRST); iter.hasNext(); ) {
       final Tree<AtnState> curStateNode = iter.next();
-      final AtnState curState = curStateNode.getData();
+      AtnState curState = curStateNode.getData();
       if (curState == null) continue;
 
-      if (isValidEndNode(curStateNode)) {
+      if (curState.isValidEnd(stopList)) {
+        final AtnState truncatedEndState = shiftTruncatedEndState(curStateNode);
+        if (truncatedEndState != null) {
+          curState = truncatedEndState;
+        }
         result.add(curState);  // NOTE: we'll remove this later if its pop failed
       }
       else if (curState.popFailed() && result.size() > 0) {
@@ -241,9 +256,28 @@ public class AtnParseResult {
     return result;
   }
 
-  private boolean isValidEndNode(Tree<AtnState> stateNode) {
-    final AtnState state = stateNode.getData();
-    return (state == null) ? false : state.isValidEnd(stopList);
+  private final AtnState shiftTruncatedEndState(Tree<AtnState> stateNode) {
+    AtnState result = null;
+
+    // if node's token is shorter than a matched parent, shift to the parent
+    // this happens when a matched revised token matches, but doesn't succeed
+    // to match enough states to encompass the original 
+
+    final int endIdx = stateNode.getData().getInputToken().getEndIndex();
+    for (Tree<AtnState> parentNode = stateNode.getParent();
+         parentNode != null;
+         parentNode = parentNode.getParent()) {
+      final AtnState parentState = parentNode.getData();
+      if (parentState == null) break;
+      if (parentState.getMatched()) {
+        if (parentState.getInputToken().getEndIndex() > endIdx) {
+          result = parentState;
+          break;
+        }
+      }
+    }
+
+    return result;
   }
 
   /**

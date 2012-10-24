@@ -1043,6 +1043,7 @@ public class AtnState {
 
     final String curCat = getRuleStep().getCategory();
     final int tokenStart = inputToken.getStartIndex();
+    final int tokenEnd = inputToken.getEndIndex();
 
     // look forward for ruleStep category (token match or constituent push)
     // by scanning nextSiblings, parent, nextSiblings, parent, nextSiblings, etc.
@@ -1057,7 +1058,7 @@ public class AtnState {
       if (forwardStateNode == null) break;
 
       // search forwardStateNode's tree for match
-      final Tree<AtnState> forwardMatchNode = findNode(forwardStateNode, curCat, tokenStart, hasClusterFlag);
+      final Tree<AtnState> forwardMatchNode = findNode(forwardStateNode, curCat, tokenStart, tokenEnd, hasClusterFlag);
       if (forwardMatchNode != null) {
         if (hasClusterFlag) {
           if (trace) System.out.println("Forward cluster failure ... moving state:\n" +
@@ -1082,7 +1083,7 @@ public class AtnState {
     return result;
   }
 
-  private final Tree<AtnState> findNode(Tree<AtnState> stateNode, String category, int tokenStart, boolean requireMatch) {
+  private final Tree<AtnState> findNode(Tree<AtnState> stateNode, String category, int tokenStart, int tokenEnd, boolean requireMatch) {
     Tree<AtnState> result = null;
 
     for (Iterator<Tree<AtnState>> iter = stateNode.iterator(Tree.Traversal.DEPTH_FIRST) ; iter.hasNext() ;) {
@@ -1092,6 +1093,9 @@ public class AtnState {
         // make sure we haven't gone too far
         final int curTokenStart = curState.getInputToken().getStartIndex();
         if (curTokenStart != tokenStart) break;
+
+        final int curTokenEnd = curState.getInputToken().getEndIndex();
+        if (curTokenEnd != tokenEnd) continue;
 
         if (!requireMatch || curState.getMatched() || curState.getPushState() == curState.getParentState()) {
           final AtnRuleStep curRuleStep = curState.getRuleStep();
