@@ -220,7 +220,7 @@ public class CrawledPage implements Publishable {
    * otherwise, write the content from this page.
    */
   public void dumpContent(File toFile, String originalContent) throws IOException {
-    if (content != null || originalContent != null) {
+    if (content != null || originalContent != null || xmlTree != null) {
       final BufferedWriter writer = FileUtil.getWriter(toFile);
       if (originalContent != null) {
         writer.write(originalContent);
@@ -251,6 +251,12 @@ public class CrawledPage implements Publishable {
    */
   public String getUrl() {
     return url;
+  }
+
+  public void setUrl(String url) {
+    this.url = url;
+    this._dUrl = null;
+    this._links = null;
   }
 
   public DetailedUrl getDetailedUrl() {
