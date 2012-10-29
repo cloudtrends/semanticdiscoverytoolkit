@@ -141,7 +141,12 @@ public class NodePath<T> {
           // add with subscripts
           final int rsbPos = piece.indexOf(']', lsbPos + 1);
           final String indecesString = piece.substring(lsbPos + 1, rsbPos);
-          indeces = MathUtil.parseIntegers(indecesString);
+          try {
+            indeces = MathUtil.parseIntegers(indecesString);
+          }
+          catch (NumberFormatException e) {
+            //indeces not integers, leave as null
+          }
           piece = piece.substring(0, lsbPos);
         }
 
