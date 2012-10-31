@@ -404,17 +404,22 @@ public class AtnStateUtil {
     return result;
   }
 
-  public static final boolean matchesCategory(AtnState atnState, String category) {
-    return matchesCategory(atnState, category, null);
+  public static final boolean matchesCategory(AtnState atnState, StepRequirement requirement) {
+    return matchesCategory(atnState, requirement, null);
   }
 
-  public static final boolean matchesCategory(AtnState atnState, String category, int[] levelDiff) {
+  public static final boolean matchesCategory(AtnState atnState, StepRequirement requirement, int[] levelDiff) {
     boolean result = false;
 
     if (atnState.getMatched()) {
       int popCount = 0;
+
       for (; !result && atnState != null; atnState = atnState.getPushState()) {
-        result = category.equals(atnState.getRuleStep().getCategory());
+        final AtnRuleStep ruleStep = atnState.getRuleStep();
+        final String category = ruleStep.getCategory();
+        final String label = ruleStep.getLabel();
+
+        result = requirement.matches(category, label, (levelDiff == null ? null : levelDiff[0] + popCount));
         if (!result && levelDiff != null) ++popCount;
       }
       if (result && levelDiff != null) levelDiff[0] += popCount;
@@ -427,11 +432,11 @@ public class AtnStateUtil {
    * Find the first state prior to the given state that matches the given
    * category, or null.
    */
-  public static final AtnState findPriorMatch(AtnState atnState, String category, int[] levelDiff) {
+  public static final AtnState findPriorMatch(AtnState atnState, StepRequirement requirement, int[] levelDiff) {
     AtnState result = null;
 
     for (AtnState prevState = getLastMatchingState(atnState, levelDiff); prevState != null; prevState = getLastMatchingState(prevState, levelDiff)) {
-      if (matchesCategory(prevState, category, levelDiff)) {
+      if (matchesCategory(prevState, requirement, levelDiff)) {
         result = prevState;
         break;
       }

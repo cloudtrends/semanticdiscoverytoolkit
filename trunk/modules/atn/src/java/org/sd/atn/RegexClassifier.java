@@ -89,6 +89,11 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
   //   type='matches/lookingat/find'
   //   ldelim='true/false'
   //   rdelim='true/false'
+  //   reverse='true/false'
+  //   require='true/false'
+  //   preText='true/false'
+  //   postText='true/false'
+  //   fullText='true/false'
   //   groupN='classification'>...regular expression...</regex>
   //
   //  regex element
@@ -97,6 +102,11 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
   //  - type -- "matches" (default), "lookingat", or "find" to specify type of regex match
   //  - ldelim -- "false" (default), or "true" to specify whether pre-token delims are included (post normalization) in matching
   //  - rdelim -- "false" (default), or "true" to specify whether post-token delims are included (post normalization) in matching
+  //  - reverse -- "false" (default), or "true" to specify success when regex match fails
+  //  - require -- "false" (default), or "true" to specify success only when this regex matches (or fails to match when reverse=true)
+  //  - preText -- "false" (default), or "true" to specify to match against all text preceding the token
+  //  - postText -- "false" (default), or "true" to specify to match against all text after the token
+  //  - fullText -- "false" (default), or "true" to specify to match against all tokenizer text
   //  - groupN -- where N is a valid group integer for specifying a classification for the matched group
   //
   //  text content:

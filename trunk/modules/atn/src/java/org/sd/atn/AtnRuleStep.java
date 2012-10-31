@@ -46,7 +46,12 @@ public class AtnRuleStep {
     return label == null ? category : label;
   }
 
-  private String[] require;
+  private String requireString;
+  public String getRequireString() {
+    return requireString;
+  }
+
+  private StepRequirement[] require;
   /**
    * If non-null, this indicates that a rule step only applies if the specified
    * constituent or category has been matched.
@@ -61,11 +66,16 @@ public class AtnRuleStep {
    * parse with this step's category is not redundantly generated when the
    * optional constituent is missing.
    */
-  public String[] getRequire() {
+  public StepRequirement[] getRequire() {
     return require;
   }
 
-  private String[] unless;
+  private String unlessString;
+  public String getUnlessString() {
+    return unlessString;
+  }
+
+  private StepRequirement[] unless;
   /**
    * If non-null, this indicates that a rule step only applies if the specified
    * constituent or category has NOT been matched.
@@ -73,7 +83,7 @@ public class AtnRuleStep {
    * This allows for a rule to specify a step that only applies when an
    * optional step has not matched.
    */
-  public String[] getUnless() {
+  public StepRequirement[] getUnless() {
     return unless;
   }
 
@@ -132,11 +142,11 @@ public class AtnRuleStep {
     this.category = stepElement.getLocalName();
     this.label = stepElement.getAttributeValue("label", null);
 
-    final String requireString = stepElement.getAttributeValue("require", null);
-    this.require = requireString == null ? null : requireString.split("\\s*,\\s*");
+    this.requireString = stepElement.getAttributeValue("require", null);
+    this.require = StepRequirement.buildInstances(requireString);
 
-    final String unlessString = stepElement.getAttributeValue("unless", null);
-    this.unless = unlessString == null ? null : unlessString.split("\\s*,\\s*");
+    this.unlessString = stepElement.getAttributeValue("unless", null);
+    this.unless = StepRequirement.buildInstances(unlessString);
 
     this.isOptional = stepElement.getAttributeBoolean("optional", false);
     this.repeats = stepElement.getAttributeBoolean("repeats", false);

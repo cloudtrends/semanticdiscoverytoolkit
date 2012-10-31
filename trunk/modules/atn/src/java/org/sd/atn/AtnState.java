@@ -533,7 +533,7 @@ public class AtnState {
       // Also, the 'unless' constraint will need to be checked again once
       // we've parsed through the current constituent.
 
-      final String[] unless = step.getUnless();
+      final StepRequirement[] unless = step.getUnless();
       if (unless == null || !haveRequired(unless, true)) {
         break;
       }
@@ -550,24 +550,32 @@ public class AtnState {
   private final boolean meetsRequirements() {
 
     final AtnRuleStep step = rule.getStep(stepNum);
-    final String[] require = step.getRequire();
+    final StepRequirement[] require = step.getRequire();
     boolean result = (require == null || haveRequired(require, false));
 
     if (result) {
-      final String[] unless = step.getUnless();
+      final StepRequirement[] unless = step.getUnless();
       if (unless != null) {
         result = !haveRequired(unless, false);
       }
     }
     
+    if (traceflow) {
+      final boolean hasRequire = step.getRequire() != null;
+      final boolean hasUnless = step.getUnless() != null;
+      if (hasRequire || hasUnless) {
+        System.out.println("traceflow--AtnState meetsRequirements(" + this.toString() + ")=" + result +
+                           " hasRequire=" + hasRequire + " hasUnless=" + hasUnless);
+      }
+    }
 
     return result;
   }
 
-  private final boolean haveRequired(String[] requires, boolean includeThisState) {
+  private final boolean haveRequired(StepRequirement[] requires, boolean includeThisState) {
     boolean result = false;
 
-    for (String require : requires) {
+    for (StepRequirement require : requires) {
       if (includeThisState) {
         result = AtnStateUtil.matchesCategory(this, require);
       }
@@ -576,11 +584,7 @@ public class AtnState {
         // haven't verified yet, look back in state history
         final int[] levelDiff = new int[]{0};
         final AtnState priorMatch = AtnStateUtil.findPriorMatch(this, require, levelDiff);
-
-        if (priorMatch != null) {
-          // can find match 'down' (pushed), but not up (popped)
-          result = (levelDiff[0] <= 0);
-        }
+        result = (priorMatch != null);
       }
 
       if (result) break;
@@ -1500,14 +1504,30 @@ public class AtnState {
 
     boolean isDup = false;
 
-    // check for duplicates
+    // check for duplicates in queued states
     final Token token = nextstate.getInputToken();
     for (AtnState state : states) {
-      if (token == state.getInputToken() && nextstate.matchesRulePath(state)) {
+      if (token.equals(state.getInputToken()) && nextstate.matchesRulePath(state)) {
         isDup = true;
         break;
       }
     }
+
+    // check for duplicates in existing siblings
+    final Tree<AtnState> parentNode = nextstate.getParentStateNode();
+    if (!isDup && parentNode != null && parentNode.hasChildren()) {
+      for (Tree<AtnState> siblingStateNode : parentNode.getChildren()) {
+        final AtnState siblingState = siblingStateNode.getData();
+        if (siblingState == nextstate) continue;
+        if (nextstate.getStepNum() == siblingState.getStepNum() &&
+            nextstate.getRule() == siblingState.getRule() &&
+            token.equals(siblingState.getInputToken())) {
+          isDup = true;
+          break;
+        }
+      }
+    }
+    
 
     // check cluster (greedy) flag
     if (!isDup && nextstate.clusterConditionFails(states)) {
