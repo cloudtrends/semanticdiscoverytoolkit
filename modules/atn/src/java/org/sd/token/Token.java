@@ -426,4 +426,30 @@ public class Token {
     }
     return _smallestToken;
   }
+
+  public boolean equals(Object other) {
+    boolean result = (this == other);
+
+    if (!result && other instanceof Token) {
+      final Token otherToken = (Token)other;
+
+      //NOTE: we're assuming we're comparing compatible tokens (where compatible
+      //      tokens are those that are from the same tokenizer or from a tokenizer
+      //      built from the same input text.
+      result =
+        this.getStartIndex() == otherToken.getStartIndex() &&
+        this.getEndIndex() == otherToken.getEndIndex();
+    }
+
+    return result;
+  }
+
+  public int hashCode() {
+    int result = 11;
+
+    result = result * 11 + getStartIndex();
+    result = result * 11 + getEndIndex();
+
+    return result;
+  }
 }

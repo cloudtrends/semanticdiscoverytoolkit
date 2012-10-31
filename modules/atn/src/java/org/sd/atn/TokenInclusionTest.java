@@ -167,21 +167,27 @@ public class TokenInclusionTest implements AtnRuleStepTest {
   // <category values="cat1,...,catN" [include='any|all'] />
   private static final class CategoryContainer extends InclusionContainer {
     private Set<String> categories;
+    private StepRequirement[] stepRequirements;
 
     CategoryContainer(DomElement categoryElement, boolean defaultIncludeAll) {
       super(categoryElement, defaultIncludeAll);
       this.categories = new HashSet<String>();
 
       final String[] values = categoryElement.getAttributeValue("values", "").split("\\s*,\\s*");
-      for (String value : values) categories.add(value);
+      this.stepRequirements = new StepRequirement[values.length];
+      for (int i = 0; i < values.length; ++i) {
+        final String value = values[i];
+        categories.add(value);
+        stepRequirements[i] = new StepRequirement(value, null);
+      }
     }
 
     boolean appliesTo(AtnState atnState) {
       boolean result = categories.contains(atnState.getRuleStep().getCategory());
 
       if (!result) {
-        for (String category : categories) {
-          result = AtnStateUtil.matchesCategory(atnState, category);
+        for (StepRequirement requirement : stepRequirements) {
+          result = AtnStateUtil.matchesCategory(atnState, requirement);
           if (scanIsComplete(result)) break;
         }
       }

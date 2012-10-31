@@ -50,6 +50,11 @@ public class RegexData {
   //   rdelim='true/false'
   //   reverse='true/false'
   //   require='true/false'
+  //   preText='true/false'
+  //   postText='true/false'
+  //   fullText='true/false'
+  //   caseInsensitive='true/false'
+  //   emptyResult='true/false'
   //   groupN='classification'>...regular expression...</regex>
   //
   //  regex element
@@ -60,6 +65,11 @@ public class RegexData {
   //  - rdelim -- "false" (default), or "true" to specify whether post-token delims are included (post normalization) in matching
   //  - reverse -- "false" (default), or "true" to specify success when regex match fails
   //  - require -- "false" (default), or "true" to specify success only when this regex matches (or fails to match when reverse=true)
+  //  - preText -- "false" (default), or "true" to specify to match against all text preceding the token
+  //  - postText -- "false" (default), or "true" to specify to match against all text after the token
+  //  - fullText -- "false" (default), or "true" to specify to match against all tokenizer text
+  //  - caseInsensitive -- "false" (default), or "true" to designate a case-insensitive match
+  //  - emptyResult -- "false" (default), or "true" for the result to return when the text is empty</li>
   //  - groupN -- where N is a valid group integer for specifying a classification for the matched group
   //
   //  text content:
@@ -95,6 +105,11 @@ public class RegexData {
   private boolean rdelim;
   private boolean reverse;
   private boolean require;
+  private boolean preText;
+  private boolean postText;
+  private boolean fullText;
+  private boolean caseInsensitive;
+  private boolean emptyResult;
 
   /**
    * Load from a regex element having the form:
@@ -105,6 +120,11 @@ public class RegexData {
    *   rdelim='true/false'
    *   reverse='true/false'
    *   require='true/false'
+   *   preText='true/false'
+   *   postText='true/false'
+   *   fullText='true/false'
+   *   caseInsensitive='true/false'
+   *   emptyResult='true/false'
    *   groupN='classification'&gt;...regular expression...&lt;/regex&gt;
    * <p>
    * Where
@@ -114,13 +134,20 @@ public class RegexData {
    * <li>when 'rdelim' is true, token postdelims are included in the match text;</li>
    * <li>when 'reverse' is true, the match succeeds when the regex fails to match;</li>
    * <li>when 'require' is true, the regex match is mandatory for success;</li>
+   * <li>when 'preText' is true, the regex is applied to all text preceding the token</li>
+   * <li>when 'postText' is true, the regex is applied to all text following the token</li>
+   * <li>when 'caseInsensitive' is true, the case-insensitive flag is set</li>
+   * <li>when 'fullText' is true, the regex is applied to all tokenizer text</li>
+   * <li>'emptyResult' holds the result, true or false (default), to return when the text is empty</li>
    * <li>a token feature name 'classification' is assigned the text of matched 'groupN' for the token;</li>
    * <li>element text is the regular expression.</li>
    * </ul>
    */
   public RegexData(DomElement regexElement) {
+    this.caseInsensitive = regexElement.getAttributeBoolean("caseInsensitive", false);
+
     final String regex = regexElement.getTextContent();
-    this.pattern = Pattern.compile(regex);
+    this.pattern = caseInsensitive ? Pattern.compile(regex, Pattern.CASE_INSENSITIVE) : Pattern.compile(regex);
 
     // matchType
     final String type = regexElement.getAttributeValue("type", "matches").toLowerCase();
@@ -133,6 +160,11 @@ public class RegexData {
     // reverse, require
     this.reverse = regexElement.getAttributeBoolean("reverse", false);
     this.require = regexElement.getAttributeBoolean("require", false);
+
+    // preText, postText, fullText
+    this.preText = regexElement.getAttributeBoolean("preText", false);
+    this.postText = regexElement.getAttributeBoolean("postText", false);
+    this.fullText = regexElement.getAttributeBoolean("fullText", false);
 
     // group2attr
     final Map<String, String> attrs = regexElement.getDomAttributes().getAttributes();
@@ -165,7 +197,26 @@ public class RegexData {
 
   public boolean matches(String text, Token token, boolean addTokenFeature) {
 
-    if (token != null && (ldelim || rdelim)) {
+    if (token != null && (preText || postText || fullText)) {
+      final StringBuilder theText = new StringBuilder();
+      if (preText) {
+        theText.append(token.getTokenizer().getPriorText(token));
+        if (ldelim || rdelim) {
+          theText.append(token.getPreDelim());
+        }
+      }
+      else if (postText) {
+        theText.append(token.getTokenizer().getNextText(token));
+        if (ldelim || rdelim) {
+          theText.insert(0, token.getPostDelim());
+        }
+      }
+      else {
+        theText.append(token.getTokenizer().getText());
+      }
+      text = theText.toString();
+    }
+    else if (token != null && (ldelim || rdelim)) {
       final StringBuilder delimText = new StringBuilder(text);
       if (ldelim) {
         delimText.insert(0, token.getPreDelim());
@@ -176,21 +227,30 @@ public class RegexData {
       text = delimText.toString();
     }
 
-    final MatchResult matches = patternMatches(text);
+    boolean result = false;
 
-    if (matches.m.matches() && token != null && addTokenFeature) {
-      for (Map.Entry<Integer, String> entry : group2attr.entrySet()) {
-        final Integer group = entry.getKey();
+    if ("".equals(text)) {
+      result = emptyResult;
+    }
+    else {
+      final MatchResult matches = patternMatches(text);
 
-        final String value = matches.m.group(group);
-        if (value != null) {
-          final String attr = entry.getValue();
-          token.setFeature(attr, value, this);
+      if (matches.m.matches() && token != null && addTokenFeature) {
+        for (Map.Entry<Integer, String> entry : group2attr.entrySet()) {
+          final Integer group = entry.getKey();
+
+          final String value = matches.m.group(group);
+          if (value != null) {
+            final String attr = entry.getValue();
+            token.setFeature(attr, value, this);
+          }
         }
       }
+
+      result = matches.matches;
     }
 
-    return matches.matches;
+    return result;
   }
 
   /**

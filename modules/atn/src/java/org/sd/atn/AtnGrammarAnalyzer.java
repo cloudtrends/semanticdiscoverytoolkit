@@ -498,13 +498,13 @@ public class AtnGrammarAnalyzer {
     }
 
     // require
-    if (step.getRequire() != null) {
-      result.append("_r(").append(step.getRequire()).append(")");
+    if (step.getRequireString() != null) {
+      result.append("_r(").append(step.getRequireString()).append(")");
     }
 
     // unless
-    if (step.getUnless() != null) {
-      result.append("_u(").append(step.getUnless()).append(")");
+    if (step.getUnlessString() != null) {
+      result.append("_u(").append(step.getUnlessString()).append(")");
     }
 
     // repeat
