@@ -1528,6 +1528,23 @@ public class AtnState {
       }
     }
     
+    // check for duplicates in matching parent
+    if (!isDup && parentNode != null) {
+      for (Tree<AtnState> pNode = nextstate.getParentStateNode();
+           pNode != null && pNode.getData() != null;
+           pNode = pNode.getData().getParentStateNode()) {
+        final AtnState pState = pNode.getData();
+        if (pState.getMatched()) {
+          final Token pToken = pState.getInputToken();
+          if (pToken.getStartIndex() < token.getStartIndex()) break;
+          if (token.equals(pToken)) {
+            isDup = true;
+            break;
+          }
+        }
+      }
+    }
+    
 
     // check cluster (greedy) flag
     if (!isDup && nextstate.clusterConditionFails(states)) {
