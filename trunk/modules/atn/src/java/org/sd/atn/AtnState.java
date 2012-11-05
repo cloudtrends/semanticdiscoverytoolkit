@@ -1530,8 +1530,17 @@ public class AtnState {
     
     // check for duplicates in matching parent
     if (!isDup && parentNode != null) {
-      for (Tree<AtnState> pNode = nextstate.getParentStateNode();
-           pNode != null && pNode.getData() != null;
+      Tree<AtnState> pNode = nextstate.getParentStateNode();
+      
+      // skip up thru parents w/same token
+      for (; pNode != null && pNode.getData() != null;
+           pNode = pNode.getData().getParentStateNode()) {
+        final Token pToken = pNode.getData().getInputToken();
+        if (token != pToken) break;
+      }
+        
+      // now see if there is a duplicate among remaining parents
+      for (; pNode != null && pNode.getData() != null;
            pNode = pNode.getData().getParentStateNode()) {
         final AtnState pState = pNode.getData();
         if (pState.getMatched()) {
