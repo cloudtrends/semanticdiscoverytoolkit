@@ -286,6 +286,18 @@ public class Token {
   }
 
   /**
+   * Add all of the given features to this token's features.
+   */
+  public void addFeatures(Features features) {
+    if (features != null && features.size() > 0) {
+      if (this.features == null) this.features = new Features();
+      for (Feature feature : features.getFeatures()) {
+        this.features.add(feature);
+      }
+    }
+  }
+
+  /**
    * Convenience method for getting the feature's value.
    */
   public Object getFeatureValue(String type, Object source) {

@@ -147,7 +147,6 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
       }
     }
 
-
     //NOTE: "reverse" isn't checked here directly because this test will be wrapped within
     //      a ReversedAtnRuleStepTest on load through the AtnRuleStep and the reversal
     //      logic will be applied there; however, in cases where the test is "ignored" or
@@ -181,6 +180,32 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
 
   }
 			
+
+  /**
+   * Given a testNode with children of the form:
+   * <p>
+   *   &lt;nodeName attName='attValue'&gt;,
+   * <p>
+   * Extract all of the attribute values.
+   */
+  public static final List<String> loadValues(DomNode testNode, String nodeName, String attName) {
+    List<String> result = null;
+
+    final NodeList nodes = testNode.selectNodes(nodeName);
+    if (nodes != null && nodes.getLength() > 0) {
+      for (int nodeNum = 0; nodeNum < nodes.getLength(); ++nodeNum) {
+        final DomElement elt = (DomElement)nodes.item(nodeNum);
+        final String value = elt.getAttributeValue(attName, null);
+        if (value != null) {
+          if (result == null) result = new ArrayList<String>();
+          result.add(value);
+        }
+      }
+    }
+
+    return result;
+  }
+
   // extenders of this abstract class  must implement 'doAccept':
   // if "verify" is overridden, then doAccept may be a no-op.
   protected abstract boolean doAccept(Token token, AtnState curState);

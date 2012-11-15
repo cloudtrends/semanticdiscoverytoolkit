@@ -62,9 +62,6 @@ public class RecordParseInterpreter extends TemplateParseInterpreter {
 
   private static final class RecordInterpretationController implements InterpretationController {
 
-    private String[] classifications;
-    private InnerResources resources;
-    private List<RecordTemplate> topTemplates;
     private boolean trace;
 
     public RecordInterpretationController(boolean trace) {

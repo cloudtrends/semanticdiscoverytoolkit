@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import org.sd.token.Break;
 import org.sd.token.FeatureConstraint;
+import org.sd.token.CategorizedToken;
 import org.sd.token.Token;
 import org.sd.token.StandardTokenizer;
 import org.sd.token.StandardTokenizerOptions;
@@ -344,6 +345,20 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
                 for (ParseInterpretation interpretation : interpretations) {
                   if (interpretation.getClassification() != null) {
                     token.setFeature(interpretation.getClassification(), interpretation, this);
+                  }
+                }
+              }
+
+              // Add the parse's token's features as features on this token
+              final List<CategorizedToken> parseCTokens = atnParse.getTokens();
+              if (parseCTokens != null) {
+                for (CategorizedToken cToken : parseCTokens) {
+                  // add a feature for the category
+                  token.setFeature(cToken.category, new Boolean(true), this);
+
+                  // add the token's features
+                  if (cToken.token.hasFeatures()) {
+                    token.addFeatures(cToken.token.getFeatures());
                   }
                 }
               }

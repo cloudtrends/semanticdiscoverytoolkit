@@ -104,15 +104,7 @@ public class TokenTest extends BaseClassifierTest {
     this.verbose = testNode.getAttributeBoolean("verbose", false);
     this.revise = testNode.getAttributeBoolean("revise", false);
 
-    final NodeList classifierNodes = testNode.selectNodes("classifier");
-    if (classifierNodes != null && classifierNodes.getLength() > 0) {
-      this.classifiers = new ArrayList<String>();
-      for (int nodeNum = 0; nodeNum < classifierNodes.getLength(); ++nodeNum) {
-        final DomElement classifierElement = (DomElement)classifierNodes.item(nodeNum);
-        final String cat = classifierElement.getAttributeValue("cat");
-        classifiers.add(cat);
-      }
-    }
+    this.classifiers = loadValues(testNode, "classifier", "cat");
 
     final NodeList preDelimNodes = testNode.selectNodes("predelim");
     if (preDelimNodes != null && preDelimNodes.getLength() > 0) {
