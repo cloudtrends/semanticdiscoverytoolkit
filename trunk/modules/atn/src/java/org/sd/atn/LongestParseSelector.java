@@ -46,6 +46,7 @@ public class LongestParseSelector implements AtnParseSelector {
   private boolean simplest;
   private boolean onlyfirst;
   private NodePath<String> weightPath;
+  private List<NodePath<String>> preferPaths;
 
   /**
    * Attribute 'simplest' (default 'true') accepts only longest parses with
@@ -56,12 +57,16 @@ public class LongestParseSelector implements AtnParseSelector {
    * <p>
    * Attribute 'weight' (default null) chooses the parse with the "weightier"
    * parse (more characters) under the given node path.
+   * <p>
+   * Attribute 'prefer' (default null) specifies preferrence order of parses
+   * having (comma delimited) node path matches.
    */
   public LongestParseSelector(DomNode domNode, ResourceManager resourceManager) {
     final DomElement domElement = (DomElement)domNode;
     this.simplest = domElement.getAttributeBoolean("simplest", true);
     this.onlyfirst = domElement.getAttributeBoolean("onlyfirst", false);
     this.weightPath = null;
+    this.preferPaths = buildNodePaths(domElement.getAttributeValue("prefer", null));
 
     final String weightString = domElement.getAttributeValue("weight", null);
     if (weightString != null) {
@@ -75,13 +80,29 @@ public class LongestParseSelector implements AtnParseSelector {
     this.weightPath = null;
   }
 
+  protected boolean getSimplest() {
+    return simplest;
+  }
+
+  protected void setSimplest(boolean simplest) {
+    this.simplest = simplest;
+  }
+
+  protected boolean getOnlyFirst() {
+    return onlyfirst;
+  }
+
+  protected void setOnlyFirst(boolean onlyfirst) {
+    this.onlyfirst = onlyfirst;
+  }
+
   public List<AtnParse> selectParses(AtnParseResult parseResult) {
     final List<ParseData> parseDatas = new ArrayList<ParseData>();
 
     for (int parseIndex = 0; parseIndex < parseResult.getNumParses(); ++parseIndex) {
       final AtnParse parse = parseResult.getParse(parseIndex);
       if (!parse.getSelected()) continue;
-      parseDatas.add(new ParseData(parse, simplest, weightPath));
+      parseDatas.add(new ParseData(parse, simplest, weightPath, preferPaths));
     }
 
     try {
@@ -152,26 +173,45 @@ public class LongestParseSelector implements AtnParseSelector {
     return result;
   }
 
+  private static final List<NodePath<String>> buildNodePaths(String pathString) {
+    List<NodePath<String>> result = null;
+
+    if (pathString != null && !"".equals(pathString)) {
+      result = new ArrayList<NodePath<String>>();
+
+      final String[] paths = pathString.split("\\s*,\\s*");
+      for (String path : paths) {
+        result.add(new NodePath<String>(path));
+      }
+    }
+
+    return result;
+  }
+
 
   private static final class ParseData implements Comparable<ParseData> {
     private AtnParse atnParse;
     private boolean simplest;
     private NodePath<String> weightPath;
+    private List<NodePath<String>> preferData;
 
     private List<Token> skipTokens;
     private int skipCount;
     private int length;
-    private int complexity;  // the lower, the simpler
-    private int diversity;   // num different tags
-    private int weight;      // prefer higher
+    private int complexity;      // the lower, the simpler
+    private int diversity;       // num different tags
+    private int weight;          // prefer higher
+    private int preferValue;     // prefer lower (when >= 0)
+    private int prefPerplexity;  // require equality when simplest + prefer
     
     private boolean computedRulePattern = false;
     private String _rulePattern = null;
 
-    ParseData(AtnParse atnParse, boolean simplest, NodePath<String> weightPath) {
+    ParseData(AtnParse atnParse, boolean simplest, NodePath<String> weightPath, List<NodePath<String>> preferData) {
       this.atnParse = atnParse;
       this.simplest = simplest;
       this.weightPath = weightPath;
+      this.preferData = preferData;
 
       this.skipTokens = null;
       this.skipCount = 0;
@@ -179,6 +219,8 @@ public class LongestParseSelector implements AtnParseSelector {
       this.complexity = 0;
       this.diversity = 0;
       this.weight = 0;
+      this.preferValue = -1;
+      this.prefPerplexity = 0;
 
       initialize();
     }
@@ -216,6 +258,35 @@ public class LongestParseSelector implements AtnParseSelector {
           }
         }
       }
+
+      if (preferData != null) {
+        final Tree<String> parseTree = atnParse.getParseTree();
+        int idx = 0;
+        for (NodePath<String> preferPath : preferData) {
+          final List<Tree<String>> preferNodes = preferPath.apply(parseTree);
+          if (preferNodes != null) {
+            preferValue = idx;
+            prefPerplexity = computePerplexity(preferNodes);
+            break;
+          }
+          ++idx;
+        }
+      }
+    }
+
+    private final int computePerplexity(List<Tree<String>> preferNodes) {
+      // defined as the minimum number of siblings for any (selected) node
+      // used as measure of "complexity" in context of preferred nodes
+      int result = Integer.MAX_VALUE;
+
+      for (Tree<String> preferNode : preferNodes) {
+        final int curResult = preferNode.getNumSiblings();
+        if (curResult < result) {
+          result = curResult;
+        }
+      }
+
+      return result;
     }
 
     public String toString() {
@@ -262,7 +333,7 @@ public class LongestParseSelector implements AtnParseSelector {
     }
 
     public int hashCode() {
-      // rulePattern, simplest, skipCount, length, complexity, diversity, weight
+      // rulePattern, simplest, skipCount, length, complexity, diversity, weight, preferValue
       int result = 1;
 
       final String rulePattern = getRulePattern();
@@ -279,6 +350,7 @@ public class LongestParseSelector implements AtnParseSelector {
       result = (result * 17) + complexity;
       result = (result * 17) + diversity;
       result = (result * 17) + weight;
+      result = (result * 17) + preferValue;
 
       return result;
     }
@@ -306,6 +378,11 @@ public class LongestParseSelector implements AtnParseSelector {
           if (result == 0) {
             result = other.getLength() - length;
 
+            // when still unresolved, check preference order of parses
+            if (result == 0 && preferData != null) {
+              result = getPrefCompare(other);
+            }
+
             // when still unresolved, the minimum complexity comes first
             if (result == 0 && simplest) {
               result = this.complexity - other.getComplexity();
@@ -316,6 +393,22 @@ public class LongestParseSelector implements AtnParseSelector {
             if (result == 0 && rulePatternMatch) {
               result = other.getWeight() - this.weight;
             }
+          }
+        }
+      }
+
+      return result;
+    }
+
+    private final int getPrefCompare(ParseData other) {
+      int result = 0;
+
+      if (preferData != null) {
+        if (this.preferValue >= 0 && other.preferValue >= 0) {
+          // as long as !simplest or prefPerplexities match,
+          if (!simplest || this.prefPerplexity == other.prefPerplexity) {
+            // lower prefer value comes first
+            result = this.preferValue - other.preferValue;
           }
         }
       }

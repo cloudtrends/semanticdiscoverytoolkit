@@ -136,6 +136,11 @@ public class AtnRuleStep {
     return skip;
   }
 
+  private boolean verbose;
+  public boolean getVerbose() {
+    return verbose;
+  }
+
 
   AtnRuleStep(DomElement stepElement, ResourceManager resourceManager, AtnRule rule) {
     this.rule = rule;
@@ -156,6 +161,7 @@ public class AtnRuleStep {
     this.consumeToken = stepElement.getAttributeBoolean("consumeToken", true);
     this.ignoreToken = stepElement.getAttributeBoolean("ignoreToken", false);
     this.skip = stepElement.getAttributeInt("skip", 0);
+    this.verbose = stepElement.getAttributeBoolean("verbose", false);
     this.clusterFlag = stepElement.getAttributeBoolean("cluster", false);
 
     this.testContainer = new StepTestContainer(stepElement, resourceManager);

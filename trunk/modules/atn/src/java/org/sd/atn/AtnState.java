@@ -560,10 +560,10 @@ public class AtnState {
       }
     }
     
-    if (traceflow) {
+    if (traceflow || step.getVerbose()) {
       final boolean hasRequire = step.getRequire() != null;
       final boolean hasUnless = step.getUnless() != null;
-      if (hasRequire || hasUnless) {
+      if (hasRequire || hasUnless || step.getVerbose()) {
         System.out.println("traceflow--AtnState meetsRequirements(" + this.toString() + ")=" + result +
                            " hasRequire=" + hasRequire + " hasUnless=" + hasUnless);
       }
@@ -758,6 +758,10 @@ public class AtnState {
 
     if (result == null) {
       result = MatchResult.getInstance(matched);
+    }
+
+    if (ruleStep.getVerbose()) {
+      System.out.println("*** " + this.toString() + " RuleStep result=" + result.matched());
     }
 
     return result;

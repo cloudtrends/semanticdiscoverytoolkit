@@ -49,6 +49,7 @@ public class BracketPopTest implements AtnRuleStepTest {
   
   private boolean allowBalanced;
   private boolean includeEnds;
+  private boolean requireEnds;
 
   private List<Bracket> brackets;
   List<Bracket> getBrackets() {
@@ -67,11 +68,14 @@ public class BracketPopTest implements AtnRuleStepTest {
    *     constituent in the testing. Note that this option is highly restrictive in
    *     that any constituent immediately preceded or followed by a bracket must span
    *     all tokens to the balanced matching bracket.</li>
+   * <li>requireEnds requires (one set of) the delimiters immediately preceding and
+   *     following the constituent in the testing.</li>
    * </ul>
    */
   public BracketPopTest(DomNode testNode, ResourceManager resourceManager) {
     this.allowBalanced = testNode.getAttributeBoolean("allowBalanced", true);
     this.includeEnds = testNode.getAttributeBoolean("includeEnds", false);
+    this.requireEnds = testNode.getAttributeBoolean("requireEnds", false);
 
     //     <brackets>
     //       <!-- -->
@@ -80,6 +84,30 @@ public class BracketPopTest implements AtnRuleStepTest {
 
     // load brackets
     this.brackets = loadBrackets(testNode);
+  }
+
+  protected void setAllowBalanced(boolean allowBalanced) {
+    this.allowBalanced = allowBalanced;
+  }
+
+  protected boolean allowBalanced() {
+    return allowBalanced;
+  }
+
+  protected void setIncludeEnds(boolean includeEnds) {
+    this.includeEnds = includeEnds;
+  }
+
+  protected boolean includeEnds() {
+    return includeEnds;
+  }
+
+  protected void setRequireEnds(boolean requireEnds) {
+    this.requireEnds = requireEnds;
+  }
+
+  protected boolean requireEnds() {
+    return requireEnds;
   }
 
   public PassFail accept(Token token, AtnState curState) {
@@ -113,55 +141,86 @@ public class BracketPopTest implements AtnRuleStepTest {
           }
         }
         else {
-          // walk forward through constituent tokens seeking start brackets and their
-          // balanced ends
-
           final int numCStates = constituentMatchStates.size();
-          for (int stateNum = includeEnds ? 0 : 1; stateNum < numCStates; ++stateNum) {
-            final AtnState cState = constituentMatchStates.get(stateNum);
-            final Token curToken = cState.getInputToken();
 
-            if (startBracket == null) {
-              startBracket = findStartBracket(curToken);
-            }
+          // if requireEnds, verify that we have brackets around the constituent
+          if (requireEnds) {
+            result = verifyRequireEnds(constituentMatchStates.get(0), constituentMatchStates.get(numCStates - 1));
+          }
 
-            if (stateNum == numCStates - 1 && !includeEnds) {
-              break;
-            }
+          if (result && allowBalanced) {
+            // walk forward through constituent tokens seeking start brackets and their
+            // balanced ends
+            for (int stateNum = includeEnds ? 0 : 1; stateNum < numCStates; ++stateNum) {
+              final AtnState cState = constituentMatchStates.get(stateNum);
+              final Token curToken = cState.getInputToken();
 
-            if (startBracket != null) {
-              if (allowBalanced) {
-                if (startBracket.matchesEnd(curToken)) {
-                  // clear balanced case
-                  startBracket = null;
+              if (startBracket == null) {
+                startBracket = findStartBracket(curToken);
+              }
+
+              if (stateNum == numCStates - 1 && !includeEnds) {
+                break;
+              }
+
+              if (startBracket != null) {
+                if (allowBalanced) {
+                  if (startBracket.matchesEnd(curToken)) {
+                    // clear balanced case
+                    startBracket = null;
+                  }
+                }
+                else {
+                  // found an errant bracket
+                  result = false;
+                  break;
                 }
               }
               else {
-                // found an errant bracket
-                result = false;
-                break;
-              }
-            }
-            else {
-              // check for wayward end brackets
-              endBracket = findEndBracket(curToken);
+                // check for wayward end brackets
+                endBracket = findEndBracket(curToken);
             
-              if (endBracket != null) {
-                result = false;
-                break;
+                if (endBracket != null) {
+                  result = false;
+                  break;
+                }
               }
             }
-          }
 
-          if (startBracket != null) {
-            // unbalanced bracket
-            result = false;
+            if (startBracket != null) {
+              // unbalanced bracket
+              result = false;
+            }
           }
         }
       }
     }
+    else {
+      if (requireEnds) {
+        result = verifyRequireEnds(curState, curState);
+      }
+    }
 
     return PassFail.getInstance(result);
+  }
+
+  private final boolean verifyRequireEnds(AtnState preState, AtnState postState) {
+    boolean result = true;
+
+    final Token preToken = preState.getInputToken();
+    final Bracket preBracket = findStartBracket(preToken);
+
+    if (preBracket == null) {
+      result = false;
+    }
+    else {
+      final Token postToken = postState.getInputToken();
+      if (!preBracket.matchesEnd(postToken)) {
+        result = false;
+      }
+    }
+
+    return result;
   }
 
   private List<Bracket> loadBrackets(DomNode grammarNode) {
