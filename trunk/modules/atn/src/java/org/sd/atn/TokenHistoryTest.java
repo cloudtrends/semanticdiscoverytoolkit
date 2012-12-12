@@ -269,19 +269,22 @@ public class TokenHistoryTest implements AtnRuleStepTest {
       if (classifierId != null) {
         boolean foundMatch = false;
 
-        final List<AtnStateTokenClassifier> tokenClassifiers = getTokenClassifiers(curState);
-
-        if (tokenClassifiers == null) {
-          throw new IllegalStateException("Unknown referenced classifier '" + classifierId + "'!");
+        if (curState.getRuleStep().getLabel().equals(classifierId)) {
+          foundMatch = true;
         }
+        else {
+          final List<AtnStateTokenClassifier> tokenClassifiers = getTokenClassifiers(curState);
 
-        final Token token = curState.getInputToken();
+          if (tokenClassifiers != null) {
+            final Token token = curState.getInputToken();
 
-        for (AtnStateTokenClassifier tokenClassifier : tokenClassifiers) {
-          final MatchResult matchResult = tokenClassifier.classify(token, curState);
-          if (matchResult.matched()) {
-            foundMatch = true;
-            break;
+            for (AtnStateTokenClassifier tokenClassifier : tokenClassifiers) {
+              final MatchResult matchResult = tokenClassifier.classify(token, curState);
+              if (matchResult.matched()) {
+                foundMatch = true;
+                break;
+              }
+            }
           }
         }
 

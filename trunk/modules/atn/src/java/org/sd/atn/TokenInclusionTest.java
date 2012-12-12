@@ -47,6 +47,10 @@ import org.w3c.dom.NodeList;
        "   <jclass>org.sd.atn.TokenInclusionTest</jclass>\n" +
        "   <category values=\"cat1,...,catN\" [include='any|all'] />\n" +
        "   <classifier values=\"classifier1,...,classifierN\" [include='any|all'] />\n" +
+       "   <halt>\n" +
+       "     <test/preDelim/postDelim>...</test/preDelim/postDelim>\n" +
+       "     ...\n" +
+       "   </halt>\n" +
        " </test>\n" +
        " \n" +
        " The test passes (or fails when reverse=true) when any (or all) categories\n" +
@@ -63,23 +67,30 @@ public class TokenInclusionTest implements AtnRuleStepTest {
   //   <jclass>org.sd.atn.TokenInclusionTest</jclass>
   //   <category values="cat1,...,catN" [include='any|all'] />
   //   <classifier values="classifier1,...,classifierN" [include='any|all'] />
+  //   <halt>
+  //     <test/preDelim/postDelim>...</test/preDelim/postDelim>"
+  //     ...
+  //   </halt>
   // </test>
   //
   // The test passes (or fails when reverse=true) when any (or all) categories
   // are present and/or classifiers match tokens in the current constituent's
-  // (rule's) history.
+  // (rule's) history before (working backwards) hitting a(n optional) halt
+  // condition.
   //
 
 
   private boolean verbose;
   private boolean includeAll;
   private List<InclusionContainer> containers;
+  private StepTestContainer haltContainer;
 
   public TokenInclusionTest(DomNode testNode, ResourceManager resourceManager) {
     this.verbose = testNode.getAttributeBoolean("verbose", false);
     final String include = testNode.getAttributeValue("include", "all");
     this.includeAll = "all".equals(include);
     this.containers = loadContainers(testNode);
+    this.haltContainer = loadHaltContainer(testNode, resourceManager);
   }
 
   private final List<InclusionContainer> loadContainers(DomNode testNode) {
@@ -108,6 +119,17 @@ public class TokenInclusionTest implements AtnRuleStepTest {
     return result;
   }
 
+  private final StepTestContainer loadHaltContainer(DomNode testNode, ResourceManager resourceManager) {
+    StepTestContainer result = null;
+
+    final DomElement haltElement = (DomElement)testNode.selectSingleNode("halt");
+    if (haltElement != null) {
+      result = new StepTestContainer(haltElement, resourceManager);
+    }
+
+    return result;
+  }
+
   /**
    * Determine whether to accept the (matched) state.
    * <p>
@@ -124,7 +146,18 @@ public class TokenInclusionTest implements AtnRuleStepTest {
     }
 
     for (InclusionContainer ic : containers) {
+      Token priorToken = token;
       for (AtnState atnState = curState; atnState != null && atnState != stopState; atnState = atnState.getParentState()) {
+        if (haltContainer != null && atnState.getInputToken() != priorToken) {
+          priorToken = atnState.getInputToken();
+          if (!haltContainer.verify(priorToken, atnState).accept()) {
+            if (verbose) {
+              System.out.println("TokenInclusionTest hit halt condition at atnState=" + atnState);
+            }
+            break;
+          }
+        }
+
         result = ic.appliesTo(atnState);
 
         if (verbose) {

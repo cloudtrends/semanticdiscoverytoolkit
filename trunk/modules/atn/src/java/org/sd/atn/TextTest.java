@@ -21,9 +21,13 @@ package org.sd.atn;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.sd.token.Feature;
+import org.sd.token.FeatureConstraint;
+import org.sd.token.Features;
 import org.sd.token.Token;
 import org.sd.token.Tokenizer;
 import org.sd.util.Usage;
+import org.sd.util.tree.Tree;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.w3c.dom.NodeList;
@@ -114,9 +118,19 @@ public class TextTest extends BaseClassifierTest {
 
     if (curState.isPoppedState()) {
       final AtnState startState = AtnStateUtil.getConstituentStartState(curState);
-      final String fulltext = token.getTokenizer().getText();
-      startToken = startState.getInputToken();
-      text = fulltext.substring(startToken.getStartIndex(), token.getEndIndex());
+
+      if (token.hasFeatures()) {
+        final List<String> constituentCategories = getConstituentCategories(curState, startState);
+        // use feature match text from the token, if present.
+        text = getFeatureMatchText(token, constituentCategories);
+      }
+
+      // otherwise, use the input text spanning the current constituent
+      if (text == null) {
+        final String fulltext = token.getTokenizer().getText();
+        startToken = startState.getInputToken();
+        text = fulltext.substring(startToken.getStartIndex(), token.getEndIndex());
+      }
     }
     else {
       text = token.getText();
@@ -157,6 +171,57 @@ public class TextTest extends BaseClassifierTest {
           if (verbose) System.out.println("TextTest.postToken(" + postToken + ")=" + result);
         }
       }
+    }
+
+    return result;
+  }
+
+  private final List<String> getConstituentCategories(AtnState curState, AtnState startState) {
+    final List<String> result = new ArrayList<String>();
+
+    for (AtnState atnState = curState.getParentState() ;
+         atnState != null && atnState != startState ;
+         atnState = atnState.getParentState()) {
+      if (atnState.isPoppedState() || atnState.getMatched()) {
+        final String cat = atnState.getRuleStep().getCategory();
+        result.add(cat);
+      }
+    }
+
+    return result;
+  }
+
+  private final String getFeatureMatchText(Token token, List<String> constituentCategories) {
+    String result = null;
+
+    // use AtnStateUtil.FEATURE_MATCH features on the token to find interp
+    // parse trees as the source for the text.
+
+    for (String cCat : constituentCategories) {
+      final List<ParseInterpretation> interps = AtnStateUtil.getFeatureMatchInterps(token, cCat);
+      if (interps != null) {
+        // keep the longest text from the interp parse tree leaf text
+        for (ParseInterpretation interp : interps) {
+          final String text = getInterpretationText(interp);
+          if (text != null) {
+            if (result == null || (text.length() > result.length())) {
+              result = text;
+            }
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private final String getInterpretationText(ParseInterpretation interp) {
+    String result = null;
+
+    final AtnParse atnParse = interp.getSourceParse();
+    if (atnParse != null && atnParse.getSelected()) {
+      final Tree<String> parseTree = atnParse.getParseTree();
+      result = parseTree.getLeafText();
     }
 
     return result;

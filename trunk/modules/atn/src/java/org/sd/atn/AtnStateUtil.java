@@ -44,8 +44,69 @@ public class AtnStateUtil {
   public static String RULE_ID_KEY = "_ruleID";  // -> ruleID:String (id'd constituents)
   public static String INTERP_KEY = "_interps";  // -> interps:ParseInterpretation[] (pre-parsed constituents)
 
+  /**
+   * A type for a feature on a token indicating the category (value) that
+   * allowed a token match for the token. This is used, e.g., in TextTest
+   * for determining the actual matched text from the token.
+   */
+  public static final String FEATURE_MATCH = "_featureMatch";
+
+  public static final FeatureConstraint FEATURE_MATCH_CONSTRAINT = new FeatureConstraint();
+  static {
+    FEATURE_MATCH_CONSTRAINT.setType(FEATURE_MATCH);
+    FEATURE_MATCH_CONSTRAINT.setClassType(AtnState.class);
+    FEATURE_MATCH_CONSTRAINT.setFeatureValueType(String.class);
+  }
+
   private static final LongestParseSelector PARSE_SELECTOR = new LongestParseSelector(false, true);
   private static final boolean RESOLVE_AMBIGUITY = false;
+
+  /**
+   * Set a feature on the token that indicates that it matched based on a
+   * token feature of the given category.  (Used, e.g., in TextTest.)
+   */
+  public static final void setFeatureMatch(Token token, String category, AtnState state) {
+    token.setFeature(FEATURE_MATCH, category, state);
+  }
+
+  /**
+   * Create a feature match constraint targetting the given category.
+   */
+  public static FeatureConstraint createFeatureMatchConstraint(String category) {
+    final FeatureConstraint result = new FeatureConstraint();
+
+    result.setType(FEATURE_MATCH);
+    result.setClassType(AtnState.class);
+    result.setValue(category);
+
+    return result;
+  }
+
+  /**
+   * Get the feature match interpretations (only for selected parses) on
+   * the given token with the given category if it exists, or null.
+   */
+  public static List<ParseInterpretation> getFeatureMatchInterps(Token token, String category) {
+    List<ParseInterpretation> result = null;
+
+    if (token.hasFeatures()) {
+      final FeatureConstraint interpConstraint = AtnParseBasedTokenizer.createParseInterpretationFeatureConstraint(category);
+      final List<Feature> interpFeatures = token.getFeatures().getFeatures(interpConstraint);
+      if (interpFeatures != null) {
+        for (Feature interpFeature : interpFeatures) {
+          final ParseInterpretation interp = (ParseInterpretation)interpFeature.getValue();
+          final AtnParse atnParse = interp.getSourceParse();
+          if (atnParse != null && atnParse.getSelected()) {
+            if (result == null) result = new ArrayList<ParseInterpretation>();
+            result.add(interp);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
 
   /**
    * Convert the state (automaton) path to a parse tree.
