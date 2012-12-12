@@ -290,12 +290,12 @@ public class AtnState {
 //        final int repeatNum = AtnStateUtil.countRepeats(this);
         result = (repeatNum + 1) >= stepRepeatLimit;
 
-        if (traceflow) {
+        if (traceflow || ruleStep.getVerbose()) {
           System.out.println("traceflow--AtnState repeatNum=" + repeatNum + " (" + this.repeatNum + ") " + this.toString());
         }
 
         if (result) {
-          if (traceflow) {
+          if (traceflow || ruleStep.getVerbose()) {
             System.out.println("traceflow--AtnState reachedRepeatLimit " + this.toString());
           }
         }
@@ -321,7 +321,7 @@ public class AtnState {
         result = constituentTokenCount >= ruleTokenLimit;
 
         if (result) {
-          if (traceflow) {
+          if (traceflow || getRuleStep().getVerbose()) {
             System.out.println("traceflow--AtnState reachedTokenLimit " + this.toString());
           }
         }
@@ -563,7 +563,7 @@ public class AtnState {
     if (traceflow || step.getVerbose()) {
       final boolean hasRequire = step.getRequire() != null;
       final boolean hasUnless = step.getUnless() != null;
-      if (hasRequire || hasUnless || step.getVerbose()) {
+      if (hasRequire || hasUnless) {
         System.out.println("traceflow--AtnState meetsRequirements(" + this.toString() + ")=" + result +
                            " hasRequire=" + hasRequire + " hasUnless=" + hasUnless);
       }
@@ -748,6 +748,10 @@ public class AtnState {
         // check for a feature that matches the category
         if (!matched) {
           matched = inputToken.getFeature(category, null) != null;
+
+          if (matched) {
+            AtnStateUtil.setFeatureMatch(inputToken, category, this);
+          }
         }
 
         if (matched) {
@@ -845,7 +849,7 @@ public class AtnState {
         
         if (!result) {
           popState.popFailed = true;
-          if (trace) {
+          if (trace || getRuleStep().getVerbose()) {
             System.out.println("POP tests FAILED\t" + popState.showStateContext() /*popState.showStateTree(true)*/);
             popState.applyTests();  // NOTE: this is here for debug stepping when tests fail unexpectedly
           }
@@ -858,7 +862,7 @@ public class AtnState {
             popState.popFailed = true;
             popStateNode.addChild(popState);
 
-            if (trace) {
+            if (trace || getRuleStep().getVerbose()) {
               System.out.println("POP verification FAILED\t" + popState.showStateContext() /*popState.showStateTree(true)*/);
             }
 
@@ -878,7 +882,7 @@ public class AtnState {
         if (!result || !popVerified) {
           // back out of popping
           while (states.size() > statesSize) {
-            if (trace) System.out.println("Failed pop backup ... removing queued state:\n" + states.getLast().showStateContext() /*states.getLast().showStatePath()*/);
+            if (trace || getRuleStep().getVerbose()) System.out.println("Failed pop backup ... removing queued state:\n" + states.getLast().showStateContext() /*states.getLast().showStatePath()*/);
             states.removeLast();
           }
           while (skipStates.size() > skipStatesSize) skipStates.removeLast();
@@ -888,7 +892,7 @@ public class AtnState {
 
         popStateNode = popStateNode.addChild(popState);
 
-        if (trace) {
+        if (trace || getRuleStep().getVerbose()) {
           System.out.println("POP \t" + popState.showStateContext() /*popState.showStateTree(true)*/);
         }
 
@@ -905,7 +909,7 @@ public class AtnState {
               // we need to stop popping when we get to one that isn't a rule end
               popState = null;
               
-              if (trace) {
+              if (trace || getRuleStep().getVerbose()) {
                 System.out.println("\t *** POP not ruleEnd!");
               }
             }
@@ -933,7 +937,7 @@ public class AtnState {
       }
     }
     else {
-      if (trace) {
+      if (trace || getRuleStep().getVerbose()) {
         System.out.println("POP FAIL (NotRuleEnd)\t" + nextStateNode.getData().showStateContext() /*nextStateNode.getData().showStateTree(true)*/);
       }
     }
@@ -952,7 +956,7 @@ public class AtnState {
     // check for contradiction earlier in the state tree
     boolean result = clusterConditionFailsBackward();
 
-    if (result && trace) {
+    if (result && (trace || getRuleStep().getVerbose())) {
       System.out.println("***Cluster condition fails (backward) for state: ***\n" + showStateContext() /*showStateTree(true)*/);
     }
 
@@ -963,7 +967,7 @@ public class AtnState {
         // check for contradition later in the state tree
         result = clusterConditionFailsForward(hasClusterFlag);
 
-        if (result && trace) {
+        if (result && (trace || getRuleStep().getVerbose())) {
           System.out.println("***Cluster condition fails (forward) for state: ***\n" + showStateContext() /*showStateTree(true)*/);
         }
       }
@@ -971,7 +975,7 @@ public class AtnState {
         // check this 'cluster' state against those on the queue
         result = removeInvalidQueuedStates(states);
 
-        if (result && trace) {
+        if (result && (trace || getRuleStep().getVerbose())) {
           System.out.println("***Cluster condition fails (queued) for state: ***\n" + showStateContext() /*showStateTree(true)*/);
         }
       }
@@ -1069,10 +1073,12 @@ public class AtnState {
       final Tree<AtnState> forwardMatchNode = findNode(forwardStateNode, curCat, tokenStart, tokenEnd, hasClusterFlag);
       if (forwardMatchNode != null) {
         if (hasClusterFlag) {
-          if (trace) System.out.println("Forward cluster failure ... moving state:\n" +
-                                        forwardMatchNode.getData().showStateContext() /*forwardMatchNode.getData().showStatePath()*/ +
-                                        "\n\tto\n" +
-                                        parentStateNode.getData().showStateContext() /*parentStateNode.getData().showStatePath()*/);
+          if (trace || getRuleStep().getVerbose()) {
+            System.out.println("Forward cluster failure ... moving state:\n" +
+                               forwardMatchNode.getData().showStateContext() /*forwardMatchNode.getData().showStatePath()*/ +
+                               "\n\tto\n" +
+                               parentStateNode.getData().showStateContext() /*parentStateNode.getData().showStatePath()*/);
+          }
 
           // prune/graft match into this state's place
           forwardMatchNode.prune(true, true);
@@ -1141,7 +1147,9 @@ public class AtnState {
 
           if (thisPrecedes) {
             // if this comes sooner, remove state and don't fail to add this
-            if (trace) System.out.println("Failed cluster condition ... removing queued state:\n" + state.showStateContext() /*state.showStatePath()*/);
+            if (trace || getRuleStep().getVerbose()) {
+              System.out.println("Failed cluster condition ... removing queued state:\n" + state.showStateContext() /*state.showStatePath()*/);
+            }
             stateIter.remove();
           }
           else {
@@ -1192,7 +1200,9 @@ public class AtnState {
 
           if (thisPrecedes) {
             // if this doesn't come sooner, remove state and don't fail to add this
-            if (trace) System.out.println("Failed cluster condition ... removing queued state:\n" + state.showStateContext() /*state.showStatePath()*/);
+            if (trace || getRuleStep().getVerbose()) {
+              System.out.println("Failed cluster condition ... removing queued state:\n" + state.showStateContext() /*state.showStatePath()*/);
+            }
             stateIter.remove();
           }
           else {
@@ -1330,7 +1340,7 @@ public class AtnState {
       boolean matches = meetsRequirements;
       if (matches) {
 
-        if (traceflow) {
+        if (traceflow || curstate.getRuleStep().getVerbose()) {
           System.out.println("traceflow--AtnState matching " + curstate.toString());
         }
 
@@ -1339,19 +1349,19 @@ public class AtnState {
       }
       final Tree<AtnState> nextStateNode = curstate.parentStateNode.addChild(curstate);
 
-      if (trace) {
+      if (trace || curstate.getRuleStep().getVerbose()) {
         System.out.println("match=" + matches + "\t" + curstate.showStateContext() /*curstate.showStateTree(matches)*/);
       }
 
       if (matches) {
 
-        if (traceflow) {
+        if (traceflow || curstate.getRuleStep().getVerbose()) {
           System.out.println("traceflow--AtnState MATCH " + curstate.toString());
         }
 
         matches = curstate.applyAllPops(nextStateNode, states, skipStates, stopList);
 
-        if (traceflow && !matches) {
+        if ((traceflow || curstate.getRuleStep().getVerbose()) && !matches) {
           System.out.println("traceflow--AtnState DROPPED match " + curstate.toString());
         }
       }
@@ -1372,7 +1382,7 @@ public class AtnState {
       success = addNextStates(grammar, states, skipStates, curstate, nextStateNode,
                               false, matches, stopList, meetsRequirements);
 
-      if (traceflow && (states.size() + skipStates.size() == 0)) {
+      if ((traceflow || curstate.getRuleStep().getVerbose()) && (states.size() + skipStates.size() == 0)) {
         System.out.println("traceflow--AtnState EXHAUSTED at " + curstate.toString());
       }
     }
@@ -1440,7 +1450,7 @@ public class AtnState {
 
     final boolean reachedTokenLimit = curstate.reachedTokenLimit();
 
-    if (traceflow && reachedTokenLimit) {
+    if ((traceflow || curstate.getRuleStep().getVerbose()) && reachedTokenLimit) {
       System.out.println("traceflow--AtnState reachedTokenLimit at " + curstate.toString() + " (not adding pushes or skips)");
     }
 
@@ -1567,11 +1577,15 @@ public class AtnState {
     }
 
     if (!isDup) {
-      if (trace) System.out.println("\nQueuing State: " + nextstate.showStateContext() /*nextstate.showStatePath()*/);
+      if (trace || nextstate.getRuleStep().getVerbose()) {
+        System.out.println("\nQueuing State: " + nextstate.showStateContext() /*nextstate.showStatePath()*/);
+      }
       states.addLast(nextstate);
     }
     else {
-      if (trace) System.out.println("\nDiscarding State (clusterFail=" + !result + "): " + nextstate.showStateContext() /*nextstate.showStatePath()*/);
+      if (trace || nextstate.getRuleStep().getVerbose()) {
+        System.out.println("\nDiscarding State (clusterFail=" + !result + "): " + nextstate.showStateContext() /*nextstate.showStatePath()*/);
+      }
     }
 
     return result;
