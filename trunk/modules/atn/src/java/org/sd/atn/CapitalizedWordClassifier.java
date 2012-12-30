@@ -67,7 +67,7 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     super(classifierIdElement, resourceManager, id2Normalizer);
 
     // ignore any maxWordCount specified by the element and set to 1
-    super.setMaxWordCount(1);
+    getTokenClassifierHelper().setMaxWordCount(1);
 
     this.allCapsMinLen = 1;
     this.excludeAllCaps = false;
@@ -181,18 +181,18 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
     return rejectDigit;
   }
 
-  public boolean doClassify(Token token) {
+  public boolean doClassify(Token token, AtnState atnState) {
     if (token.getWordCount() > 1) return false;  // just take one word at a time
 
     final String tokenText = token.getText();
     final int len = tokenText.length();
 
     // check lookups first so attributes get added
-    final boolean isStopword = super.doClassifyStopword(token);
+    final boolean isStopword = super.doClassifyStopword(token, atnState);
 
     if (isStopword) return false;
 
-    boolean result = super.doClassifyTerm(token);
+    boolean result = super.doClassifyTerm(token, atnState);
 
     if (!result) {
       // check capital first letter

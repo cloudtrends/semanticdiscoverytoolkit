@@ -32,8 +32,13 @@ import org.sd.xml.DomUtil;
  * <p>
  * @author Spence Koehler
  */
-public abstract class AbstractTokenClassifier implements TokenClassifier {
+public class TokenClassifierHelper {
   
+  private Map<String, Normalizer> id2Normalizer;
+  public Map<String, Normalizer> getId2Normalizer() {
+    return id2Normalizer;
+  }
+
   /**
    * Normalizer to use when classifying token text.
    */
@@ -41,7 +46,7 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
   public Normalizer getNormalizer() {
     return normalizer;
   }
-  protected void setNormalizer(Normalizer normalizer) {
+  public void setNormalizer(Normalizer normalizer) {
     this.normalizer = normalizer;
   }
 
@@ -54,7 +59,7 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
   public int getMaxWordCount() {
     return maxWordCount;
   }
-  protected void setMaxWordCount(int maxWordCount) {
+  public void setMaxWordCount(int maxWordCount) {
     this.maxWordCount = maxWordCount;
   }
 
@@ -66,13 +71,23 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
   public IntegerRange getValidTokenLength() {
     return validTokenLength;
   }
-  protected void setValidTokenLength(IntegerRange validTokenLength) {
+  public void setValidTokenLength(IntegerRange validTokenLength) {
     this.validTokenLength = validTokenLength;
   }
   public boolean lengthIsInRange(Token token) {
     return validTokenLength == null || validTokenLength.includes(token.getLength());
   }
 
+  /**
+   * Classifier's name.
+   */
+  private String name;
+  public String getName() {
+    return name;
+  }
+  public void setName(String name) {
+    this.name = name;
+  }
 
   /**
    * Classification utility to identify text as digits.
@@ -170,28 +185,17 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
   }
 
 
-  /**
-   * Classify the given token, adding features as appropriate.
-   */
-  public abstract boolean doClassify(Token token);
-
-
-  public boolean classify(Token token) {
-    boolean result = false;
-
-    if ((maxWordCount == 0 || token.getWordCount() <= maxWordCount) &&
-        lengthIsInRange(token)) {
-      result = doClassify(token);
-    }
-
-    return result;
+  public boolean meetsConstraints(Token token) {
+    return
+      ((maxWordCount == 0 || token.getWordCount() <= maxWordCount) &&
+       lengthIsInRange(token));
   }
 
-  protected AbstractTokenClassifier() {
+  public TokenClassifierHelper() {
     init(null, 0);
   }
 
-  protected AbstractTokenClassifier(Normalizer normalizer, int maxWordCount) {
+  public TokenClassifierHelper(Normalizer normalizer, int maxWordCount) {
     init(normalizer, maxWordCount);
   }
 
@@ -204,9 +208,11 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
   // </classifierId>
   //
 
-  protected AbstractTokenClassifier(DomElement classifierIdElement, Map<String, Normalizer> id2Normalizer) {
+  public TokenClassifierHelper(DomElement classifierIdElement, Map<String, Normalizer> id2Normalizer) {
+    this.id2Normalizer = id2Normalizer;
     final Normalizer normalizer = loadNormalizer((DomNode)classifierIdElement.selectSingleNode("normalizer"), id2Normalizer);
     final int maxWordCount = DomUtil.getSelectedNodeInt(classifierIdElement, "maxWordCount", 0);
+    this.name = classifierIdElement.getAttributeValue("name", null);
 
     init(normalizer, maxWordCount);
 
@@ -225,14 +231,14 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
   /**
    * Add a feature with the given type and value and P=1.0 to the token.
    */
-  protected void addFeature(Token token, String type, String value) {
+  public void addFeature(Token token, String type, String value) {
     addFeature(token, type, value, 1.0);
   }
 
   /**
    * Add a feature with the given type, value, and probability to the token.
    */
-  protected void addFeature(Token token, String type, String value, double p) {
+  public void addFeature(Token token, String type, String value, double p) {
     token.getFeatures().add(new Feature(type, value, p, this));
   }
 
@@ -264,7 +270,7 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
    * Get the token's normalized text according to this Classifier's
    * normalizer, returning null if the MaxWordCount constraint is not met.
    */
-  protected String getNormalizedText(Token token) {
+  public String getNormalizedText(Token token) {
     if (maxWordCount > 0 && token.getWordCount() > maxWordCount) return null;
 
     String result = token.getText();
@@ -288,6 +294,16 @@ public abstract class AbstractTokenClassifier implements TokenClassifier {
           token.setFeature(tokenFeature, result, normalizer);
         }
       }
+    }
+
+    return result;
+  }
+
+  public String normalize(String text) {
+    String result = text;
+
+    if (normalizer != null) {
+      result = normalizer.normalize(text);
     }
 
     return result;

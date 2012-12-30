@@ -30,8 +30,10 @@ import java.util.Map;
 import java.util.Set;
 import org.sd.io.FileUtil;
 import org.sd.atn.ResourceManager;
+import org.sd.token.Feature;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
+import org.sd.token.TokenClassifierHelper;
 import org.sd.util.Usage;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
@@ -96,6 +98,7 @@ import org.w3c.dom.NodeList;
        "    <classifiers>\n" +
        "      <classifier>...</classifier>\n" +
        "      ...\n" +
+       "      <feature type='...'>...</feature>\n" +
        "    </classifiers>\n" +
        "  </stopwords>\n" +
        "</roteListType>"
@@ -128,19 +131,21 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   //     ...
   //     <classifiers>
   //       <classifier>...</classifier>
+  //       <feature ...>...</feature>
   //       ...
   //     </classifiers>
+  //     <predelim>...</predelim>
+  //     <postdelim>...</postdelim>
+  //     <test>...</test>
   //   </stopwords>
   // </roteListType>
   //
 
   private String roteListType;
-  private TermsBundle terms;
-  private TermsBundle stopwords;
+  private TermsWithStopwords termsAndStopwords;
   private boolean defaultCaseSensitivity;
   private String classFeature;
   private ResourceManager resourceManager;
-  private String name;
   private boolean trace;
 
   public RoteListClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
@@ -150,10 +155,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
   private final void init(DomElement classifierIdElement, ResourceManager resourceManager) {
     this.resourceManager = resourceManager;
-    this.name = classifierIdElement.getAttributeValue("name", "unknown");
     this.roteListType = classifierIdElement.getLocalName();
-    this.terms = null;
-    this.stopwords = null;
+    this.termsAndStopwords = null;
     this.defaultCaseSensitivity = true;
     this.classFeature = null;
 
@@ -165,6 +168,34 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     this.classFeature = classifierIdElement.getAttributeValue("classFeature", this.classFeature);
     this.trace = classifierIdElement.getAttributeBoolean("trace", false);
 
+    this.termsAndStopwords = loadTermsAndStopwords(this.termsAndStopwords, classifierIdElement, false, getClassifiersNode(classifierIdElement));
+  }
+
+  /**
+   * Scan up the DOM tree to find the (shallowest) "classifiers" node.
+   */
+  private final DomNode getClassifiersNode(DomNode refElement) {
+    DomNode result = null;
+
+    for (DomNode parentNode = (DomNode)refElement.getParentNode();
+         parentNode != null;
+         parentNode = (DomNode)parentNode.getParentNode()) {
+      final String nodeName = parentNode.getLocalName();
+      if ("classifiers".equals(nodeName)) {
+        result = parentNode;
+        //NOTE: don't break so we can find shallowest!
+      }
+    }
+
+    return result;
+  }
+
+  private final TermsWithStopwords loadTermsAndStopwords(TermsWithStopwords termsWithStopwords, DomNode classifierIdElement, boolean isStopwords, DomNode allClassifiersParentNode) {
+    TermsWithStopwords result = termsWithStopwords == null ? new TermsWithStopwords() : termsWithStopwords;
+
+    final boolean reset = classifierIdElement.getAttributeBoolean("reset", false);
+    if (reset) result.reset();
+
     final NodeList childNodes = classifierIdElement.getChildNodes();
     final int numChildNodes = childNodes.getLength();
     for (int childNodeNum = 0; childNodeNum < numChildNodes; ++childNodeNum) {
@@ -175,57 +206,45 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       final String childNodeName = childNode.getLocalName();
 
       if ("terms".equalsIgnoreCase(childNodeName)) {
-        this.terms = loadTerms(this.terms, childElement, false);
+        result.setTerms(loadTerms(result.getTerms(), childElement, isStopwords));
       }
       else if ("textfile".equalsIgnoreCase(childNodeName)) {
-        this.terms = loadTextFile(this.terms, childElement, false, classifierIdElement.getLocalName());
+        result.setTerms(loadTextFile(result.getTerms(), childElement, isStopwords, classifierIdElement.getLocalName()));
       }
       else if ("regexes".equalsIgnoreCase(childNodeName)) {
-        this.terms = loadRegexes(this.terms, childElement, false);
+        result.setTerms(loadRegexes(result.getTerms(), childElement, isStopwords));
+      }
+      else if ("classifiers".equalsIgnoreCase(childNodeName)) {
+        result.setTerms(loadClassifiers(result.getTerms(), childElement, isStopwords, allClassifiersParentNode));
+      }
+      else if ("classifier".equalsIgnoreCase(childNodeName)) {
+        result.setTerms(loadClassifier(result.getTerms(), childElement, isStopwords));
+      }
+      else if ("feature".equalsIgnoreCase(childNodeName)) {
+        result.setTerms(loadFeature(result.getTerms(), childElement, isStopwords));
+      }
+      else if ("predelim".equalsIgnoreCase(childNodeName)) {
+        result.setTerms(loadStepTest(result.getTerms(), childElement, isStopwords));
+      }
+      else if ("postdelim".equalsIgnoreCase(childNodeName)) {
+        result.setTerms(loadStepTest(result.getTerms(), childElement, isStopwords));
+      }
+      else if ("test".equalsIgnoreCase(childNodeName)) {
+        result.setTerms(loadStepTest(result.getTerms(), childElement, isStopwords));
       }
       else if ("stopwords".equalsIgnoreCase(childNodeName)) {
-        final boolean reset = childElement.getAttributeBoolean("reset", false);
-        if (reset) {
-          if (this.stopwords != null) this.stopwords.reset();
-        }
-
-        final NodeList stopChildNodes = childNode.getChildNodes();
-        final int numStopChildNodes = stopChildNodes.getLength();
-        for (int stopNodeNum = 0; stopNodeNum < numStopChildNodes; ++stopNodeNum) {
-          final Node stopNode = stopChildNodes.item(stopNodeNum);
-          if (stopNode.getNodeType() != Node.ELEMENT_NODE) continue;
-
-          final DomElement stopElement = (DomElement)stopNode;
-          final String stopNodeName = stopNode.getLocalName();
-
-          if ("terms".equalsIgnoreCase(stopNodeName)) {
-            this.stopwords = loadTerms(this.stopwords, stopElement, true);
-          }
-          else if ("textfile".equalsIgnoreCase(stopNodeName)) {
-            this.stopwords = loadTextFile(this.stopwords, stopElement, true, classifierIdElement.getLocalName());
-          }
-          else if ("regexes".equalsIgnoreCase(stopNodeName)) {
-            this.stopwords = loadRegexes(this.stopwords, stopElement, true);
-          }
-          else if ("classifiers".equalsIgnoreCase(stopNodeName)) {
-            this.stopwords = loadClassifiers(this.stopwords, stopElement, true, (DomNode)classifierIdElement.getParentNode());
-          }
-        }
+        result.setStopwords(loadTermsAndStopwords(result.getStopwords(), childElement, true, allClassifiersParentNode));
       }
     }
 
-    if (this.terms != null) {
-      this.terms.setTrace(trace);
+    if (result.getTerms() != null) {
       // adjust user-defined down to finite observed if warranted
-      final int maxWordCount = terms.getMaxWordCount();
+      final int maxWordCount = result.getTerms().getMaxWordCount();
       final int curMaxWordCount = super.getMaxWordCount();
-      super.setMaxWordCount(adjustMaxWordCount(maxWordCount, curMaxWordCount));
+      getTokenClassifierHelper().setMaxWordCount(adjustMaxWordCount(maxWordCount, curMaxWordCount));
     }
-    if (this.stopwords != null) this.stopwords.setTrace(trace);
-  }
 
-  public String getName() {
-    return name;
+    return result;
   }
 
   public String getRoteListType() {
@@ -233,7 +252,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   }
 
   public boolean isEmpty() {
-    return terms == null || terms.isEmpty();
+    return termsAndStopwords == null || termsAndStopwords.isEmpty();
   }
 
   /**
@@ -247,48 +266,43 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   /**
    * Determine whether the token is a stopword.
    */
-  public boolean doClassifyStopword(Token token) {
-    return doClassify(token, stopwords);
+  public boolean doClassifyStopword(Token token, AtnState atnState) {
+    return termsAndStopwords == null ? false : termsAndStopwords.doClassifyStopword(token, atnState);
   }
 
   /**
    * Determine whether the text is a stopword.
    */
   public Map<String, String> doClassifyStopword(String text) {
-    return doClassify(text, stopwords);
+    return termsAndStopwords == null ? null : termsAndStopwords.doClassifyStopword(text);
   }
 
   /**
    * Determine whether the token is a term.
    */
-  public boolean doClassifyTerm(Token token) {
-    return doClassify(token, terms);
+  public boolean doClassifyTerm(Token token, AtnState atnState) {
+    return termsAndStopwords == null ? false : termsAndStopwords.doClassifyTerm(token, atnState);
   }
 
   /**
    * Determine whether the text is a term.
    */
   public Map<String, String> doClassifyTerm(String text) {
-    return doClassify(text, terms);
+    return termsAndStopwords == null ? null : termsAndStopwords.doClassifyTerm(text);
   }
 
   /**
    * Determine whether the token is a valid term, and not a stopword.
    */
-  public boolean doClassify(Token token) {
-    boolean result = false;
-
+  public boolean doClassify(Token token, AtnState atnState) {
     if (trace) {
-      System.out.println("RoteListClassifier(" + name + ").classify(" + token + ")...");
+      System.out.println("RoteListClassifier(" + getName() + ").classify(" + token + "," + atnState + ")...");
     }
 
-    if ((stopwords == null || (stopwords != null && !stopwords.doClassify(token))) &&
-        (terms != null)) {
-      result = terms.doClassify(token);
-    }
+    final boolean result = termsAndStopwords.doClassify(token, atnState);
 
     if (trace) {
-      System.out.println("\tRoteListClassifier(" + name + ").classify(" + token + ").result=" + result);
+      System.out.println("\tRoteListClassifier(" + getName() + ").classify(" + token + ").result=" + result);
     }
 
     return result;
@@ -298,39 +312,14 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
    * Determine whether the text is a valid term, and not a stopword.
    */
   public Map<String, String> doClassify(String text) {
-    Map<String, String> result = null;
+    if (trace) {
+      System.out.println("RoteListClassifier(" + getName() + ").classify(" + text + ")...");
+    }
+
+    final Map<String, String> result = termsAndStopwords.doClassify(text);
 
     if (trace) {
-      System.out.println("RoteListClassifier(" + name + ").classify(" + text + ")...");
-    }
-
-    if ((stopwords == null || (stopwords != null && stopwords.doClassify(text) == null)) &&
-        (terms != null)) {
-      result = terms.doClassify(text);
-    }
-
-    if (trace) {
-      System.out.println("RoteListClassifier(" + name + ").classify(" + text + ").result=" + result);
-    }
-
-    return result;
-  }
-
-  private final boolean doClassify(Token token, TermsBundle termsBundle) {
-    boolean result = false;
-
-    if (termsBundle != null && token != null) {
-      result = termsBundle.doClassify(token);
-    }
-
-    return result;
-  }
-
-  private final Map<String, String> doClassify(String text, TermsBundle termsBundle) {
-    Map<String, String> result = null;
-
-    if (termsBundle != null && text != null) {
-      result = termsBundle.doClassify(text);
+      System.out.println("RoteListClassifier(" + getName() + ").classify(" + text + ").result=" + result);
     }
 
     return result;
@@ -344,18 +333,14 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     return classFeature;
   }
 
-  protected TermsBundle getTerms() {
-    return terms;
-  }
-
-  protected TermsBundle getStopwords() {
-    return stopwords;
+  protected TermsWithStopwords getTermsWithStopwords() {
+    return termsAndStopwords;
   }
 
   protected final TermsBundle loadTerms(TermsBundle termsBundle, DomElement termsElement, boolean isStopwords) {
     if (termsElement == null) return termsBundle;
 
-    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords);
+    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords, super.getTokenClassifierHelper());
     termsBundle.loadTerms(termsElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature);
     return termsBundle;
   }
@@ -363,7 +348,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   protected final TermsBundle loadTextFile(TermsBundle termsBundle, DomElement textfileElement, boolean isStopwords, String classifierName) {
     if (textfileElement == null) return termsBundle;
 
-    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords);
+    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords, super.getTokenClassifierHelper());
     termsBundle.loadTextFile(textfileElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature, resourceManager, classifierName);
     return termsBundle;
   }
@@ -371,7 +356,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   protected final TermsBundle loadRegexes(TermsBundle termsBundle, DomElement regexesElement, boolean isStopwords) {
     if (regexesElement == null) return termsBundle;
 
-    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords);
+    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords, super.getTokenClassifierHelper());
     termsBundle.loadRegexes(regexesElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature);
     return termsBundle;
   }
@@ -379,10 +364,35 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   protected final TermsBundle loadClassifiers(TermsBundle termsBundle, DomElement classifiersElement, boolean isStopwords, DomNode classifiersParentNode) {
     if (classifiersElement == null) return termsBundle;
 
-    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords);
+    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords, super.getTokenClassifierHelper());
     termsBundle.loadClassifiers(classifiersElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature, resourceManager, classifiersParentNode);
     return termsBundle;
   }
+
+  protected final TermsBundle loadClassifier(TermsBundle termsBundle, DomElement classifierElement, boolean isStopwords) {
+    if (classifierElement == null) return termsBundle;
+
+    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords, super.getTokenClassifierHelper());
+    termsBundle.loadClassifier(classifierElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature, resourceManager);
+    return termsBundle;
+  }
+
+  protected final TermsBundle loadFeature(TermsBundle termsBundle, DomElement featureElement, boolean isStopwords) {
+    if (featureElement == null) return termsBundle;
+
+    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords, super.getTokenClassifierHelper());
+    termsBundle.loadFeature(featureElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature, resourceManager);
+    return termsBundle;
+  }
+
+  protected final TermsBundle loadStepTest(TermsBundle termsBundle, DomElement stepTestElement, boolean isStopwords) {
+    if (stepTestElement == null) return termsBundle;
+
+    if (termsBundle == null) termsBundle = new TermsBundle(isStopwords, super.getTokenClassifierHelper());
+    termsBundle.loadStepTest(stepTestElement, this.defaultCaseSensitivity, isStopwords ? null : this.classFeature, resourceManager);
+    return termsBundle;
+  }
+
 
   public static final int adjustMaxWordCount(int localMaxWordCount, int globalMaxWordCount) {
     int result = globalMaxWordCount;
@@ -410,11 +420,14 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private int maxWordCount;
     private Map<String, Map<String, String>> term2attributes;
     private RegexDataContainer regexes;
-    private List<RoteListClassifier> classifiers;
+    private List<ClassifierContainer> classifiers;
     private Map<String, Class> features;
+    private StepTestContainer testContainer;
     private boolean trace;
+    private TokenClassifierHelper tokenClassifierHelper;
+    private boolean hasOnlyTests;
 
-    public Terms(boolean caseSensitive, String classFeature, boolean isStopwords, int userDefinedMaxWordCount) {
+    public Terms(boolean caseSensitive, String classFeature, boolean isStopwords, int userDefinedMaxWordCount, TokenClassifierHelper tokenClassifierHelper) {
       this.caseSensitive = caseSensitive;
       this.classFeature = "".equals(classFeature) ? null : classFeature;
       this.isStopwords = isStopwords;
@@ -424,7 +437,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       this.regexes = null;
       this.classifiers = null;
       this.features = null;
+      this.testContainer = null;
       this.trace = false;
+      this.tokenClassifierHelper = tokenClassifierHelper;
+      this.hasOnlyTests = true;
     }
 
     public void setMaxWordCount(int maxWordCount) {
@@ -438,6 +454,12 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
     void setTrace(boolean trace) {
       this.trace = trace;
+
+      if (classifiers != null) {
+        for (ClassifierContainer classifier : classifiers) {
+          classifier.setTrace(trace);
+        }
+      }
     }
 
     public void reset() {
@@ -445,6 +467,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       this.regexes = null;
       this.classifiers = null;
       this.features = null;
+      this.testContainer = null;
+      this.hasOnlyTests = true;
     }
 
     public boolean isEmpty() {
@@ -452,7 +476,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         (term2attributes == null || term2attributes.size() == 0) &&
         (this.regexes == null || this.regexes.size() == 0) &&
         (this.classifiers == null || this.classifiers.size() == 0) &&
-        (this.features == null || this.features.size() == 0);
+        (this.features == null || this.features.size() == 0) &&
+        (this.testContainer == null || this.testContainer.isEmpty());
     }
 
     public Map<String, Map<String, String>> getTerm2Attributes() {
@@ -463,12 +488,16 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       return regexes;
     }
 
-    public List<RoteListClassifier> getClassifiers() {
+    public List<ClassifierContainer> getClassifiers() {
       return classifiers;
     }
 
     public Map<String, Class> getFeatures() {
       return features;
+    }
+
+    public StepTestContainer getTestContainer() {
+      return testContainer;
     }
 
     public boolean isCaseSensitive() {
@@ -483,7 +512,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       return isStopwords;
     }
 
-    public boolean doClassify(Token token) {
+    public boolean doClassify(Token token, AtnState atnState) {
       boolean result = false;
 
       boolean exceedsMaxWordCount = false;
@@ -494,7 +523,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       }
 
       boolean hasClassAttribute = false;
-      String key = token.getText();
+      String key = tokenClassifierHelper.getNormalizedText(token);
 
       if (!exceedsMaxWordCount) {
         if (!caseSensitive) {
@@ -532,8 +561,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         }
 
         if ((classifiers != null) && (!isStopwords || !result)) {
-          for (RoteListClassifier classifier : classifiers) {
-            final boolean curResult = classifier.doClassify(token);
+          for (ClassifierContainer classifier : classifiers) {
+            final boolean curResult = classifier.doClassify(token, atnState);
             if (curResult) {
               if (trace) {
                 System.out.println("\tfound '" + key + "' in classifier '" + classifier.getName() + "'");
@@ -543,28 +572,37 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
             }
           }
         }
-      }
 
-      if (!result && features != null) {
-        for (Map.Entry<String, Class> featureEntry : features.entrySet()) {
-          final String feature = featureEntry.getKey();
-          final Class type = featureEntry.getValue();
+        if (!result && features != null) {
+          for (Map.Entry<String, Class> featureEntry : features.entrySet()) {
+            final String feature = featureEntry.getKey();
+            final Class type = featureEntry.getValue();
 
-          if (token.getFeatureValue(feature, null, type) != null) {
-            result = true;
-            if (trace) {
-              System.out.println("\tfound '" + feature + "' (value=" + token.getFeatureValue(feature, null, type) + ")");
+            if (token.getFeatureValue(feature, null, type) != null) {
+              result = true;
+              if (trace) {
+                System.out.println("\tfound '" + feature + "' (value=" + token.getFeatureValue(feature, null, type) + ")");
+              }
             }
           }
         }
-      }
 
-      if (result && classFeature != null && !hasClassAttribute) {
-        token.setFeature("class", classFeature, this);
-      }
+        // NOTE: token tests (predelim/postdelim/test) are only applied to verify (or reverse) a match
+        if ((result || hasOnlyTests) && testContainer != null && !testContainer.isEmpty()) {
+          result = testContainer.verify(token, atnState).accept();
 
-      if (trace && !result) {
-        System.out.println("\tdidn't find '" + key + "'");
+          if (trace) {
+            System.out.println("\ttokenTests.verify(" + token + "," + atnState + ")=" + result);
+          }
+        }
+
+        if (result && classFeature != null && !hasClassAttribute) {
+          token.setFeature("class", classFeature, this);
+        }
+
+        if (trace && !result) {
+          System.out.println("\tdidn't find '" + key + "'");
+        }
       }
 
       return result;
@@ -594,16 +632,13 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         }
       }
 
+      //NOTE: matching raw text against classifiers can fail
       if ((classifiers != null) && (!isStopwords || !matched)) {
-        for (RoteListClassifier classifier : classifiers) {
+        for (ClassifierContainer classifier : classifiers) {
           final Map<String, String> curResult = classifier.doClassify(key);
           if (curResult != null) {
-            if (result == null) {
-              result = curResult;
-            }
-            else {
-              result.putAll(curResult);
-            }
+            if (result == null) result = new HashMap<String, String>();
+            result.putAll(curResult);
             matched = true;
             //keep going to add features from further matches
           }
@@ -611,6 +646,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       }
 
       //NOTE: unable to match raw text against features
+      //NOTE: unable to match raw text against testContainer
+//TODO: remove this (and related) text matching method by fixing infrastructure for free-text matching cases
 
       if (matched && classFeature != null) {
         boolean hasClassAttribute = false;
@@ -676,6 +713,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         }
         addTermAttributes(term, termAttributes);
       }
+
+      if (term2attributes != null && term2attributes.size() > 0) {
+        hasOnlyTests = false;
+      }
     }
 
     protected final void loadTextFile(DomElement textfileElement, ResourceManager resourceManager, String classifierName) {
@@ -722,10 +763,18 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       catch (IOException e) {
         throw new IllegalStateException(e);
       }
+
+      if (term2attributes != null && term2attributes.size() > 0) {
+        hasOnlyTests = false;
+      }
     }
 
     protected final void loadRegexes(DomElement regexesElement) {
       this.regexes = new RegexDataContainer(regexesElement);
+
+      if (regexes.size() > 0) {
+        hasOnlyTests = false;
+      }
     }
 
     protected final void loadClassifiers(DomElement classifiersElement, ResourceManager resourceManager, DomNode classifiersParentNode) {
@@ -738,21 +787,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         final String classifierName = curNode.getTextContent().trim();
 
         if ("classifier".equals(nodeName)) {
-          retrieveClassifier(classifierName, resourceManager);
+          loadClassifier((DomNode)curNode, resourceManager);
         }
         else if ("feature".equals(nodeName)) {
-          if (this.features == null) this.features = new HashMap<String, Class>();
-
-          Class type = null;
-          final String typeString = ((DomElement)curNode).getAttributeValue("type", null);
-          if (typeString != null) {
-            if ("interp".equals(typeString)) {
-              type = ParseInterpretation.class;
-            }
-          }
-
-          final String classifierNameString = "".equals(classifierName) ? null : classifierName;
-          this.features.put(classifierNameString, type);
+          loadFeature((DomNode)curNode);
         }
         else if ("allNamedClassifiers".equals(nodeName)) {
           // look at each classifiersParentNode child elts w/"name" attribute
@@ -765,8 +803,11 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
                 !childNode.hasAttributes())
               continue;
 
-            final String cName = ((DomElement)childNode).getAttributeValue("name", null);
-            retrieveClassifier(cName, resourceManager);
+            final DomElement childElement = (DomElement)childNode;
+            final boolean verbose = childElement.getAttributeBoolean("verbose", false);
+            final boolean trace = childElement.getAttributeBoolean("trace", verbose);
+            final String cName = childElement.getAttributeValue("name", null);
+            retrieveClassifier(cName, resourceManager, trace);
           }
         }
         else {
@@ -776,22 +817,56 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       }
     }
 
-    private final void retrieveClassifier(String classifierName, ResourceManager resourceManager) {
-      final Object classifierObject = resourceManager.getResource(classifierName);
-      if (classifierObject == null) {
-        System.out.println(new Date() + ": WARNING : RoteListClassifier unknown classifier '" + classifierName + "'");
+    protected final void loadClassifier(DomNode classifierElement, ResourceManager resourceManager) {
+      String classifierName = classifierElement.hasAttributes() ? classifierElement.getAttributeValue("cat", null) : null;
+      if (classifierName == null) {
+        classifierName = classifierElement.getTextContent().trim();
       }
-      else {
-        if (classifierObject instanceof RoteListClassifier) {
-          if (this.classifiers == null) this.classifiers = new ArrayList<RoteListClassifier>();
-          this.classifiers.add((RoteListClassifier)classifierObject);
-        }
-        else {
-          System.out.println(new Date() + ": WARNING : RoteListClassifier classifier '" +
-                             classifierName + "' is *NOT* an RoteListClassifier (" +
-                             classifierObject.getClass().getName() + ")");
+      final boolean verbose = classifierElement.getAttributeBoolean("verbose", false);
+      final boolean trace = classifierElement.getAttributeBoolean("trace", verbose);
+                                                                  
+      retrieveClassifier(classifierName, resourceManager, trace);
+
+      if (classifiers != null && classifiers.size() > 0) {
+        hasOnlyTests = false;
+      }
+    }
+
+    private final void retrieveClassifier(String classifierName, ResourceManager resourceManager, boolean trace) {
+      if (this.classifiers == null) this.classifiers = new ArrayList<ClassifierContainer>();
+      final ClassifierContainer classifier = new ClassifierContainer(classifierName, resourceManager);
+      if (trace) classifier.setTrace(trace);
+      this.classifiers.add(classifier);
+    }
+
+    protected final void loadFeature(DomNode featureElement) {
+      String featureName = featureElement.hasAttributes() ? featureElement.getAttributeValue("name", null) : null;
+      if (featureName == null) {
+        featureName = featureElement.getTextContent().trim();
+      }
+
+      Class type = null;
+      final String typeString = featureElement.getAttributeValue("type", null);
+      if (typeString != null) {
+        if ("interp".equals(typeString)) {
+          type = ParseInterpretation.class;
         }
       }
+
+      if (featureName != null && !"".equals(featureName)) {
+        if (this.features == null) this.features = new HashMap<String, Class>();
+        this.features.put(featureName, type);
+      }
+
+      if (features != null && features.size() > 0) {
+        hasOnlyTests = false;
+      }
+    }
+
+    protected final void loadStepTest(DomElement stepTestElement, ResourceManager resourceManager) {
+      if (testContainer == null) testContainer = new StepTestContainer();
+      final StepTestWrapper testWrapper = new StepTestWrapper(stepTestElement, resourceManager);
+      testContainer.addTestWrapper(testWrapper);
     }
 
     private final void addTermAttributes(String term, Map<String, String> attributes) {
@@ -832,12 +907,14 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private Terms caseSensitiveTerms;
     private Terms caseInsensitiveTerms;
     private int maxWordCount;
+    private TokenClassifierHelper tokenClassifierHelper;
 
-    public TermsBundle(boolean isStopwords) {
+    public TermsBundle(boolean isStopwords, TokenClassifierHelper tokenClassifierHelper) {
       this.isStopwords = isStopwords;
       this.caseSensitiveTerms = null;
       this.caseInsensitiveTerms = null;
       this.maxWordCount = 0;
+      this.tokenClassifierHelper = tokenClassifierHelper;
     }
 
     void setTrace(boolean trace) {
@@ -872,16 +949,16 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         (caseInsensitiveTerms == null || caseInsensitiveTerms.isEmpty());
     }
 
-    public boolean doClassify(Token token) {
+    public boolean doClassify(Token token, AtnState atnState) {
       boolean result = false;
 
       if (caseSensitiveTerms != null) {
-        result = caseSensitiveTerms.doClassify(token);
+        result = caseSensitiveTerms.doClassify(token, atnState);
       }
 
       if ((caseInsensitiveTerms != null) && (!isStopwords || !result)) {
         // even if prior result succeeded, try again here to get any new token features (unless stopwords)
-        result |= caseInsensitiveTerms.doClassify(token);
+        result |= caseInsensitiveTerms.doClassify(token, atnState);
       }
 
       return result;
@@ -934,6 +1011,25 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       adjustMaxWordCount(theTerms.getMaxWordCount());
     }
 
+    protected final void loadClassifier(DomElement classifierElement, boolean defaultCaseSensitivity, String classFeature, ResourceManager resourceManager) {
+      final Terms theTerms = getTheTerms(classifierElement, defaultCaseSensitivity, classFeature);
+      theTerms.loadClassifier(classifierElement, resourceManager);
+      adjustMaxWordCount(theTerms.getMaxWordCount());
+    }
+
+    protected final void loadFeature(DomElement featureElement, boolean defaultCaseSensitivity, String classFeature, ResourceManager resourceManager) {
+      final Terms theTerms = getTheTerms(featureElement, defaultCaseSensitivity, classFeature);
+      theTerms.loadFeature(featureElement);
+      adjustMaxWordCount(theTerms.getMaxWordCount());
+    }
+
+    protected final void loadStepTest(DomElement stepTestElement, boolean defaultCaseSensitivity, String classFeature, ResourceManager resourceManager) {
+      final Terms theTerms = getTheTerms(stepTestElement, defaultCaseSensitivity, classFeature);
+      theTerms.loadStepTest(stepTestElement, resourceManager);
+      adjustMaxWordCount(theTerms.getMaxWordCount());
+    }
+
+
     private final void adjustMaxWordCount(int termsMaxWordCount) {
       // for a bundle, we want to preserve the "largest" maxWordCount
       if (termsMaxWordCount > 0 && termsMaxWordCount > this.maxWordCount) {
@@ -951,15 +1047,271 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
       // Get a handle on theTerms based on case sensitivity
       if (caseSensitive) {
-        if (this.caseSensitiveTerms == null) this.caseSensitiveTerms = new Terms(true, classFeature, isStopwords, maxWordCount);
+        if (this.caseSensitiveTerms == null) this.caseSensitiveTerms = new Terms(true, classFeature, isStopwords, maxWordCount, tokenClassifierHelper);
         theTerms = this.caseSensitiveTerms;
       }
       else {
-        if (this.caseInsensitiveTerms == null) this.caseInsensitiveTerms = new Terms(false, classFeature, isStopwords, maxWordCount);
+        if (this.caseInsensitiveTerms == null) this.caseInsensitiveTerms = new Terms(false, classFeature, isStopwords, maxWordCount, tokenClassifierHelper);
         theTerms = this.caseInsensitiveTerms;
       }
 
       return theTerms;
+    }
+  }
+
+  protected static final class TermsWithStopwords {
+    private TermsBundle terms;
+    private TermsWithStopwords stopwords;
+
+    public TermsWithStopwords() {
+      this.terms = null;
+      this.stopwords = null;
+    }
+
+    public void reset() {
+      if (terms != null) terms.reset();
+      if (stopwords != null) stopwords.reset();
+    }
+
+    public void setTrace(boolean trace) {
+      if (terms != null) {
+        terms.setTrace(trace);
+      }
+      if (stopwords != null) {
+        stopwords.setTrace(trace);
+      }
+    }
+
+    public TermsBundle getTerms() {
+      return terms;
+    }
+
+    public void setTerms(TermsBundle terms) {
+      this.terms = terms;
+    }
+
+    public TermsWithStopwords getStopwords() {
+      return stopwords;
+    }
+
+    public void setStopwords(TermsWithStopwords stopwords) {
+      this.stopwords = stopwords;
+    }
+
+    public boolean hasStopwords() {
+      return stopwords != null && !stopwords.isEmpty();
+    }
+
+    public boolean isEmpty() {
+      return (terms == null || terms.isEmpty()) && (stopwords == null || stopwords.isEmpty());
+    }
+
+    public boolean doClassify(Token token, AtnState atnState) {
+      boolean result = false;
+
+      if ((stopwords == null || (stopwords != null && !stopwords.doClassify(token, atnState))) &&
+          (terms != null)) {
+        result = terms.doClassify(token, atnState);
+      }
+
+      return result;
+    }
+
+    public Map<String, String> doClassify(String text) {
+      Map<String, String> result = null;
+
+      if ((stopwords == null || (stopwords != null && stopwords.doClassify(text) == null)) &&
+          (terms != null)) {
+        result = terms.doClassify(text);
+      }
+
+      return result;
+    }
+
+    public boolean doClassifyTerm(Token token, AtnState atnState) {
+      boolean result = false;
+
+      if (terms != null && token != null) {
+        result = terms.doClassify(token, atnState);
+      }
+
+      return result;
+    }
+
+    public Map<String, String> doClassifyTerm(String text) {
+      Map<String, String> result = null;
+
+      if (terms != null && text != null) {
+        result = terms.doClassify(text);
+      }
+
+      return result;
+    }
+
+    public boolean doClassifyStopword(Token token, AtnState atnState) {
+      boolean result = false;
+
+      if (stopwords != null && token != null) {
+        result = stopwords.doClassify(token, atnState);
+      }
+
+      return result;
+    }
+
+    public Map<String, String> doClassifyStopword(String text) {
+      Map<String, String> result = null;
+
+      if (stopwords != null && text != null) {
+        result = stopwords.doClassify(text);
+      }
+
+      return result;
+    }
+  }
+
+  protected static final class ClassifierContainer {
+    private String classifierName;
+    private AtnStateTokenClassifier namedResource;      // temp storage
+    private List<AtnStateTokenClassifier> classifiers;  // delayed load
+    private boolean literalMatch;                       // delayed load
+    private boolean trace;
+
+    public ClassifierContainer(String classifierName, ResourceManager resourceManager) {
+      this.classifierName = classifierName;
+      this.namedResource = findClassifierResource(classifierName, resourceManager);
+      this.classifiers = null;
+      this.literalMatch = false;
+    }
+
+    public boolean getTrace() {
+      return trace;
+    }
+
+    public void setTrace(boolean trace) {
+      this.trace = trace;
+    }
+
+    public String getName() {
+      return classifierName;
+    }
+
+    private final AtnStateTokenClassifier findClassifierResource(String classifierName, ResourceManager resourceManager) {
+      AtnStateTokenClassifier result = null;
+
+      final Object classifierObject = classifierName != null && !"".equals(classifierName) ? resourceManager.getResource(classifierName) : null;
+      if (classifierObject == null) {
+        System.out.println(new Date() + ": WARNING : RoteListClassifier unknown classifier '" + classifierName + "'");
+      }
+      else {
+        if (classifierObject instanceof AtnStateTokenClassifier) {
+//TODO: adjust maxWordCount in containing Terms instance?
+          result = (AtnStateTokenClassifier)classifierObject;
+        }
+        else {
+          System.out.println(new Date() + ": WARNING : classifier '" +
+                             classifierName + "' is *NOT* an AtnStateTokenClassifier (" +
+                             classifierObject.getClass().getName() + ")");
+        }
+      }
+
+      return result;
+    }
+
+    public boolean doClassify(Token token, AtnState atnState) {
+      if (this.classifiers == null) loadClassifiers(atnState);
+
+      boolean result = false;
+
+      // classify by resource and grammar classifiers
+      for (AtnStateTokenClassifier classifier : classifiers) {
+        result = classifier.classify(token, atnState).matched();
+
+        if (result) {
+          if (trace) {
+            System.out.println("\tclassifier(" + classifierName + ").classify(" + token + "," + atnState + ")=true");
+          }
+          break;
+        }
+      }
+
+      // check for literal token match
+      if (!result && literalMatch) {
+        result = classifierName.equals(token.getText());
+
+        if (result && trace) {
+          System.out.println("\tliteralMatch(" + classifierName + ")=true");
+        }
+      }
+
+      // check for a token feature that matches the category
+      if (!result) {
+        final Feature feature = token.getFeature(classifierName, null);
+        result = (feature != null);
+
+        if (result && trace) {
+          System.out.println("\ttokenFeature(" + classifierName + ")=" + feature);
+        }
+      }
+
+      return result;
+    }
+
+    public Map<String, String> doClassify(String text) {
+      Map<String, String> result = null;
+
+      if (this.classifiers == null) {
+        if (trace) {
+          System.out.println("\tWARNING: ClassifierContainer(" + classifierName + ") not fully initialized for doClassify(" + text + ")");
+        }
+
+        if (namedResource != null) {
+          final Map<String, String> curResult = namedResource.classify(text);
+          if (curResult != null) {
+            if (result == null) new HashMap<String, String>();
+            result.putAll(curResult);
+
+            if (trace) {
+              System.out.println("\tclassifier(" + classifierName + ").classify(" + text + ")=" + curResult);
+            }
+          }
+        }
+      }
+      else {
+        // classify by resource and grammar classifiers
+        for (AtnStateTokenClassifier classifier : classifiers) {
+          final Map<String, String> curResult = classifier.classify(text);
+          if (curResult != null) {
+            if (result == null) new HashMap<String, String>();
+            result.putAll(curResult);
+
+            if (trace) {
+              System.out.println("\tclassifier(" + classifierName + ").classify(" + text + ")=" + curResult);
+            }
+          }
+        }
+      }
+
+      return result;
+    }
+
+    private final synchronized void loadClassifiers(AtnState atnState) {
+      this.classifiers = new ArrayList<AtnStateTokenClassifier>();
+
+      if (namedResource != null) {
+        this.classifiers.add(namedResource);
+      }
+
+      final AtnGrammar grammar = atnState.getRule().getGrammar();
+      final List<AtnStateTokenClassifier> tokenClassifiers = grammar.getClassifiers(classifierName);
+      if (tokenClassifiers != null) {
+//TODO: adjust maxWordCount in containing Terms instance?
+        this.classifiers.addAll(tokenClassifiers);
+      }
+      else {
+        if (!grammar.getCat2Rules().containsKey(classifierName)) {
+          literalMatch = true;
+        }
+      }
     }
   }
 }

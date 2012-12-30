@@ -144,4 +144,17 @@ public class Feature implements Publishable {
       }
     }
   }
+
+  public String toString() {
+    final StringBuilder result = new StringBuilder();
+
+    result.
+      append("Feature(").
+      append(type).
+      append(',').
+      append(value).
+      append(")");
+
+    return result.toString();
+  }
 }

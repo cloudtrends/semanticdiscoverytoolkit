@@ -19,6 +19,7 @@
 package org.sd.atn;
 
 
+import java.util.Map;
 import org.sd.token.Token;
 import org.sd.xml.DomNode;
 
@@ -35,6 +36,15 @@ public interface AtnStateTokenClassifier {
   public MatchResult classify(Token token, AtnState atnState);
 
   /**
+   * Classify just the given text regardless of token or state context, if
+   * possible.
+   *
+   * @return a (possibly empty) map of feature keys to values if matched;
+   *         otherwise, null if didn't or couldn't match.
+   */
+  public Map<String, String> classify(String text);
+
+  /**
    * Supplement this classifier with the given dom node.
    */
   public void supplement(DomNode supplementNode);
@@ -43,4 +53,9 @@ public interface AtnStateTokenClassifier {
    * Get the maximum word count (0 for infinite) for token classification.
    */
   public int getMaxWordCount();
+
+  /**
+   * Get the classifier's name.
+   */
+  public String getName();
 }

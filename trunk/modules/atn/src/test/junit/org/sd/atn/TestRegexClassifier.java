@@ -48,7 +48,7 @@ public class TestRegexClassifier extends TestCase {
     final RegexClassifier regexClassifier = new RegexClassifier(element, null, null);
 
     final Token token = StandardTokenizerFactory.getFirstToken("84");
-    assertTrue(regexClassifier.doClassify(token));
+    assertTrue(regexClassifier.doClassify(token, null));
 
     final String value = (String)token.getFeatureValue("num", null);
     assertEquals("84", value);

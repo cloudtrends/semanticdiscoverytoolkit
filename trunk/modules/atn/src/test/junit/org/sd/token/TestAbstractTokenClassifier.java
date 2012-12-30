@@ -52,7 +52,7 @@ public class TestAbstractTokenClassifier extends TestCase {
 
   private final void verifyDigits(String input, Integer expected) {
     final int[] gotValue = new int[]{0};
-    final boolean parsedDigits = AbstractTokenClassifier.isDigits(input, gotValue);
+    final boolean parsedDigits = TokenClassifierHelper.isDigits(input, gotValue);
 
     if (expected == null) {
       assertFalse("Unexpectedly parsed digits from '" + input + "'", parsedDigits);

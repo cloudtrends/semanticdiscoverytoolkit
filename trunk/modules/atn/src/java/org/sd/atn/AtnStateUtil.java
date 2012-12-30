@@ -201,7 +201,7 @@ public class AtnStateUtil {
 
           if (!category.equals(inputToken.getText())) {
             // add non-literal matched token
-            final List<Tree<String>> tokenParses = goDeep ? getTokenParses(inputToken, category) : null;
+            final List<Tree<String>> tokenParses = goDeep ? getTokenParses(inputToken, pathState.getRuleStep().getCategory()) : null;  //was category
             if (tokenParses == null) {
               // add token text
               categoryNode.addChild(inputToken.getText()/*WithDelims()*/);

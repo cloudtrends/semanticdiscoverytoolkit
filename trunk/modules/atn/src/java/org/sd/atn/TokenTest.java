@@ -44,12 +44,13 @@ import org.w3c.dom.NodeList;
  */
 @Usage(notes =
        "An org.sd.atn.BaseClassifierTest to evaluate tokens through\n" +
-       "org.sd.atn.RoteListClassifier, org.sd.atn.RegexClassifier and/or\n" +
+       "org.sd.atn.RoteListClassifier and/or\n" +
        "named org.sd.atn.AtnStateTokenClassifier instances.\n" +
        "\n" +
        "Note that this tests the last single token seen, not for example the full\n" +
        "token text of a constituent that has been matched. For testing against the\n" +
-       "full text of a constituent, see TextTest instead.\n" +
+       "full text of a constituent, see TextTest instead; or for selecting the state-\n" +
+       "based constituent token for testing, see StateSelectionTest.\n" +
        " \n" +
        " under token node, setup allowed and disallowed tokens\n" +
        " \n" +
@@ -57,6 +58,8 @@ import org.w3c.dom.NodeList;
        " - when reverse='true', fail on match (handled elsewhere)\n" +
        " - when next='true', test against the next token\n" +
        " - when prev='true', test against the prior token (taken as smallest prior if not available through state)\n" +
+       " - when require='true', fail if the selected (prev or next) token isn't present\n" +
+       " - when scan='true', test against each next (or prev if prev='true') token\n" +
        " - when delimMatch='X', test against next or prev only succeeds if delims equal X\n" +
        " - when revise='true', test against token revisions\n" +
        " - when ignoreLastToken='true', always accept the last token\n" +
@@ -64,7 +67,7 @@ import org.w3c.dom.NodeList;
        " - when onlyFirstToken='true', only test against a \"first\" constituent token\n" +
        " - when onlyLastToken='true', only test against a \"last\" constituent token\n" +
        " \n" +
-       " <test reverse='true|false' next='true|false' prev='true|false' revise='true|false' verbose='true|false'>\n" +
+       " <test reverse='true|false' next='true|false' prev='true|false' require='true|false' scan='true|false' revise='true|false' verbose='true|false'>\n" +
        "   <jclass>org.sd.atn.TokenTest</jclass>\n" +
        "   <terms caseSensitive='true|false'>\n" +
        "     <term>...</term>\n" +
@@ -94,8 +97,7 @@ public class TokenTest extends BaseClassifierTest {
   
   private boolean verbose;
   private boolean revise;
-  private List<String> classifiers;
-  private List<DelimTest> delimTests;
+  private boolean scan;
   private List<TokenClause> tokenClauses;
 
   public TokenTest(DomNode testNode, ResourceManager resourceManager) {
@@ -103,29 +105,7 @@ public class TokenTest extends BaseClassifierTest {
 
     this.verbose = testNode.getAttributeBoolean("verbose", false);
     this.revise = testNode.getAttributeBoolean("revise", false);
-
-    this.classifiers = loadValues(testNode, "classifier", "cat");
-
-    final NodeList preDelimNodes = testNode.selectNodes("predelim");
-    if (preDelimNodes != null && preDelimNodes.getLength() > 0) {
-      for (int nodeNum = 0; nodeNum < preDelimNodes.getLength(); ++nodeNum) {
-        final DomElement delimElement = (DomElement)preDelimNodes.item(nodeNum);
-        final DelimTest delimTest = new DelimTest(true, delimElement, resourceManager);
-        if (delimTests == null) delimTests = new ArrayList<DelimTest>();
-        delimTests.add(delimTest);
-      }
-    }
-
-    final NodeList postDelimNodes = testNode.selectNodes("postdelim");
-    if (postDelimNodes != null && postDelimNodes.getLength() > 0) {
-      for (int nodeNum = 0; nodeNum < postDelimNodes.getLength(); ++nodeNum) {
-        final DomElement delimElement = (DomElement)postDelimNodes.item(nodeNum);
-        final DelimTest delimTest = new DelimTest(false, delimElement, resourceManager);
-        if (delimTests == null) delimTests = new ArrayList<DelimTest>();
-        delimTests.add(delimTest);
-        delimTest.setIgnoreConstituents(true);
-      }
-    }
+    this.scan = testNode.getAttributeBoolean("scan", false);
 
     final NodeList wordPatternNodes = testNode.selectNodes("wordPattern");
     if (wordPatternNodes != null && wordPatternNodes.getLength() > 0) {
@@ -163,6 +143,7 @@ public class TokenTest extends BaseClassifierTest {
     // options:
     // - when reverse='true', fail on match (handled elsewhere)
     // - when revise='true', test against token revisions
+    // - when scan='true', test against each next (or prev if prev='true') token
     // - when ignoreLastToken='true', always accept the last token
     // - when ignoreFirstToken='true', always accept the first token
     // - when onlyFirstToken='true', only test against a "first" constituent token
@@ -178,10 +159,12 @@ public class TokenTest extends BaseClassifierTest {
     //     <regex type='...' groupN='...'>...</regex>
     //   </regexes>
     //   <classifier cat='...'/>
+    //   <feature .../>
     //
     //   <!-- NOTE: delims are applied only if something else succeeds -->
     //   <predelim>...</predelim>
     //   <postdelim>...</postdelim>
+    //   <test>...</test>
     //
     //   <!-- Additional token-based tests -->
     //   <wordPattern key='..........' onChange='fail|succeed' prevToken='true|false' curToken='true|false' nextToken='true|false'/>
@@ -210,85 +193,27 @@ public class TokenTest extends BaseClassifierTest {
     boolean verifyAdditional = true;
     final Token orig = token;
 
-    for (; token != null; token = revise ? token.getRevisedToken() : null) {
-      if (!result && roteListClassifier != null) {
-        verifyAdditional = result = roteListClassifier.doClassify(token);
+    for (Token scanToken = token; scanToken != null;
+         scanToken = scan ? (prev ? scanToken.getPrevToken() : scanToken.getNextToken()) : null) {
+      for (Token reviseToken = scanToken; reviseToken != null; reviseToken = revise ? reviseToken.getRevisedToken() : null) {
+        token = reviseToken;
 
-        if (result && verbose) {
-          System.out.println("\troteListClassifier.classify=true");
-        }
-      }
+        if (!result && roteListClassifier != null) {
+          verifyAdditional = result = roteListClassifier.doClassify(token, curState);
 
-      if (!result && regexClassifier != null) {
-        verifyAdditional = result = regexClassifier.doClassify(token);
-
-        if (result && verbose) {
-          System.out.println("\tregexClassifier.classify=true");
-        }
-      }
-
-      if (!result && classifiers != null) {
-        for (String cat : classifiers) {
-          final AtnGrammar grammar = curState.getRule().getGrammar();
-          final List<AtnStateTokenClassifier> tokenClassifiers = grammar.getClassifiers(cat);
-          if (tokenClassifiers != null) {
-            for (AtnStateTokenClassifier tokenClassifier : tokenClassifiers) {
-              final MatchResult matchResult = tokenClassifier.classify(token, curState);
-              if (matchResult.matched()) {
-
-                if (verbose) {
-                  System.out.println("\tclassifier(" + cat + ").classify=true");
-                }
-
-                verifyAdditional = result = true;
-                break;
-              }
-            }
+          if (result && verbose) {
+            System.out.println("\troteListClassifier.classify=true");
           }
-          else {
-            // check for literal grammar token match
-            if (!grammar.getCat2Rules().containsKey(cat)) {
-              // use an "identity" classifier for literal grammar tokens
-              verifyAdditional = result = cat.equals(token.getText());
-
-              if (result && verbose) {
-                System.out.println("\tgrammarRule(" + cat + ").classify=true");
-              }
-            }
-
-            // check for a token feature that matches the category
-            if (!result) {
-              verifyAdditional = result = token.getFeature(cat, null) != null;
-
-              if (result && verbose) {
-                System.out.println("\ttokenFeature(" + cat + "," + token.getFeature(cat, null) + ").classify=true");
-              }
-            }
-          }
-          if (result) break;
         }
-      }
 
-      if (verifyAdditional && hasAdditionalChecks()) {
-        verifyAdditional = result = doAdditionalChecks(token, curState);
-        if (verbose) {
-          System.out.println("\tTokenTest.doAdditionalCheck(" + token + ")=" + result);
-        }
-      }
-
-      if (result) break;
-    }
-
-    if (result && delimTests != null && token != null) {
-      for (DelimTest delimTest : delimTests) {
-        verifyAdditional = result = delimTest.accept(token, curState).accept();
-        if (!result) {
+        if (verifyAdditional && hasAdditionalChecks()) {
+          verifyAdditional = result = doAdditionalChecks(token, curState);
           if (verbose) {
-            System.out.println("\tdelimTest(pre=" + delimTest.isPre() + ") FAILED! token=" + token + " delims=" +
-                               (delimTest.isPre() ? token.getPreDelim() : token.getPostDelim()));
+            System.out.println("\tTokenTest.doAdditionalCheck(" + token + ")=" + result);
           }
-          break;
         }
+
+        if (result) break;
       }
     }
 

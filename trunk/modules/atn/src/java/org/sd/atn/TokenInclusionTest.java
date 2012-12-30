@@ -78,7 +78,7 @@ public class TokenInclusionTest implements AtnRuleStepTest {
   // (rule's) history before (working backwards) hitting a(n optional) halt
   // condition.
   //
-
+  //NOTE: reverse is applied in the container that runs the tests.
 
   private boolean verbose;
   private boolean includeAll;
