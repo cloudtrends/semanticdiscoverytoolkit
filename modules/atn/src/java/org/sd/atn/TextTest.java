@@ -141,12 +141,7 @@ public class TextTest extends BaseClassifierTest {
       result = (roteListClassifier.doClassify(text) != null);
     }
 
-    if (!result && regexClassifier != null) {
-      result = regexClassifier.doClassify(text);
-      if (verbose) System.out.println("TextTest(" + text + ")=" + result);
-    }
-
-    if (roteListClassifier == null && regexClassifier == null) {
+    if (roteListClassifier == null) {
       result = true;
     }
 
@@ -155,7 +150,7 @@ public class TextTest extends BaseClassifierTest {
         try {
           final Token priorToken = startToken.getPrevToken();
           if (priorToken != null) {
-            result = priorRegexClassifier.doClassify(priorToken);
+            result = priorRegexClassifier.doClassify(priorToken, curState);
             if (verbose) System.out.println("TextTest.priorToken(" + priorToken + ")=" + result);
           }
         }
@@ -167,7 +162,7 @@ public class TextTest extends BaseClassifierTest {
       if (result && !postRegexClassifier.isEmpty()) {
         final Token postToken = token.getNextToken();
         if (postToken != null) {
-          result = postRegexClassifier.doClassify(postToken);
+          result = postRegexClassifier.doClassify(postToken, curState);
           if (verbose) System.out.println("TextTest.postToken(" + postToken + ")=" + result);
         }
       }

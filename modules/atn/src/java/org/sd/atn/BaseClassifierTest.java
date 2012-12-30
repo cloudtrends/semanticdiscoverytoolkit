@@ -67,9 +67,9 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
 
   protected String id;
   protected RoteListClassifier roteListClassifier;
-  protected RegexClassifier regexClassifier;
   protected boolean next;
   protected boolean prev;
+  protected boolean require;
   protected String delimMatch;
   protected boolean verbose;
   protected boolean ignoreLastToken;
@@ -91,13 +91,12 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     this.id = testNode.getAttributeValue("id", Integer.toString(nextAutoId++));
 
     this.roteListClassifier = new RoteListClassifier((DomElement)testNode, resourceManager, resourceManager.getId2Normalizer());
-    this.regexClassifier = new RegexClassifier((DomElement)testNode, resourceManager, resourceManager.getId2Normalizer());
 
     if (roteListClassifier.isEmpty()) roteListClassifier = null;
-    if (regexClassifier.isEmpty()) regexClassifier = null;
 
     this.next = testNode.getAttributeBoolean("next", false);
     this.prev = testNode.getAttributeBoolean("prev", false);
+    this.require = testNode.getAttributeBoolean("require", false);
     this.delimMatch = testNode.getAttributeValue("delimMatch", null);
     this.verbose = testNode.getAttributeBoolean("verbose", false);
 
@@ -164,9 +163,10 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     // - when repeatCheck is used, the test is only applied to the defined repeats\n" +
     // - when next='true', test against the next token
     // - when prev='true', test against the prior token (taken as smallest prior if not available through state)
+    // - when require='true', fail if the selected (prev or next) token isn't present
     // - when delimMatch='X', test against next or prev only succeeds if delims equal X
     //
-    // <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false' validTokenLength='integerRangeExpression' next='true|false' prev='true|false' delimMatch="X">
+    // <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false' validTokenLength='integerRangeExpression' next='true|false' prev='true|false' require='true|false' delimMatch="X">
     //   <repeatCheck type='ignore|test|fail'>integer-range-expression</repeatCheck>\n" +
     //   <jclass>org.sd.atn.*Test</jclass>
     //   <terms caseSensitive='true|false'>
@@ -222,6 +222,10 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     boolean result = false;
     boolean applyTest = true;
 
+    final Token nextToken = token.getNextToken();
+    final boolean isFirstToken = (token.getStartIndex() == 0);
+    final boolean isLastToken = (nextToken == null);
+
     // first check the repeat range for applicability of this test
     if (ignoreRepeatRange != null || failRepeatRange != null || testRepeatRange != null) {
       final int repeat = curState.getRepeatNum();
@@ -249,7 +253,7 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     }
 
 
-    if (ignoreLastToken && token.getNextToken() == null) {
+    if (ignoreLastToken && isLastToken) {
       if (verbose) {
         System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
                            ") SKIPPING test on lastToken '" + token + "'! state=" +
@@ -259,7 +263,7 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
       result = success;
     }
     else if (ignoreFirstToken) {
-      if (token.getStartIndex() == 0 || AtnStateUtil.isFirstConstituentState(curState)) {
+      if (isFirstToken || AtnStateUtil.isFirstConstituentState(curState)) {
         if (verbose) {
           System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
                              ") SKIPPING test on firstToken '" + token + "'! state=" +
@@ -270,7 +274,7 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
       }
     }
     else if (onlyFirstToken) {
-      if ((token.getStartIndex() == 0 || AtnStateUtil.isFirstConstituentState(curState))) {
+      if ((isFirstToken || AtnStateUtil.isFirstConstituentState(curState))) {
         // is first token
         if (verbose) {
           System.out.println("***BaseClassifierTest(" + this.getClass().getName() +
@@ -306,13 +310,23 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
           }
         }
 
-        token = token.getNextToken();
+        token = nextToken;
 
         if (token == null) {
-          if (verbose) {
-            System.out.println("***BaseClassifierTest SKIPPING due to null (non-applicable) token (no next token).");
+          PassFail retval = null;
+          if (require) {
+            if (verbose) {
+              System.out.println("***BaseClassifierTest failing due to no next token (required).");
+            }
+            retval = PassFail.getInstance(false);  // reversibly fail
           }
-          return PassFail.NOT_APPLICABLE;  // success;
+          else {
+            if (verbose) {
+              System.out.println("***BaseClassifierTest SKIPPING due to null (non-applicable) token (no next token).");
+            }
+            retval = PassFail.NOT_APPLICABLE;  // success;
+          }
+          return retval;
         }
 
         if (verbose) {
@@ -336,10 +350,20 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
         token = token.getPrevToken();
 
         if (token == null) {
-          if (verbose) {
-            System.out.println("***BaseClassifierTest SKIPPING due to null (non-applicable) token (no prev token).");
+          PassFail retval = null;
+          if (require) {
+            if (verbose) {
+              System.out.println("***BaseClassifierTest failing due to no prior token (required).");
+            }
+            retval = PassFail.getInstance(false);  // reversibly fail
           }
-          return PassFail.NOT_APPLICABLE;  // success;
+          else {
+            if (verbose) {
+              System.out.println("***BaseClassifierTest SKIPPING due to null (non-applicable) token (no prev token).");
+            }
+            retval = PassFail.NOT_APPLICABLE;  // success;
+          }
+          return retval;
         }
 
         if (verbose) {

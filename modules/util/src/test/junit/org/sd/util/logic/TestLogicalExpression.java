@@ -237,6 +237,66 @@ public class TestLogicalExpression extends TestCase {
     assertNull(result);
   }
 
+  public void testXor() {
+    final StringContainsTruthFunction foo = new StringContainsTruthFunction("foo");
+    final StringContainsTruthFunction bar = new StringContainsTruthFunction("bar");
+    final LogicalExpression<String> expression = new LogicalExpression<String>("(xor 0 1)", new StringContainsTruthFunction[]{foo, bar});
+
+    List<LogicalResult<String>> result = null;
+
+    result = expression.evaluate("foo");
+    assertEquals(1, result.size());
+    assertTrue(result.get(0).isTrue());
+
+    result = expression.evaluate("bar");
+    assertEquals(1, result.size());
+    assertTrue(result.get(0).isTrue());
+
+    result = expression.evaluate("foo other");
+    assertEquals(1, result.size());
+    assertTrue(result.get(0).isTrue());
+
+    result = expression.evaluate("other foo");
+    assertEquals(1, result.size());
+    assertTrue(result.get(0).isTrue());
+
+    result = expression.evaluate("foo bar");
+    assertNull(result);
+
+    result = expression.evaluate("bar foo");
+    assertNull(result);
+  }
+
+  public void testNotXor() {
+    final StringContainsTruthFunction foo = new StringContainsTruthFunction("foo");
+    final StringContainsTruthFunction bar = new StringContainsTruthFunction("bar");
+    final LogicalExpression<String> expression = new LogicalExpression<String>("(not (xor 0 1))", new StringContainsTruthFunction[]{foo, bar});
+
+    List<LogicalResult<String>> result = null;
+
+    result = expression.evaluate("foo");
+    assertNull(result);
+
+    result = expression.evaluate("bar");
+    assertNull(result);
+
+    result = expression.evaluate("foo other");
+    assertNull(result);
+
+    result = expression.evaluate("other foo");
+    assertNull(result);
+
+    result = expression.evaluate("foo bar");
+    assertEquals(2, result.size());
+    assertTrue(result.get(0).isTrue());
+    assertTrue(result.get(1).isTrue());
+
+    result = expression.evaluate("other1 other2");
+    assertEquals(2, result.size());
+    assertFalse(result.get(0).isTrue());
+    assertFalse(result.get(1).isTrue());
+  }
+
 
   /**
    * Truth function that evaluates to true equal strings.

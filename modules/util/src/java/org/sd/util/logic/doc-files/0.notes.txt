@@ -7,3 +7,24 @@ logicalStatement<T> <>--+-- type {operator[non-leaf], truthFunction<T>[leaf]}
 truthFunction<T>.evaluateInput(input:T):LogicalResult<T>
 
 input --> tree<logicalStatement> --> logicalResult <>-- successful:List<TruthFunction>
+
+==============================================================================
+
+See TestLogicalExpression for examples of use.
+
+==============================================================================
+
+Main ideas:
+
+- The generic type, T, is the input to TruthFunctions to be evaluated
+  - TruthFunctions are organized along with logical operators for evaluating a logical expression.
+
+- To use:
+  - Create a "logic" tree:Tree<LogicalStatement<T>>
+    - nodes contain either
+      - non-terminal nodes: LogicalOperators<T> ("and", "or", "xor", or "not") or
+      - terminal nodes: with a TruthFunction<T>
+        - that evaluates input, T, and generates a LogicalResult<T>
+  - instantiate a LogicalExpression with this tree
+  - evaluate the logical expression over the input
+    - non-null results contain the results from successfully evaluated TruthFunctions.

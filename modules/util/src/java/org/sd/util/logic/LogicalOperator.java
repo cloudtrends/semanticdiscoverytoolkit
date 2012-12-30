@@ -26,7 +26,7 @@ package org.sd.util.logic;
  */
 public class LogicalOperator<T> extends LogicalStatement<T> {
   
-  public enum Type { OR, AND, NOT; };
+  public enum Type { OR, AND, NOT, XOR; };
 
 
   private Type type;

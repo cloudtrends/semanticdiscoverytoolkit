@@ -20,7 +20,6 @@ package org.sd.atn;
 
 
 import java.util.Map;
-import org.sd.atn.AbstractAtnStateTokenClassifier;
 import org.sd.atn.ResourceManager;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
@@ -74,7 +73,7 @@ public class AnyTokenClassifier extends RoteListClassifier {
     super(classifierIdElement, resourceManager, id2Normalizer);
 
     // ignore any maxWordCount specified by the element and set to 1
-    super.setMaxWordCount(1);
+    getTokenClassifierHelper().setMaxWordCount(1);
 
     this.featureName = classifierIdElement.getAttributeValue("feature", null);
 
@@ -82,7 +81,7 @@ public class AnyTokenClassifier extends RoteListClassifier {
     this.maxLength = classifierIdElement.getAttributeInt("maxLength", 0);
   }
 
-  public boolean doClassify(Token token) {
+  public boolean doClassify(Token token, AtnState atnState) {
     boolean result = true;
 
     if (minLength > 0 || maxLength > 0) {
@@ -95,7 +94,7 @@ public class AnyTokenClassifier extends RoteListClassifier {
       }
     }
 
-    if (result && doClassifyStopword(token)) {
+    if (result && doClassifyStopword(token, atnState)) {
       result = false;
     }
     

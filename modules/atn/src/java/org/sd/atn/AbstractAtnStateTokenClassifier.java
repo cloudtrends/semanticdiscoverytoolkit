@@ -19,8 +19,9 @@
 package org.sd.atn;
 
 
+import java.util.HashMap;
 import java.util.Map;
-import org.sd.token.AbstractTokenClassifier;
+import org.sd.token.TokenClassifierHelper;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
 import org.sd.util.Usage;
@@ -33,12 +34,23 @@ import org.sd.xml.DomNode;
  * @author Spence Koehler
  */
 @Usage(notes = "Base class for classifying tokens through an org.sd.atn.AtnGrammar.")
-public abstract class AbstractAtnStateTokenClassifier extends AbstractTokenClassifier implements AtnStateTokenClassifier {
+public abstract class AbstractAtnStateTokenClassifier implements AtnStateTokenClassifier {
+
+  public static final Map<String, String> EMPTY_MAP = new HashMap<String, String>();
+
+
+  /** Do the basic classification work. */
+  protected abstract boolean doClassify(Token token, AtnState atnState);
+
+  /** Do text classification over already normalized text if possible. */
+  protected abstract Map<String, String> doClassify(String normalizedText);
 
   private boolean consume;
+  private TokenClassifierHelper tokenClassifierHelper;
 
   protected AbstractAtnStateTokenClassifier() {
-    super();
+    this.consume = true;
+    this.tokenClassifierHelper = new TokenClassifierHelper();
   }
 
   protected AbstractAtnStateTokenClassifier(Normalizer normalizer, int maxWordCount) {
@@ -46,17 +58,15 @@ public abstract class AbstractAtnStateTokenClassifier extends AbstractTokenClass
   }
 
   protected AbstractAtnStateTokenClassifier(Normalizer normalizer, int maxWordCount, boolean consume) {
-    super(normalizer, maxWordCount);
+    this.tokenClassifierHelper = new TokenClassifierHelper(normalizer, maxWordCount);
     this.consume = consume;
   }
 
   protected AbstractAtnStateTokenClassifier(DomElement classifierIdElement, Map<String, Normalizer> id2Normalizer) {
-    super();
+    this.tokenClassifierHelper = new TokenClassifierHelper(classifierIdElement, id2Normalizer);
 
     // check for consume attribute; default to 'true'
     this.consume = classifierIdElement.getAttributeBoolean("consume", true);
-
-    super.setMaxWordCount(classifierIdElement.getAttributeInt("maxWordCount", 0));
   }
 
   protected boolean consume() {
@@ -67,6 +77,10 @@ public abstract class AbstractAtnStateTokenClassifier extends AbstractTokenClass
     this.consume = consume;
   }
 
+  protected final TokenClassifierHelper getTokenClassifierHelper() {
+    return tokenClassifierHelper;
+  }
+
   /**
    * Default implementation ignores atnState and returns result of
    * 'doClassify(token)' through 'super.classify(token)'.
@@ -75,9 +89,38 @@ public abstract class AbstractAtnStateTokenClassifier extends AbstractTokenClass
    * from atnState.
    */
   public MatchResult classify(Token token, AtnState atnState) {
-    return new MatchResult(super.classify(token), consume);
+    boolean result = false;
+
+    if (tokenClassifierHelper.meetsConstraints(token)) {
+      result = doClassify(token, atnState);
+    }
+
+    return new MatchResult(result, consume);
+  }
+
+  /**
+   * Classify just the given text regardless of token or state context, if
+   * possible.
+   *
+   * @return a (possibly empty) map of feature keys to values if matched;
+   *         otherwise, null if didn't or couldn't match.
+   */
+  public Map<String, String> classify(String text) {
+    return doClassify(tokenClassifierHelper.normalize(text));
   }
 
   public void supplement(DomNode supplementNode) {
+  }
+
+  public int getMaxWordCount() {
+    return tokenClassifierHelper.getMaxWordCount();
+  }
+
+  /**
+   * Get the classifier's name.
+   */
+  public String getName() {
+    String result = tokenClassifierHelper.getName();
+    return result == null ? "unknown" : result;
   }
 }

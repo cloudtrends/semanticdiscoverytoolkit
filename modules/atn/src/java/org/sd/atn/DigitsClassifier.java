@@ -20,7 +20,6 @@ package org.sd.atn;
 
 
 import java.util.Map;
-import org.sd.atn.AbstractAtnStateTokenClassifier;
 import org.sd.atn.ResourceManager;
 import org.sd.token.Normalizer;
 import org.sd.token.Token;
@@ -51,7 +50,7 @@ import org.sd.xml.DomElement;
  * @author Spence Koehler
  */
 @Usage(notes =
-       "org.sd.atn.AbstractAtnStateTokenClassifier for recognizing digits\n" +
+       "org.sd.atn.RoteListClassifier for recognizing digits\n" +
        "(for improved efficiency over regexes).\n" +
        "\n" +
        "Attributes:\n" +
@@ -70,7 +69,7 @@ import org.sd.xml.DomElement;
        "  ignoreLetters -- (optional, default=false) specifies whether to ignore\n" +
        "                   letters and accept any digits found."
   )
-public class DigitsClassifier extends RoteListClassifier /*AbstractAtnStateTokenClassifier*/ {
+public class DigitsClassifier extends RoteListClassifier {
 
   private String featureName;
   private IntegerRange range;
@@ -83,7 +82,7 @@ public class DigitsClassifier extends RoteListClassifier /*AbstractAtnStateToken
     super(classifierIdElement, resourceManager, id2Normalizer);
 
     // ignore any maxWordCount specified by the element and set to 1
-    super.setMaxWordCount(1);
+    getTokenClassifierHelper().setMaxWordCount(1);
 
     this.featureName = classifierIdElement.getAttributeValue("feature", "value");
 
@@ -101,13 +100,13 @@ public class DigitsClassifier extends RoteListClassifier /*AbstractAtnStateToken
     this.ignoreLetters = classifierIdElement.getAttributeBoolean("ignoreLetters", false);
   }
   
-  public boolean doClassify(Token token) {
+  public boolean doClassify(Token token, AtnState atnState) {
     boolean result = false;
 
     final String text = token.getText();
 
-    if (!doClassifyStopword(token)) {
-      result = doClassifyTerm(token);
+    if (!doClassifyStopword(token, atnState)) {
+      result = doClassifyTerm(token, atnState);
 
       if (!result) {
         if (text.length() >= minLength) {
@@ -148,10 +147,10 @@ public class DigitsClassifier extends RoteListClassifier /*AbstractAtnStateToken
     boolean result = false;
 
     if (!ignoreLetters) {
-      result = isDigits(text, intValue, requireTrueDigit);
+      result = getTokenClassifierHelper().isDigits(text, intValue, requireTrueDigit);
     }
     else {
-      result = hasDigits(text, intValue, requireTrueDigit);
+      result = getTokenClassifierHelper().hasDigits(text, intValue, requireTrueDigit);
     }
 
     return result;

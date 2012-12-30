@@ -48,7 +48,7 @@ public class MultiTermFinderClassifier extends AbstractAtnStateTokenClassifier {
   public MultiTermFinderClassifier(DomElement classifierIdElement, ResourceManager resourceManager, Map<String, Normalizer> id2Normalizer) {
     super(classifierIdElement, id2Normalizer);
 
-    super.setMaxWordCount(0);
+    getTokenClassifierHelper().setMaxWordCount(0);
     this.resourceManager = resourceManager;
     this.mtf = null;
 
@@ -78,11 +78,15 @@ public class MultiTermFinderClassifier extends AbstractAtnStateTokenClassifier {
     init(supplementNode.asDomElement());
   }
 
-  public boolean doClassify(Token token) {
-    return doClassify(token.getTextWithDelims());
+  public boolean doClassify(Token token, AtnState atnState) {
+    return doClassification(token.getTextWithDelims());
   }
 
-  public boolean doClassify(String text) {
+  protected Map<String, String> doClassify(String text) {
+    return doClassification(text) ? EMPTY_MAP : null;
+  }
+
+  private final boolean doClassification(String text) {
     boolean result = false;
 
     if (mtf != null) {

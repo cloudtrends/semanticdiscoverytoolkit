@@ -62,16 +62,16 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
     return regexes == null || regexes.size() == 0;
   }
 
-  public boolean doClassify(Token token) {
-    final String text = getNormalizedText(token);
-    return doClassify(text, token);
+  public boolean doClassify(Token token, AtnState atnState) {
+    final String text = getTokenClassifierHelper().getNormalizedText(token);
+    return doClassification(text, token);
   }
 
-  public boolean doClassify(String text) {
-    return doClassify(text, null);
+  protected Map<String, String> doClassify(String text) {
+    return doClassification(text, null) ? EMPTY_MAP : null;
   }
 
-  private final boolean doClassify(String text, Token token) {
+  private final boolean doClassification(String text, Token token) {
     boolean result = false;
 
     for (RegexData regexData : regexes) {

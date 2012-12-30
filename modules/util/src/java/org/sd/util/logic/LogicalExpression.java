@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Factory for creating and engine for evaluating logical expressions,
+ * Factory for creating an engine for evaluating logical expressions,
  * which are trees of logical statements.
  * <p>
  * @author Spence Koehler
@@ -49,7 +49,7 @@ public class LogicalExpression <T> {
    * <p>
    * An expressionString is of the form: ([OP] [EXP]) where
    * <p>
-   * OP is a LogicalOperatory.Type (case-insensitive) {"and", "or", "not"}.
+   * OP is a LogicalOperator.Type (case-insensitive) {"and", "or", "not"}.
    * <p>
    * and EXP is
    * <ul>
@@ -66,6 +66,15 @@ public class LogicalExpression <T> {
   }
 
   /**
+   * Construct with the given expression tree.
+   */
+  public LogicalExpression(Tree<LogicalStatement<T>> expression) {
+    this.expressionString = null;
+    this.truthFunctions = null;
+    this.expression = expression;
+  }
+
+  /**
    * Evaluate the given input through this expression.
    *
    * @return a list of (the first) LogicalResult(s) that evaluate to true over
@@ -77,7 +86,7 @@ public class LogicalExpression <T> {
   }
 
   private final List<LogicalResult<T>> evaluate(T input, Tree<LogicalStatement<T>> statementNode, boolean findTrue, Map<TruthFunction, LogicalResult<T>> evalCache) {
-    List<LogicalResult<T>> result = new ArrayList<LogicalResult<T>>();
+    List<LogicalResult<T>> result = null;
 
     final LogicalStatement<T> logicalStatement = statementNode.getData();
 
@@ -113,6 +122,13 @@ public class LogicalExpression <T> {
             throw new IllegalStateException("'NOT' operator must have exactly 1 child! [has " + children.size() + "] in expression '" + expression + "'!");
           }
           result = evaluate(input, children.get(0), !findTrue, evalCache);
+          break;
+        case XOR :
+          // illegal operator if there is not exactly two children!
+          if (children.size() != 2) {
+            throw new IllegalStateException("'XOR' operator must have exactly 2 children! [has " + children.size() + "] in expression '" + expression + "'!");
+          }
+          result = ascertainXor(children, input, findTrue, evalCache);
           break;
       }
     }
@@ -176,6 +192,43 @@ public class LogicalExpression <T> {
         if (result == null) result = new ArrayList<LogicalResult<T>>();
         result.addAll(curResult);
       }
+    }
+
+    return result;
+  }
+
+  private final List<LogicalResult<T>> ascertainXor(List<Tree<LogicalStatement<T>>> statementNodes, T input, boolean trueOrFalse, Map<TruthFunction, LogicalResult<T>> evalCache) {
+    List<LogicalResult<T>> result = null;
+
+    final Tree<LogicalStatement<T>> firstStatement = statementNodes.get(0);
+    final Tree<LogicalStatement<T>> secondStatement = statementNodes.get(1);
+
+    final List<LogicalResult<T>> firstAsTrue = evaluate(input, firstStatement, true, evalCache);
+    final List<LogicalResult<T>> secondAsTrue = evaluate(input, secondStatement, true, evalCache);
+    final List<LogicalResult<T>> firstAsFalse = evaluate(input, firstStatement, false, evalCache);
+    final List<LogicalResult<T>> secondAsFalse = evaluate(input, secondStatement, false, evalCache);
+
+    if (trueOrFalse) {
+      if (firstAsTrue != null && secondAsFalse != null) {
+        result = firstAsTrue;
+      }
+      else if (firstAsFalse != null && secondAsTrue != null) {
+        result = secondAsTrue;
+      }
+      //else result is null
+    }
+    else {
+      if ((firstAsTrue != null && secondAsTrue != null)) {
+        result = new ArrayList<LogicalResult<T>>();
+        result.addAll(firstAsTrue);
+        result.addAll(secondAsTrue);
+      }
+      else if ((firstAsFalse !=  null && secondAsFalse != null)) {
+        result = new ArrayList<LogicalResult<T>>();
+        result.addAll(firstAsFalse);
+        result.addAll(secondAsFalse);
+      }
+      //else result is null
     }
 
     return result;

@@ -40,6 +40,12 @@ public class StepTestContainer {
   private ConditionType conditionType;
   private boolean empty;
 
+  public StepTestContainer() {
+    this.testWrappers = null;
+    this.conditionType = null;
+    this.empty = true;
+  }
+
   public StepTestContainer(DomElement stepElement, ResourceManager resourceManager) {
     this.testWrappers = null;
 
@@ -58,6 +64,19 @@ public class StepTestContainer {
     }
 
     this.empty = (testWrappers == null);
+  }
+
+  public final synchronized boolean addTestWrapper(StepTestWrapper testWrapper) {
+    boolean result = false;
+
+    if (testWrapper != null && !testWrapper.isEmpty()) {
+      if (this.testWrappers == null) this.testWrappers = new ArrayList<StepTestWrapper>();
+      this.testWrappers.add(testWrapper);
+      result = true;
+      this.empty = false;
+    }
+
+    return result;
   }
 
   public boolean isCondition() {

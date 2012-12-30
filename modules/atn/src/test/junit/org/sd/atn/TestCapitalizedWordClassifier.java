@@ -52,21 +52,21 @@ public class TestCapitalizedWordClassifier extends TestCase {
     final CapitalizedWordClassifier classifier = new CapitalizedWordClassifier(xml, resourceManager, null);
 
     for (char c = 'A' ; c <= 'Z'; ++c) {
-      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + "")));
+      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + ""), null));
     }
 
     for (char c = 'A' ; c <= 'Z'; ++c) {
-      assertFalse(classifier.doClassify(StandardTokenizerFactory.getFirstToken("A" + c)));
+      assertFalse(classifier.doClassify(StandardTokenizerFactory.getFirstToken("A" + c), null));
     }
 
     classifier.setAllCapsMinLen(3);
 
     for (char c = 'A' ; c <= 'Z'; ++c) {
-      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("A" + c)));
+      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("A" + c), null));
     }
 
     for (char c = 'A' ; c <= 'Z'; ++c) {
-      assertFalse(classifier.doClassify(StandardTokenizerFactory.getFirstToken("AB" + c)));
+      assertFalse(classifier.doClassify(StandardTokenizerFactory.getFirstToken("AB" + c), null));
     }
   }
 
@@ -82,12 +82,12 @@ public class TestCapitalizedWordClassifier extends TestCase {
 
     // accept lower-case letter followed by '.'
     for (char c = 'a' ; c <= 'z'; ++c) {
-      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + ".")));
+      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + "."), null));
     }
 
     // accept case letter not followed by '.'
     for (char c = 'A' ; c <= 'Z'; ++c) {
-      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + "")));
+      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + ""), null));
     }
   }
 
@@ -103,17 +103,17 @@ public class TestCapitalizedWordClassifier extends TestCase {
 
     // don't accept single letter not followed by '.'
     for (char c = 'A' ; c <= 'Z'; ++c) {
-      assertFalse(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + "")));
+      assertFalse(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + ""), null));
     }
 
     // accept lower-case letter followed by '.'
     for (char c = 'a' ; c <= 'z'; ++c) {
-      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + ".")));
+      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + "."), null));
     }
 
     // accept upper-case letter followed by '.'
     for (char c = 'A' ; c <= 'Z'; ++c) {
-      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + ".")));
+      assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken(c + "."), null));
     }
   }
 
@@ -132,10 +132,10 @@ public class TestCapitalizedWordClassifier extends TestCase {
     tOpts.setEmbeddedDashBreak(Break.NO_BREAK);
 
     // do accept a dash
-    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez", tOpts)));
-    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Martinez", tOpts)));
-    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez-Martinez", tOpts)));
-    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez-martinez", tOpts)));
+    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez", tOpts), null));
+    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Martinez", tOpts), null));
+    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez-Martinez", tOpts), null));
+    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez-martinez", tOpts), null));
   }
 
   public void testDontAcceptDash() {
@@ -153,10 +153,10 @@ public class TestCapitalizedWordClassifier extends TestCase {
     tOpts.setEmbeddedDashBreak(Break.NO_BREAK);
 
     // don't accept a dash
-    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez", tOpts)));
-    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Martinez", tOpts)));
-    assertFalse(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez-Martinez", tOpts)));
-    assertFalse(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez-martinez", tOpts)));
+    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez", tOpts), null));
+    assertTrue(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Martinez", tOpts), null));
+    assertFalse(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez-Martinez", tOpts), null));
+    assertFalse(classifier.doClassify(StandardTokenizerFactory.getFirstToken("Ramirez-martinez", tOpts), null));
   }
 
 
