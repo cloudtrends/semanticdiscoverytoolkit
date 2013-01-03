@@ -79,7 +79,7 @@ public class AtnParser {
    */
   public AtnParseResult parse(Token firstToken, AtnParseOptions options, Set<Integer> stopList,
                               DataProperties overrides, AtomicBoolean die) {
-    final AtnParseResult result = new AtnParseResult(grammar, firstToken, options, stopList, overrides, die);
+    final AtnParseResult result = new AtnParseResult(grammar, firstToken, firstToken.getStartIndex(), options, stopList, overrides, die);
 
     // Compute at least the first parse now.
     result.continueParsing();
@@ -125,7 +125,8 @@ public class AtnParser {
       System.out.println("\tAtnParser seeking from firstToken=" + firstToken);
     }
 
-    AtnParseResult result = new AtnParseResult(grammar, firstToken, options, stopList, overrides, die);
+    final int seekStartIndex = firstToken.getStartIndex();
+    AtnParseResult result = new AtnParseResult(grammar, firstToken, seekStartIndex, options, stopList, overrides, die);
     result.continueParsing();
 
     while (result.getNumParses() == 0 && !options.getConsumeAllText()) {
@@ -136,7 +137,7 @@ public class AtnParser {
         System.out.println("\tAtnParser re-seeking from firstToken=" + firstToken);
       }
 
-      result = new AtnParseResult(grammar, firstToken, options, stopList, overrides, die);
+      result = new AtnParseResult(grammar, firstToken, seekStartIndex, options, stopList, overrides, die);
       result.continueParsing();
     }
 

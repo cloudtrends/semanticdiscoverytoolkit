@@ -149,7 +149,7 @@ public class AtnState {
   private boolean computedNextToken;
   private Token _nextToken;
   private boolean popFailed;
-
+  private int seekStartIndex;  //NOTE: only instantiated on the first token of a parse
 
   /**
    * Information used for verifying and incrementing a considered state
@@ -171,6 +171,7 @@ public class AtnState {
     this.computedNextToken = false;
     this._nextToken = null;
     this.popFailed = false;
+    this.seekStartIndex = 0;
   }
 
   /** Copy constructor */
@@ -191,6 +192,26 @@ public class AtnState {
     this.computedNextToken = other.computedNextToken;
     this._nextToken = other._nextToken;
     this.popFailed = other.popFailed;
+  }
+
+  /**
+   * The seekStartIndex is the start (input) index from which this
+   * parse was sought.
+   * <p>
+   * NOTE: This will only be instantiated on the first state of a parse.
+   * <p>
+   * The first state's token is the first token that matches a start rule
+   * while this seekStartIndex is the position in the input from which
+   * this parse was originally sought. If it is less than the start state's
+   * input token's start, then tokens were skipped to arrive at the beginning
+   * of this parse (after any prior parses).
+   */
+  public int getSeekStartIndex() {
+    return seekStartIndex;
+  }
+
+  public void setSeekStartIndex(int seekStartIndex) {
+    this.seekStartIndex = seekStartIndex;
   }
 
   /**

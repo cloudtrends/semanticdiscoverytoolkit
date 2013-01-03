@@ -95,9 +95,14 @@ import org.w3c.dom.NodeList;
   )
 public class TokenTest extends BaseClassifierTest {
   
+  public enum ScanLimit { PARSE_START, SEEK_START, INPUT_START };
+
+
   private boolean verbose;
   private boolean revise;
   private boolean scan;
+  private ScanLimit scanLimit;
+  private List<TokenTest> scanStops;
   private List<TokenClause> tokenClauses;
 
   public TokenTest(DomNode testNode, ResourceManager resourceManager) {
@@ -106,6 +111,20 @@ public class TokenTest extends BaseClassifierTest {
     this.verbose = testNode.getAttributeBoolean("verbose", false);
     this.revise = testNode.getAttributeBoolean("revise", false);
     this.scan = testNode.getAttributeBoolean("scan", false);
+    this.scanLimit = ScanLimit.valueOf(testNode.getAttributeValue("scanLimit", "INPUT_START").toUpperCase());
+    this.scanStops = null;
+
+    if (scan) {
+      final NodeList scanStopNodes = testNode.selectNodes("scanStop");
+      if (scanStopNodes != null && scanStopNodes.getLength() > 0) {
+        for (int nodeNum = 0; nodeNum < scanStopNodes.getLength(); ++nodeNum) {
+          final DomElement ssElt = (DomElement)scanStopNodes.item(nodeNum);
+          final TokenTest scanStop = new TokenTest(ssElt, resourceManager);
+          if (scanStops == null) scanStops = new ArrayList<TokenTest>();
+          scanStops.add(scanStop);
+        }
+      }
+    }
 
     final NodeList wordPatternNodes = testNode.selectNodes("wordPattern");
     if (wordPatternNodes != null && wordPatternNodes.getLength() > 0) {
@@ -144,6 +163,7 @@ public class TokenTest extends BaseClassifierTest {
     // - when reverse='true', fail on match (handled elsewhere)
     // - when revise='true', test against token revisions
     // - when scan='true', test against each next (or prev if prev='true') token
+    //   - and optionally include "scanStop" child elements defining stop conditions
     // - when ignoreLastToken='true', always accept the last token
     // - when ignoreFirstToken='true', always accept the first token
     // - when onlyFirstToken='true', only test against a "first" constituent token
@@ -151,6 +171,9 @@ public class TokenTest extends BaseClassifierTest {
     //
     // <test reverse='true|false' revise='true|false'>
     //   <jclass>org.sd.atn.TokenTest</jclass>
+    //
+    //   <scanStop>...</scanStop>
+    //
     //   <terms caseSensitive='true|false'>
     //     <term>...</term>
     //     ...
@@ -189,17 +212,52 @@ public class TokenTest extends BaseClassifierTest {
 
   protected boolean doAccept(Token token, AtnState curState) {
     boolean result = false;
+    boolean didSomething = false;
 
     boolean verifyAdditional = true;
     final Token orig = token;
 
+    int minTokenIdx = 0;
+    if (scan) {
+      switch (scanLimit) {
+        case PARSE_START :
+          minTokenIdx = getFirstTokenStart(curState);
+          break;
+        case SEEK_START :
+          minTokenIdx = getSeekTokenStart(curState);
+          break;
+      }
+    }
+
     for (Token scanToken = token; scanToken != null;
          scanToken = scan ? (prev ? scanToken.getPrevToken() : scanToken.getNextToken()) : null) {
+
+      boolean timeToStop = false;
+
       for (Token reviseToken = scanToken; reviseToken != null; reviseToken = revise ? reviseToken.getRevisedToken() : null) {
         token = reviseToken;
 
+        // check for scanLimit
+        if (token.getStartIndex() < minTokenIdx) {
+          timeToStop = true;
+        }
+
+        // check for scan stop
+        if (!timeToStop && scanStops != null) {
+          for (TokenTest scanStop : scanStops) {
+            if (scanStop.accept(token, curState).accept()) {
+              timeToStop = true;
+              break;
+            }
+          }
+        }
+
+        // stop if its time to
+        if (timeToStop) break;
+
         if (!result && roteListClassifier != null) {
           verifyAdditional = result = roteListClassifier.doClassify(token, curState);
+          didSomething = true;
 
           if (result && verbose) {
             System.out.println("\troteListClassifier.classify=true");
@@ -208,6 +266,7 @@ public class TokenTest extends BaseClassifierTest {
 
         if (verifyAdditional && hasAdditionalChecks()) {
           verifyAdditional = result = doAdditionalChecks(token, curState);
+          didSomething = true;
           if (verbose) {
             System.out.println("\tTokenTest.doAdditionalCheck(" + token + ")=" + result);
           }
@@ -215,11 +274,14 @@ public class TokenTest extends BaseClassifierTest {
 
         if (result) break;
       }
+
+      if (timeToStop) break;
     }
 
     if (verifyAdditional && tokenClauses != null) {
       for (TokenClause tokenClause : tokenClauses) {
         verifyAdditional = result = tokenClause.accept(orig, verbose);
+        didSomething = true;
 
         if (result && verbose) {
           System.out.println("\ttokenClause.accept(" + orig + ")=" + result);
@@ -228,6 +290,8 @@ public class TokenTest extends BaseClassifierTest {
         if (result) break;
       }
     }
+
+    if (!result && !didSomething) result = true;
 
     return result;
   }
@@ -249,6 +313,25 @@ public class TokenTest extends BaseClassifierTest {
   protected boolean doAdditionalChecks(Token token, AtnState curState) {
     return true;
   }
+
+  private final int getFirstTokenStart(AtnState curState) {
+    final AtnState firstState = getFirstState(curState);
+    return firstState.getInputToken().getStartIndex();
+  }
+
+  private final int getSeekTokenStart(AtnState curState) {
+    final AtnState firstState = getFirstState(curState);
+    return firstState.getSeekStartIndex();
+  }
+
+  private final AtnState getFirstState(AtnState curState) {
+    AtnState firstState = curState;
+    for (AtnState parentState = firstState.getParentState(); parentState != null; parentState = parentState.getParentState()) {
+      firstState = parentState;
+    }
+    return firstState;
+  }
+
 
   private static final Token getPrevToken(Token token) {
     Token result = null;

@@ -47,6 +47,11 @@ public class AtnParseResult {
     return firstToken;
   }
 
+  private int seekStartIndex;
+  public int getSeekStartIndex() {
+    return seekStartIndex;
+  }
+
   private AtnParseOptions options;
   public AtnParseOptions getOptions() {
     return options;
@@ -107,10 +112,12 @@ public class AtnParseResult {
   }
 
   /** Primary construtor */
-  AtnParseResult(AtnGrammar grammar, Token firstToken, AtnParseOptions options,
-                 Set<Integer> stopList, DataProperties overrides, AtomicBoolean die) {
+  AtnParseResult(AtnGrammar grammar, Token firstToken, int seekStartIndex,
+                 AtnParseOptions options, Set<Integer> stopList,
+                 DataProperties overrides, AtomicBoolean die) {
     this.grammar = grammar;
     this.firstToken = firstToken;
+    this.seekStartIndex = seekStartIndex;
     this.options = options;
     this.stopList = stopList;
     this.die = die;
@@ -318,13 +325,16 @@ public class AtnParseResult {
         if (startRule.isPermuted()) {
           // add all step states, not just first
           for (int stepNum = 0; stepNum < numSteps; ++stepNum) {
-            states.addLast(new AtnState(firstToken, startRule, stepNum, parse, options, 0, 0, null));
+            final AtnState firstState = new AtnState(firstToken, startRule, stepNum, parse, options, 0, 0, null);
+            firstState.setSeekStartIndex(this.firstToken.getStartIndex());
+            states.addLast(firstState);
           }
         }
         else {
           for (AtnState firstState = new AtnState(firstToken, startRule, 0, parse, options, 0, 0, null);
                firstState != null;
                firstState = firstState.getSkipOptionalState()) {
+            firstState.setSeekStartIndex(this.seekStartIndex);
             states.addLast(firstState);
           }
         }
