@@ -114,8 +114,8 @@ public class StateSelectionTest extends BaseClassifierTest {
   //     gravity='pop|lastMatch|firstMatch|push'  // identifies which state to select for a constituent node
   //     closestOnly='true|false'     // default=true; if false, searches for other states matching all of the criterea when token tests fail
   //     disallow='false|true'>       // default=false; if true, fails the test when state is found; otherwise, reference state remains unchanged
-  //       <tokenTest>...</tokenTest>
-  //       ...more token tests...
+  //       <test>...</test>
+  //       ...more tests...
   //   </selectState>
   //   ...more select state terms that work from the last selected state...
   // </test>
@@ -262,7 +262,7 @@ public class StateSelectionTest extends BaseClassifierTest {
 
   private static class StateSelector {
     private boolean verbose;
-    private List<TokenTest> tokenTests;
+    private StateTestContainer testContainer;
     private PathMatcher pathMatcher;
     private IntegerRange tokenDistance;
     private IntegerRange constituentDistance;
@@ -271,27 +271,22 @@ public class StateSelectionTest extends BaseClassifierTest {
     private Gravity gravity;
     private boolean closestOnly;
     private boolean disallow;
+    private boolean hasArg;
 
     protected StateSelector(DomElement selectElement, ResourceManager resourceManager) {
+      this.hasArg = false;
+
       // verbosity
       this.verbose =
         selectElement.getAttributeBoolean("verbose", false) ||
         ((DomElement)(selectElement.getParentNode())).getAttributeBoolean("verbose", false);
 
-      // token tests
-      this.tokenTests = null;
-      final NodeList tokenTestNodes = selectElement.selectNodes("tokenTest");
-      if (tokenTestNodes != null && tokenTestNodes.getLength() > 0) {
-        for (int nodeNum = 0; nodeNum < tokenTestNodes.getLength(); ++nodeNum) {
-          final DomElement ttElt = (DomElement)tokenTestNodes.item(nodeNum);
-          final TokenTest tokenTest = new TokenTest(ttElt, resourceManager);
-          if (tokenTests == null) tokenTests = new ArrayList<TokenTest>();
-          tokenTests.add(tokenTest);
-        }
-      }
+      // tests
+      this.testContainer = new StateTestContainer(selectElement, resourceManager);
 
       // path
       this.pathMatcher = buildPathMatcher(selectElement.getAttributeValue("path", null));
+      if (pathMatcher != null) hasArg = true;
 
       // tokenDistance, constituentDistance, distance
       this.tokenDistance = this.constituentDistance = null;
@@ -301,15 +296,20 @@ public class StateSelectionTest extends BaseClassifierTest {
       }
       this.tokenDistance = getAttributeRange(selectElement, "tokenDistance", this.tokenDistance);
       this.constituentDistance = getAttributeRange(selectElement, "tokenDistance", this.constituentDistance);
+      if (tokenDistance != null || constituentDistance != null) hasArg = true;
 
       // ascend, descend, unlock
       this.ascend = this.descend = new IntegerRange(0);
-      final IntegerRange unlock = getAttributeRange(selectElement, "unlock", null);
-      if (unlock != null) {  // sets both ascend and descend
+
+      if (selectElement.hasAttribute("unlock")) {
+        // sets both ascend and descend
+        final IntegerRange unlock = getAttributeRange(selectElement, "unlock", null);
         this.ascend = this.descend = unlock;
+        hasArg = true;
       }
       this.ascend = getAttributeRange(selectElement, "ascend", this.ascend);
       this.descend = getAttributeRange(selectElement, "descend", this.descend);
+      if (selectElement.hasAttribute("ascend") || selectElement.hasAttribute("descend")) hasArg = true;
 
       // gravity
       this.gravity = buildGravity(selectElement.getAttributeValue("gravity", null));
@@ -317,6 +317,11 @@ public class StateSelectionTest extends BaseClassifierTest {
       // closestOnly, disallow
       this.closestOnly = selectElement.getAttributeBoolean("closestOnly", true);
       this.disallow = selectElement.getAttributeBoolean("disallow", false);
+
+      // open up range constraints if there were no args
+      if (!hasArg) {
+        this.tokenDistance = this.constituentDistance = null;
+      }
     }
 
     private final Gravity buildGravity(String gravityString) {
@@ -374,41 +379,81 @@ public class StateSelectionTest extends BaseClassifierTest {
 
       for (AtnState curState = fromState; curState != null; curState = curState.getParentState()) {
 
+        if (verbose) {
+          System.out.println("***StateSelectionTest.StateSelector visitingState(" +
+                             curState + ") ascend=" + ascendDist + " descend=" +
+                             descendDist + " tokenDist=" + tokenDist +
+                             " constituentDist=" + constituentDist);
+        }
+
         // meet vertical, distance, and path constraints
-        if (meetsRangeConstraint(ascendDist, ascend) &&
+        if (hasArg && meetsRangeConstraint(ascendDist, ascend) &&
             meetsRangeConstraint(descendDist, descend) &&
             meetsRangeConstraint(tokenDist, tokenDistance) &&
             meetsRangeConstraint(constituentDist, constituentDistance) &&
-            meetsPathConstraint(curState, fromState)) {
+            meetsPathConstraint(curState, fromState)) {  // apply final tests
 
           // adjust according to gravity
           final AtnState theState = adjustForGravity(curState, gravity);
 
+          if (testContainer.hasFinalTests()) {
+
+            if (verbose) {
+              System.out.println("***StateSelectionTest.StateSelector verifyingFinalTests(" +
+                                 theState + ") ascend=" + ascendDist + " descend=" +
+                                 descendDist + " tokenDist=" + tokenDist +
+                                 " constituentDist=" + constituentDist);
+            }
+
+            // verify tests
+            final StateTestContainer.Directive directive = verifyFinalTests(theState);
+            if (directive != StateTestContainer.Directive.CONTINUE) {
+              switch (directive) {
+              case SUCCEED :
+                result = theState; break;
+              case FAIL :
+                result = null; break;
+              }
+
+              if (verbose) {
+                System.out.println("***StateSelectionTest.StateSelector final tests terminating w/" + directive + " at state=" + theState);
+              }
+
+              break;
+            }
+          }
+          else {
+            // no final tests, but all constraints met ==> success
+            result = theState;
+            break;
+          }
+        }
+        else if (testContainer.hasScanTests()) {  // apply scanning tests
+          // adjust according to gravity
+          final AtnState theState = adjustForGravity(curState, gravity);
+
           if (verbose) {
-            System.out.println("***StateSelectionTest.StateSelector verifyingTests(" +
+            System.out.println("***StateSelectionTest.StateSelector verifyingScanTests(" +
                                theState + ") ascend=" + ascendDist + " descend=" +
                                descendDist + " tokenDist=" + tokenDist +
                                " constituentDist=" + constituentDist);
           }
 
           // verify tests
-          if (verifyTests(theState)) {
-            result = theState;
+          final StateTestContainer.Directive directive = verifyScanTests(theState);
+          if (directive != StateTestContainer.Directive.CONTINUE) {
+            switch (directive) {
+              case SUCCEED :
+                result = theState; break;
+              case FAIL :
+                result = null; break;
+            }
 
             if (verbose) {
-              System.out.println("***StateSelectionTest.StateSelector tests PASSED. result=" + theState);
+              System.out.println("***StateSelectionTest.StateSelector scan tests terminating w/" + directive + " at state=" + theState);
             }
 
             break;
-          }
-          else {
-            if (verbose) {
-              System.out.println("***StateSelectionTest.StateSelector tests FAILED.");
-            }
-
-            if (closestOnly) {
-              break;
-            }
           }
         }
 
@@ -478,20 +523,12 @@ public class StateSelectionTest extends BaseClassifierTest {
       return result;
     }
 
-    private final boolean verifyTests(AtnState theState) {
-      boolean result = true;
+    private final StateTestContainer.Directive verifyScanTests(AtnState theState) {
+      return testContainer.verifyScanTests(theState.getInputToken(), theState);
+    }
 
-      if (tokenTests != null) {
-        for (TokenTest tokenTest : tokenTests) {
-          final PassFail passFail = tokenTest.accept(theState.getInputToken(), theState);
-          if (!passFail.accept()) {
-            result = false;
-            break;
-          }
-        }
-      }
-
-      return result;
+    private final StateTestContainer.Directive verifyFinalTests(AtnState theState) {
+      return testContainer.verifyFinalTests(theState.getInputToken(), theState);
     }
   }
 

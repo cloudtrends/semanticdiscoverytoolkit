@@ -1174,6 +1174,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private AtnStateTokenClassifier namedResource;      // temp storage
     private List<AtnStateTokenClassifier> classifiers;  // delayed load
     private boolean literalMatch;                       // delayed load
+    private boolean ruleMatch;                          // delayed load
     private boolean trace;
 
     public ClassifierContainer(String classifierName, ResourceManager resourceManager) {
@@ -1181,6 +1182,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       this.namedResource = findClassifierResource(classifierName, resourceManager);
       this.classifiers = null;
       this.literalMatch = false;
+      this.ruleMatch = false;
     }
 
     public boolean getTrace() {
@@ -1240,6 +1242,22 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
         if (result && trace) {
           System.out.println("\tliteralMatch(" + classifierName + ")=true");
+        }
+      }
+
+      // check for rule match
+      if (!result && ruleMatch) {
+        result = atnState.getRuleStep().getLabel().equals(classifierName);
+
+        for (AtnState theState = atnState.getPushState(); !result && theState != null; theState = theState.getPushState()) {
+          final AtnRule rule = theState.getRule();
+          final String ruleName = rule.getRuleName();
+          final String ruleId = rule.getRuleId();
+
+          result = ruleName.equals(classifierName);
+          if (!result && ruleId != null) {
+            result = ruleId.equals(classifierName);
+          }
         }
       }
 
@@ -1308,7 +1326,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         this.classifiers.addAll(tokenClassifiers);
       }
       else {
-        if (!grammar.getCat2Rules().containsKey(classifierName)) {
+        if (grammar.getCat2Rules().containsKey(classifierName)) {
+          ruleMatch = true;
+        }
+        else {
           literalMatch = true;
         }
       }
