@@ -105,6 +105,7 @@ import org.w3c.dom.NodeList;
   )
 public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   
+  public static final String TYPED_FEATURE_KEY = "*";
   private static final Map<String, String> EMPTY_ATTRIBUTES = new HashMap<String, String>();
 
   //
@@ -575,7 +576,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
         if (!result && features != null) {
           for (Map.Entry<String, Class> featureEntry : features.entrySet()) {
-            final String feature = featureEntry.getKey();
+            String feature = featureEntry.getKey();
+            if (TYPED_FEATURE_KEY.equals(feature)) feature = null;
             final Class type = featureEntry.getValue();
 
             if (token.getFeatureValue(feature, null, type) != null) {
@@ -851,11 +853,19 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         if ("interp".equals(typeString)) {
           type = ParseInterpretation.class;
         }
+        else if ("parse".equals(typeString)) {
+          featureName = AtnParseBasedTokenizer.SOURCE_PARSE;
+          type = Parse.class;
+        }
       }
 
       if (featureName != null && !"".equals(featureName)) {
         if (this.features == null) this.features = new HashMap<String, Class>();
         this.features.put(featureName, type);
+      }
+      else if (type != null) {
+        if (this.features == null) this.features = new HashMap<String, Class>();
+        this.features.put(TYPED_FEATURE_KEY, type);
       }
 
       if (features != null && features.size() > 0) {
