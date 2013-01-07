@@ -376,6 +376,7 @@ public class StateSelectionTest extends BaseClassifierTest {
       int tokenDist = 0;
       int constituentDist = 0;
       Token prevToken = null;
+      final int fromDepth = AtnStateUtil.getPushDepth(fromState);
 
       for (AtnState curState = fromState; curState != null; curState = curState.getParentState()) {
 
@@ -458,24 +459,18 @@ public class StateSelectionTest extends BaseClassifierTest {
         }
 
         // increment distances
-        if (curState.getMatched() || curState.isRepeat()) {
-          // adjust tokenDist
-          if (curState.getInputToken() != prevToken) {
-            ++tokenDist;
-          }
+        final int curDepth = AtnStateUtil.getPushDepth(curState);
+        if (curDepth >= fromDepth) {  // descending or level
+          ascendDist = 0;
+          descendDist = curDepth - fromDepth;
         }
-        else {
-          // adjust ascend/descend dists
-          if (curState.isPoppedState()) {
-            // descend
-            if (ascendDist > 0) --ascendDist;
-            else ++descendDist;
-          }
-          else { // else is push state
-            // ascend
-            if (descendDist > 0) --descendDist;
-            else ++ascendDist;
-          }
+        else if (curDepth < fromDepth) {  // ascending
+          descendDist = 0;
+          ascendDist = fromDepth - curDepth;
+        }
+
+        if (curState.getInputToken() != prevToken) {
+          ++tokenDist;
         }
 
         // adjust consituentDist
