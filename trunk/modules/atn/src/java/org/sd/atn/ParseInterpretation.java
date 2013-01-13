@@ -31,6 +31,7 @@ import org.sd.cio.MessageHelper;
 import org.sd.io.Publishable;
 import org.sd.util.Usage;
 import org.sd.util.tree.Tree;
+import org.sd.util.tree.TraversalIterator;
 import org.sd.xml.DomElement;
 import org.sd.xml.XmlFactory;
 import org.sd.xml.XmlLite;
@@ -103,6 +104,13 @@ public class ParseInterpretation implements Publishable, Serializable {
   }
 
   /**
+   * Set the Parse associated with this instance.
+   */
+  public void setParse(Parse parse) {
+    this._parse = parse;
+  }
+
+  /**
    * Get the free-standing parse information connected with this instance, if
    * available.
    */
@@ -136,6 +144,54 @@ public class ParseInterpretation implements Publishable, Serializable {
       }
     }
     return this._interpTree;
+  }
+
+  /**
+   * Get the interpretation text under the given named node (or full text if topNode is null).
+   */
+  public String getInterpText(String topNode) {
+    final StringBuilder result = new StringBuilder();
+
+    final Tree<XmlLite.Data> interpTree = getInterpTree();
+    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        if (topNode == null || topNode.equals(tag.name)) {
+          getInterpText(result, curNode);
+          iter.skip();
+        }
+      }
+    }
+
+    return result.toString();
+  }
+
+  private final void getInterpText(StringBuilder result, Tree<XmlLite.Data> topNode) {
+    for (TraversalIterator<XmlLite.Data> iter = topNode.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        final String tokText = tag.attributes.get("_tokText");
+        if (tokText != null) {
+          final String preDelim = tag.attributes.get("_tokPreDelim");
+          if (result.length() > 0) {
+            result.append(preDelim != null ? preDelim : " ");
+          }
+          result.append(tokText);
+          iter.skip();
+        }
+      }
+      else {
+        final XmlLite.Text text = curNode.getData().asText();
+        if (text != null) {
+          if (result.length() > 0) result.append(' ');
+          result.append(text.text);
+        }
+      }
+    }
   }
 
   public String getInterpXml() {
