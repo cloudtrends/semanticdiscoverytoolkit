@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.sd.token.CategorizedToken;
 import org.sd.token.FeatureConstraint;
@@ -43,6 +44,7 @@ public class AtnStateUtil {
   public static String TOKEN_KEY = "cToken";     // -> cToken:CategorizedToken (leafs' parents)
   public static String RULE_ID_KEY = "_ruleID";  // -> ruleID:String (id'd constituents)
   public static String INTERP_KEY = "_interps";  // -> interps:ParseInterpretation[] (pre-parsed constituents)
+  // public static String CATEGORY_KEY = "_category";  // for mapping a ruleStep label back to its original category (e.g., for interps)
 
   /**
    * A type for a feature on a token indicating the category (value) that
@@ -151,11 +153,8 @@ public class AtnStateUtil {
         final String ruleName = pathState.getRule().getRuleName();
         result = new Tree<String>(ruleName);
 
-        // add ruleID as an attribute on the parse node
-        final String ruleId = pathState.getRule().getRuleId();
-        if (ruleId != null && !"".equals(ruleId)) {
-          result.getAttributes().put(RULE_ID_KEY, ruleId);
-        }
+        // add ruleID and category attributes on the parse node
+        addParseNodeAttributes(result, pathState);
 
         curResultNode = result;
       }
@@ -176,13 +175,8 @@ public class AtnStateUtil {
             unknownNode.getAttributes().put(TOKEN_KEY, new CategorizedToken(inputToken, "?"));
           }
           else {
-            // add ruleID as an attribute on the parse node
-            if (!curResultNode.hasAttributes() || !curResultNode.getAttributes().containsKey(RULE_ID_KEY)) {
-              final String ruleId = pathState.getRule().getRuleId();
-              if (ruleId != null && !"".equals(ruleId)) {
-                curResultNode.getAttributes().put(RULE_ID_KEY, ruleId);
-              }
-            }
+            // add ruleID and category attributes on the parse node
+            addParseNodeAttributes(curResultNode, pathState);
 
             curResultNode = curResultNode.addChild(category);
           }
@@ -191,17 +185,12 @@ public class AtnStateUtil {
           // add matched token
           final Tree<String> categoryNode = curResultNode.addChild(category);
 
-          // add ruleID as an attribute on the parse node
-          if (!curResultNode.hasAttributes() || !curResultNode.getAttributes().containsKey(RULE_ID_KEY)) {
-            final String ruleId = pathState.getRule().getRuleId();
-            if (ruleId != null && !"".equals(ruleId)) {
-              curResultNode.getAttributes().put(RULE_ID_KEY, ruleId);
-            }
-          }
+          // add ruleID and category attributes on the parse node
+          addParseNodeAttributes(curResultNode, pathState);
 
           if (!category.equals(inputToken.getText())) {
             // add non-literal matched token
-            final List<Tree<String>> tokenParses = goDeep ? getTokenParses(inputToken, pathState.getRuleStep().getCategory()) : null;  //was category
+            final List<Tree<String>> tokenParses = goDeep ? getTokenParses(inputToken, pathState.getRuleStep().getCategory()) : null;  //...getCategory() was category
             if (tokenParses == null) {
               // add token text
               categoryNode.addChild(inputToken.getText()/*WithDelims()*/);
@@ -225,6 +214,24 @@ public class AtnStateUtil {
     }
 
     return result;
+  }
+
+  private static final void addParseNodeAttributes(Tree<String> parseNode, AtnState pathState) {
+    final Map<String, Object> attributes = parseNode.getAttributes();
+
+    // add ruleID as an attribute on the parse node
+    final String ruleId = pathState.getRule().getRuleId();
+    if (ruleId != null && !"".equals(ruleId) && !attributes.containsKey(RULE_ID_KEY)) {
+      attributes.put(RULE_ID_KEY, ruleId);
+    }
+
+    // // add original category as an attribute on the parse node
+    // final AtnRuleStep ruleStep = pathState.getRuleStep();
+    // final String origCat = ruleStep.getCategory();
+    // final String label = ruleStep.getLabel();
+    // if (!origCat.equals(label) && !attributes.containsKey(CATEGORY_KEY)) {
+    //   attributes.put(CATEGORY_KEY, origCat);
+    // }
   }
 
   public static final int countConstituentTokens(AtnState refState) {

@@ -84,6 +84,9 @@ public class TokenInclusionTest implements AtnRuleStepTest {
   private boolean includeAll;
   private List<InclusionContainer> containers;
   private StepTestContainer haltContainer;
+  private boolean unlimit;
+  private boolean haltReverse;
+  private boolean applyHaltAfterTest;
 
   public TokenInclusionTest(DomNode testNode, ResourceManager resourceManager) {
     this.verbose = testNode.getAttributeBoolean("verbose", false);
@@ -91,6 +94,16 @@ public class TokenInclusionTest implements AtnRuleStepTest {
     this.includeAll = "all".equals(include);
     this.containers = loadContainers(testNode);
     this.haltContainer = loadHaltContainer(testNode, resourceManager);
+    this.unlimit = false;
+    this.haltReverse = false;
+    this.applyHaltAfterTest = false;
+
+    if (haltContainer != null) {
+      final DomElement haltElt = haltContainer.getStepElement();
+      this.unlimit = haltElt.getAttributeBoolean("unlimit", false);
+      this.haltReverse = haltElt.getAttributeBoolean("reverse", false);
+      this.applyHaltAfterTest = haltElt.getAttributeBoolean("afterTest", false);
+    }
   }
 
   private final List<InclusionContainer> loadContainers(DomNode testNode) {
@@ -139,7 +152,7 @@ public class TokenInclusionTest implements AtnRuleStepTest {
   public PassFail accept(Token token, AtnState curState) {
     boolean result = false;
 
-    final AtnState stopState = curState.getPushState();
+    final AtnState stopState = (unlimit ? null : curState.getPushState());
 
     if (verbose) {
       System.out.println("\nTokenInclusionTest starting w/token=" + token + ", stopState=" + stopState);
@@ -148,11 +161,12 @@ public class TokenInclusionTest implements AtnRuleStepTest {
     for (InclusionContainer ic : containers) {
       Token priorToken = token;
       for (AtnState atnState = curState; atnState != null && atnState != stopState; atnState = atnState.getParentState()) {
-        if (haltContainer != null && atnState.getInputToken() != priorToken) {
+        if (haltContainer != null && !applyHaltAfterTest && atnState.getInputToken() != priorToken) {
           priorToken = atnState.getInputToken();
-          if (!haltContainer.verify(priorToken, atnState).accept()) {
+          final boolean haltResult = haltContainer.verify(priorToken, atnState).accept();
+          if ((haltResult && !haltReverse) || (!haltResult && haltReverse)) {
             if (verbose) {
-              System.out.println("TokenInclusionTest hit halt condition at atnState=" + atnState);
+              System.out.println("TokenInclusionTest hit (beforeTest) halt (rev=" + haltReverse + ") condition at atnState=" + atnState);
             }
             break;
           }
@@ -166,6 +180,17 @@ public class TokenInclusionTest implements AtnRuleStepTest {
         }
 
         if (result) break;
+
+        if (haltContainer != null && applyHaltAfterTest && atnState.getInputToken() != priorToken) {
+          priorToken = atnState.getInputToken();
+          final boolean haltResult = haltContainer.verify(priorToken, atnState).accept();
+          if ((haltResult && !haltReverse) || (!haltResult && haltReverse)) {
+            if (verbose) {
+              System.out.println("TokenInclusionTest hit (afterTest) halt (rev=" + haltReverse + ") condition at atnState=" + atnState);
+            }
+            break;
+          }
+        }
       }
 
       if (isFinalResult(result, includeAll)) break;
