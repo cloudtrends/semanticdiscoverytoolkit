@@ -194,6 +194,25 @@ public class ParseInterpretation implements Publishable, Serializable {
     }
   }
 
+  public String getInterpAttribute(String fromNode, String attribute) {
+    String result = null;
+
+    final Tree<XmlLite.Data> interpTree = getInterpTree();
+    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        if (fromNode == null || fromNode.equals(tag.name)) {
+          result = tag.attributes.get(attribute);
+          if (result != null) break;
+        }
+      }
+    }
+
+    return result;
+  }
+
   public String getInterpXml() {
     if (_interpXml == null && _interpTree != null) {
       final StringBuilder builder = new StringBuilder();
@@ -217,6 +236,13 @@ public class ParseInterpretation implements Publishable, Serializable {
    */
   public void setClassification(String classification) {
     this.classification = classification;
+  }
+
+  /**
+   * Determine whether this instance has an explicitly set (serializable) interp object.
+   */
+  public boolean hasInterpretationObject() {
+    return interpretation != null;
   }
 
   /**

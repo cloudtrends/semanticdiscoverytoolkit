@@ -19,7 +19,9 @@
 package org.sd.atn;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,7 @@ import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
 import org.sd.xml.XmlLite;
+import org.w3c.dom.NodeList;
 
 /**
  * An ParseInterpreter that uses the parse itself as the interpretation.
@@ -47,10 +50,14 @@ public class IdentityParseInterpreter implements ParseInterpreter {
   
   private boolean compress;
   protected boolean verbose;
+  protected boolean keepInterpObjects;
+  private Map<String, String> featureMap;
 
   public IdentityParseInterpreter(DomNode domNode, ResourceManager resourceManager) {
     this.compress = domNode.getAttributeBoolean("compress", false);
     this.verbose = domNode.getAttributeBoolean("verbose", false);
+    this.keepInterpObjects = domNode.getAttributeBoolean("keepInterpObjects", true);
+    this.featureMap = loadFeatureMap(domNode);
   }
 
   public IdentityParseInterpreter(boolean compress) {
@@ -89,6 +96,56 @@ public class IdentityParseInterpreter implements ParseInterpreter {
     // nothing to do.
   }
 
+  public Map<String, String> getFeatureMap() {
+    return featureMap;
+  }
+
+  public void setFeatureMap(Map<String, String> featureMap) {
+    this.featureMap = featureMap;
+  }
+
+  public String getMappedFeature(String cat) {
+    String result = null;
+
+    if (featureMap != null) {
+      result = featureMap.get(cat);
+    }
+
+    return result;
+  }
+
+
+  private final Map<String, String> loadFeatureMap(DomNode domNode) {
+    Map<String, String> result = null;
+
+    final NodeList featureMappingsNodes = domNode.selectNodes("featureMappings");
+    if (featureMappingsNodes != null) {
+      result = new HashMap<String, String>();
+      for (int fmidx = 0; fmidx < featureMappingsNodes.getLength(); ++fmidx) {
+        final DomElement fmElt = (DomElement)featureMappingsNodes.item(fmidx);
+        final NodeList mapNodes = fmElt.selectNodes("map");
+        if (mapNodes != null) {
+          for (int midx = 0; midx < mapNodes.getLength(); ++midx) {
+            final DomElement mapElt = (DomElement)mapNodes.item(midx);
+            final String keyString = mapElt.getAttributeValue("key", null);
+            final String valueString = mapElt.getAttributeValue("value", null);
+            if (keyString != null && valueString != null) {
+              final String[] keys = keyString.split("\\s*,\\s*");
+              final String[] values = valueString.split("\\s*,\\s*");
+              for (String key : keys) {
+                for (String value : values) {
+                  result.put(key, value);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
   private final Tree<XmlLite.Data> asInterpTree(Context context, Tree<String> parseTree, Tree<XmlLite.Data> parent) {
     Set<Tree<String>> compressNodes = null;
 
@@ -110,9 +167,20 @@ public class IdentityParseInterpreter implements ParseInterpreter {
       nodeContainer.setTerminateFlag(true);
     }
 
+    // Collect interp object
+    if (nodeContainer.hasParseInterp()) {
+      final ParseInterpretation interp = nodeContainer.getParseInterp();
+      if (interp.hasInterpretationObject()) {
+        final Serializable interpObject = (Serializable)interp.getInterpretation();
+        if (interpObject != null) {
+          context.addInterpObject(interp.getClassification(), interpObject);
+        }
+      }
+    }
+
     // echo location when verbose
     if (verbose) {
-      System.out.print("PersonPhraseInterpreter: Visiting '" + parseTree.getData() + "'(" + nodeContainer.getDepth() + ")");
+      System.out.print(this.getClass().getName() + ": Visiting '" + parseTree.getData() + "'(" + nodeContainer.getDepth() + ")");
       if (nodeContainer.hasParseInterp()) {
         System.out.print("*");
       }
@@ -152,14 +220,18 @@ public class IdentityParseInterpreter implements ParseInterpreter {
    * Hook for extenders to modify NodeContainer construction.
    */
   protected NodeContainer buildNodeContainerHook(Context context, Tree<String> parseTree) {
-    return new NodeContainer(parseTree, context.nextSeqNum());
+    return new NodeContainer(this, parseTree, context.nextSeqNum());
   }
 
   /**
    * Hook for extenders to modify final ParseInterpretation construction.
    */
   protected ParseInterpretation buildParseInterpretationHook(Context context, Tree<XmlLite.Data> interpTree) {
-    return new ParseInterpretation(interpTree);
+    final ParseInterpretation result = new ParseInterpretation(interpTree);
+    if (keepInterpObjects) {
+      context.setInterpObject(result);
+    }
+    return result;
   }
 
   private final Set<Tree<String>> getCompressNodes(Tree<String> parseTree) {
@@ -195,6 +267,7 @@ public class IdentityParseInterpreter implements ParseInterpreter {
     protected boolean verbose;
     private Set<Tree<String>> compressNodes;
     private int seqNum;
+    private Map<String, List<Serializable>> interpObjects;
 
     private NodeContainer curNodeContainer;
     private NodeContainer prevNodeContainer;
@@ -207,9 +280,10 @@ public class IdentityParseInterpreter implements ParseInterpreter {
       this.curNodeContainer = null;
       this.prevNodeContainer = null;
       this.seqNum = -1;
+      this.interpObjects = null;
 
       if (verbose) {
-        System.out.println("IdentityParseInterpreter.Context: Analyzing " + parse.getParseTree());
+        System.out.println(this.getClass().getName() + ": Analyzing " + parse.getParseTree());
       }
     }
 
@@ -273,9 +347,75 @@ public class IdentityParseInterpreter implements ParseInterpreter {
     public int getSeqNum() {
       return seqNum;
     }
+
+    public void addInterpObject(String type, Serializable interpObject) {
+      if (interpObjects == null) interpObjects = new HashMap<String, List<Serializable>>();
+      List<Serializable> objects = interpObjects.get(type);
+      if (objects == null) {
+        objects = new ArrayList<Serializable>();
+        interpObjects.put(type, objects);
+      }
+      objects.add(interpObject);
+    }
+
+    public boolean hasInterpObjects() {
+      return interpObjects != null && interpObjects.size() > 0;
+    }
+
+    /**
+     * If there is only one interp object, return it; otherwise (0 or 2+) return null.
+     */
+    public Serializable getSingleInterpObject() {
+      Serializable result = null;
+
+      if (interpObjects != null && interpObjects.size() == 1) {
+        for (List<Serializable> objects : interpObjects.values()) {
+          if (objects.size() == 1) {
+            result = objects.get(0);
+          }
+        }
+      }
+
+      return result;
+    }
+
+    public Map<String, List<Serializable>> getInterpObjects() {
+      return interpObjects;
+    }
+
+    /**
+     * This method sets an interpretation object on the interp based on this
+     * instance's interpObjects using the following rules:
+     * <ul>
+     * <li>If there are no interpObjects in this context, nothing is done</li>
+     * <li>If there is exactly one interpretation object, that object is set
+     *     as the given interp's interpretation object.</li>
+     * <li>Otherwise, (more than one interp object), the map from type to
+     *     list of interp objects is set as the given interp's interpretation.</li>
+     * </ul>
+     * @return true if an interpretation object was set on the given interp.
+     */
+    public boolean setInterpObject(ParseInterpretation interp) {
+      boolean result = false;
+
+      if (hasInterpObjects()) {
+        final Serializable single = getSingleInterpObject();
+        if (single != null) {
+          interp.setInterpretation(single);
+          result = true;
+        }
+        else {
+          interp.setInterpretation((Serializable)interpObjects);
+          result = true;
+        }
+      }
+
+      return result;
+    }
   }
 
   protected static final class NodeContainer {
+    private IdentityParseInterpreter interpreter;
     private Tree<String> parseTree;  // immutable
     private int seqNum;
     private boolean isTag;           // when false, adds parseTree's token's text or parseTree's data to tree (!isTerminal)
@@ -285,7 +425,8 @@ public class IdentityParseInterpreter implements ParseInterpreter {
     private ParseInterpretation parseInterp;
     private Integer _depth;
 
-    public NodeContainer(Tree<String> parseTree, int seqNum) {
+    public NodeContainer(IdentityParseInterpreter interpreter, Tree<String> parseTree, int seqNum) {
+      this.interpreter = interpreter;
       this.parseTree = parseTree;
       this.seqNum = seqNum;
       this.isTag = parseTree.hasChildren();
@@ -306,13 +447,12 @@ public class IdentityParseInterpreter implements ParseInterpreter {
 
         // add attributes
         if (parseTree.hasAttributes()) {
-          final XmlLite.Tag tag = curInterpNode.getData().asTag();
-
           for (Map.Entry<String, Object> entry : parseTree.getAttributes().entrySet()) {
             final String attr = entry.getKey();
             final Object val = entry.getValue();
 
             if (val != null) {
+              final XmlLite.Tag tag = curInterpNode.getData().asTag();
               if (val instanceof CategorizedToken) {
                 final CategorizedToken cToken = (CategorizedToken)val;
 
@@ -336,6 +476,9 @@ public class IdentityParseInterpreter implements ParseInterpreter {
 
                 // add-in token features
                 if (cToken.token.hasFeatures()) {
+                  ParseInterpretation primaryInterp = null;
+                  ParseInterpretation altInterp = null;
+
                   for (Feature feature : cToken.token.getFeatures().getFeatures()) {
                     final Object featureValue = feature.getValue();
                     if (featureValue != null) {
@@ -345,14 +488,32 @@ public class IdentityParseInterpreter implements ParseInterpreter {
                       if (className.startsWith("java.lang")) {
                         tag.attributes.put(feature.getType(), featureValue.toString());
                       }
-                      else if (featureValue instanceof ParseInterpretation && feature.getType().equals(parseTree.getData())) {
-                        this.parseInterp = (ParseInterpretation)featureValue;
+//                      else if (featureValue instanceof ParseInterpretation && feature.getType().equals(parseTree.getData())) {
+                      else if (featureValue instanceof ParseInterpretation) {
+                        final String featureType = feature.getType();
+                        final String parseType = parseTree.getData();
+                        if (featureType.equals(parseType)) {
+                          primaryInterp = (ParseInterpretation)featureValue;
+                        }
+                        else {
+                          final String mappedType = interpreter.getMappedFeature(parseType);
+                          if (mappedType != null && featureType.equals(mappedType)) {
+                            altInterp = (ParseInterpretation)featureValue;
+                          }
+                        }
                       }
                     }
                   }
+
+                  if (primaryInterp != null) {
+                    this.parseInterp = primaryInterp;
+                  }
+                  else if (altInterp != null) {
+                    this.parseInterp = altInterp;
+                  }
                 }
               }
-              else {
+              else if (tag != null) {
                 tag.attributes.put(attr, val.toString());
               }
             }

@@ -36,6 +36,7 @@ public class StepTestContainer {
   public enum ConditionType { ANY, ALL };
 
 
+  private DomElement stepElement;
   private List<StepTestWrapper> testWrappers;
   private ConditionType conditionType;
   private boolean empty;
@@ -47,6 +48,7 @@ public class StepTestContainer {
   }
 
   public StepTestContainer(DomElement stepElement, ResourceManager resourceManager) {
+    this.stepElement = stepElement;
     this.testWrappers = null;
 
     final NodeList childNodes = stepElement.getChildNodes();
@@ -64,6 +66,10 @@ public class StepTestContainer {
     }
 
     this.empty = (testWrappers == null);
+  }
+
+  public DomElement getStepElement() {
+    return stepElement;
   }
 
   public final synchronized boolean addTestWrapper(StepTestWrapper testWrapper) {
