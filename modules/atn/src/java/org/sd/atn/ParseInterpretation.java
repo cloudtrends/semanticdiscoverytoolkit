@@ -213,6 +213,31 @@ public class ParseInterpretation implements Publishable, Serializable {
     return result;
   }
 
+  public boolean hasInterpNode(String nodeName) {
+    return hasInterpAttribute(nodeName, null);
+  }
+
+  public boolean hasInterpAttribute(String nodeName, String attribute) {
+    boolean result = false;
+
+    final Tree<XmlLite.Data> interpTree = getInterpTree();
+    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        if (nodeName == null || nodeName.equals(tag.name)) {
+          if (attribute == null || tag.attributes.containsKey(attribute)) {
+            result = true;
+            break;
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
   public String getInterpXml() {
     if (_interpXml == null && _interpTree != null) {
       final StringBuilder builder = new StringBuilder();

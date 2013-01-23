@@ -184,6 +184,9 @@ public class IdentityParseInterpreter implements ParseInterpreter {
       if (nodeContainer.hasParseInterp()) {
         System.out.print("*");
       }
+      if (nodeContainer.isAmbiguous()) {
+        System.out.print("@");
+      }
       System.out.println();
     }
 
@@ -423,6 +426,7 @@ public class IdentityParseInterpreter implements ParseInterpreter {
     private Tree<XmlLite.Data> curInterpNode;
     private boolean terminate;       // terminate this branch with this node
     private ParseInterpretation parseInterp;
+    private boolean ambiguous;
     private Integer _depth;
 
     public NodeContainer(IdentityParseInterpreter interpreter, Tree<String> parseTree, int seqNum) {
@@ -434,6 +438,7 @@ public class IdentityParseInterpreter implements ParseInterpreter {
       this.curInterpNode = null;
       this.terminate = false;
       this.parseInterp = null;
+      this.ambiguous = false;
       this._depth = null;
 
       init();
@@ -512,6 +517,9 @@ public class IdentityParseInterpreter implements ParseInterpreter {
                     this.parseInterp = altInterp;
                   }
                 }
+              }
+              else if ("ambiguous".equals(attr)) {
+                this.ambiguous = "true".equals(val.toString());
               }
               else if (tag != null) {
                 tag.attributes.put(attr, val.toString());
@@ -630,6 +638,10 @@ public class IdentityParseInterpreter implements ParseInterpreter {
 
     public ParseInterpretation getParseInterp() {
       return parseInterp;
+    }
+
+    public boolean isAmbiguous() {
+      return ambiguous;
     }
 
     public int getDepth() {
