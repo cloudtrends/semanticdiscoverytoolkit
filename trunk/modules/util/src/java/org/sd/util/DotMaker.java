@@ -157,6 +157,26 @@ public abstract class DotMaker {
     return result.toString();
   }
 
+  private static final String fixNodeString(String string) {
+    if (string == null) return "";
+
+    final StringBuilder result = new StringBuilder();
+
+    // manage symbols "|<>{}" in result
+    final int len = string.length();
+    for (int i = 0; i < len; ++i) {
+      final char c = string.charAt(i);
+      if (c == '"') {
+        result.append('_');
+      }
+      else {
+        result.append(c);
+      }
+    }
+    
+    return result.toString();
+  }
+
 
   protected final int getNextId() {
     return nextId++;
@@ -255,7 +275,7 @@ public abstract class DotMaker {
     for (Map.Entry<Integer, String> entry : id2label.entrySet()) {
       final int id = entry.getKey();
       final String label = entry.getValue();
-      writer.write("  node" + id + " [label=\"" + label + "\"];\n");
+      writer.write("  node" + id + " [label=\"" + fixNodeString(label) + "\"];\n");
     }
 
     writer.write("\n");
