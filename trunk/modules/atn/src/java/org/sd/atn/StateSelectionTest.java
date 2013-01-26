@@ -225,17 +225,19 @@ public class StateSelectionTest extends BaseClassifierTest {
 
     if (!selectedState.getMatched() && selectedState.isPoppedState()) {
       final AtnState pushState = selectedState.getPushState();
-      switch (gravity) {
-        case PUSH :
-          result = pushState; break;
-        case POP :
-          result = selectedState; break;
-        case FIRST_MATCH :
-          // look backwards from selectedState to pushState for match closest to pushState
-          result = findMatchState(selectedState, pushState, true); break;
-        case LAST_MATCH :
-          // look backwards from selectedState to pushState for match closest to selectedState
-          result = findMatchState(selectedState, pushState, false); break;
+      if (pushState != null) {
+        switch (gravity) {
+          case PUSH :
+            result = pushState; break;
+          case POP :
+            result = selectedState; break;
+          case FIRST_MATCH :
+            // look backwards from selectedState to pushState for match closest to pushState
+            result = findMatchState(selectedState, pushState, true); break;
+          case LAST_MATCH :
+            // look backwards from selectedState to pushState for match closest to selectedState
+            result = findMatchState(selectedState, pushState, false); break;
+        }
       }
     }
 

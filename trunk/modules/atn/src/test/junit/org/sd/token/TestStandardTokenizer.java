@@ -68,7 +68,7 @@ public class TestStandardTokenizer extends TestCase {
       new TokenizeTest("Default.JJJS.CamelCase.2", "JohnJacobJingleheimerSchmidt -- His name is my name, too!", defaultOptions,
                        new String[] { "JohnJacobJingleheimerSchmidt", "His name is my name", "too" },
                        new String[][] { new String[] {"John", "JohnJacob", "JohnJacobJingleheimer" },
-                                        new String[] {"His", "His name", "His name is", "His name is my", "His name is my name" },
+                                        new String[] {"His", "His name", "His name is", "His name is my", },
                                         new String[] {} });
 
     assertTrue(tokenizeTest.runTest());
@@ -186,11 +186,10 @@ public class TestStandardTokenizer extends TestCase {
 													 new String[] { "JacobJingleheimer", "JacobJingleheimerSchmidt" },
 													 new String[] { "JingleheimerSchmidt" },
 													 new String[] {},
-													 new String[] { "His name", "His name is", "His name is my", "His name is my name", "His name is my name too" },
-													 new String[] { "name is", "name is my", "name is my name", "name is my name too" },
-													 new String[] { "is my", "is my name", "is my name too" },
-													 new String[] { "my name", "my name too" },
-													 new String[] { "name too" },
+													 new String[] { "His name", "His name is", "His name is my", "His name is my name",},
+													 new String[] { "name is", "name is my", "name is my name", },
+													 new String[] { "is my", "is my name", },
+													 new String[] { "my name", },
 													 new String[] {},
 													 new String[] {} } );
 
@@ -260,11 +259,24 @@ public class TestStandardTokenizer extends TestCase {
     loOptions.setRevisionStrategy(TokenRevisionStrategy.LO);
 
     final TokenizeTest tokenizeTest =
-				new TokenizeTest("SL.JJJS.CamelCase.1", "JohnJacobJingleheimerSchmidt -- His name is my name too!", loOptions,
+				new TokenizeTest("LO.JJJS.CamelCase.1", "JohnJacobJingleheimerSchmidt -- His name is my name too!", loOptions,
 												 new String[] { "JohnJacobJingleheimerSchmidt", "His name is my name too" },
 												 new String[][]
 												 { new String[] {},
 													 new String[] {} });
+
+    assertTrue(tokenizeTest.runTest());
+  }
+
+  public void test_LSL_Strategy_DontRevisitLongest() {
+    final StandardTokenizerOptions lslOptions = new StandardTokenizerOptions();
+    lslOptions.setRevisionStrategy(TokenRevisionStrategy.LSL);
+
+    final TokenizeTest tokenizeTest =
+				new TokenizeTest("LSL.JJJS.Only.1", "JohnJacobJingleheimerSchmidt", lslOptions,
+												 new String[] { "JohnJacobJingleheimerSchmidt" },
+												 new String[][]
+												 { new String[] {"John", "JohnJacob", "JohnJacobJingleheimer"} });
 
     assertTrue(tokenizeTest.runTest());
   }
