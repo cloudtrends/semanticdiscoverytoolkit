@@ -960,6 +960,24 @@ public class TestAtnParser extends TestCase {
                  });
   }
 
+  public void testDontReviseAfterPop() throws IOException {
+    // E <- X W
+    // W <- T (="in July")
+    // W <- P(="in") M(="July")
+
+    final AtnParser test13_Parser = AtnParseTest.buildParser("<grammar><classifiers><T><jclass>org.sd.atn.RoteListClassifier</jclass><terms><term>in July</term></terms></T><P><jclass>org.sd.atn.RoteListClassifier</jclass><terms><term>in</term></terms></P><M><jclass>org.sd.atn.RoteListClassifier</jclass><terms><term>July</term></terms></M></classifiers><rules><E start='true'><X/><W/></E><W><T/></W><W><P/><M/></W></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer13a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>LSL</revisionStrategy></tokenizer>", "X in July");
+    runParseTest("ParserTest.13a",
+                 test13_Parser,
+                 tokenizer13a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(E X (W (T in July)))",
+                   "(E X (W (P in) (M July)))",
+                 });
+  }
+
   public void testRuleStepSkip() throws IOException {
     //
     // X <- A Y? E(s2)

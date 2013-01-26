@@ -60,6 +60,9 @@ public class TokenizeTest {
     boolean pass = true;
 
     int numPrimaryTokens = 0;
+    int numSecondaryTokens = 0;
+    int expectedSecondaryTokenCount = 0;
+
     for (Token primaryToken = tokenizer.getToken(0); primaryToken != null; primaryToken = tokenizer.getNextToken(primaryToken)) {
       if (expectedPrimaryTokens == null) {
         System.out.println(name + ": Primary token #" + numPrimaryTokens + " = " + primaryToken);
@@ -97,9 +100,14 @@ public class TokenizeTest {
           }
         }
         ++numRevisedTokens;
+        ++numSecondaryTokens;
       }
 
       if (!pass) break;
+
+      if (expectedSecondaryTokens != null && expectedSecondaryTokens.length > numPrimaryTokens) {
+        expectedSecondaryTokenCount += expectedSecondaryTokens[numPrimaryTokens].length;
+      }
 
       ++numPrimaryTokens;
     }
@@ -107,6 +115,10 @@ public class TokenizeTest {
     if (pass) {
       if (expectedPrimaryTokens != null && expectedPrimaryTokens.length != numPrimaryTokens) {
         System.out.println(name + ": Primary token count mismatch.");
+        pass = false;
+      }
+      if (expectedSecondaryTokens != null && expectedSecondaryTokenCount != numSecondaryTokens) {
+        System.out.println(name + ": Secondary token count mismatch.");
         pass = false;
       }
     }

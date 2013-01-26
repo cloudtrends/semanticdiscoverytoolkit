@@ -877,6 +877,10 @@ public class StandardTokenizer implements Tokenizer {
       else break;
     }
 
+    if (softOnly && result == text.length()) {
+      // end of text is like a hardBreak
+      result = -1;
+    }
 
     return result;
   }

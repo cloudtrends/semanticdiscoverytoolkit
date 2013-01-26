@@ -1441,11 +1441,13 @@ public class AtnState {
         }
       }
 
-      // revise token
-      nextstate = curstate.getNextRevisedState();
-      if (nextstate != null) {
-        addState(grammar, states, skipStates, nextstate, stopList);
-        foundOne = true;
+      if (!isPop) {
+        // revise token (unless popping)
+        nextstate = curstate.getNextRevisedState();
+        if (nextstate != null) {
+          addState(grammar, states, skipStates, nextstate, stopList);
+          foundOne = true;
+        }
       }
 
       return foundOne;
