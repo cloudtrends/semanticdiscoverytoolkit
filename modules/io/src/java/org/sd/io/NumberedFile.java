@@ -54,6 +54,16 @@ public class NumberedFile {
     this.useFileLocks = useFileLocks;
   }
 
+  private final FileLock.LockOperation<File[]> s_lockOp =
+    new FileLock.LockOperation<File[]>()
+  {
+    public File[] operate(String filename) 
+      throws IOException 
+    {
+      return FileUtil.findFiles(dir, namePattern);
+    }
+  };
+
   /**
    * Get all existing numbered files and, as the last element of the list, the
    * next logically sequenced numbered file.
@@ -67,8 +77,28 @@ public class NumberedFile {
    */
   public List<File> getExistingAndNext() {
     List<File> result = null;
+    
+    // if file locks are used, and there is still a lock on the dir
+    // return as if no files were found, 
+    // but do increment the counter so that the next file obtained
+    // uses the correct number
+    boolean locked = false;
+    File[] files = null;
+    if(useFileLocks)
+    {
+      String dirPath = dir.getAbsolutePath()+File.separatorChar+"foo";
+      FileLock<File[]> fileLock = new FileLock<File[]>(dirPath, 100);
+      files = fileLock.operateWhileLocked(s_lockOp);
 
-    final File[] files = FileUtil.findFiles(dir, namePattern);
+      if(files == null)
+      {
+        locked = true;
+        files = new File[] {};
+      }
+    }
+    else
+      files = FileUtil.findFiles(dir, namePattern);
+
     if (files != null) {
       final TreeMap<Integer, File> sortedFiles = new TreeMap<Integer, File>();
       int nextNumber = -1;
@@ -77,11 +107,7 @@ public class NumberedFile {
       for (File file : files) {
         final int curNumber = getNumber(file);
 
-        // if file locks are used, and there is still a lock on the file
-        // do not add it to the list of existing batches, 
-        // but do increment the counter so that the next file obtained
-        // uses the correct number
-        if(!useFileLocks || !isLocked(file))
+        if(!locked)
           sortedFiles.put(curNumber, file);
 
         if (curNumber > nextNumber) {  // keep track of maximum
@@ -98,27 +124,6 @@ public class NumberedFile {
     }
 
     return result;
-  }
-
-
-  // lock operation which simply returns true
-  // we will check if the file is locked by trying to obtain
-  // the lock on a short timeout
-  private final FileLock.LockOperation<Boolean> s_lockOp =
-    new FileLock.LockOperation<Boolean>()
-  {
-    public Boolean operate(String filename) 
-      throws IOException 
-    {
-      return true;
-    }
-  };
-  private boolean isLocked(File file)
-  {
-    FileLock<Boolean> fileLock =
-      new FileLock<Boolean>(file.getAbsolutePath(), 100);
-    Boolean result = fileLock.operateWhileLocked(s_lockOp);
-    return (result == null ? false : result);
   }
 
   /**
