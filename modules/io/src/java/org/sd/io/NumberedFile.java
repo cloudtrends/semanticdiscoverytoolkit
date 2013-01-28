@@ -18,7 +18,7 @@
 */
 package org.sd.io;
 
-
+import java.io.IOException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,13 +38,20 @@ public class NumberedFile {
   public final String nameSuffix;  // name of files after number
 
   private Pattern namePattern;  // pattern for matching numbered files
+  private boolean useFileLocks;
 
   public NumberedFile(File dir, String namePrefix, String nameSuffix) {
+    this(dir, namePrefix, nameSuffix, false);
+  }
+  public NumberedFile(File dir, String namePrefix, String nameSuffix,
+                      boolean useFileLocks) 
+  {
     this.dir = dir;
     this.namePrefix = namePrefix;
     this.nameSuffix = nameSuffix;
 
     this.namePattern = Pattern.compile(namePrefix + "(\\d+)" + nameSuffix);
+    this.useFileLocks = useFileLocks;
   }
 
   /**
@@ -70,7 +77,12 @@ public class NumberedFile {
       for (File file : files) {
         final int curNumber = getNumber(file);
 
-        sortedFiles.put(curNumber, file);
+        // if file locks are used, and there is still a lock on the file
+        // do not add it to the list of existing batches, 
+        // but do increment the counter so that the next file obtained
+        // uses the correct number
+        if(!useFileLocks || !isLocked(file))
+          sortedFiles.put(curNumber, file);
 
         if (curNumber > nextNumber) {  // keep track of maximum
           nextNumber = curNumber;
@@ -86,6 +98,27 @@ public class NumberedFile {
     }
 
     return result;
+  }
+
+
+  // lock operation which simply returns true
+  // we will check if the file is locked by trying to obtain
+  // the lock on a short timeout
+  private final FileLock.LockOperation<Boolean> s_lockOp =
+    new FileLock.LockOperation<Boolean>()
+  {
+    public Boolean operate(String filename) 
+      throws IOException 
+    {
+      return true;
+    }
+  };
+  private boolean isLocked(File file)
+  {
+    FileLock<Boolean> fileLock =
+      new FileLock<Boolean>(file.getAbsolutePath(), 100);
+    Boolean result = fileLock.operateWhileLocked(s_lockOp);
+    return (result == null ? false : result);
   }
 
   /**
