@@ -21,6 +21,7 @@ package org.sd.cio;
 
 import org.sd.io.DataHelper;
 import org.sd.io.Publishable;
+import org.sd.io.FileLock;
 import org.sd.util.ReflectUtil;
 import org.sd.util.tree.Tree;
 import org.sd.xml.XmlFactory;
@@ -318,6 +319,27 @@ public class MessageHelper extends DataHelper {
     final DataOutputStream dataOut = new DataOutputStream(outStream);
     MessageHelper.writePublishable(dataOut, publishable);
     dataOut.close();
+  }
+
+  /**
+   * Dump the publishable's bytes to the given file,
+   * lock while writing if the flag is set to true
+   */
+  public static final void 
+    dumpPublishable(File file, Publishable publishable, 
+                    boolean lock) 
+    throws IOException 
+  {
+    if(lock)
+    {
+      FileLock<Boolean> flock = new FileLock<Boolean>(file.getAbsolutePath(), 100);
+      LockWhileWritingOperation op = new LockWhileWritingOperation(publishable);
+      Boolean result = flock.operateWhileLocked(op);
+      if(result == null)
+        throw new IOException("unknown error while attempting to write the file");
+    }
+    else
+      dumpPublishable(file, publishable);
   }
 
   /**
