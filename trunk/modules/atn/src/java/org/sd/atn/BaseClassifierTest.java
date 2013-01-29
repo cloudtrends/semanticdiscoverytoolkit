@@ -22,6 +22,7 @@ package org.sd.atn;
 import java.util.ArrayList;
 import java.util.List;
 import org.sd.token.Token;
+import org.sd.util.tree.Tree;
 import org.sd.util.range.IntegerRange;
 import org.sd.util.Usage;
 import org.sd.xml.DomElement;
@@ -64,6 +65,8 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
   
   public enum TestResult { SOFT_SUCCESS, SOFT_FAILURE, HARD_SUCCESS, HARD_FAILURE };
 
+  public enum TokenRef { STEP_END, STEP_START, RULE_START };
+
 
   protected String id;
   protected RoteListClassifier roteListClassifier;
@@ -77,6 +80,8 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
   protected boolean onlyFirstToken;
   protected boolean onlyLastToken;
   protected IntegerRange validTokenLength;
+  protected TokenRef tokenRef;
+
   private boolean reverse;
   private final boolean success;
   private final boolean failure;
@@ -115,6 +120,18 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     final String vtlString = testNode.getAttributeValue("validTokenLength", null);
     if (vtlString != null && !"".equals(vtlString)) {
       this.validTokenLength = new IntegerRange(vtlString);
+    }
+
+    // token ref
+    final String tokenRefString = testNode.getAttributeValue("refToken", null);
+    this.tokenRef = TokenRef.STEP_END;
+    if (tokenRefString != null) {
+      if ("stepStart".equals(tokenRefString)) {
+        tokenRef = TokenRef.STEP_START;
+      }
+      else if ("ruleStart".equals(tokenRefString)) {
+        tokenRef = TokenRef.RULE_START;
+      }
     }
 
     // init repeat ranges
@@ -165,6 +182,7 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     // - when prev='true', test against the prior token (taken as smallest prior if not available through state)
     // - when require='true', fail if the selected (prev or next) token isn't present
     // - when delimMatch='X', test against next or prev only succeeds if delims equal X
+    // - when refToken='X', use indicated token as the reference token ("stepEnd" (default), stepStart, ruleStart)
     //
     // <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false' validTokenLength='integerRangeExpression' next='true|false' prev='true|false' require='true|false' delimMatch="X">
     //   <repeatCheck type='ignore|test|fail'>integer-range-expression</repeatCheck>\n" +
@@ -221,6 +239,47 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
   public final PassFail accept(Token token, AtnState curState) {
     boolean result = false;
     boolean applyTest = true;
+
+    switch (tokenRef) {
+      case STEP_START :
+        if (curState.isPoppedState()) {
+          final AtnState parentState = curState.getParentState();
+          final AtnState stepPush = getPushState((parentState != null) ? parentState : curState);
+          if (stepPush != null) {
+            if (verbose) {
+              System.out.println("***BaseClassifierTest adjusting for refToken=" + tokenRef + " from state=" + curState + " to state=" + stepPush);
+            }
+
+            curState = stepPush;
+            token = stepPush.getInputToken();
+          }
+          else {
+            if (verbose) {
+              System.out.println("***BaseClassifierTest adjusting for refToken=" + tokenRef + " from state=" + curState + " FAILED");
+            }
+          }
+        }
+        break;
+
+      case RULE_START :
+        final AtnState rulePush = getPushState(curState);
+        if (rulePush != null) {
+          if (verbose) {
+            System.out.println("***BaseClassifierTest adjusting for refToken=" + tokenRef + " from state=" + curState + " to state=" + rulePush);
+          }
+
+          curState = rulePush;
+          token = rulePush.getInputToken();
+        }
+        else {
+          if (verbose) {
+            System.out.println("***BaseClassifierTest adjusting for refToken=" + tokenRef + " from state=" + curState + " FAILED");
+          }
+        }
+        break;
+
+      //else no adjustment necessary.
+    }
 
     final Token nextToken = token.getNextToken();
     final boolean isFirstToken = (token.getStartIndex() == 0);
@@ -415,5 +474,19 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     }
 
     return PassFail.getInstance(result, !applyTest);
+  }
+
+  private final AtnState getPushState(AtnState curState) {
+    AtnState result = curState == null ? null : curState.getPushState();
+
+    if (result == null && curState != null) {
+      for (Tree<AtnState> parentStateNode = curState.getParentStateNode();
+           parentStateNode != null && parentStateNode.getData() != null;
+           parentStateNode = parentStateNode.getParent()) {
+        result = parentStateNode.getData();
+      }
+    }
+
+    return result;
   }
 }
