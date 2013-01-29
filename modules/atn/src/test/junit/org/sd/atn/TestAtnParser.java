@@ -283,11 +283,11 @@ public class TestAtnParser extends TestCase {
 
     // Disable consume all text and verify that "Z Z Z" remains after parse
     final StandardTokenizer tokenizer8h = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "A B C Z Z Z");
-    runParseTest("ParserTest.8h", skipParser1, tokenizer8h, "<parseOptions><skipTokenLimit>2</skipTokenLimit><consumeAllText>false</consumeAllText></parseOptions>", new String[] { "(X A B C)" }, new String[] { "Z Z Z" }, false);
+    runParseTest("ParserTest.8h", skipParser1, tokenizer8h, "<parseOptions><skipTokenLimit>2</skipTokenLimit><consumeAllText>false</consumeAllText></parseOptions>", new String[] { "(X A B C)" }, new String[] { "Z Z Z" }, false, false);
 
     // Disable consume all text, don't skip, and verify that initial "Z Z Z" is skipped while trailing "Z Z Z" remains after parse
     final StandardTokenizer tokenizer8i = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "Z Z Z A B C Z Z Z");
-    runParseTest("ParserTest.8i", skipParser1, tokenizer8i, "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>false</consumeAllText></parseOptions>", new String[] { "(X A B C)" }, new String[] { "Z Z Z" }, true);
+    runParseTest("ParserTest.8i", skipParser1, tokenizer8i, "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>false</consumeAllText></parseOptions>", new String[] { "(X A B C)" }, new String[] { "Z Z Z" }, true, false);
   }
 
   public void testEndConditionsWithOptionalOptionalRquiredGrammar() throws IOException {
@@ -1775,16 +1775,455 @@ public class TestAtnParser extends TestCase {
                  });
   }
 
+  public void testTokenTestStepStartForClassifierStep() throws IOException {
+    //
+    // Z <- X+
+    // X <- a* Y+ b*
+    // Y <- c* d+
+    //
+    // fail step "c" if "c" is preceded by "a"
+    //
+    // a d b   PASS
+    // c d b   PASS
+    // c d     PASS
+    // a c d   FAIL
+    // a c d b FAIL
+    //
 
-  private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings) throws IOException {
-    runParseTest(name, parser, tokenizer, parseOptionsXml, expectedTreeStrings, null, false);
+    final AtnParser test26_Parser = AtnParseTest.buildParser("<grammar><rules><Z start='true'><X repeats='true' /></Z><X><a optional='true' repeats='true'/><Y repeats='true' cluster='true'/><b optional='true' repeats='true'/></X><Y><c optional='true' repeats='true'><test reverse='true' prev='true' refToken='stepStart'><jclass>org.sd.atn.TokenTest</jclass><classifier cat='a'/></test></c><d repeats='true' cluster='true'/></Y></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer26a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a d b");
+    runParseTest("parserTest_26a",
+                 test26_Parser,
+                 tokenizer26a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X a (Y d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer26b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d b");
+    runParseTest("parserTest_26b",
+                 test26_Parser,
+                 tokenizer26b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y c d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer26c = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d");
+    runParseTest("parserTest_26c",
+                 test26_Parser,
+                 tokenizer26c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y c d)))",
+                 }, true);
+
+    final StandardTokenizer tokenizer26d = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d");
+    runParseTest("parserTest_26d",
+                 test26_Parser,
+                 tokenizer26d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer26e = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d b");
+    runParseTest("parserTest_26e",
+                 test26_Parser,
+                 tokenizer26e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
   }
 
-  private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek) throws IOException {
+  public void testTokenTestStepStartForConstituentStep() throws IOException {
+    //
+    // Z <- X+
+    // X <- a* Y+ b*
+    // Y <- c* d+
+    //
+    // fail step "Y" if "Y" is preceded by "a"
+    //
+    // d d b   PASS
+    // c d b   PASS
+    // c d     PASS
+    // a c d   FAIL
+    // a c d b FAIL
+    // a d d b FAIL
+    //
+
+    final AtnParser test27_Parser = AtnParseTest.buildParser("<grammar><rules><Z start='true'><X repeats='true' /></Z><X><a optional='true' repeats='true'/><Y repeats='true' cluster='true'><test reverse='true' prev='true' refToken='stepStart'><jclass>org.sd.atn.TokenTest</jclass><classifier cat='a'/></test></Y><b optional='true' repeats='true'/></X><Y><c optional='true' repeats='true'/><d repeats='true' cluster='true'/></Y></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer27a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d d b");
+    runParseTest("parserTest_27a",
+                 test27_Parser,
+                 tokenizer27a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y d d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer27b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d b");
+    runParseTest("parserTest_27b",
+                 test27_Parser,
+                 tokenizer27b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y c d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer27c = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d");
+    runParseTest("parserTest_27c",
+                 test27_Parser,
+                 tokenizer27c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y c d)))",
+                 }, true);
+
+    final StandardTokenizer tokenizer27d = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d");
+    runParseTest("parserTest_27d",
+                 test27_Parser,
+                 tokenizer27d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer27e = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d b");
+    runParseTest("parserTest_27e",
+                 test27_Parser,
+                 tokenizer27e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer27f = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a d d b");
+    runParseTest("parserTest_27f",
+                 test27_Parser,
+                 tokenizer27f,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+  }
+
+  public void testTokenStepStartForPopTestStep() throws IOException {
+    //
+    // Z <- X+
+    // X <- a* Y+ b*
+    // Y <- c* d+ T
+    //
+    // fail step T if "d" is preceded by "c"
+    //
+    // a d b   PASS
+    // d b     PASS
+    // d d b   PASS
+    // c d b   FAIL
+    // c d     FAIL
+    // a c d   FAIL
+    // a c d b FAIL
+    //
+
+    final AtnParser test28_Parser = AtnParseTest.buildParser("<grammar><rules><Z start='true'><X repeats='true' /></Z><X><a optional='true' repeats='true'/><Y repeats='true' cluster='true'/><b optional='true' repeats='true'/></X><Y><c optional='true' repeats='true'/><d repeats='true' cluster='true'/><no-op popTest='true'><test reverse='true' prev='true' refToken='stepStart'><jclass>org.sd.atn.TokenTest</jclass><classifier cat='c'/></test></no-op></Y></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer28a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a d b");
+    runParseTest("parserTest_28a",
+                 test28_Parser,
+                 tokenizer28a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X a (Y d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer28b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d b");
+    runParseTest("parserTest_28b",
+                 test28_Parser,
+                 tokenizer28b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer28c = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d d b");
+    runParseTest("parserTest_28c",
+                 test28_Parser,
+                 tokenizer28c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y d d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer28d = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d b");
+    runParseTest("parserTest_28d",
+                 test28_Parser,
+                 tokenizer28d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer28e = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d");
+    runParseTest("parserTest_28e",
+                 test28_Parser,
+                 tokenizer28e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer28f = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d");
+    runParseTest("parserTest_28f",
+                 test28_Parser,
+                 tokenizer28f,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer28g = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d b");
+    runParseTest("parserTest_28g",
+                 test28_Parser,
+                 tokenizer28g,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+  }
+
+  public void testTokenRuleStartForClassifierStep() throws IOException {
+    //
+    // Z <- X+
+    // X <- a* Y+ b*
+    // Y <- c* d+
+    //
+    // fail step "d" if rule "Y" is preceded by "a"
+    //
+    // d b     PASS
+    // d d b   PASS
+    // c d b   PASS
+    // c d     PASS
+    // a d b   FAIL
+    // a c d   FAIL
+    // a c d b FAIL
+    //
+
+    final AtnParser test29_Parser = AtnParseTest.buildParser("<grammar><rules><Z start='true'><X repeats='true' /></Z><X><a optional='true' repeats='true'/><Y repeats='true' cluster='true'/><b optional='true' repeats='true'/></X><Y><c optional='true' repeats='true'/><d repeats='true' cluster='true'><test reverse='true' prev='true' refToken='ruleStart'><jclass>org.sd.atn.TokenTest</jclass><classifier cat='a'/></test></d></Y></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer29a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d b");
+    runParseTest("parserTest_29a",
+                 test29_Parser,
+                 tokenizer29a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer29b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d d b");
+    runParseTest("parserTest_29b",
+                 test29_Parser,
+                 tokenizer29b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y d d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer29c = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d b");
+    runParseTest("parserTest_29c",
+                 test29_Parser,
+                 tokenizer29c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y c d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer29d = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d");
+    runParseTest("parserTest_29d",
+                 test29_Parser,
+                 tokenizer29d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y c d)))",
+                 }, true);
+
+    final StandardTokenizer tokenizer29e = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a d b");
+    runParseTest("parserTest_29e",
+                 test29_Parser,
+                 tokenizer29e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer29f = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d");
+    runParseTest("parserTest_29f",
+                 test29_Parser,
+                 tokenizer29f,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer29g = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d b");
+    runParseTest("parserTest_29g",
+                 test29_Parser,
+                 tokenizer29g,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+  }
+
+  public void testTokenTestRuleStartForConstituentStep() throws IOException {
+    //
+    // Z <- x? X+
+    // X <- a* Y+ b*
+    // Y <- c* d+
+    //
+    // fail step "Y" if rule "X" is preceded by "x"
+    //
+    // d b     PASS
+    // d d b   PASS
+    // c d b   PASS
+    // c d     PASS
+    // a d b   PASS
+    // a c d   PASS
+    // a c d b PASS
+    // x d b   FAIL
+    // x c d   FAIL
+    // x a d b FAIL
+    // x a c d FAIL
+    //
+
+    final AtnParser test30_Parser = AtnParseTest.buildParser("<grammar><rules><Z start='true'><x optional='true'/><X repeats='true' /></Z><X><a optional='true' repeats='true'/><Y repeats='true' cluster='true'><test reverse='true' prev='true' refToken='ruleStart'><jclass>org.sd.atn.TokenTest</jclass><classifier cat='x'/></test></Y><b optional='true' repeats='true'/></X><Y><c optional='true' repeats='true'/><d repeats='true' cluster='true'/></Y></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer30a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d b");
+    runParseTest("parserTest_30a",
+                 test30_Parser,
+                 tokenizer30a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer30b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "d d b");
+    runParseTest("parserTest_30b",
+                 test30_Parser,
+                 tokenizer30b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y d d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer30c = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d b");
+    runParseTest("parserTest_30c",
+                 test30_Parser,
+                 tokenizer30c,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y c d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer30d = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "c d");
+    runParseTest("parserTest_30d",
+                 test30_Parser,
+                 tokenizer30d,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X (Y c d)))",
+                 }, true);
+
+    final StandardTokenizer tokenizer30e = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a d b");
+    runParseTest("parserTest_30e",
+                 test30_Parser,
+                 tokenizer30e,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X a (Y d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer30f = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d");
+    runParseTest("parserTest_30f",
+                 test30_Parser,
+                 tokenizer30f,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X a (Y c d)))",
+                 }, true);
+
+    final StandardTokenizer tokenizer30g = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "a c d b");
+    runParseTest("parserTest_30g",
+                 test30_Parser,
+                 tokenizer30g,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (X a (Y c d) b))",
+                 }, true);
+
+    final StandardTokenizer tokenizer30h = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "x d b");
+    runParseTest("parserTest_30h",
+                 test30_Parser,
+                 tokenizer30h,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer30i = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "x c d");
+    runParseTest("parserTest_30i",
+                 test30_Parser,
+                 tokenizer30i,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer30j = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "x a d b");
+    runParseTest("parserTest_30j",
+                 test30_Parser,
+                 tokenizer30j,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+
+    final StandardTokenizer tokenizer30k = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "x a c d");
+    runParseTest("parserTest_30k",
+                 test30_Parser,
+                 tokenizer30k,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                 }, true);
+  }
+
+/* Not necessary -- essentially same as testTokenTestRuleStartForConstituentStep()
+  public void testTokenTestRuleStartForPopTestStep() throws IOException {
+    //
+    // Z <- x? X+
+    // X <- a* Y+ b* T
+    // Y <- c* d+
+    //
+    // fail step "T" if rule "X" is preceded by "x"
+    //
+    // d b     PASS
+    // d d b   PASS
+    // c d b   PASS
+    // c d     PASS
+    // a d b   PASS
+    // a c d   PASS
+    // a c d b PASS
+    // x d b   FAIL
+    // x c d   FAIL
+    // x a d b FAIL
+    // x a c d FAIL
+    //
+  }
+*/
+
+
+  private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings) throws IOException {
+    runParseTest(name, parser, tokenizer, parseOptionsXml, expectedTreeStrings, null, false, false);
+  }
+
+  private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings, boolean failIfExtras) throws IOException {
+    runParseTest(name, parser, tokenizer, parseOptionsXml, expectedTreeStrings, null, false, failIfExtras);
+  }
+
+  private final void runParseTest(String name, AtnParser parser, StandardTokenizer tokenizer, String parseOptionsXml, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek, boolean failIfExtras) throws IOException {
 
     final AtnParseOptions parseOptions = AtnParseTest.buildParseOptions(parseOptionsXml);
 
-    final MyParseTest atnParseTest = new MyParseTest(name, parser, tokenizer, parseOptions, expectedTreeStrings, expectedRemainder, seek);
+    final MyParseTest atnParseTest = new MyParseTest(name, parser, tokenizer, parseOptions, expectedTreeStrings, expectedRemainder, seek, failIfExtras);
     atnParseTest.runTest();
   }
 
@@ -1798,21 +2237,18 @@ public class TestAtnParser extends TestCase {
     private String[] expectedTreeStrings;
     private String[] expectedRemainder;
     private boolean seek;
+    private boolean failIfExtras;
     private Set<Integer> stopList;
 
-    public MyParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings) {
-      init(name, parser, tokenizer, options, expectedTreeStrings, null, false, null);
+    public MyParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek, boolean failIfExtras) {
+      init(name, parser, tokenizer, options, expectedTreeStrings, expectedRemainder, seek, failIfExtras, null);
     }
 
-    public MyParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek) {
-      init(name, parser, tokenizer, options, expectedTreeStrings, expectedRemainder, seek, null);
+    public MyParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek, boolean failIfExtras, Set<Integer> stopList) {
+      init(name, parser, tokenizer, options, expectedTreeStrings, expectedRemainder, seek, failIfExtras, stopList);
     }
 
-    public MyParseTest(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek, Set<Integer> stopList) {
-      init(name, parser, tokenizer, options, expectedTreeStrings, expectedRemainder, seek, stopList);
-    }
-
-    private final void init(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek, Set<Integer> stopList) {
+    private final void init(String name, AtnParser parser, Tokenizer tokenizer, AtnParseOptions options, String[] expectedTreeStrings, String[] expectedRemainder, boolean seek, boolean failIfExtras, Set<Integer> stopList) {
       this.name = name;
       this.parser = parser;
       this.tokenizer = tokenizer;
@@ -1820,6 +2256,7 @@ public class TestAtnParser extends TestCase {
       this.expectedTreeStrings = expectedTreeStrings;
       this.expectedRemainder = expectedRemainder;
       this.seek = seek;
+      this.failIfExtras = failIfExtras;
       this.stopList = stopList;
     }
 
@@ -1865,11 +2302,17 @@ public class TestAtnParser extends TestCase {
       parseResult.generateParses(0);
       final int expectedCount = expectedTreeStrings == null ? 1 : expectedTreeStrings.length;
       if (parseResult.getNumParses() > expectedCount) {
-        System.out.println("*** WARNING: " + name + " yielded " + parseResult.getNumParses() +
-                           " parses when expected " + expectedCount + ".");
+        if (failIfExtras) {
+          fail(name + " yielded " + parseResult.getNumParses() +
+               " parses when expected " + expectedCount + ".");
+        }
+        else {
+          System.out.println("*** WARNING: " + name + " yielded " + parseResult.getNumParses() +
+                             " parses when expected " + expectedCount + ".");
 
-        for (int parseNum = 0; parseNum < parseResult.getNumParses(); ++parseNum) {
-          System.out.println("\t" + parseResult.getParse(parseNum).getParseTree().toString());
+          for (int parseNum = 0; parseNum < parseResult.getNumParses(); ++parseNum) {
+            System.out.println("\t" + parseResult.getParse(parseNum).getParseTree().toString());
+          }
         }
       }
     }

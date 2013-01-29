@@ -66,6 +66,7 @@ public class ResourceManager {
    * Default constructor for empty instance.
    */
   public ResourceManager() {
+    init(null);
   }
 
   /**
@@ -90,8 +91,8 @@ public class ResourceManager {
   private final void init(DataProperties options) {
     if (this.options == null) this.options = options;
     this.name2resource = new HashMap<String, Object>();
-    this.disableLoad = options.getBoolean("_disableLoad", false);
-    this.disableResources = options.getBoolean("_disableResources", false);
+    this.disableLoad = options == null ? false : options.getBoolean("_disableLoad", false);
+    this.disableResources = options == null ? false : options.getBoolean("_disableResources", false);
 
     final DomElement resourceElement = (options == null) ? null : options.getDomElement();
     loadResources(resourceElement);
