@@ -30,7 +30,10 @@ import org.sd.token.Feature;
 import org.sd.token.FeatureConstraint;
 import org.sd.token.Token;
 import org.sd.token.Tokenizer;
+import org.sd.util.tree.TraversalIterator;
 import org.sd.util.tree.Tree;
+import org.sd.xml.XmlLite;
+import org.sd.xml.XmlTreeHelper;
 
 /**
  * Utilities for working with parse interpretations.
@@ -290,6 +293,172 @@ public class ParseInterpretationUtil {
       result = CharType.OTHER;
     }
 
+    return result;
+  }
+
+
+  /**
+   * Get the interpretation text under the given named node (or full text if topNode is null).
+   */
+  public static final String getInterpText(Tree<XmlLite.Data> interpTree, String topNode) {
+    final StringBuilder result = new StringBuilder();
+
+    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        if (topNode == null || topNode.equals(tag.name)) {
+          getInterpText(result, curNode);
+          iter.skip();
+        }
+      }
+    }
+
+    return result.toString();
+  }
+
+  public static final void getInterpText(StringBuilder result, Tree<XmlLite.Data> topNode) {
+    for (TraversalIterator<XmlLite.Data> iter = topNode.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        final String tokText = tag.attributes.get("_tokText");
+        if (tokText != null) {
+          final String preDelim = tag.attributes.get("_tokPreDelim");
+          if (result.length() > 0) {
+            result.append(preDelim != null ? preDelim : " ");
+          }
+          result.append(tokText);
+          iter.skip();
+        }
+      }
+      else {
+        final XmlLite.Text text = curNode.getData().asText();
+        if (text != null) {
+          if (result.length() > 0) result.append(' ');
+          result.append(text.text);
+        }
+      }
+    }
+  }
+
+  public static final String getInterpAttribute(Tree<XmlLite.Data> interpTree, String fromNode, String attribute) {
+    String result = null;
+
+    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        if (fromNode == null || fromNode.equals(tag.name)) {
+          result = tag.attributes.get(attribute);
+          if (result != null) break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  public static final boolean hasInterpNode(Tree<XmlLite.Data> interpTree, String nodeName) {
+    return hasInterpAttribute(interpTree, nodeName, null);
+  }
+
+  public static final List<Tree<XmlLite.Data>> getInterpNodes(Tree<XmlLite.Data> interpTree, String nodeName) {
+    List<Tree<XmlLite.Data>> result = null;
+
+    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        if (nodeName == null || nodeName.equals(tag.name)) {
+          if (result == null) result = new ArrayList<Tree<XmlLite.Data>>();
+          result.add(curNode);
+          iter.skip();
+        }
+      }
+    }
+
+    return result;
+  }
+
+  public static final List<Tree<XmlLite.Data>> getInterpNodes(Tree<XmlLite.Data> interpTree, String[] nodeNames) {
+    List<Tree<XmlLite.Data>> result = null;
+
+    Set<String> nodeNameSet = null;
+    boolean hasNullNodeName = nodeNames == null || nodeNames.length == 0;
+    
+    if (!hasNullNodeName) {
+      nodeNameSet = new HashSet<String>();
+      for (String nodeName : nodeNames) {
+        if (nodeName == null) {
+          hasNullNodeName = true;
+          break;
+        }
+        else if (!"".equals(nodeName)) {
+          nodeNameSet.add(nodeName);
+        }
+      }
+    }
+
+    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        if (hasNullNodeName || nodeNameSet.contains(tag.name)) {
+          if (result == null) result = new ArrayList<Tree<XmlLite.Data>>();
+          result.add(curNode);
+          iter.skip();
+        }
+      }
+    }
+
+    return result;
+  }
+
+  public static final boolean hasInterpAttribute(Tree<XmlLite.Data> interpTree, String nodeName, String attribute) {
+    boolean result = false;
+
+    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        if (nodeName == null || nodeName.equals(tag.name)) {
+          if (attribute == null || tag.attributes.containsKey(attribute)) {
+            result = true;
+            break;
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  public static final StringBuilder collectLeafText(StringBuilder result, Tree<XmlLite.Data> topNode, String nodeName) {
+    final List<Tree<XmlLite.Data>> nodes = getInterpNodes(topNode, nodeName);
+    final String text = XmlTreeHelper.getAllText(nodes);
+    if (text != null && !"".equals(text)) {
+      if (result == null) result = new StringBuilder();
+      else if (result.length() > 0) result.append(' ');
+      result.append(text);
+    }
+    return result;
+  }
+
+  public static final StringBuilder collectLeafText(StringBuilder result, Tree<XmlLite.Data> topNode, String[] nodeNames) {
+    final List<Tree<XmlLite.Data>> nodes = getInterpNodes(topNode, nodeNames);
+    final String text = XmlTreeHelper.getAllText(nodes);
+    if (text != null && !"".equals(text)) {
+      if (result == null) result = new StringBuilder();
+      else if (result.length() > 0) result.append(' ');
+      result.append(text);
+    }
     return result;
   }
 }

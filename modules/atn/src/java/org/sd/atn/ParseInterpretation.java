@@ -25,13 +25,14 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.sd.cio.MessageHelper;
 import org.sd.io.Publishable;
 import org.sd.util.Usage;
 import org.sd.util.tree.Tree;
-import org.sd.util.tree.TraversalIterator;
 import org.sd.xml.DomElement;
 import org.sd.xml.XmlFactory;
 import org.sd.xml.XmlLite;
@@ -146,97 +147,39 @@ public class ParseInterpretation implements Publishable, Serializable {
     return this._interpTree;
   }
 
+
   /**
    * Get the interpretation text under the given named node (or full text if topNode is null).
    */
   public String getInterpText(String topNode) {
-    final StringBuilder result = new StringBuilder();
-
     final Tree<XmlLite.Data> interpTree = getInterpTree();
-    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
-         iter.hasNext(); ) {
-      final Tree<XmlLite.Data> curNode = iter.next();
-      final XmlLite.Tag tag = curNode.getData().asTag();
-      if (tag != null) {
-        if (topNode == null || topNode.equals(tag.name)) {
-          getInterpText(result, curNode);
-          iter.skip();
-        }
-      }
-    }
-
-    return result.toString();
-  }
-
-  private final void getInterpText(StringBuilder result, Tree<XmlLite.Data> topNode) {
-    for (TraversalIterator<XmlLite.Data> iter = topNode.iterator(Tree.Traversal.DEPTH_FIRST);
-         iter.hasNext(); ) {
-      final Tree<XmlLite.Data> curNode = iter.next();
-      final XmlLite.Tag tag = curNode.getData().asTag();
-      if (tag != null) {
-        final String tokText = tag.attributes.get("_tokText");
-        if (tokText != null) {
-          final String preDelim = tag.attributes.get("_tokPreDelim");
-          if (result.length() > 0) {
-            result.append(preDelim != null ? preDelim : " ");
-          }
-          result.append(tokText);
-          iter.skip();
-        }
-      }
-      else {
-        final XmlLite.Text text = curNode.getData().asText();
-        if (text != null) {
-          if (result.length() > 0) result.append(' ');
-          result.append(text.text);
-        }
-      }
-    }
+    return ParseInterpretationUtil.getInterpText(interpTree, topNode);
   }
 
   public String getInterpAttribute(String fromNode, String attribute) {
-    String result = null;
-
     final Tree<XmlLite.Data> interpTree = getInterpTree();
-    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
-         iter.hasNext(); ) {
-      final Tree<XmlLite.Data> curNode = iter.next();
-      final XmlLite.Tag tag = curNode.getData().asTag();
-      if (tag != null) {
-        if (fromNode == null || fromNode.equals(tag.name)) {
-          result = tag.attributes.get(attribute);
-          if (result != null) break;
-        }
-      }
-    }
-
-    return result;
+    return ParseInterpretationUtil.getInterpAttribute(interpTree, fromNode, attribute);
   }
 
   public boolean hasInterpNode(String nodeName) {
     return hasInterpAttribute(nodeName, null);
   }
 
-  public boolean hasInterpAttribute(String nodeName, String attribute) {
-    boolean result = false;
-
+  /**
+   * Collect all (highest) interp nodes having the given name.
+   * <p>
+   * @return nodes w/name or null.
+   */
+  public List<Tree<XmlLite.Data>> getInterpNodes(String nodeName) {
     final Tree<XmlLite.Data> interpTree = getInterpTree();
-    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
-         iter.hasNext(); ) {
-      final Tree<XmlLite.Data> curNode = iter.next();
-      final XmlLite.Tag tag = curNode.getData().asTag();
-      if (tag != null) {
-        if (nodeName == null || nodeName.equals(tag.name)) {
-          if (attribute == null || tag.attributes.containsKey(attribute)) {
-            result = true;
-            break;
-          }
-        }
-      }
-    }
-
-    return result;
+    return ParseInterpretationUtil.getInterpNodes(interpTree, nodeName);
   }
+
+  public boolean hasInterpAttribute(String nodeName, String attribute) {
+    final Tree<XmlLite.Data> interpTree = getInterpTree();
+    return ParseInterpretationUtil.hasInterpAttribute(interpTree, nodeName, attribute);
+  }
+
 
   public String getInterpXml() {
     if (_interpXml == null && _interpTree != null) {
