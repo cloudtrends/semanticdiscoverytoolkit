@@ -328,7 +328,8 @@ public class ParseInterpretationUtil {
         if (tokText != null) {
           final String preDelim = tag.attributes.get("_tokPreDelim");
           if (result.length() > 0) {
-            result.append(preDelim != null ? preDelim : " ");
+            if (preDelim != null) result.append(preDelim);
+            if (preDelim == null || preDelim.indexOf(' ') < 0) result.append(' ');
           }
           result.append(tokText);
           iter.skip();
