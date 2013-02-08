@@ -21,8 +21,8 @@ package org.sd.cluster.io;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
+import org.sd.cluster.config.PortServer;
 import org.sd.testtools.BaseTestCase;
-import org.sd.testtools.PortServer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

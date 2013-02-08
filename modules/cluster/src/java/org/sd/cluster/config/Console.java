@@ -126,6 +126,10 @@ public class Console {
     this.defaultGroup = defaultGroup;
   }
 
+  public NodeClient getConsoleClient() {
+    return consoleClient;
+  }
+
   private final NodeClient makeConsoleClient(String identifier) {
     NodeClient result = null;
     try {

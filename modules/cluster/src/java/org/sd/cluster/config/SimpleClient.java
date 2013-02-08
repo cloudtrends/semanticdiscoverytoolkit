@@ -50,6 +50,10 @@ public class SimpleClient {
     }
   }
 
+  public SimpleClient(NodeClient nodeClient) {
+    this.nodeClient = nodeClient;
+  }
+
   public void close()  {
     nodeClient.shutdown(true);
   }
