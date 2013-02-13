@@ -168,6 +168,14 @@ public class PathGroup {
     return wordCounts;
   }
 
+  public void rebuildText() {
+    wordCounts.clear();
+    this.text.setLength(0);
+    for (Path path : paths) {
+      addText(path);
+    }
+  }
+
   public String toString() {
     final StringBuilder result = new StringBuilder();
 
