@@ -20,3 +20,4 @@ MultiFunctionTextRipper: wrapper around an XmlTextRipper to call multiple functi
 XmlWordRipper: uses an XmlTextRipper to grab "top words" from the file.
 XmlNodeIterator: uses an XmlNodeRipper to iterate over Tree<XmlLite.Data> nodes with text.
 XmlIterator: iterates over each Tree<XmlLite.Data> node just under the root.
+HtmlDivRipper: uses an XmlLeafNodeRipper to grab deepest div nodes (text) as PathGroup instances.

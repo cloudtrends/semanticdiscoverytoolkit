@@ -65,7 +65,7 @@ public interface TagStack {
    *
    * @param tagName  an already lowercased tag name.
    *
-   * @return the position of the tag name in the stack (where 0 is 'deepest')
+   * @return the position of the tag name in the stack (where 0 is 'root')
    *         or -1.
    */
   public int hasTag(String tagName);
@@ -76,7 +76,7 @@ public interface TagStack {
    *
    * @param tagNames already lowercased tag names.
    *
-   * @return the position of the tag name in the stack (where 0 is 'deepest')
+   * @return the position of the tag name in the stack (where 0 is 'root')
    *         or -1.
    */
   public int hasTag(Set<String> tagNames);
@@ -86,7 +86,7 @@ public interface TagStack {
    *
    * @param tag  the tag instance to locate.
    *
-   * @return the position of the tag in the stack (where 0 is 'deepest') or -1.
+   * @return the position of the tag in the stack (where 0 is 'root') or -1.
    */
   public int hasTag(XmlLite.Tag tag);
 
@@ -102,6 +102,16 @@ public interface TagStack {
    *         don't diverge.
    */
   public int findFirstDivergentTag(TagStack other);
+
+  /**
+   * Find the deepest index of the tag in this stack.
+   *
+   * @param tagName  the already lowercased tag name to find.
+   *
+   * @return the deepest position of the tag name in the stack (where 0 is 'root')
+   *         or -1.
+   */
+  public int findDeepestTag(String tagName);
 
   /**
    * Get tags that have been saved with this tagstack.

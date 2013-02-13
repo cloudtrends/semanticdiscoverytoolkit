@@ -102,7 +102,7 @@ public abstract class BaseTagStack implements TagStack {
    *
    * @param tagName  an already lowercased tag name.
    *
-   * @return the position of the tag name in the stack (where 0 is 'deepest')
+   * @return the position of the tag name in the stack (where 0 is 'root')
    *         or -1.
    */
   public int hasTag(String tagName) {
@@ -124,7 +124,7 @@ public abstract class BaseTagStack implements TagStack {
    *
    * @param tagNames an already lowercased tag name.
    *
-   * @return the position of the tag name in the stack (where 0 is 'deepest')
+   * @return the position of the tag name in the stack (where 0 is 'root')
    *         or -1.
    */
   public int hasTag(Set<String> tagNames) {
@@ -144,7 +144,7 @@ public abstract class BaseTagStack implements TagStack {
    *
    * @param tag  the tag instance to locate.
    *
-   * @return the position of the tag in the stack (where 0 is 'deepest') or -1.
+   * @return the position of the tag in the stack (where 0 is 'root') or -1.
    */
   public int hasTag(XmlLite.Tag tag) {
     if (tag == null) return -1;
@@ -206,6 +206,29 @@ public abstract class BaseTagStack implements TagStack {
 
       if (myTag != otherTag) {
         break;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Find the deepest index of the tag in this stack.
+   *
+   * @param tagName  the already lowercased tag name to find.
+   *
+   * @return the deepest position of the tag name in the stack (where 0 is 'root')
+   *         or -1.
+   */
+  public int findDeepestTag(String tagName) {
+    int result = -1;
+
+    if (tagName != null) {
+      final List<XmlLite.Tag> tags = getTagsList();
+      for (result = tags.size() - 1; result >= 0; --result) {
+        if (tagName.equals(tags.get(result).name)) {
+          break;
+        }
       }
     }
 

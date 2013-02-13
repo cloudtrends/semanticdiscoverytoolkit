@@ -461,7 +461,7 @@ public class Parse implements Publishable, Serializable {
 
             if (lToken == null) {
               System.err.println(new Date() +
-                                 ": Warning -- Parse.buildNode cToken.token=" + cToken.token +
+                                 ": Note -- Parse.buildNode cToken.token=" + cToken.token +
                                  " zeroIndex=" + zeroIndex +
                                  " startPos=" + startPos +
                                  " endPos=" + endPos +

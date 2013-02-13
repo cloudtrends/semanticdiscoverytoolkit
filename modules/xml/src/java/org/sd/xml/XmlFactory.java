@@ -239,6 +239,41 @@ public class XmlFactory {
     return xmlLite.parse(xmlString);
   }
 
+  /**
+   * Utility to determine whether a file contains html based on the presence
+   * of an "html" tag within the first 5 tags.
+   */
+  public static final boolean isHtml(File file) throws IOException {
+    return isHtml(file, 5);
+  }
+
+  /**
+   * Utility to determine whether a file contains html based on the presence
+   * of an "html" tag within the first N tags.
+   */
+  public static final boolean isHtml(File file, int maxTags) throws IOException {
+    boolean result = false;
+
+    final XmlTagRipper tagRipper = new XmlTagRipper(file, true, null);
+
+    try {
+      int tagCount = 0;
+      while (tagRipper.hasNext() && tagCount < maxTags) {
+        final XmlLite.Tag tag = tagRipper.next();
+        if ("html".equalsIgnoreCase(tag.name)) {
+          result = true;
+          break;
+        }
+        ++tagCount;
+      }
+    }
+    finally {
+      tagRipper.close();
+    }
+
+    return result;
+  }
+
   public static final String stripHtmlFormatting(String htmlString) {
     String result = null;
 
