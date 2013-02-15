@@ -146,10 +146,22 @@ public class DelimTest extends BaseClassifierTest {
   private boolean ignoreConstituents;
 
 
+  public DelimTest(DomNode delimNode, ResourceManager resourceManager) {
+    super(delimNode, resourceManager);
+
+    this.isPre = delimNode.getAttributeBoolean("pre", false);
+    init(delimNode, resourceManager);
+  }
+
   DelimTest(boolean isPre, DomNode delimNode, ResourceManager resourceManager) {
     super(delimNode, resourceManager);
 
     this.isPre = isPre;
+    init(delimNode, resourceManager);
+  }
+
+  private final void init(DomNode delimNode, ResourceManager resourceManager) {
+
     this.allowAll = false;
     this.disallowAll = false;
     this.delimStrings = new ArrayList<DelimString>();
