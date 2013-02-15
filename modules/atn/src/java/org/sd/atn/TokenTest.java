@@ -62,6 +62,7 @@ import org.w3c.dom.NodeList;
        " - when scan='true', test against each next (or prev if prev='true') token\n" +
        " - when delimMatch='X', test against next or prev only succeeds if delims equal X\n" +
        " - when revise='true', test against token revisions\n" +
+       " - when relax='true' (default), test succeeds when no rote list, extra check, or token clause exists\n" +
        " - when ignoreLastToken='true', always accept the last token\n" +
        " - when ignoreFirstToken='true', always accept the first token\n" +
        " - when onlyFirstToken='true', only test against a \"first\" constituent token\n" +
@@ -100,6 +101,7 @@ public class TokenTest extends BaseClassifierTest {
 
   private boolean verbose;
   private boolean revise;
+  private boolean relax;
   private boolean scan;
   private ScanLimit scanLimit;
   private List<TokenTest> scanStops;
@@ -110,6 +112,7 @@ public class TokenTest extends BaseClassifierTest {
 
     this.verbose = testNode.getAttributeBoolean("verbose", false);
     this.revise = testNode.getAttributeBoolean("revise", false);
+    this.relax = testNode.getAttributeBoolean("relax", true);
     this.scan = testNode.getAttributeBoolean("scan", false);
     this.scanLimit = ScanLimit.valueOf(testNode.getAttributeValue("scanLimit", "INPUT_START").toUpperCase());
     this.scanStops = null;
@@ -162,6 +165,8 @@ public class TokenTest extends BaseClassifierTest {
     // options:
     // - when reverse='true', fail on match (handled elsewhere)
     // - when revise='true', test against token revisions
+    // - when relax='true' (default), test succeeds when no rote list, extra check, or token clause exists
+    //   - when false (and no rote list, extra check, or token clause) the test succeeds 
     // - when scan='true', test against each next (or prev if prev='true') token
     //   - and optionally include "scanStop" child elements defining stop conditions
     // - when ignoreLastToken='true', always accept the last token
@@ -212,7 +217,7 @@ public class TokenTest extends BaseClassifierTest {
 
   protected boolean doAccept(Token token, AtnState curState) {
     boolean result = false;
-    boolean didSomething = false;
+    boolean didSomething = !relax;
 
     boolean verifyAdditional = true;
     final Token orig = token;
