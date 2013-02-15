@@ -61,7 +61,11 @@ public class PathGroup {
 
   public void add(Path path) {
     if (path == null) return;
-    this.commonPathIndex = computeCommonPathIndex(path);
+    int idx = computeCommonPathIndex(path);
+    if(commonPathIndex >= 0)
+      this.commonPathIndex = Math.min(idx, this.commonPathIndex);
+    else
+      this.commonPathIndex = idx;
     this.paths.add(path);
     addText(path);
   }
