@@ -185,6 +185,9 @@ public class AtnRuleStep {
     final StringBuilder result = new StringBuilder();
 
     result.append(category);
+    if (label != null && !label.equals(category)) {
+      result.append('[').append(label).append(']');
+    }
 
     if (isOptional && repeats) result.append('*');
     else if (isOptional) result.append('?');

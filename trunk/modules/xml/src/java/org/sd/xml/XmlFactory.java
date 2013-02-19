@@ -28,6 +28,8 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -247,28 +249,46 @@ public class XmlFactory {
     return isHtml(file, 5);
   }
 
+  private static final Set<String> htmlKeyTags = new HashSet<String>();
+  static {
+    htmlKeyTags.add("html");
+    htmlKeyTags.add("head");
+    htmlKeyTags.add("body");
+    htmlKeyTags.add("meta");
+  }
+
   /**
    * Utility to determine whether a file contains html based on the presence
-   * of an "html" tag within the first N tags.
+   * of ".htm" (case-insensitive) in the file name or an "html", "head", "body",
+   * or "meta" tag within the first N tags.
    */
   public static final boolean isHtml(File file, int maxTags) throws IOException {
     boolean result = false;
 
-    final XmlTagRipper tagRipper = new XmlTagRipper(file, true, null);
-
-    try {
-      int tagCount = 0;
-      while (tagRipper.hasNext() && tagCount < maxTags) {
-        final XmlLite.Tag tag = tagRipper.next();
-        if ("html".equalsIgnoreCase(tag.name)) {
-          result = true;
-          break;
-        }
-        ++tagCount;
-      }
+    final String fileName = file.getName().toLowerCase();
+    if (fileName.indexOf(".htm") >= 0) {
+      // if the file says it's html, then believe it.
+      result = true;
     }
-    finally {
-      tagRipper.close();
+    else {
+      // otherwise, check the first few tags for "html"-like names, allowing for
+      // poor/corrupt formatting
+      final XmlTagRipper tagRipper = new XmlTagRipper(file, true, null);
+
+      try {
+        int tagCount = 0;
+        while (tagRipper.hasNext() && tagCount < maxTags) {
+          final XmlLite.Tag tag = tagRipper.next();
+          if (htmlKeyTags.contains(tag.name.toLowerCase())) {
+            result = true;
+            break;
+          }
+          ++tagCount;
+        }
+      }
+      finally {
+        tagRipper.close();
+      }
     }
 
     return result;
