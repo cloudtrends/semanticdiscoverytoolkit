@@ -24,9 +24,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.sd.token.Normalizer;
 import org.sd.token.StandardNormalizer;
 import org.sd.token.StandardNormalizerOptions;
@@ -317,6 +320,35 @@ public class AtnGrammar {
     return result;
   }
 
+  public String getRulesString(AtnParseOptions parseOptions) {
+    final StringBuilder result = new StringBuilder();
+
+    final LinkedList<AtnRule> todo = new LinkedList<AtnRule>(getStartRules(parseOptions));
+    final Set<AtnRule> done = new HashSet<AtnRule>();
+
+    while (todo.size() > 0) {
+      final AtnRule curRule = todo.removeFirst();
+      if (!done.contains(curRule)) {
+        done.add(curRule);
+        getRuleString(result, curRule, todo);
+      }
+    }
+
+    return result.toString();
+  }
+
+  private final void getRuleString(StringBuilder result, AtnRule curRule, LinkedList<AtnRule> todo) {
+    result.append(curRule.getRuleName()).append(" <--");
+    for (int stepNum = 0; stepNum < curRule.getNumSteps(); ++stepNum) {
+      final AtnRuleStep ruleStep = curRule.getStep(stepNum);
+      result.append(" ").append(ruleStep.toString());
+
+      final List<AtnRule> moreRules = cat2Rules.get(ruleStep.getCategory());
+      if (moreRules != null) todo.addAll(moreRules);
+    }
+    result.append("\n");
+  }
+
   Token getAcceptedToken(String tokenFilterId, Token token, boolean isRevised, Token prevToken, boolean doRevise, boolean doGetNext, AtnState curState) {
     Token result = token;
 
@@ -509,5 +541,24 @@ public class AtnGrammar {
         if (rule.isStart()) this.startRules.add(rule);
       }
     }
+  }
+
+
+  public static void main(String[] args) throws IOException {
+    // Properties:
+    //   grammarFile=path to grammarFile 
+    //
+    final DataProperties options = new DataProperties(args);
+    args = options.getRemainingArgs();
+
+    if (!options.hasProperty("_disableLoad")) options.set("_disableLoad", true);
+    final ResourceManager resourceManager = new ResourceManager(options);
+    final File grammarFile = new File(options.getString("grammarFile"));
+    final DomDocument grammarDocument = XmlFactory.loadDocument(grammarFile, false, options);
+    final DomElement grammarElement = (DomElement)grammarDocument.getDocumentElement();
+    final AtnGrammar grammar = new AtnGrammar(grammarElement, resourceManager);
+
+    System.out.println("Grammar: " + grammarFile.getAbsolutePath());
+    System.out.println(grammar.getRulesString(null));
   }
 }
