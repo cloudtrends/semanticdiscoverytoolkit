@@ -235,6 +235,21 @@ public abstract class BaseTagStack implements TagStack {
     return result;
   }
 
+  public int findDeepestTag(Set<String> tagNames) {
+    int result = -1;
+
+    if (tagNames != null && tagNames.size() > 0) {
+      final List<XmlLite.Tag> tags = getTagsList();
+      for (result = tags.size() - 1; result >= 0; --result) {
+        if (tagNames.contains(tags.get(result).name)) {
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
   /**
    * Get tags that have been saved with this tagstack.
    */

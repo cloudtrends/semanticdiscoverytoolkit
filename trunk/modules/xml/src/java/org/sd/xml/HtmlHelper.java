@@ -42,7 +42,7 @@ public class HtmlHelper {
    */
   public static final String[] DEFAULT_IGNORE_TAG_STRINGS = new String[] {
     /*"meta", "link",*/ "style", "script", /*"form",*/ "select", "input", "option",
-    "optgroup", "textarea", "button", "iframe",
+    "optgroup", "textarea", "button", "iframe", 
   };
   public static final Set<String> DEFAULT_IGNORE_TAGS = new HashSet<String>();
   static {
@@ -74,6 +74,45 @@ public class HtmlHelper {
     // these are only considered as heading when found over non consecutive text
     "font@size", "em", "b", "strong"
   };
+
+  /** These tags are considered block-element. */
+  public static final String[] DEFAULT_BLOCK_TAG_STRINGS = 
+    new String[] 
+  {
+    "applet",
+    "blockquote",
+    "body",
+    "button",
+    "div",
+    "dl",
+    "fieldset",
+    "form",
+    "frameset",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "head",
+    "html",
+    "iframe",
+    "img",
+    "layer",
+    "legend",
+    "object",
+    "ol",
+    //"p",
+    "select",
+    "table",
+    "ul",
+  };
+  public static final Set<String> DEFAULT_BLOCK_TAGS = new HashSet<String>();
+  static {
+    for (String str : DEFAULT_BLOCK_TAG_STRINGS) {
+      DEFAULT_BLOCK_TAGS.add(str);
+    }
+  }
 
   public static int MIN_USABLE_STRENGTH = 1;
   public static int MAX_STRENGTH = 7;

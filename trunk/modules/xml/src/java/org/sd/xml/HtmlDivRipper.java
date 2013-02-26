@@ -97,13 +97,15 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     else {
       int commonPos = pathGroup.computeCommonPathIndex(path);
       if (commonPos >= 0) {
-        final int deepestDiv = findDeepestDiv(pathGroup.getLastPath());
-if ("text size:".equals(path.getText())) {
-  final boolean stopHere = true;
-}
+        final int deepestDiv = findDeepestBlockElement(pathGroup.getLastPath());
+        //if ("text size:".equals(path.getText())) {
+        //  final boolean stopHere = true;
+        //}
+
         if (deepestDiv < 0) {  // pathGroup has no div
           // path belongs if it has no div as well
-          if (!path.hasTagStack() || path.getTagStack().hasTag("div") < 0) {
+          if (!path.hasTagStack() || 
+              path.getTagStack().hasTag(HtmlHelper.DEFAULT_BLOCK_TAGS) < 0) {
             result = true;
           }
         }
@@ -113,6 +115,16 @@ if ("text size:".equals(path.getText())) {
         }
         //else, fail when commonPos < pathGroup's deepest div
       }
+    }
+
+    return result;
+  }
+
+  protected int findDeepestBlockElement(Path path) {
+    int result = -1;
+
+    if (path != null && path.hasTagStack()) {
+      result = path.getTagStack().findDeepestTag(HtmlHelper.DEFAULT_BLOCK_TAGS);
     }
 
     return result;
