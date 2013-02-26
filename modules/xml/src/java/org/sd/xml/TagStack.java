@@ -114,6 +114,16 @@ public interface TagStack {
   public int findDeepestTag(String tagName);
 
   /**
+   * Find the deepest index of any of the tags in the specified set in this stack.
+   *
+   * @param tagNames  the set of already lowercased tag names to find.
+   *
+   * @return the deepest position of the first matching tag name in the stack (where 0 is 'root')
+   *         or -1.
+   */
+  public int findDeepestTag(Set<String> tagNames);
+
+  /**
    * Get tags that have been saved with this tagstack.
    */
   public List<XmlLite.Tag> getSavedTags();
