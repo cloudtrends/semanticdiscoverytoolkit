@@ -209,6 +209,10 @@ public abstract class BaseTagStack implements TagStack {
       }
     }
 
+    // if we run out of tags, these are common blocks
+    if(!myTagsIter.hasNext() && !otherTagsIter.hasNext())
+      result++;
+
     return result;
   }
 
