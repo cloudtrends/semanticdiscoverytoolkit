@@ -273,9 +273,13 @@ public class HtmlHelper {
   }
 
   public final int computeHeadingStrength(Tree<XmlLite.Data> headingNode) {
+    final XmlLite.Tag tag = headingNode.getData().asTag();
+    return computeHeadingStrength(tag);
+  }
+
+  public final int computeHeadingStrength(XmlLite.Tag tag) {
     int result = 0;
 
-    final XmlLite.Tag tag = headingNode.getData().asTag();
     final String att = tag2attribute.get(tag.name);  // check for attribute (i.e. font@size=)
     final String value = (att == null) ? tag.name : tag.getAttribute(att);
     if (value != null) {  // found attribute or using tag name
