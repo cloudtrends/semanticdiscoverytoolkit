@@ -22,6 +22,8 @@ package org.sd.xml;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.HashSet;
 import org.sd.io.FileUtil;
 import org.sd.util.tree.Tree;
 
@@ -33,11 +35,13 @@ import org.sd.util.tree.Tree;
 public class HtmlDivRipper implements Iterator<PathGroup> {
   
   private XmlLeafNodeRipper leafRipper;
+  private HtmlHelper htmlHelper;
   private PathGroup inProgress;
   private PathGroup next;
 
   public HtmlDivRipper(File htmlFile) throws IOException {
     this.leafRipper = new XmlLeafNodeRipper(FileUtil.getInputStream(htmlFile), true, null, false, null);
+    this.htmlHelper = new HtmlHelper();
     this.inProgress = null;
     this.next = getNextPathGroup();
   }
@@ -96,35 +100,59 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     }
     else {
       int commonPos = pathGroup.computeCommonPathIndex(path);
+      Path lastPath = pathGroup.getLastPath();
       if (commonPos >= 0) {
-        final int deepestDiv = findDeepestBlockElement(pathGroup.getLastPath());
+        final int lastDeepestDiv = findDeepestBlockElement(lastPath);
         //if ("text size:".equals(path.getText())) {
         //  final boolean stopHere = true;
         //}
 
-        if (deepestDiv < 0) {  // pathGroup has no div
+        if (lastDeepestDiv < 0) {  // pathGroup has no div
           // path belongs if it has no div as well
           if (!path.hasTagStack() || 
               path.getTagStack().hasTag(HtmlHelper.DEFAULT_BLOCK_TAGS) < 0) {
             result = true;
           }
         }
-        else if (deepestDiv <= commonPos) {
-          // since tag stack is common, this is a div in path, too
+        // since tag stack is common, this is a div in path, too
+        else if (lastDeepestDiv <= commonPos) {
           result = true;
         }
         //else, fail when commonPos < pathGroup's deepest div
       }
+
+      final int lastPathStrength = getPathHeadingStrength(lastPath);
+      final int pathStrength = getPathHeadingStrength(path);
+      if(pathStrength > lastPathStrength)
+        result = false;
     }
 
     return result;
   }
 
+  protected int getPathHeadingStrength(Path path)
+  {
+    int result = -1;
+
+    if(!path.hasTagStack())
+      return result;
+    
+    for(XmlLite.Tag tag : path.getTagStack().getTags())
+    {
+      int strength = htmlHelper.computeHeadingStrength(tag);
+      if(strength > result)
+        result = strength;
+    }
+
+    return result;
+  }
+  
   protected int findDeepestBlockElement(Path path) {
     int result = -1;
 
     if (path != null && path.hasTagStack()) {
-      result = path.getTagStack().findDeepestTag(HtmlHelper.DEFAULT_BLOCK_TAGS);
+      TagStack tstack = path.getTagStack();
+      result = tstack.findDeepestTag(HtmlHelper.DEFAULT_BLOCK_TAGS);
     }
 
     return result;
