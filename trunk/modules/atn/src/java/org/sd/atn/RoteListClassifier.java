@@ -1182,15 +1182,17 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   protected static final class ClassifierContainer {
     private String classifierName;
     private AtnStateTokenClassifier namedResource;      // temp storage
-    private List<AtnStateTokenClassifier> classifiers;  // delayed load
+    private List<AtnStateTokenClassifier> _classifiers; // delayed load
     private boolean literalMatch;                       // delayed load
     private boolean ruleMatch;                          // delayed load
     private boolean trace;
 
+    private Object classifiersMutex = new Object();
+
     public ClassifierContainer(String classifierName, ResourceManager resourceManager) {
       this.classifierName = classifierName;
       this.namedResource = findClassifierResource(classifierName, resourceManager);
-      this.classifiers = null;
+      this._classifiers = null;
       this.literalMatch = false;
       this.ruleMatch = false;
     }
@@ -1230,7 +1232,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     }
 
     public boolean doClassify(Token token, AtnState atnState) {
-      if (this.classifiers == null) loadClassifiers(atnState);
+      final List<AtnStateTokenClassifier> classifiers = getClassifiers(atnState);
 
       boolean result = false;
 
@@ -1284,10 +1286,23 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       return result;
     }
 
+    private final List<AtnStateTokenClassifier> getClassifiers(AtnState atnState) {
+      List<AtnStateTokenClassifier> result = null;
+
+      synchronized (classifiersMutex) {
+        if (_classifiers == null) {
+          loadClassifiers(atnState);
+        }
+        result = _classifiers;
+      }
+
+      return result;
+    }
+
     public Map<String, String> doClassify(String text) {
       Map<String, String> result = null;
 
-      if (this.classifiers == null) {
+      if (this._classifiers == null) {
         if (trace) {
           System.out.println("\tWARNING: ClassifierContainer(" + classifierName + ") not fully initialized for doClassify(" + text + ")");
         }
@@ -1306,7 +1321,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       }
       else {
         // classify by resource and grammar classifiers
-        for (AtnStateTokenClassifier classifier : classifiers) {
+        for (AtnStateTokenClassifier classifier : _classifiers) {
           final Map<String, String> curResult = classifier.classify(text);
           if (curResult != null) {
             if (result == null) new HashMap<String, String>();
@@ -1323,17 +1338,17 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     }
 
     private final synchronized void loadClassifiers(AtnState atnState) {
-      this.classifiers = new ArrayList<AtnStateTokenClassifier>();
+      this._classifiers = new ArrayList<AtnStateTokenClassifier>();
 
       if (namedResource != null) {
-        this.classifiers.add(namedResource);
+        this._classifiers.add(namedResource);
       }
 
       final AtnGrammar grammar = atnState.getRule().getGrammar();
       final List<AtnStateTokenClassifier> tokenClassifiers = grammar.getClassifiers(classifierName);
       if (tokenClassifiers != null) {
 //TODO: adjust maxWordCount in containing Terms instance?
-        this.classifiers.addAll(tokenClassifiers);
+        this._classifiers.addAll(tokenClassifiers);
       }
       else {
         if (grammar.getCat2Rules().containsKey(classifierName)) {
