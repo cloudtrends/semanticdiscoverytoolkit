@@ -132,79 +132,88 @@ public class HtmlHelper {
    * 
    */
   public static final Map<String, Integer> VALUE_TO_STRENGTH = new HashMap<String, Integer>();
+  public static final Map<String, Integer> VALUE_TO_STRENGTH_456 = new HashMap<String, Integer>();
+  public static final Map<String, Integer> VALUE_TO_STRENGTH_NO_456 = new HashMap<String, Integer>();
   static {
+    // if IGNORE_HEADINGS_456 == true
+    VALUE_TO_STRENGTH_NO_456.put("h1", 6);
+    VALUE_TO_STRENGTH_NO_456.put("h2", 5);
+    VALUE_TO_STRENGTH_NO_456.put("h3", 4);
+    VALUE_TO_STRENGTH_NO_456.put("h4", 3);
+    VALUE_TO_STRENGTH_NO_456.put("h5", 2);
+    VALUE_TO_STRENGTH_NO_456.put("h6", 1);
+    VALUE_TO_STRENGTH_NO_456.put("hr", 6);
+    
+    VALUE_TO_STRENGTH_NO_456.put("200%", 6);
+    VALUE_TO_STRENGTH_NO_456.put("150%", 5);
+    VALUE_TO_STRENGTH_NO_456.put("120%", 4);
+    VALUE_TO_STRENGTH_NO_456.put("100%", 0);
+    VALUE_TO_STRENGTH_NO_456.put( "80%", 3);
+    VALUE_TO_STRENGTH_NO_456.put( "70%", 2);
+    VALUE_TO_STRENGTH_NO_456.put( "60%", 1);
+    
+    VALUE_TO_STRENGTH_NO_456.put("+3", 6);
+    VALUE_TO_STRENGTH_NO_456.put("+2", 5);
+    VALUE_TO_STRENGTH_NO_456.put("+1", 4);
+    VALUE_TO_STRENGTH_NO_456.put("1", 0);
+    VALUE_TO_STRENGTH_NO_456.put("-1", 2);
+    VALUE_TO_STRENGTH_NO_456.put("-2", 1);
+    
+    VALUE_TO_STRENGTH_NO_456.put("thead", 2);
+    VALUE_TO_STRENGTH_NO_456.put("th", 1);
+    VALUE_TO_STRENGTH_NO_456.put("em", 1);
+    VALUE_TO_STRENGTH_NO_456.put("strong", 1);
+    VALUE_TO_STRENGTH_NO_456.put("b", 1);
+    
+    VALUE_TO_STRENGTH_NO_456.put("title", 7);
+
+    // if IGNORE_HEADINGS_456 == false
+    VALUE_TO_STRENGTH_456.put("h1", 6);
+    VALUE_TO_STRENGTH_456.put("h2", 5);
+    VALUE_TO_STRENGTH_456.put("h3", 4);
+    VALUE_TO_STRENGTH_456.put("h4", 3);
+    VALUE_TO_STRENGTH_456.put("h5", 2);
+    VALUE_TO_STRENGTH_456.put("h6", 1);
+    VALUE_TO_STRENGTH_456.put("hr", 6);
+    
+    VALUE_TO_STRENGTH_456.put("200%", 6);
+    VALUE_TO_STRENGTH_456.put("150%", 5);
+    VALUE_TO_STRENGTH_456.put("120%", 4);
+    VALUE_TO_STRENGTH_456.put("100%", 0);
+    VALUE_TO_STRENGTH_456.put( "80%", 3);
+    VALUE_TO_STRENGTH_456.put( "70%", 2);
+    VALUE_TO_STRENGTH_456.put( "60%", 1);
+    
+    VALUE_TO_STRENGTH_456.put("+3", 6);
+    VALUE_TO_STRENGTH_456.put("+2", 5);
+    VALUE_TO_STRENGTH_456.put("+1", 4);
+    VALUE_TO_STRENGTH_456.put("1", 0);
+    VALUE_TO_STRENGTH_456.put("-1", 0);
+    VALUE_TO_STRENGTH_456.put("-2", 0);
+    
+    VALUE_TO_STRENGTH_456.put("thead", 0);
+    VALUE_TO_STRENGTH_456.put("th", 0);
+    VALUE_TO_STRENGTH_456.put("em", 0);
+    VALUE_TO_STRENGTH_456.put("strong", 0);
+    VALUE_TO_STRENGTH_456.put("b", 0);
+    
+    VALUE_TO_STRENGTH_456.put("title", 7);
+
     if (IGNORE_HEADINGS_456) {
-      VALUE_TO_STRENGTH.put("h1", 6);
-      VALUE_TO_STRENGTH.put("h2", 5);
-      VALUE_TO_STRENGTH.put("h3", 4);
-      VALUE_TO_STRENGTH.put("h4", 3);
-      VALUE_TO_STRENGTH.put("h5", 2);
-      VALUE_TO_STRENGTH.put("h6", 1);
-      VALUE_TO_STRENGTH.put("hr", 6);
-
-      VALUE_TO_STRENGTH.put("200%", 6);
-      VALUE_TO_STRENGTH.put("150%", 5);
-      VALUE_TO_STRENGTH.put("120%", 4);
-      VALUE_TO_STRENGTH.put("100%", 0);
-      VALUE_TO_STRENGTH.put( "80%", 3);
-      VALUE_TO_STRENGTH.put( "70%", 2);
-      VALUE_TO_STRENGTH.put( "60%", 1);
-
-      VALUE_TO_STRENGTH.put("+3", 6);
-      VALUE_TO_STRENGTH.put("+2", 5);
-      VALUE_TO_STRENGTH.put("+1", 4);
-      VALUE_TO_STRENGTH.put("1", 0);
-      VALUE_TO_STRENGTH.put("-1", 2);
-      VALUE_TO_STRENGTH.put("-2", 1);
-
-      VALUE_TO_STRENGTH.put("thead", 2);
-      VALUE_TO_STRENGTH.put("th", 1);
-      VALUE_TO_STRENGTH.put("em", 1);
-      VALUE_TO_STRENGTH.put("strong", 1);
-      VALUE_TO_STRENGTH.put("b", 1);
-
-      VALUE_TO_STRENGTH.put("title", 7);
+      for(Map.Entry<String, Integer> entry : VALUE_TO_STRENGTH_NO_456.entrySet())
+        VALUE_TO_STRENGTH.put(entry.getKey(), entry.getValue());
 
       MIN_USABLE_STRENGTH = 3;
       MAX_STRENGTH = 7;
     }
     else {
-      VALUE_TO_STRENGTH.put("h1", 6);
-      VALUE_TO_STRENGTH.put("h2", 5);
-      VALUE_TO_STRENGTH.put("h3", 4);
-      VALUE_TO_STRENGTH.put("h4", 3);
-      VALUE_TO_STRENGTH.put("h5", 2);
-      VALUE_TO_STRENGTH.put("h6", 1);
-      VALUE_TO_STRENGTH.put("hr", 6);
-
-      VALUE_TO_STRENGTH.put("200%", 6);
-      VALUE_TO_STRENGTH.put("150%", 5);
-      VALUE_TO_STRENGTH.put("120%", 4);
-      VALUE_TO_STRENGTH.put("100%", 0);
-      VALUE_TO_STRENGTH.put( "80%", 3);
-      VALUE_TO_STRENGTH.put( "70%", 2);
-      VALUE_TO_STRENGTH.put( "60%", 1);
-
-      VALUE_TO_STRENGTH.put("+3", 6);
-      VALUE_TO_STRENGTH.put("+2", 5);
-      VALUE_TO_STRENGTH.put("+1", 4);
-      VALUE_TO_STRENGTH.put("1", 0);
-      VALUE_TO_STRENGTH.put("-1", 0);
-      VALUE_TO_STRENGTH.put("-2", 0);
-
-      VALUE_TO_STRENGTH.put("thead", 0);
-      VALUE_TO_STRENGTH.put("th", 0);
-      VALUE_TO_STRENGTH.put("em", 0);
-      VALUE_TO_STRENGTH.put("strong", 0);
-      VALUE_TO_STRENGTH.put("b", 0);
-
-      VALUE_TO_STRENGTH.put("title", 7);
+      for(Map.Entry<String, Integer> entry : VALUE_TO_STRENGTH_456.entrySet())
+        VALUE_TO_STRENGTH.put(entry.getKey(), entry.getValue());
 
       MIN_USABLE_STRENGTH = 1;
       MAX_STRENGTH = 7;
     }
   }
-
 
   private Set<String> ignoreTags;
   private Set<String> headingTags;
@@ -217,6 +226,13 @@ public class HtmlHelper {
    */
   public HtmlHelper() {
     this(DEFAULT_IGNORE_TAG_STRINGS, DEFAULT_HEADING_TAGS, VALUE_TO_STRENGTH, DEFAULT_IGNORE_TAG_ATTRIBUTES);
+  }
+
+  public HtmlHelper(boolean ignoreHeadings456) {
+    this(DEFAULT_IGNORE_TAG_STRINGS, 
+         DEFAULT_HEADING_TAGS, 
+         (ignoreHeadings456 ? VALUE_TO_STRENGTH_NO_456 : VALUE_TO_STRENGTH_456), 
+         DEFAULT_IGNORE_TAG_ATTRIBUTES);
   }
 
   /**

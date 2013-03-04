@@ -197,7 +197,7 @@ public abstract class BaseTagStack implements TagStack {
     final Iterator<XmlLite.Tag> otherTagsIter = ((BaseTagStack)other).getTagsList().iterator();
 
     int result = -1;
-
+    boolean match = true;
     while (myTagsIter.hasNext() && otherTagsIter.hasNext()) {
       final XmlLite.Tag myTag = myTagsIter.next();
       final XmlLite.Tag otherTag = otherTagsIter.next();
@@ -205,14 +205,13 @@ public abstract class BaseTagStack implements TagStack {
       ++result;
 
       if (myTag != otherTag) {
+        match = false;
         break;
       }
     }
 
     // if we run out of tags, these are common blocks
-    if(!myTagsIter.hasNext() || !otherTagsIter.hasNext())
-      result++;
-
+    if(match) result++;
     return result;
   }
 

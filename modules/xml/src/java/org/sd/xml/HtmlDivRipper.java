@@ -11,7 +11,7 @@
     The Semantic Discovery Toolkit is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
+    GNU Lesser General Public License for more details.\
 
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
@@ -41,7 +41,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
 
   public HtmlDivRipper(File htmlFile) throws IOException {
     this.leafRipper = new XmlLeafNodeRipper(FileUtil.getInputStream(htmlFile), true, null, false, null);
-    this.htmlHelper = new HtmlHelper();
+    this.htmlHelper = new HtmlHelper(true /* use full headings map */);
     this.inProgress = null;
     this.next = getNextPathGroup();
   }

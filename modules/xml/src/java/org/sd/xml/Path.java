@@ -87,4 +87,27 @@ public class Path {
   public TagStack getTagStack() {
     return tagStack;
   }
+
+  public String toString() 
+  {
+    StringBuilder result = new StringBuilder();
+    for (XmlLite.Tag tag : tagStack.getTags()) {
+      if (result.length() > 0) result.append('.');
+      result.append(tag.name);
+    }
+    return result.toString();
+  }
+
+  public String toString(int endIdx) 
+  {
+    StringBuilder result = new StringBuilder();
+    final List<XmlLite.Tag> tags = tagStack.getTags();
+    for (int i = 0; i <= endIdx; ++i) {
+      final XmlLite.Tag tag = tags.get(i);
+      if (result.length() > 0) result.append('.');
+      result.append(tag.name);
+    }
+    return result.toString();
+  }
+
 }
