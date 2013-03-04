@@ -204,6 +204,22 @@ public class PathGroup {
     return result.toString();
   }
 
+  public DomElement asXml() 
+  {
+    final XmlStringBuilder result = new XmlStringBuilder();
+    StringBuilder tag = new StringBuilder();
+    tag.append("pathGroup paths='").append(paths.size()).append("'");
+    result.addTag(tag.toString());
+    if (commonPathIndex >= 0)
+    {
+      Path path = getFirstPath();
+      result.addTagAndText("commonPath", path.toString(commonPathIndex));
+      result.addTagAndText("text", text.toString());
+    }
+    result.addEndTag("pathGroup");
+    return result.getXmlElement();
+  }
+
   private final void addText(Path path) {
     if (path.hasText()) {
       final String pathText = path.getText();
