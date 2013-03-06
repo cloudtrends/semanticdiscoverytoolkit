@@ -88,6 +88,29 @@ public class Path {
     return tagStack;
   }
 
+  public boolean isInline(Path other) 
+  {
+    // find first divergent tag
+    // if first divergent tag == this path.depth()
+    //   and the tag at that index is not block tags
+    //   then this is inline
+    // else not inline
+
+    boolean result = false;
+    if(!hasTagStack())
+      return result;
+
+    TagStack otherStack = other.getTagStack();
+    int idx = tagStack.findFirstDivergentTag(otherStack);
+    if(idx == tagStack.depth())
+    {
+      XmlLite.Tag tag = otherStack.getTag(idx);
+      if(tag != null)
+        result = !HtmlHelper.DEFAULT_BLOCK_TAGS.contains(tag.name);
+    }
+    return result;
+  }
+
   public String toString() 
   {
     StringBuilder result = new StringBuilder();

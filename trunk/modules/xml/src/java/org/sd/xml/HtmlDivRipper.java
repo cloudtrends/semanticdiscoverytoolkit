@@ -123,7 +123,11 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
 
       final int lastPathStrength = getPathHeadingStrength(lastPath);
       final int pathStrength = getPathHeadingStrength(path);
-      if(pathStrength > lastPathStrength)
+      // todo: check the path strength if the tag is not inline
+      //       even with a tag which is not a block element,
+      //       the tag may not share a common root element
+      if(!lastPath.isInline(path) && 
+         pathStrength > lastPathStrength)
         result = false;
     }
 
