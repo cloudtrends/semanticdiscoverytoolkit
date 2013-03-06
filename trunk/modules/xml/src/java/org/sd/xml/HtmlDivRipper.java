@@ -26,6 +26,8 @@ import java.util.Set;
 import java.util.HashSet;
 import org.sd.io.FileUtil;
 import org.sd.util.tree.Tree;
+import org.sd.util.StringUtil;
+import org.sd.util.WordIterator;
 
 /**
  * A ripper that grabs text blocks under (deepest) div nodes.
@@ -103,9 +105,12 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
       Path lastPath = pathGroup.getLastPath();
       if (commonPos >= 0) {
         final int lastDeepestDiv = findDeepestBlockElement(lastPath);
-        //if ("text size:".equals(path.getText())) {
-        //  final boolean stopHere = true;
-        //}
+        // todo: if the current path's deepest div is deeper than the last
+        //       path's, it is possible that the current div may be nested
+        //       in such a case, it might make sense to skip this path
+        //       when comparing the next path for common pos, 
+        //       i.e. the header div is considered to be the header for both
+        //       the current block and the next block
 
         if (lastDeepestDiv < 0) {  // pathGroup has no div
           // path belongs if it has no div as well
@@ -120,23 +125,69 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
         }
         //else, fail when commonPos < pathGroup's deepest div
       }
-
+      
       final int lastPathStrength = getPathHeadingStrength(lastPath);
       final int pathStrength = getPathHeadingStrength(path);
       // todo: check the path strength if the tag is not inline
       //       even with a tag which is not a block element,
       //       the tag may not share a common root element
-      if(!lastPath.isInline(path) && 
-         pathStrength > lastPathStrength)
-        result = false;
+      if(!lastPath.isInline(path))
+      {
+        if(lastPathStrength <= 1 && pathStrength <= 1 && isAllCapsPrefix(path))
+          result = false;
+        else if(pathStrength > lastPathStrength)
+          result = false;
+      }
+    }
+
+    return result;
+  }
+  
+  public boolean isAllCapsPrefix(Path path)
+  {
+    boolean result = false;
+    int count = 0;
+    if(path.hasText())
+    {
+      String text = path.getText();
+      for(WordIterator it = new WordIterator(text); it.hasNext();)
+      {
+        String word = it.next();
+        // ignore short words
+        if(word.length() < 3)
+          continue;
+        else if((word.length() > 4 || !StringUtil.isLikelyAbbreviation(word))
+                && StringUtil.allCaps(word))
+        {
+          result = true;
+          break;
+        }
+        else
+        {
+          result = false;
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  public int getPathGroupHeadingStrength(PathGroup group)
+  {
+    int result = 0;
+    for (Path path : group.getPaths())
+    {
+      int strength = getPathHeadingStrength(path);
+      if(strength != HtmlHelper.MAX_STRENGTH && strength > result)
+        result = strength;
     }
 
     return result;
   }
 
-  protected int getPathHeadingStrength(Path path)
+  public int getPathHeadingStrength(Path path)
   {
-    int result = -1;
+    int result = 0;
 
     if(!path.hasTagStack())
       return result;
@@ -147,6 +198,12 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
       if(strength > result)
         result = strength;
     }
+    
+    // if the heading strength == 0
+    //  and the text starts with all caps,
+    //  set heading strength to 1
+    if(result < 1 && isAllCapsPrefix(path))
+      result = 1;
 
     return result;
   }
