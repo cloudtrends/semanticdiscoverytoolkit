@@ -315,34 +315,13 @@ public class FileContext implements InputContext {
   }
 
 
-  private static abstract class FileContextIterator implements InputContextIterator {
-
-    protected abstract InputContext getItem(int itemNum);
+  private static abstract class FileContextIterator extends SimpleInputContextIterator {
 
     protected final FileContext fileContext;
-    private int numItems;
-    private int nextItem;
 
     protected FileContextIterator(FileContext fileContext, int numItems) {
+      super(numItems);
       this.fileContext = fileContext;
-      this.numItems = numItems;
-      this.nextItem = 0;
-    }
-
-    public boolean hasNext() {
-      return nextItem < numItems;
-    }
-
-    public InputContext next() {
-      return getItem(nextItem++);
-    }
-
-    public void remove() {
-      throw new UnsupportedOperationException("Implement when needed.");
-    }
-
-    public void reset() {
-      nextItem = 0;
     }
   }
 

@@ -343,17 +343,25 @@ public class CompoundParser {
 
   private final AtnParseBasedTokenizer getCurrentTokenizer(AtnParseBasedTokenizer currentTokenizer, ParseOutputCollector output, InputContext input, AtnParserWrapper parserWrapper) {
 
-    final DomElement tokenizerConfig = parserWrapper.getTokenizerOverride();
-
     if (currentTokenizer == null) {
-      currentTokenizer = new AtnParseBasedTokenizer(resourceManager, tokenizerConfig, output.getParseResults(), input, parserWrapper.getTokenizerOptions());
+      currentTokenizer = buildTokenizer(output, input, parserWrapper);
     }
     else {
       if (!currentTokenizer.getOptions().equals(parserWrapper.getTokenizerOptions())) {
-        currentTokenizer = new AtnParseBasedTokenizer(resourceManager, tokenizerConfig, output.getParseResults(), input, parserWrapper.getTokenizerOptions());
+        currentTokenizer = buildTokenizer(output, input, parserWrapper);
       }
     }
     
     return currentTokenizer;
+  }
+
+  private final AtnParseBasedTokenizer buildTokenizer(ParseOutputCollector output, InputContext input, AtnParserWrapper parserWrapper) {
+
+    final DomElement tokenizerConfig = parserWrapper.getTokenizerOverride();
+
+    final AtnParseBasedTokenizer result =
+      new AtnParseBasedTokenizer(resourceManager, tokenizerConfig, output.getParseResults(), input, parserWrapper.getTokenizerOptions());
+
+    return result;
   }
 }

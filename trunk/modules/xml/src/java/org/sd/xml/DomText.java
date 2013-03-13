@@ -34,6 +34,13 @@ public class DomText extends DomNode implements Text {
     super(textData, "#text", "#text", textData.text);
   }
 
+  /**
+   * Safely, efficiently downcast this DomNode to a DomText if it is one.
+   */
+  public DomText asDomText() {
+    return this;
+  }
+
   public String getTextContent() {
     return nodeValue;
   }
