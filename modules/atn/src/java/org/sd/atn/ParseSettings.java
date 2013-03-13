@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.sd.util.InputContext;
 import org.sd.util.InputContextIterator;
 import org.sd.xml.DataProperties;
 

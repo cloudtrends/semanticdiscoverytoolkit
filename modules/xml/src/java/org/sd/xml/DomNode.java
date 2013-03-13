@@ -78,6 +78,13 @@ public abstract class DomNode implements Node {
     return null;
   }
 
+  /**
+   * Safely, efficiently downcast this DomNode to a DomText if it is one.
+   */
+  public DomText asDomText() {
+    return null;
+  }
+
   public void prune() {
     final DomNode parentNode = getParent();
 

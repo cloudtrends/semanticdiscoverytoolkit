@@ -472,6 +472,16 @@ public class AtnParseRunner {
     return result;
   }
 
+  /**
+   * Parse input using the given inputContext iterator for input.
+   * <p>
+   * NOTE: Uses only a "RESET" InputUpdateStrategy.
+   */
+  public ParseOutputCollector parseInput(InputContextIterator inputContextIterator,
+                                         DataProperties overrides, AtomicBoolean die) {
+    return parseInput(inputContextIterator, InputUpdateStrategy.RESET, null, overrides, die);
+  }
+
   protected ParseOutputCollector parseInput(InputContextIterator inputContextIterator,
                                             InputUpdateStrategy inputUpdateStrategy, ParseOutputCollector result,
                                             DataProperties overrides, AtomicBoolean die) {

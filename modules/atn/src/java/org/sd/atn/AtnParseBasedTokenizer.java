@@ -29,6 +29,8 @@ import org.sd.token.Break;
 import org.sd.token.FeatureConstraint;
 import org.sd.token.CategorizedToken;
 import org.sd.token.Token;
+import org.sd.token.TokenInfo;
+import org.sd.token.TokenInfoContainer;
 import org.sd.token.StandardTokenizer;
 import org.sd.token.StandardTokenizerOptions;
 import org.sd.util.InputContext;
@@ -50,8 +52,9 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
   
   public static final String SOURCE_PARSE = "_sourceParse";
 
-  private Map<Integer, TokenInfoContainer> pos2tokenInfoContainer;
+  private Map<Integer, TokenInfoContainer<MyTokenInfo>> pos2tokenInfoContainer;
   private IntegerRange _parseSpans;
+  private List<TokenInfo> hardBreaks;
 
   public AtnParseBasedTokenizer(InputContext inputContext, StandardTokenizerOptions tokenizerOptions) {
     this(null, null, null, inputContext, tokenizerOptions);
@@ -63,6 +66,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
 
   public AtnParseBasedTokenizer(ResourceManager resourceManager, DomElement tokenizerConfig, List<AtnParseResult> parseResults, InputContext inputContext, StandardTokenizerOptions tokenizerOptions) {
     super(inputContext.getText(), tokenizerOptions);
+    this.hardBreaks = null;
 
     NodeList tokenNodes = null;
     if (tokenizerConfig != null) {
@@ -74,25 +78,32 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
 
   private void init(ResourceManager resourceManager, InputContext inputContext, List<AtnParseResult> parseResults, NodeList tokenNodes) {
     super.setInputContext(inputContext);
-    this.pos2tokenInfoContainer = new TreeMap<Integer, TokenInfoContainer>();
+    this.pos2tokenInfoContainer = new TreeMap<Integer, TokenInfoContainer<MyTokenInfo>>();
 
     add(parseResults);
     add(tokenNodes);
+
+    if (inputContext instanceof ParseInputContext) {
+      // augment tokenizer based on parse input data
+      final ParseInputContext parseInput = (ParseInputContext)inputContext;
+      addOtherTokenInfos(parseInput.getTokenInfos());
+      this.hardBreaks = parseInput.getHardBreaks();
+    }
   }
 
-  public void add(List<AtnParseResult> parseResults) {
+  public final void add(List<AtnParseResult> parseResults) {
     if (parseResults != null && parseResults.size() > 0) {
       boolean changed = false;
 
       for (AtnParseResult parseResult : parseResults) {
-        changed = add(parseResult);
+        changed |= add(parseResult);
       }
 
       if (changed) super.reset();
     }
   }
 
-  public boolean add(AtnParseResult parseResult) {
+  private final boolean add(AtnParseResult parseResult) {
     boolean changed = false;
 
     final InputContext parseInputContext = parseResult.getInputContext();
@@ -106,35 +117,35 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     return changed;
   }
 
-  private void addParseResult(AtnParseResult parseResult, int startPosition) {
+  private final void addParseResult(AtnParseResult parseResult, int startPosition) {
     for (int parseNum = 0; parseNum < parseResult.getNumParses(); ++parseNum) {
       final AtnParse parse = parseResult.getParse(parseNum);
 
       if (parse.getSelected()) {
-        final TokenInfo tokenInfo = new TokenInfo(parse);
+        final MyTokenInfo tokenInfo = new MyTokenInfo(parse);
         addTokenInfo(tokenInfo, startPosition);
       }
     }
   }
 
-  private void add(NodeList tokenNodes) {
+  private final void add(NodeList tokenNodes) {
     if (tokenNodes != null) {
       for (int i = 0; i < tokenNodes.getLength(); ++i) {
         final DomNode tokenNode = (DomNode)tokenNodes.item(i);
-        TokenInfo tokenInfo = new TokenInfo(tokenNode);
+        MyTokenInfo tokenInfo = new MyTokenInfo(tokenNode);
         addTokenInfo(tokenInfo, 0);
       }
     }
   }
 
 
-  private void addTokenInfo(TokenInfo tokenInfo, int startPosition) {
+  private final void addTokenInfo(MyTokenInfo tokenInfo, int startPosition) {
     final int pos = startPosition + tokenInfo.getTokenStart();
 
-    TokenInfoContainer tokenInfoContainer = pos2tokenInfoContainer.get(pos);
+    TokenInfoContainer<MyTokenInfo> tokenInfoContainer = pos2tokenInfoContainer.get(pos);
 
     if (tokenInfoContainer == null) {
-      tokenInfoContainer = new TokenInfoContainer();
+      tokenInfoContainer = new TokenInfoContainer<MyTokenInfo>();
       pos2tokenInfoContainer.put(pos, tokenInfoContainer);
       _parseSpans = null; // force recalculate
     }
@@ -142,10 +153,22 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     tokenInfoContainer.add(tokenInfo, startPosition);
   }
 
+
+  private final void addOtherTokenInfos(List<TokenInfo> tokenInfos) {
+    if (tokenInfos != null) {
+      for (TokenInfo tokenInfo : tokenInfos) {
+        addTokenInfo(new MyTokenInfo(tokenInfo), 0);
+      }
+
+      // changed
+      super.reset();
+    }
+  }
+
   /**
    * Access this data for results analysis.
    */
-  public Map<Integer, TokenInfoContainer> getPos2tokenInfoContainer() {
+  public Map<Integer, TokenInfoContainer<MyTokenInfo>> getPos2tokenInfoContainer() {
     return pos2tokenInfoContainer;
   }
 
@@ -158,21 +181,23 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
 
     final int textlen = text.length();
     for (int i = 0; i < textlen; ++i) {
-      final TokenInfoContainer tic = pos2tokenInfoContainer.get(i);
+      final TokenInfoContainer<MyTokenInfo> tic = pos2tokenInfoContainer.get(i);
       if (tic != null) {
         // get the longest parse's entry
-        final Map.Entry<Integer, List<TokenInfo>> lastEntry = tic.getTokenInfoList().lastEntry();
+        final Map.Entry<Integer, List<MyTokenInfo>> lastEntry = tic.getTokenInfoList().lastEntry();
 
         // keep the most "complex" parse
-        TokenInfo ti = null;
+        MyTokenInfo ti = null;
         AtnParse parse = null;
         int complexity = 0;
-        for (TokenInfo curti : lastEntry.getValue()) {
+        for (MyTokenInfo curti : lastEntry.getValue()) {
           final AtnParse curParse = curti.getParse();
-          final int curComplexity = curParse.getParseTree().countNodes();
-          if (ti == null || curComplexity > complexity) {
-            ti = curti;
-            complexity = curComplexity;
+          if (curParse != null) {
+            final int curComplexity = curParse.getParseTree().countNodes();
+            if (ti == null || curComplexity > complexity) {
+              ti = curti;
+              complexity = curComplexity;
+            }
           }
         }
         if (ti != null) {
@@ -192,9 +217,9 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
   private IntegerRange getParseSpans() {
     if (_parseSpans == null) {
       _parseSpans = new IntegerRange();
-      for (Map.Entry<Integer, TokenInfoContainer> mapEntry : pos2tokenInfoContainer.entrySet()) {
+      for (Map.Entry<Integer, TokenInfoContainer<MyTokenInfo>> mapEntry : pos2tokenInfoContainer.entrySet()) {
         final int pos = mapEntry.getKey();
-        final TokenInfoContainer tic = mapEntry.getValue();
+        final TokenInfoContainer<MyTokenInfo> tic = mapEntry.getValue();
         _parseSpans.add(pos + 1, tic.getTokenInfoList().lastKey() - 1, true);
       }
     }
@@ -204,7 +229,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
   private final Set<Integer> getTokenEnds() {
     final Set<Integer> result = new HashSet<Integer>();
 
-    for (TokenInfoContainer tic : pos2tokenInfoContainer.values()) {
+    for (TokenInfoContainer<MyTokenInfo> tic : pos2tokenInfoContainer.values()) {
       result.addAll(tic.getTokenInfoList().keySet());
     }
 
@@ -215,13 +240,42 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     final Map<Integer, Break> result = super.createBreaks();
     final Set<Integer> tokenEnds = getTokenEnds();
 
+    // set hard breaks, if any
+    if (hardBreaks != null) {
+      for (TokenInfo hardBreak : hardBreaks) {
+        final int startPos = hardBreak.getTokenStart();
+        final int endPos = hardBreak.getTokenEnd();
+        final String breakType = hardBreak.getCategory();  // null or "h" for hard, "s" for soft, "n" for none
+        if (endPos > startPos) {
+          final Break theBreak =
+            "s".equals(breakType) ? Break.SINGLE_WIDTH_SOFT_BREAK :
+            "n".equals(breakType) ? Break.NO_BREAK :
+            Break.SINGLE_WIDTH_HARD_BREAK;
+
+          for (int pos = startPos; pos < endPos; ++pos) {
+            result.put(pos, theBreak);
+          }
+        }
+        else {
+          final Break theBreak =
+            "s".equals(breakType) ? Break.ZERO_WIDTH_SOFT_BREAK :
+            "n".equals(breakType) ? null :
+            Break.ZERO_WIDTH_HARD_BREAK;
+
+          if (theBreak != null) {
+            result.put(startPos, theBreak);
+          }
+        }
+      }
+    }
+
     // get the ranges covered by parses
     final IntegerRange parseSpans = getParseSpans();
 
     // turn boundaries between parses into hard breaks; within parse alternatives as soft breaks; clearing other breaks
-    for (Map.Entry<Integer, TokenInfoContainer> mapEntry : pos2tokenInfoContainer.entrySet()) {
+    for (Map.Entry<Integer, TokenInfoContainer<MyTokenInfo>> mapEntry : pos2tokenInfoContainer.entrySet()) {
       int pos = mapEntry.getKey();
-      final TokenInfoContainer tic = mapEntry.getValue();
+      final TokenInfoContainer<MyTokenInfo> tic = mapEntry.getValue();
 
       // Set LHS break as Hard (or soft if contained w/in another parse)
       final boolean isHard = !parseSpans.includes(pos);
@@ -315,132 +369,108 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
   // adds parse category features to token
   protected void addTokenFeatures(Token token) {
     if (token != null) {
-      final TokenInfoContainer tic = pos2tokenInfoContainer.get(token.getStartIndex());
+      final TokenInfoContainer<MyTokenInfo> tic = pos2tokenInfoContainer.get(token.getStartIndex());
       if (tic != null) {
-        final TokenInfo first = tic.getFirst(token.getEndIndex());
+        final MyTokenInfo first = tic.getFirst(token.getEndIndex());
 
-        final List<TokenInfo> tokenInfos = tic.getAll(token.getEndIndex());
+        final List<MyTokenInfo> tokenInfos = tic.getAll(token.getEndIndex());
         if (tokenInfos != null) {
-          for (TokenInfo tokenInfo : tokenInfos) {
-
-            // Add the matched grammar rule's category as a token feature
-            // (NOTE: this feature is used by AtnState.tokenMatchesStepCategory to
-            //        identify a token match and needs to be present whether we
-            //        have a parse or not.)
-            token.setFeature(tokenInfo.getCategory(), new Boolean(true), this);
-
-            final AtnParse atnParse = tokenInfo.getParse();
-
-            if (atnParse != null) {
-
-              // Add the Parse as a (_sourceParse) feature on the token
-              final Parse sourceParse = atnParse.getParse();
-              if (sourceParse != null) {
-                token.setFeature(AtnParseBasedTokenizer.SOURCE_PARSE, sourceParse, this);
-              }
-
-              // Add the interpretation classifications as token features
-              final List<ParseInterpretation> interpretations = atnParse.getParseInterpretations();
-              if (interpretations != null) {
-                for (ParseInterpretation interpretation : interpretations) {
-                  if (interpretation.getClassification() != null) {
-                    token.setFeature(interpretation.getClassification(), interpretation, this);
-                  }
-                }
-              }
-
-              // Add the parse's token's features as features on this token
-              final List<CategorizedToken> parseCTokens = atnParse.getTokens();
-              if (parseCTokens != null) {
-                for (CategorizedToken cToken : parseCTokens) {
-                  // add a feature for the category
-                  token.setFeature(cToken.category, new Boolean(true), this);
-
-                  // add the token's features
-                  if (cToken.token.hasFeatures()) {
-                    token.addFeatures(cToken.token.getFeatures());
-                  }
-                }
-              }
-            }
+          for (MyTokenInfo tokenInfo : tokenInfos) {
+            tokenInfo.addTokenFeatures(token, this);
           }
         }
       }
     }
   }
 
-  public class TokenInfo {
-
-    private int tokenStart;
-    public int getTokenStart() {
-      return tokenStart;
-    }
-
-    private int tokenEnd;
-    public int getTokenEnd() {
-      return tokenEnd;
-    }
-
-    private String category;
-    public String getCategory() {
-      return category;
-    }
+  public static class MyTokenInfo extends TokenInfo {
 
     private AtnParse parse;
+    private TokenInfo wrappedTokenInfo;
+
+    MyTokenInfo(DomNode tokenNode) {
+      super(
+        tokenNode.getAttributeInt("start"),
+        tokenNode.getAttributeInt("end"),
+        tokenNode.getTextContent());
+      this.parse = null;
+      this.wrappedTokenInfo = null;
+    }
+
+    MyTokenInfo(AtnParse parse) {
+      super(
+        parse.getStartIndex(),
+        parse.getEndIndex(),
+        parse.getCategory());
+      this.parse = parse;
+      this.wrappedTokenInfo = null;
+    }
+
+    MyTokenInfo(TokenInfo wrappedTokenInfo) {
+      super(
+        wrappedTokenInfo.getTokenStart(),
+        wrappedTokenInfo.getTokenEnd(),
+        wrappedTokenInfo.getCategory());
+      this.parse = null;
+      this.wrappedTokenInfo = wrappedTokenInfo;
+    }
+
     public AtnParse getParse() {
       return parse;
     }
 
-
-    TokenInfo(DomNode tokenNode) {
-      this.tokenStart = tokenNode.getAttributeInt("start");
-      this.tokenEnd = tokenNode.getAttributeInt("end");
-      this.category = tokenNode.getTextContent();
-      this.parse = null;
+    public TokenInfo getWrappedTokenInfo() {
+      return wrappedTokenInfo;
     }
 
-    TokenInfo(AtnParse parse) {
-      this.tokenStart = parse.getStartIndex();
-      this.tokenEnd = parse.getEndIndex();
-      this.category = parse.getCategory();
-      this.parse = parse;
-    }
-  }
+    public void addTokenFeatures(Token token, Object source) {
 
-  public class TokenInfoContainer {
-
-    private TreeMap<Integer, List<TokenInfo>> tokenInfoList;
-    public TreeMap<Integer, List<TokenInfo>> getTokenInfoList() {
-      return tokenInfoList;
-    }
-
-    TokenInfoContainer() {
-      this.tokenInfoList = new TreeMap<Integer, List<TokenInfo>>();
-    }
-
-    void add(TokenInfo tokenInfo, int offset) {
-      final int endIndex = offset + tokenInfo.getTokenEnd();
-      List<TokenInfo> tokenInfos = tokenInfoList.get(endIndex);
-      if (tokenInfos == null) {
-        tokenInfos = new ArrayList<TokenInfo>();
-        tokenInfoList.put(endIndex, tokenInfos);
-      }
-      tokenInfos.add(tokenInfo);
-    }
-
-    TokenInfo getFirst(int endPos) {
-      TokenInfo result = null;
-
-      final List<TokenInfo> tokenInfos = tokenInfoList.get(endPos);
-      if (tokenInfos != null && tokenInfos.size() > 0) {
-        result = tokenInfos.get(0);
+      // Add the matched grammar rule's category as a token feature
+      // (NOTE: this feature is used by AtnState.tokenMatchesStepCategory to
+      //        identify a token match and needs to be present whether we
+      //        have a parse or not.)
+      final String category = getCategory();
+      if (category != null && !"".equals(category)) {
+        token.setFeature(category, new Boolean(true), source);
       }
 
-      return result;
-    }
 
-    List<TokenInfo> getAll(int endPos) {
-      return tokenInfoList.get(endPos);
+      if (wrappedTokenInfo != null) {
+        wrappedTokenInfo.addTokenFeatures(token, source);
+      }
+
+      if (parse != null) {
+
+        // Add the Parse as a (_sourceParse) feature on the token
+        final Parse sourceParse = parse.getParse();
+        if (sourceParse != null) {
+          token.setFeature(AtnParseBasedTokenizer.SOURCE_PARSE, sourceParse, source);
+        }
+
+        // Add the interpretation classifications as token features
+        final List<ParseInterpretation> interpretations = parse.getParseInterpretations();
+        if (interpretations != null) {
+          for (ParseInterpretation interpretation : interpretations) {
+            if (interpretation.getClassification() != null) {
+              token.setFeature(interpretation.getClassification(), interpretation, source);
+            }
+          }
+        }
+
+        // Add the parse's token's features as features on this token
+        final List<CategorizedToken> parseCTokens = parse.getTokens();
+        if (parseCTokens != null) {
+          for (CategorizedToken cToken : parseCTokens) {
+            // add a feature for the category
+            token.setFeature(cToken.category, new Boolean(true), source);
+
+            // add the token's features
+            if (cToken.token.hasFeatures()) {
+              token.addFeatures(cToken.token.getFeatures());
+            }
+          }
+        }
+      }
     }
   }
 }
