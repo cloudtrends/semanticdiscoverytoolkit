@@ -161,7 +161,7 @@ public class ParseAnalyzer {
   protected void analyzeGrammarTree(String id, Tree<String> tree) {
     final Parse parse = getHardwiredParse(tree);
 
-    final boolean stopHere = true;
+    //final boolean stopHere = true;
   }
 
   public Set<String> getInterpXml(List<Tree<String>> trees) {

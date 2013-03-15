@@ -417,6 +417,68 @@ public class AtnParseRunner {
     return result;
   }
 
+  //
+  // Parsing execution model:
+  // - AtnParseRunner parses based on a sequence of ParserFlow elements
+  // - each ParserFlow corresponds to a ParseConfig
+  // - each ParseConfig corresponds to a CompoundParser
+  // - each CompoundParser parses based on a sequence of AtnParserWrapper elements
+  // - each AtnParserWrapper encapsulates a single FSM parser
+  //
+  // Parser input/flow strategy:
+  // - Input: InputContextIterator
+  //   - for each ParseConfig (encapsulating a CompoundParser)
+  //     - apply the ParseConfig to the full (reset or broadened) input
+  //     - collecting the parse results (in ParseOutputCollector)
+  //
+  // - ParseConfig processing consists of:
+  //   - for each input line (InputContext from InputContextIterator)
+  //     - parse the input line using the associated CompoundParser
+  //     - collecting results in the working ParseOutputCollector
+  //   - execute each AtnParserWrapper-level ambiguity resolution
+  //     - over the CompoundParser's results over all input
+  //
+  // - Parsing an input line with a CompoundParser consists of
+  //   - for each AtnParserWrapper
+  //     - build a tokenizer for the input line
+  //       - note that successive tokenizers based on prior parses
+  //         - incorporate prior parse information into the tokenization
+  //           - from prior parses results generated previously outside the scope of this loop
+  //           - from prior parse results generated within the scope of this loop
+  //     - seek/collect all parses of the input as seen through the tokenizer with the AtnParserWrapper
+  //     - collecting the parse results (in ParseOutputCollector)
+  //
+  // - Parsing tokenizer input through an AtnParserWrapper consists of
+  //   - seek/collect all parses of the tokenizer input with the associated AtnParser
+  //   - select parses from the current results using the associated AtnParseSelector
+  //   - collecting the parse results (in ParseOutputCollector)
+  //
+  // - Parsing tokenizer input through an AtnParser consists of
+  //   - starting with each (successive) token
+  //     - generate all valid parses according to the parser's grammar
+  //     - collecting each valid parse in a parse result
+  //
+  //
+  // NOTES:
+  // - Each compound parser builds on parses from prior compound parsers
+  //   - prior parses become classified tokens/constituents to be leveraged in later parsers
+  //
+  // - Broadening (to be deprecated)
+  //   - The idea of broadening -vs- resetting the input between compound parser parses is
+  //     - instead of resetting the input to re-walk it with the next compound parser,
+  //       - we can broaden the input
+  //         - (e.g. add in the next file line or
+  //         - expand to include more expansive content in a dom by moving up to the next higher element)
+  //       - for successive parsers to take advantage of the prior parses AND provide more parses for later parsers
+  //         - examples:
+  //           - An input record with multiple "lines", one for each type of information being extracted
+  //           - A deep DOM element's encapsulated text is further interpreted in its broader context
+  //   - The bottom line: "Broadening" isn't really applicable at this level of processing and should be controlled by clients
+  //
+  // - Resetting
+  //   - The input iteration needs reset capability so that the same input can be submitted to successive parsers.
+  //
+
   public ParseOutputCollector parseInputString(String inputString, DataProperties overrides, AtomicBoolean die) throws IOException {
     final FileContext fileContext = new FileContext(new String[]{inputString}, WhitespacePolicy.HYPERTRIM);
     final ParseOutputCollector output = parseInput(fileContext.getLineIterator(), InputUpdateStrategy.RESET, null, overrides, die);
