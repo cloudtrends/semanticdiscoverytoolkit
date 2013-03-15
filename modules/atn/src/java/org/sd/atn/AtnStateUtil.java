@@ -560,7 +560,9 @@ public class AtnStateUtil {
   private static final void reconcileDeepTokens(Token baseToken, Tree<String> deepParseTree) {
     if (deepParseTree.hasAttributes()) {
       final CategorizedToken cToken = (CategorizedToken)deepParseTree.getAttributes().get(AtnStateUtil.TOKEN_KEY);
-      if (cToken != null && cToken.token.getTokenizer() != baseToken.getTokenizer()) {
+      if (cToken != null && cToken.token.getTokenizer() != baseToken.getTokenizer() &&
+          !cToken.token.getTokenizer().getText().equals(baseToken.getTokenizer().getText())) {
+
         final int baseStart = baseToken.getStartIndex();
         int startIndex = cToken.token.getStartIndex();
         int endIndex = cToken.token.getEndIndex();
