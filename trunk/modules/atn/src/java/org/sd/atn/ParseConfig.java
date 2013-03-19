@@ -491,20 +491,20 @@ public class ParseConfig {
 
 
   public ParseOutputCollector parse(InputContextIterator inputContextIterator,
-                                    MultiParseSettings settings, DataProperties overrides,
+                                    MultiParseSettings settings, InputOptions overrides,
                                     AtomicBoolean die) {
     return settings.parse(this, inputContextIterator, overrides, die);
   }
 
   public ParseOutputCollector parse(InputContextIterator inputContextIterator,
                                     MultiParseSettings settings, ParseOutputCollector output,
-                                    DataProperties overrides, AtomicBoolean die) {
+                                    InputOptions overrides, AtomicBoolean die) {
     return settings.parse(this, inputContextIterator, output, overrides, die);
   }
 
   public ParseOutputCollector parse(InputContextIterator inputContextIterator,
                                     String compoundParserId, String[] flow,
-                                    DataProperties overrides, AtomicBoolean die) {
+                                    InputOptions overrides, AtomicBoolean die) {
     // NOTE: flow holds the ordered parser IDs within the identified compound
     //       parser to apply. When null, all parsers are applied in the order
     //       they were defined.
@@ -513,7 +513,7 @@ public class ParseConfig {
 
   public ParseOutputCollector parse(InputContextIterator inputContextIterator,
                                     String compoundParserId, String[] flow,
-                                    ParseOutputCollector output, DataProperties overrides,
+                                    ParseOutputCollector output, InputOptions overrides,
                                     AtomicBoolean die) {
     
     // the stop list holds start positions of tokens that start parses and
@@ -554,7 +554,7 @@ public class ParseConfig {
   public ParseOutputCollector parse(InputContext inputContext, String compoundParserId,
                                     String[] flow, ParseOutputCollector output,
                                     Set<Integer> stopList, List<AtnParseResult> collector,
-                                    DataProperties overrides, AtomicBoolean die) {
+                                    InputOptions overrides, AtomicBoolean die) {
     ParseOutputCollector result = output;
 
     final CompoundParser compoundParser = id2CompoundParser.get(compoundParserId);

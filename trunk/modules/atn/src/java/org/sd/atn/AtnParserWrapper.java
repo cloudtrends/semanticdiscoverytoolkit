@@ -99,6 +99,9 @@ public class AtnParserWrapper {
   public AtnParseOptions getParseOptions() {
     return parseOptions;
   }
+  public void setParseOptions(AtnParseOptions parseOptions) {
+    this.parseOptions = parseOptions;
+  }
 
   private AtnParsePrequalifier prequalifier;
   public AtnParsePrequalifier getPrequalifier() {
@@ -277,7 +280,8 @@ public class AtnParserWrapper {
   }
 
   public List<AtnParseResult> seekAll(AtnParseBasedTokenizer tokenizer, Set<Integer> stopList,
-                                      DataProperties overrides, AtomicBoolean die) {
+                                      AtnParseOptions parseOptions, DataProperties overrides,
+                                      AtomicBoolean die) {
 
     List<AtnParseResult> parseResults = null;
     tokenizer.setTokenizerOptions(tokenizerOptions);

@@ -19,6 +19,7 @@
 package org.sd.atn;
 
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import org.sd.xml.DataProperties;
@@ -117,6 +118,11 @@ public class AtnParseOptions {
 
   public boolean hasStartRules() {
     return startRules != null && startRules.size() > 0;
+  }
+
+  /** Set the names of start rules to use. */
+  public void setStartRules(String[] startRules) {
+    this.startRules = Arrays.asList(startRules);
   }
 
   private ResourceManager resourceManager;

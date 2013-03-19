@@ -223,7 +223,7 @@ public class CompoundParser {
 
   public ParseOutputCollector parse(InputContext input, String[] flow, ParseOutputCollector output,
                                     Set<Integer> stopList, List<AtnParseResult> collector,
-                                    DataProperties overrides, AtomicBoolean die) {
+                                    InputOptions overrides, AtomicBoolean die) {
     final ParseOutputCollector theOutput = output == null ? new ParseOutputCollector(outputNode) : output;
 
     //NOTE: stopList holds indexes for starts of tokens that have been consumed by other parses
@@ -250,7 +250,7 @@ public class CompoundParser {
 
   private void collectOutput(InputContext input, String[] flow, ParseOutputCollector output,
                              Set<Integer> stopList, List<AtnParseResult> collector,
-                             DataProperties overrides, AtomicBoolean die) {
+                             InputOptions overrides, AtomicBoolean die) {
     if (flow == null) {
       flow = parserWrappers.keySet().toArray(new String[parserWrappers.size()]);
     }
@@ -280,8 +280,16 @@ public class CompoundParser {
                            currentTokenizer.getText() + "\"");
       }
 
+      // get appropriate parseOptions and options
+      AtnParseOptions parseOptions = parserWrapper.getParseOptions();
+      DataProperties options = null;
+      if (overrides != null) {
+        options = overrides.getBaseOptions();
+        parseOptions = overrides.getParseOptions(this.id, parserWrapper.getId(), parseOptions);
+      }
+
       // generate initial parse results
-      final List<AtnParseResult> parseResults = parserWrapper.seekAll(currentTokenizer, stopList, overrides, die);
+      final List<AtnParseResult> parseResults = parserWrapper.seekAll(currentTokenizer, stopList, parseOptions, options, die);
 
       if (parseResults.size() > 0) {
         if (verbose && !gotResults) {

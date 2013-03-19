@@ -550,6 +550,8 @@ public class AtnParseRunner {
 
     boolean didOne = false;
 
+    final InputOptions inputOptions = new InputOptions(overrides);
+
     for (ParserFlow parserFlow : activeFlow) {
 
       if (didOne) {
@@ -557,7 +559,7 @@ public class AtnParseRunner {
         inputContextIterator = updateInput(inputContextIterator, inputUpdateStrategy, result);
       }
 
-      result = parseConfig.parse(inputContextIterator, parserFlow.getFlowId(), parserFlow.getParserIds(true), result, overrides, die);
+      result = parseConfig.parse(inputContextIterator, parserFlow.getFlowId(), parserFlow.getParserIds(true), result, inputOptions, die);
       didOne = true;
     }
 
