@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.util.InputContextIterator;
-import org.sd.xml.DataProperties;
 import org.sd.xml.DomElement;
 
 /**
@@ -48,12 +47,12 @@ public class MultiParseSettings {
   }
 
   public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator,
-                                    DataProperties overrides, AtomicBoolean die) {
+                                    InputOptions overrides, AtomicBoolean die) {
     return parse(parseConfig, inputContextIterator, null, overrides, die);
   }
 
   public ParseOutputCollector parse(ParseConfig parseConfig, InputContextIterator inputContextIterator,
-                                    ParseOutputCollector output, DataProperties overrides,
+                                    ParseOutputCollector output, InputOptions overrides,
                                     AtomicBoolean die) {
     for (ParseSettings parseSettings : this.parseSettings) {
       output = parseSettings.parse(parseConfig, inputContextIterator, output, overrides, die);

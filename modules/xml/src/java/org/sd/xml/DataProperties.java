@@ -89,9 +89,14 @@ public class DataProperties extends BaseDataProperties {
 
   /** Copy constructor. */
   public DataProperties(DataProperties other) {
-    this.domDataProperties = copy(other.domDataProperties);
-    this.properties = copy(other.properties);
-    this.remainingArgs = copy(other.remainingArgs);
+    if (other == null) {
+      init(new String[]{}, null);
+    }
+    else {
+      this.domDataProperties = copy(other.domDataProperties);
+      this.properties = copy(other.properties);
+      this.remainingArgs = copy(other.remainingArgs);
+    }
   }
 
   private final LinkedList<DomDataProperties> copy(LinkedList<DomDataProperties> otherDomDataProperties) {
