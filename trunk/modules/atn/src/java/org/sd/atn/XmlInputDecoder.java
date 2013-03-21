@@ -147,6 +147,9 @@ public class XmlInputDecoder {
                 this.paragraphs.add(partialParagraph);
                 partialParagraph = buildParagraph(childNode.asDomElement());
               }
+              else {
+                partialParagraph.setProperties(childNode.asDomElement().getDomAttributes().getAttributes());
+              }
               recurse = true;
               break;
             case 't': 
@@ -393,7 +396,7 @@ public class XmlInputDecoder {
       return properties;
     }
 
-    public void getProperties(Map<String, String> properties) {
+    public void setProperties(Map<String, String> properties) {
       this.properties = properties;
     }
 
