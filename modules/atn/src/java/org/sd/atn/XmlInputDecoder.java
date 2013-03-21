@@ -123,7 +123,7 @@ public class XmlInputDecoder {
   public XmlInputDecoder(String inputString, boolean oneLine) {
     this.paragraphs = new ArrayList<Paragraph>();
     this.defaultOneLine = oneLine;
-    paragraphs.add(new Paragraph(oneLine, inputString));
+    paragraphs.add(new Paragraph(oneLine, inputString, null));
   }
 
   public List<Paragraph> getParagraphs() {
@@ -176,7 +176,7 @@ public class XmlInputDecoder {
 
   private final Paragraph buildParagraph(DomElement pElt) {
     final boolean oneLine = pElt.getAttributeBoolean("oneLine", defaultOneLine);
-    return new Paragraph(oneLine);
+    return new Paragraph(oneLine, pElt.getDomAttributes().getAttributes());
   }
 
   private final void loadToken(Paragraph partialParagraph, DomElement tokenElt) {
@@ -349,21 +349,23 @@ public class XmlInputDecoder {
     private TreeMap<Integer, List<MarkerInfo>> pos2markerInfos;
     private boolean oneLine;
     private boolean gotDelim;
+    private Map<String, String> properties;
 
     private List<MarkerInfo> tokenStarts;
     private List<MarkerInfo> breakMarkers;
 
-    private Paragraph(boolean oneLine) {
+    private Paragraph(boolean oneLine, Map<String, String> properties) {
       this.text = new StringBuilder();
       this.pos2markerInfos = null;
       this.oneLine = oneLine;
       this.gotDelim = false;
+      this.properties = properties;
       this.tokenStarts = null;
       this.breakMarkers = null;
     }
 
-    private Paragraph(boolean oneLine, String trimmedText) {
-      this(oneLine);
+    private Paragraph(boolean oneLine, String trimmedText, Map<String, String> properties) {
+      this(oneLine, properties);
       addText(trimmedText);
     }
 
@@ -377,6 +379,22 @@ public class XmlInputDecoder {
 
     public boolean oneLine() {
       return oneLine;
+    }
+
+    public boolean hasProperties() {
+      return properties != null && properties.size() > 0;
+    }
+
+    public String getProperty(String att) {
+      return (properties != null) ? properties.get(att) : null;
+    }
+
+    public Map<String, String> getProperties() {
+      return properties;
+    }
+
+    public void getProperties(Map<String, String> properties) {
+      this.properties = properties;
     }
 
     public boolean hasTokens() {
@@ -473,7 +491,7 @@ public class XmlInputDecoder {
         final String nextText = iter.next();
         offset = this.text.indexOf(nextText, offset);
 
-        final Paragraph nextParagraph = new Paragraph(true/*already split*/, nextText);
+        final Paragraph nextParagraph = new Paragraph(true/*already split*/, nextText, properties);
         result.add(nextParagraph);
         final int nextOffset = offset + nextText.length();
         if (pos2markerInfos != null) {
