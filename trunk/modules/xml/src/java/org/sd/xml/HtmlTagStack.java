@@ -68,7 +68,7 @@ public class HtmlTagStack extends XmlTagStack {
     return result;
   }
 
-  private final boolean findTag(String tagName) {
+  protected final boolean findTag(String tagName) {
     final String lTagName = tagName.toLowerCase();
 
     for (XmlLite.Tag tag : tags) {

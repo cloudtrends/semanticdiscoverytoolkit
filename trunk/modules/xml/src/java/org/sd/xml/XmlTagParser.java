@@ -133,7 +133,7 @@ public class XmlTagParser {
       }
     }
 
-    // deal with script or start tag
+    // deal with script/style or start tag
     else {
       if (data != null) data.appendCodePoint(codePoint);  // don't forget the first char!
 
@@ -151,6 +151,12 @@ public class XmlTagParser {
           final int pos = readToEndOfScript(inputStream, scriptText, true);
           final XmlLite.Script script = new XmlLite.Script(getBuiltText(scriptText, false));
           result = new TagResult(script, pos < 0);
+        }
+        else if (specialScriptLogic && ltext.startsWith("style") && (ltext.length() == 5 || ltext.charAt(5) == ' ')) {
+          final StringBuilder styleText = new StringBuilder();
+          final int pos = readToEndOfStyle(inputStream, styleText, true);
+          final XmlLite.Style style = new XmlLite.Style(getBuiltText(styleText, false));
+          result = new TagResult(style, pos < 0);
         }
         else {
           final XmlLite.Tag tag = new XmlLite.Tag(text, commonCase);
@@ -359,6 +365,62 @@ public class XmlTagParser {
     return false;
   }
 
+  // protected and static access for junit testing
+  protected static final int readToEndOfStyle(XmlInputStream inputStream, StringBuilder result, boolean firstOne) throws IOException {
+    int pos = -1;
+    while ((pos = inputStream.readToChar('>', result, -1)) >= 0) {
+      if (endsWithEndStyle(result)) {
+        // if firstOne, remove </style> from end of result
+        if (firstOne) result.setLength(result.length() - 7);
+        else result.append('>');
+        break;
+      }
+/*
+      else if (endsWithStartStyle(result)) {
+        // recurse to readToEndOf embedded style.
+        result.append('>');
+        pos = readToEndOfStyle(inputStream, result, false);
+        if (pos < 0) break;
+      }
+*/
+      else {
+        // else, keep reading. haven't found end of style yet.
+        result.append('>');
+      }
+    }
+    return pos;
+  }
+
+  // return true if builder.toString().endsWith("</style")
+  private static final boolean endsWithEndStyle(StringBuilder builder) {
+    final int len = builder.length();
+    if (len >= 7) {
+      final String end = builder.substring(len - 7).toLowerCase();
+      return "</style".equals(end);
+    }
+    return false;
+  }
+
+  // return true if builder.toString().endsWith("<style" or "<style ...")
+  private static final boolean endsWithStartStyle(StringBuilder builder) {
+    final int len = builder.length();
+    final int closePos = builder.lastIndexOf(">");
+    final int openPos = builder.lastIndexOf("<");
+
+    if (openPos >= 0 && openPos > closePos && openPos + 5 <= len) {
+      final String end = builder.substring(openPos + 1).toLowerCase();
+      if (end.startsWith("style")) {
+        if (end.length() == 5) return true;
+        else if (end.charAt(5) == ' ') {
+          // make sure it's not self-terminating
+          if (builder.charAt(len - 1) != '/') return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   public static class TagResult {
 
     private boolean endOfStream;
@@ -366,6 +428,7 @@ public class XmlTagParser {
     private String endTag;
     private XmlLite.Comment comment;
     private XmlLite.Script script;
+    private XmlLite.Style style;
 
     private TagResult() {
       this.endOfStream = false;
@@ -373,6 +436,7 @@ public class XmlTagParser {
       this.endTag = null;
       this.comment = null;
       this.script = null;
+      this.style = null;
     }
 
     private TagResult(boolean endOfStream) {
@@ -403,6 +467,13 @@ public class XmlTagParser {
       this();
       this.tag = new XmlLite.Tag("script", true);
       this.script = script;
+      this.endOfStream = endOfStream;
+    }
+
+    public TagResult(XmlLite.Style style, boolean endOfStream) {
+      this();
+      this.tag = new XmlLite.Tag("style", true);
+      this.style = style;
       this.endOfStream = endOfStream;
     }
 
@@ -455,6 +526,17 @@ public class XmlTagParser {
      */
     public XmlLite.Script getScript() {
       return script;
+    }
+
+    public boolean hasStyle() {
+      return style != null;
+    }
+
+    /**
+     * Get this result's style if present, or null.
+     */
+    public XmlLite.Style getStyle() {
+      return style;
     }
 
     public String toString() {

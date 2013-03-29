@@ -355,7 +355,7 @@ public class XmlTextRipper implements Iterator<String> {
           final XmlTagParser.TagResult tagResult = xmlTagParser.readTag(xmlInputStream, tags, false, commonCase);
 
           if (tagStack != null && tagResult != null) {
-            if (tagResult.hasTag() && !tagResult.hasScript()) {
+            if (tagResult.hasTag() && !tagResult.hasScript() && !tagResult.hasStyle()) {
               final XmlLite.Tag theTag = tagResult.getTag();
 
               sawBeginTag = true;

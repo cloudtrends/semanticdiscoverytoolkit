@@ -21,6 +21,7 @@ package org.sd.xml;
 
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
 
 /**
  * Interface for representing and accessing a stack of xml tags.
@@ -91,6 +92,32 @@ public interface TagStack {
   public int hasTag(XmlLite.Tag tag);
 
   /**
+   * Determine the position at which the current stack has the any tag which has
+   * an attribute with the specified value.
+   * @param name attribute name
+   * @param value attribute value
+   * @return the position of the tag in the stack (where 0 is 'root') or -1.
+   */
+  public int hasTagAttribute(String name, String value);
+
+  /**
+   * Determine the position at which the current stack has the any tag which has
+   * an attribute with any of the specified values.
+   * @param name attribute name
+   * @param values set of attribute value
+   * @return the position of the tag in the stack (where 0 is 'root') or -1.
+   */
+  public int hasTagAttribute(String name, Set<String> values);
+
+  /**
+   * Determine the position at which the current stack has the any tag which has
+   * any of the specified attributes with any of the specified values.
+   * @param attrs a map of valid attribute names and the attribute values they may contain
+   * @return the position of the tag in the stack (where 0 is 'root') or -1.
+   */
+  public int hasTagAttribute(Map<String,Set<String>> attrs);
+
+  /**
    * Find the deepest tag this stack has in common with the other.
    */
   public XmlLite.Tag getDeepestCommonTag(TagStack other);
@@ -114,6 +141,15 @@ public interface TagStack {
   public int findDeepestTag(String tagName);
 
   /**
+   * Find the deepest index of the tag in this stack which has the specified attribute name
+   * @param tagName  the already lowercased tag name to find.
+   * @param attr  attribute name
+   * @return the deepest position of the tag name in the stack (where 0 is 'root')
+   *         or -1.
+   */
+  public int findDeepestTag(String tagName, String attr);
+
+  /**
    * Find the deepest index of any of the tags in the specified set in this stack.
    *
    * @param tagNames  the set of already lowercased tag names to find.
@@ -124,8 +160,16 @@ public interface TagStack {
   public int findDeepestTag(Set<String> tagNames);
 
   /**
+   * Find the deepest index of any of the tag in this stack which have the specified attribute name
+   * @param tagNames  the set of already lowercased tag name to find.
+   * @param attr attribute name
+   * @return the deepest position of the tag name in the stack (where 0 is 'root')
+   *         or -1.
+   */
+  public int findDeepestTag(Set<String> tagNames, String attr);
+
+  /**
    * Get tags that have been saved with this tagstack.
    */
   public List<XmlLite.Tag> getSavedTags();
-
 }
