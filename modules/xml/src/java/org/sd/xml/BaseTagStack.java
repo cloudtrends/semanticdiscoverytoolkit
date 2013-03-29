@@ -22,6 +22,7 @@ package org.sd.xml;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
 
 /**
  * Abstract base implementation of the tag stack interface.
@@ -117,7 +118,6 @@ public abstract class BaseTagStack implements TagStack {
     return result >= tags.size() ? -1 : result;
   }
 
-
   /**
    * Determine the position at which the current stack has any of the given
    * tag names.
@@ -153,6 +153,78 @@ public abstract class BaseTagStack implements TagStack {
     final List<XmlLite.Tag> tags = getTagsList();
     for (XmlLite.Tag curTag : tags) {
       if (curTag == tag) break;
+      ++result;
+    }
+    return result >= tags.size() ? -1 : result;
+  }
+
+  /**
+   * Determine the position at which the current stack has the any tag which has
+   * an attribute with the specified value.
+   * @param name attribute name
+   * @param value attribute value
+   * @return the position of the tag in the stack (where 0 is 'root') or -1.
+   */
+  public int hasTagAttribute(String name, String value) {
+    if (name == null || value == null) return -1;
+
+    int result = 0;
+    final List<XmlLite.Tag> tags = getTagsList();
+    for (XmlLite.Tag tag : tags) {
+      String val = tag.getAttribute(name);
+      if(value.equals(val)) break;
+      ++result;
+    }
+    return result >= tags.size() ? -1 : result;
+  }
+
+  /**
+   * Determine the position at which the current stack has the any tag which has
+   * an attribute with any of the specified values.
+   * @param name attribute name
+   * @param values set of attribute value
+   * @return the position of the tag in the stack (where 0 is 'root') or -1.
+   */
+  public int hasTagAttribute(String name, Set<String> values) {
+    if (name == null || values == null || values.size() == 0) return -1;
+
+    int result = 0;
+    final List<XmlLite.Tag> tags = getTagsList();
+    for (XmlLite.Tag tag : tags) {
+      String val = tag.getAttribute(name);
+      if(values.contains(val)) break;
+      ++result;
+    }
+    return result >= tags.size() ? -1 : result;
+  }
+
+  /**
+   * Determine the position at which the current stack has the any tag which has
+   * any of the specified attributes with any of the specified values.
+   * @param attrs a map of valid attribute names and the attribute values they may contain
+   * @return the position of the tag in the stack (where 0 is 'root') or -1.
+   */
+  public int hasTagAttribute(Map<String,Set<String>> attrs) {
+    if (attrs.size() == 0) return -1;
+
+    int result = 0;
+    final List<XmlLite.Tag> tags = getTagsList();
+    for (XmlLite.Tag tag : tags) {
+      boolean found = false;
+      for(Map.Entry<String,Set<String>> entry : attrs.entrySet())
+      {
+        String name = entry.getKey();
+        Set<String> values = entry.getValue();
+        String val = tag.getAttribute(name);
+        if(values.contains(val))
+        {
+          found = true;
+          break;
+        }
+      }
+      
+      if(found) break;
+      
       ++result;
     }
     return result >= tags.size() ? -1 : result;
@@ -238,6 +310,35 @@ public abstract class BaseTagStack implements TagStack {
     return result;
   }
 
+  /**
+   * Find the deepest index of the tag in this stack which has the specified attribute name
+   * @param tagName  the already lowercased tag name to find.
+   * @param attr  attribute name
+   * @return the deepest position of the tag name in the stack (where 0 is 'root')
+   *         or -1.
+   */
+  public int findDeepestTag(String tagName, String attr) {
+    int result = -1;
+
+    if (tagName != null) {
+      final List<XmlLite.Tag> tags = getTagsList();
+      for (result = tags.size() - 1; result >= 0; --result) {
+        if (tagName.equals(tags.get(result).name) && 
+            tags.get(result).getAttribute(attr) != null) {
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Find the deepest index of any of the tags in the specified set in this stack.
+   * @param tagNames  the set of already lowercased tag names to find.
+   * @return the deepest position of the first matching tag name in the stack (where 0 is 'root')
+   *         or -1.
+   */
   public int findDeepestTag(Set<String> tagNames) {
     int result = -1;
 
@@ -245,6 +346,29 @@ public abstract class BaseTagStack implements TagStack {
       final List<XmlLite.Tag> tags = getTagsList();
       for (result = tags.size() - 1; result >= 0; --result) {
         if (tagNames.contains(tags.get(result).name)) {
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Find the deepest index of any of the tag in this stack which have the specified attribute name
+   * @param tagNames  the set of already lowercased tag name to find.
+   * @param attr attribute name
+   * @return the deepest position of the tag name in the stack (where 0 is 'root')
+   *         or -1.
+   */
+  public int findDeepestTag(Set<String> tagNames, String attr) {
+    int result = -1;
+
+    if (tagNames != null && tagNames.size() > 0) {
+      final List<XmlLite.Tag> tags = getTagsList();
+      for (result = tags.size() - 1; result >= 0; --result) {
+        if (tagNames.contains(tags.get(result).name) && 
+            tags.get(result).getAttribute(attr) != null) {
           break;
         }
       }

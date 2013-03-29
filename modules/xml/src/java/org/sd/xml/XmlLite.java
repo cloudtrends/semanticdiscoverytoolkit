@@ -49,7 +49,7 @@ public class XmlLite {
   
   // note: if changing, do clean compile to take effect in referring classes!
   // note: optional end tags will NOT be preserved through default html "ripping"
-  public static final String[] DEFAULT_OPTIONAL_END_TAGS = new String[] {/*"p", */"br", "dir", "hr", "img", "meta", "input", "option", /*"dd", "dt", "li", */"link", /*"embed", "param"*/};
+  public static final String[] DEFAULT_OPTIONAL_END_TAGS = new String[] {/*"p", */"br", "dir", "hr", "img", "meta", "input", "option", /*"dd", "dt", "li", */"link", /*"a", "embed", "param"*/};
   public static final Set<String> OPTIONAL_END_TAGS = new HashSet<String>();
   static {
     for (String doet : DEFAULT_OPTIONAL_END_TAGS) {
@@ -80,7 +80,6 @@ public class XmlLite {
       SPECIAL_RULE_END_TAG_MAP.put(sret[0], sret);
     }
   }
-
 
   private XmlTagParser xmlTagParser;
   private Set<String> ignoreTags;
@@ -456,7 +455,8 @@ public class XmlLite {
         final String endTag = tagResult.getEndTag();
         Tree<Data> tagNode = findTag(curNode, endTag);
 
-        if (tagNode == null) {
+        if (tagNode == null) 
+        {
           // didn't find a tag, make a self-terminating version so
           // that we get a break between text nodes.
           final Tag tag = new Tag(endTag, commonCase);
@@ -487,6 +487,18 @@ public class XmlLite {
         }
       }
 
+      // deal with style
+      else if (tagResult.hasStyle()) {
+        final Style style = tagResult.getStyle();
+        final Tree<Data> styleNode = new Tree<Data>(style);
+        if (curNode == null) {
+          curNode = styleNode;
+        }
+        else {
+          curNode.addChild(styleNode);
+        }
+      }
+
       // deal with start tag
       else if (tagResult.hasTag()) {
         final Tag tag = tagResult.getTag();
@@ -498,19 +510,7 @@ public class XmlLite {
           curNode = tagNode;
         }
         else {
-          if (xmlTagParser.isSpecialRuleEndTag(tag.name)) {
-            // need to end first open special rule tag
-            final String[] toClose = xmlTagParser.getSpecialToCloseTags(tag.name);
-            Tree<Data> specialTag = null;
-            for (int i = 1; i < toClose.length && specialTag == null; ++i) {
-              final String tagToClose = toClose[i];
-              specialTag = findTag(curNode, tagToClose);
-            }
-            if (specialTag != null) {
-              curNode = closeTag(specialTag);
-            }
-          }
-
+          curNode = getClosingNode(curNode, tagNode);
           curNode.addChild(tagNode);
           if (!tag.isSelfTerminating() && !isOptionalEndTag) {
             // push tag to be current
@@ -533,6 +533,28 @@ public class XmlLite {
     keepGoing[0] = true;
 
     return curNode;
+  }
+
+  private final Tree<Data>
+    getClosingNode(Tree<Data> curNode, Tree<Data> tagNode)
+  {
+    Tree<Data> result = curNode;
+    final Tag tag = tagNode.getData().asTag();
+
+    if (xmlTagParser.isSpecialRuleEndTag(tag.name)) {
+      // need to end first open special rule tag
+      final String[] toClose = xmlTagParser.getSpecialToCloseTags(tag.name);
+      Tree<Data> specialTag = null;
+      for (int i = 1; i < toClose.length && specialTag == null; ++i) {
+        final String tagToClose = toClose[i];
+        specialTag = findTag(curNode, tagToClose);
+      }
+      if (specialTag != null) {
+        result = closeTag(specialTag);
+      }
+    }
+
+    return result;
   }
 
   private final Tree<Data> closeTag(Tree<Data> tagNode) {
@@ -628,6 +650,7 @@ public class XmlLite {
     public Tag asTag();
     public Comment asComment();
     public Script asScript();
+    public Style asStyle();
 
     public void setProperty(String name, Object value);
     public Object getProperty(String name);
@@ -649,6 +672,7 @@ public class XmlLite {
     public Tag asTag() { return null; }
     public Comment asComment() { return null; }
     public Script asScript() { return null; }
+    public Style asStyle() { return null; }
 
     public void setProperty(String name, Object value) {properties.put(name, value);}
     public Object getProperty(String name) {return properties.get(name);}
@@ -985,6 +1009,37 @@ public class XmlLite {
 
     public String toString() {
       return "<script>" + text + "</script>";  // leave script text as-is
+    }
+
+    public boolean equals(Object o) {
+      boolean result = (this == o);
+
+      if (!result && o instanceof Text) {
+        final Text other = (Text)o;
+        result = text.equals(other.text);
+      }
+
+      return result;
+    }
+
+    public int hashCode() {
+      return text.hashCode();
+    }
+  }
+
+  public static final class Style extends AbstractData {
+    public final String text;
+
+    protected Style(String text) {
+      this.text = text;
+    }
+
+    public final Style asStyle() {
+      return this;
+    }
+
+    public String toString() {
+      return "<style>" + text + "</style>";  // leave style text as-is
     }
 
     public boolean equals(Object o) {

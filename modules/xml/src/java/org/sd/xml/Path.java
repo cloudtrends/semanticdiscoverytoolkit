@@ -20,6 +20,8 @@ package org.sd.xml;
 
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import org.sd.util.tree.Tree;
 
 /**
@@ -88,6 +90,7 @@ public class Path {
     return tagStack;
   }
 
+  // determine if the other path is inline with this one
   public boolean isInline(Path other) 
   {
     // find first divergent tag
@@ -106,7 +109,35 @@ public class Path {
     {
       XmlLite.Tag tag = otherStack.getTag(idx);
       if(tag != null)
-        result = !HtmlHelper.DEFAULT_BLOCK_TAGS.contains(tag.name);
+      {
+        result = 
+          !HtmlHelper.DEFAULT_BLOCK_TAGS.contains(tag.name) &&
+          !"p".equals(tag.name);
+      }
+    }
+    return result;
+  }
+
+  // get the first index of any of the tags in this path's tag stack
+  public int indexOfTag(Set<String> tags)
+  {
+    int result = -1;
+    if (hasTagStack()) 
+    {
+      TagStack tstack = getTagStack();
+      result = tstack.hasTag(tags);
+    }
+    return result;
+  }
+
+  // get the last index of any of the tags in this path's tag stack
+  public int lastIndexOfTag(Set<String> tags)
+  {
+    int result = -1;
+    if (hasTagStack()) 
+    {
+      TagStack tstack = getTagStack();
+      result = tstack.findDeepestTag(tags);
     }
     return result;
   }

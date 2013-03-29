@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Properties;
 import org.sd.io.FileUtil;
 import org.sd.util.tree.Tree;
+import org.sd.util.PropertiesParser;
 import org.sd.util.StringUtil;
 import org.sd.util.WordIterator;
 
@@ -40,12 +42,24 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
   private HtmlHelper htmlHelper;
   private PathGroup inProgress;
   private PathGroup next;
+  private boolean useCapitalization;
+  private boolean useParagraphBlocks;
 
   public HtmlDivRipper(File htmlFile) throws IOException {
-    this.leafRipper = new XmlLeafNodeRipper(FileUtil.getInputStream(htmlFile), true, null, false, null);
-    this.htmlHelper = new HtmlHelper(true /* use full headings map */);
+    this(htmlFile, true, true);
+  }
+  public HtmlDivRipper(File htmlFile, 
+                       boolean useFullHeadings,
+                       boolean useCapitalization) 
+    throws IOException 
+  {
+    this.leafRipper = new XmlLeafNodeRipper(FileUtil.getInputStream(htmlFile), true, true, null, false, null);
+    this.htmlHelper = new HtmlHelper(useFullHeadings);
     this.inProgress = null;
     this.next = getNextPathGroup();
+
+    this.useCapitalization = useCapitalization;
+    this.useParagraphBlocks = useParagraphBlocks;
   }
 
   public boolean hasNext() {
@@ -94,7 +108,8 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
    * A path belongs in the pathGroup if it shares the deepest div or if
    * there is no div in either the path or the group.
    */
-  protected boolean belongs(Path path, PathGroup pathGroup) {
+  protected boolean belongs(Path path, PathGroup pathGroup) 
+  {
     boolean result = false;
 
     if (pathGroup == null || pathGroup.isEmpty()) {
@@ -104,7 +119,9 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
       int commonPos = pathGroup.computeCommonPathIndex(path);
       Path lastPath = pathGroup.getLastPath();
       if (commonPos >= 0) {
-        final int lastDeepestDiv = findDeepestBlockElement(lastPath);
+        final int lastDeepestDiv = 
+          (lastPath == null ? -1 : 
+           lastPath.lastIndexOfTag(HtmlHelper.DEFAULT_BLOCK_TAGS));
         // todo: if the current path's deepest div is deeper than the last
         //       path's, it is possible that the current div may be nested
         //       in such a case, it might make sense to skip this path
@@ -114,8 +131,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
 
         if (lastDeepestDiv < 0) {  // pathGroup has no div
           // path belongs if it has no div as well
-          if (!path.hasTagStack() || 
-              path.getTagStack().hasTag(HtmlHelper.DEFAULT_BLOCK_TAGS) < 0) {
+          if (path.indexOfTag(HtmlHelper.DEFAULT_BLOCK_TAGS) < 0) {
             result = true;
           }
         }
@@ -126,14 +142,15 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
         //else, fail when commonPos < pathGroup's deepest div
       }
       
-      final int lastPathStrength = getPathHeadingStrength(lastPath);
-      final int pathStrength = getPathHeadingStrength(path);
+      final int lastPathStrength = htmlHelper.computeHeadingStrength(lastPath);
+      final int pathStrength = htmlHelper.computeHeadingStrength(path);
       // todo: check the path strength if the tag is not inline
       //       even with a tag which is not a block element,
       //       the tag may not share a common root element
-      if(!lastPath.isInline(path))
+      if(!PathHelper.inlinePaths(lastPath,path))
       {
-        if(lastPathStrength <= 1 && pathStrength <= 1 && isAllCapsPrefix(path))
+        if(useCapitalization && lastPathStrength == 0 &&
+           htmlHelper.computeTextStrength(path) > 0)
           result = false;
         else if(pathStrength > lastPathStrength)
           result = false;
@@ -145,6 +162,9 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
   
   public boolean isAllCapsPrefix(Path path)
   {
+    if(!useCapitalization)
+      return false;
+
     boolean result = false;
     int count = 0;
     if(path.hasText())
@@ -177,7 +197,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     int result = 0;
     for (Path path : group.getPaths())
     {
-      int strength = getPathHeadingStrength(path);
+      int strength = htmlHelper.computeHeadingStrength(path, useCapitalization);
       if(strength != HtmlHelper.MAX_STRENGTH && strength > result)
         result = strength;
     }
@@ -185,53 +205,16 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     return result;
   }
 
-  public int getPathHeadingStrength(Path path)
-  {
-    int result = 0;
-
-    if(!path.hasTagStack())
-      return result;
-    
-    for(XmlLite.Tag tag : path.getTagStack().getTags())
-    {
-      int strength = htmlHelper.computeHeadingStrength(tag);
-      if(strength > result)
-        result = strength;
-    }
-    
-    // if the heading strength == 0
-    //  and the text starts with all caps,
-    //  set heading strength to 1
-    if(result < 1 && isAllCapsPrefix(path))
-      result = 1;
-
-    return result;
-  }
-  
-  protected int findDeepestBlockElement(Path path) {
-    int result = -1;
-
-    if (path != null && path.hasTagStack()) {
-      TagStack tstack = path.getTagStack();
-      result = tstack.findDeepestTag(HtmlHelper.DEFAULT_BLOCK_TAGS);
-    }
-
-    return result;
-  }
-
-  protected int findDeepestDiv(Path path) {
-    int result = -1;
-
-    if (path != null && path.hasTagStack()) {
-      result = path.getTagStack().findDeepestTag("div");
-    }
-
-    return result;
-  }
-
-
   public static void main(String[] args) throws IOException {
-    final HtmlDivRipper ripper = new HtmlDivRipper(new File(args[0]));
+    final PropertiesParser pp = new PropertiesParser(args);
+    final Properties properties = pp.getProperties();
+    args = pp.getArgs();
+    final boolean fullHeadings = 
+      "true".equalsIgnoreCase(properties.getProperty("fullHeadings", "true"));
+    final boolean capitalization = 
+      "true".equalsIgnoreCase(properties.getProperty("capitalization", "true"));
+
+    final HtmlDivRipper ripper = new HtmlDivRipper(new File(args[0]), fullHeadings, capitalization);
 
     int groupNum = 1;
     while (ripper.hasNext()) {

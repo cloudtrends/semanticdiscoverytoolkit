@@ -199,6 +199,14 @@ public class PathHelper {
     return true;
   }
 
+  // check to see if either path is inline the other
+  public static final boolean inlinePaths(Path path1, Path path2)
+  {
+    if(path1.isInline(path2) || path2.isInline(path1))
+      return true;
+    else
+      return false;
+  }
 
   public static final void dumpPaths(Tree<XmlLite.Data> xmlTree) {
     dumpPaths(xmlTree, System.out);

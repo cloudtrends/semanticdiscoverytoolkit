@@ -21,6 +21,8 @@ package org.sd.xml;
 
 import org.sd.util.tree.Tree;
 import org.sd.xml.XmlLite;
+import org.sd.util.StringUtil;
+import org.sd.util.WordIterator;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -79,33 +81,50 @@ public class HtmlHelper {
   public static final String[] DEFAULT_BLOCK_TAG_STRINGS = 
     new String[] 
   {
-    "applet",
+    "address",
     "blockquote",
-    "body",
-    "button",
+    "dir",
     "div",
     "dl",
     "fieldset",
     "form",
-    "frameset",
     "h1",
     "h2",
     "h3",
     "h4",
     "h5",
     "h6",
-    "head",
-    "html",
-    "iframe",
-    "img",
-    "layer",
-    "legend",
-    "object",
+    "hr",
+    "isindex",
+    "menu",
+    "noframes",
+    "noscript",
     "ol",
     //"p",
-    "select",
+    "pre",
     "table",
     "ul",
+
+    "html",
+    "head",
+    "body",
+
+    //"dd",
+    //"dt",
+    "frameset",
+    //"li",
+    //"tbody",
+    //"td",
+    //"tfoot",
+    //"th",
+    //"thead",
+    //"tr",
+
+    //"applet",
+    //"iframe",
+    //"layer",
+    //"legend",
+    //"object",
   };
   public static final Set<String> DEFAULT_BLOCK_TAGS = new HashSet<String>();
   static {
@@ -113,6 +132,112 @@ public class HtmlHelper {
       DEFAULT_BLOCK_TAGS.add(str);
     }
   }
+
+  /** These tags are considered block-element. */
+  public static final String[] DEFAULT_INLINE_TAG_STRINGS = 
+    new String[] 
+  {
+    "a",
+    "abbr",
+    "acronym",
+    "b",
+    "basefont",
+    "bdo",
+    "big",
+    "br",
+    "cite",
+    "code",
+    "dfn",
+    "em",
+    "font",
+    "i",
+    "img",
+    "input",
+    "kbd",
+    "label",
+    "q",
+    "s",
+    "samp",
+    "select",
+    "small",
+    "span",
+    "strike",
+    "strong",
+    "sub",
+    "sup",
+    "textarea",
+    "tt",
+    "u",
+    "var",
+  };
+  public static final Set<String> DEFAULT_INLINE_TAGS = new HashSet<String>();
+  static {
+    for (String str : DEFAULT_INLINE_TAG_STRINGS) {
+      DEFAULT_INLINE_TAGS.add(str);
+    }
+  }
+
+  /** These tags are considered block-element. */
+  public static final String[] DEFAULT_BLOCK_INLINE_TAG_STRINGS = 
+    new String[] 
+  {
+    "applet",
+    "button",
+    "del",
+    "iframe",
+    "ins",
+    "map",
+    "object",
+    "script",
+  };
+  public static final Set<String> DEFAULT_BLOCK_INLINE_TAGS = new HashSet<String>();
+  static {
+    for (String str : DEFAULT_BLOCK_INLINE_TAG_STRINGS) {
+      DEFAULT_BLOCK_INLINE_TAGS.add(str);
+    }
+  }
+
+  /** These tags are either block level elements or do not have a type. */
+  public static final String[][] RESTRICTED_NESTING_TAGS = 
+    new String[][]
+  {
+    {
+      "a", 
+      "tt", "i", "b", "big", "small", 
+      "em", "strong", "dfn", "code", "samp", "kbd", "var", "cite", "abbr", "acronym", 
+      /*"a",*/ "img", "object", "br", "script", "map", "q", "sub", "sup", "span", "bdo",
+      "input", "select", "textarea", "label", "button",
+    },
+  };
+  public static final Map<String, Set<String>> RESTRICTED_NESTING_TAG_MAP = new HashMap<String, Set<String>>();
+  static {
+    for (String[] tags : RESTRICTED_NESTING_TAGS) 
+    {
+      String tag = tags[0];
+      Set<String> allowed = new HashSet<String>();
+      for(int i = 1; i < tags.length; i++)
+        allowed.add(tags[i]);
+
+      RESTRICTED_NESTING_TAG_MAP.put(tag, allowed);
+    }
+  }
+
+  public static final boolean 
+    isNestingAllowed(XmlLite.Tag parent, XmlLite.Tag current) 
+  {
+    boolean result = true;
+
+    if(parent == null || current == null)
+      return true;
+
+    // only inline tags allowed in other inline tags
+    if(DEFAULT_INLINE_TAGS.contains(parent.name) && 
+       !DEFAULT_INLINE_TAGS.contains(current.name))
+      result = false;
+    
+    return result;
+  }
+
 
   public static int MIN_USABLE_STRENGTH = 1;
   public static int MAX_STRENGTH = 7;
@@ -158,6 +283,13 @@ public class HtmlHelper {
     VALUE_TO_STRENGTH_NO_456.put("1", 0);
     VALUE_TO_STRENGTH_NO_456.put("-1", 2);
     VALUE_TO_STRENGTH_NO_456.put("-2", 1);
+    VALUE_TO_STRENGTH_NO_456.put("7", 7);
+    VALUE_TO_STRENGTH_NO_456.put("6", 6);
+    VALUE_TO_STRENGTH_NO_456.put("5", 5);
+    VALUE_TO_STRENGTH_NO_456.put("4", 3);
+    VALUE_TO_STRENGTH_NO_456.put("3", 0);
+    VALUE_TO_STRENGTH_NO_456.put("2", -1);
+    //VALUE_TO_STRENGTH_NO_456.put("1", -2);
     
     VALUE_TO_STRENGTH_NO_456.put("thead", 2);
     VALUE_TO_STRENGTH_NO_456.put("th", 1);
@@ -190,6 +322,12 @@ public class HtmlHelper {
     VALUE_TO_STRENGTH_456.put("1", 0);
     VALUE_TO_STRENGTH_456.put("-1", 0);
     VALUE_TO_STRENGTH_456.put("-2", 0);
+    VALUE_TO_STRENGTH_456.put("7", 4);
+    VALUE_TO_STRENGTH_456.put("6", 3);
+    VALUE_TO_STRENGTH_456.put("5", 2);
+    VALUE_TO_STRENGTH_456.put("4", 1);
+    VALUE_TO_STRENGTH_456.put("3", 0);
+    VALUE_TO_STRENGTH_456.put("2", 0);
     
     VALUE_TO_STRENGTH_456.put("thead", 0);
     VALUE_TO_STRENGTH_456.put("th", 0);
@@ -303,6 +441,59 @@ public class HtmlHelper {
       if (strength != null) result = strength;
     }
 
+    return result;
+  }
+
+  public final int computeHeadingStrength(Path path) {
+    return computeHeadingStrength(path, false);
+  }
+  public final int computeHeadingStrength(Path path, boolean useTextStrength)
+  {
+    int result = 0;
+    if(path.hasTagStack())
+    {
+      for(XmlLite.Tag tag : path.getTagStack().getTags())
+      {
+        int strength = computeHeadingStrength(tag);
+        if(strength > result)
+          result = strength;
+      }
+    }
+    
+    if(useTextStrength)
+      result = Math.max(result, computeTextStrength(path));
+
+    return result;
+  }
+
+  public final int computeTextStrength(Path path)
+  {
+    int result = 0;
+
+    int count = 0;
+    if(path.hasText())
+    {
+      String text = path.getText();
+      for(WordIterator it = new WordIterator(text); it.hasNext();)
+      {
+        String word = it.next();
+        // ignore short words
+        if(word.length() < 3)
+          continue;
+        else if((word.length() > 4 || !StringUtil.isLikelyAbbreviation(word))
+                && StringUtil.allCaps(word))
+        {
+          result = 1;
+          break;
+        }
+        else
+        {
+          result = 0;
+          break;
+        }
+      }
+    }
+    
     return result;
   }
 
