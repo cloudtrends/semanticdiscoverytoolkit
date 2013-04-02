@@ -432,21 +432,7 @@ public class XmlInputDecoder {
       if (markerInfo != null) {
         if (pos2markerInfos == null) pos2markerInfos = new TreeMap<Integer, List<MarkerInfo>>();
         int pos = text.length();  // point to end of string/=next delim pos
-        if (markerInfo.marker == Marker.TOKEN_START) {
-          if (text.length() > 0) ++pos;  //point to first letter of next trimmedText
-          if (tokenStarts == null) tokenStarts = new ArrayList<MarkerInfo>();
-          tokenStarts.add(markerInfo);
-        }
-        else if (markerInfo.marker == Marker.BREAK) {
-          if (breakMarkers == null) breakMarkers = new ArrayList<MarkerInfo>();
-          breakMarkers.add(markerInfo);
-
-          final String delim = markerInfo.getAttribute("delim");
-          if (delim != null) {
-            text.append(delim);
-            gotDelim = true;
-          }
-        }
+        if (markerInfo.marker == Marker.TOKEN_START && text.length() > 0) ++pos;  //point to first letter of next trimmedText
         addMarkerInfo(pos, markerInfo);
       }
     }
@@ -464,6 +450,26 @@ public class XmlInputDecoder {
     void addMarkerInfo(int pos, MarkerInfo markerInfo) {
       if (markerInfo != null) {
         if (pos2markerInfos == null) pos2markerInfos = new TreeMap<Integer, List<MarkerInfo>>();
+
+        // Add tokenStart
+        if (markerInfo.marker == Marker.TOKEN_START) {
+          if (tokenStarts == null) tokenStarts = new ArrayList<MarkerInfo>();
+          tokenStarts.add(markerInfo);
+        }
+
+        // Add break
+        else if (markerInfo.marker == Marker.BREAK) {
+          if (breakMarkers == null) breakMarkers = new ArrayList<MarkerInfo>();
+          breakMarkers.add(markerInfo);
+
+          final String delim = markerInfo.getAttribute("delim");
+          if (delim != null) {
+            text.append(delim);
+            gotDelim = true;
+          }
+        }
+
+        // Add pos2markerInfo
         List<MarkerInfo> markerInfos = pos2markerInfos.get(pos);
         if (markerInfos == null) {
           markerInfos = new ArrayList<MarkerInfo>();
