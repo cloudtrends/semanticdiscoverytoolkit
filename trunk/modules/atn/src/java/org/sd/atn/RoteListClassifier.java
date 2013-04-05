@@ -1250,7 +1250,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
       // check for literal token match
       if (!result && literalMatch) {
-        result = classifierName.equals(token.getText());
+        result = classifierName != null && classifierName.equals(token.getText());
 
         if (result && trace) {
           System.out.println("\tliteralMatch(" + classifierName + ")=true");
