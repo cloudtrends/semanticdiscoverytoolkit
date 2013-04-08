@@ -460,13 +460,16 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
         // Add the parse's token's features as features on this token
         final List<CategorizedToken> parseCTokens = parse.getTokens();
         if (parseCTokens != null) {
+          final String tokenText = token.getText();
           for (CategorizedToken cToken : parseCTokens) {
-            // add a feature for the category
-            token.setFeature(cToken.category, new Boolean(true), source);
+            if (tokenText.equals(cToken.token.getText())) {
+              // add a feature for the category
+              token.setFeature(cToken.category, new Boolean(true), source);
 
-            // add the token's features
-            if (cToken.token.hasFeatures()) {
-              token.addFeatures(cToken.token.getFeatures());
+              // add the token's features
+              if (cToken.token.hasFeatures()) {
+                token.addFeatures(cToken.token.getFeatures());
+              }
             }
           }
         }
