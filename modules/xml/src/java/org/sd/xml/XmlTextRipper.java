@@ -311,13 +311,20 @@ public class XmlTextRipper implements Iterator<String> {
     final StringBuilder text = new StringBuilder();
     final StringBuilder tags = (tagStack != null) ? new StringBuilder() : null;
 
+    boolean savePopForNextTime = false;
     if (nextTag != null) {
       tagStack.pushTag(nextTag);
+      if (keepEmpties && nextTag.isSelfTerminating()) {
+        savePopForNextTime = true;
+        result = "";
+      }
       nextTag = null;
     }
     if (popTag != null) {
-      tagStack.popTag(popTag);
-      popTag = null;
+      if (!savePopForNextTime) {
+        tagStack.popTag(popTag);
+        popTag = null;
+      }
     }
 
     try {

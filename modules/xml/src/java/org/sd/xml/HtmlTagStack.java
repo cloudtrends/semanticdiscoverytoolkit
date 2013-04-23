@@ -35,7 +35,7 @@ public class HtmlTagStack extends XmlTagStack {
    */
   public void pushTag(XmlLite.Tag tag) {
     // if optional end tag, don't push
-    if (!XmlLite.OPTIONAL_END_TAGS.contains(tag.name)) {
+    if (!XmlLite.OPTIONAL_END_TAGS.contains(tag.name) || tag.isSelfTerminating()) {
       // if special rule end tag,
       if (XmlLite.SPECIAL_RULE_END_TAG_MAP.containsKey(tag.name)) {
         // pop special tag

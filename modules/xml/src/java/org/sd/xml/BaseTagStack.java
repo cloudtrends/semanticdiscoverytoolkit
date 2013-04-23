@@ -390,4 +390,8 @@ public abstract class BaseTagStack implements TagStack {
   public String toString() {
     return getPathKey();
   }
+
+  protected void clearPathKey() {
+    _pathKey = null;
+  }
 }
