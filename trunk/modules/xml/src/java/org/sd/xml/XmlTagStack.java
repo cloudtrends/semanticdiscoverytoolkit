@@ -63,6 +63,7 @@ public class XmlTagStack extends MutableTagStack {
     }
 
     tags.addLast(tag);
+    clearPathKey();
     _tags = null;
   }
 
@@ -89,6 +90,7 @@ public class XmlTagStack extends MutableTagStack {
       }
     }
 
+    clearPathKey();
     _tags = null;
     return result;
   }
@@ -103,6 +105,7 @@ public class XmlTagStack extends MutableTagStack {
     if (tags.size() > 0) {
       result = tags.removeLast();
     }
+    clearPathKey();
     _tags = null;
     return result;
   }
@@ -112,6 +115,7 @@ public class XmlTagStack extends MutableTagStack {
    */
   public void reset() {
     tags.clear();
+    clearPathKey();
     _tags = null;
   }
 

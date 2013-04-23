@@ -54,7 +54,7 @@ public class TestXmlTextRipper extends TestCase {
       final List<XmlLite.Tag> tags = ripper.getTags();
       if (expectedTags != null) {
         final String[] eTags = expectedTags[index];
-        assertEquals("index=" + index, eTags.length, tags.size());
+        assertEquals("index=" + index + " tags=" + tags, eTags.length, tags.size());
         for (int i = 0; i < eTags.length; ++i) {
           assertEquals(eTags[i], tags.get(i).name);
         }
@@ -143,20 +143,39 @@ public class TestXmlTextRipper extends TestCase {
     ripper.close();
   }
 
+  public void testKeepEmptyHtml1() throws IOException {
+    final File file = FileUtil.getFile(this.getClass(), "resources/xml-text-ripper-test-data-0.xml");
+    final XmlTextRipper ripper = XmlTextRipper.buildHtmlRipper(file, true);
+
+    final String[] expectedText = new String[] {
+      "This is some text", "", "and some more text",
+    };
+    final String[][] expectedTags = new String[][] {
+      {},
+      {"br"},
+      {},
+    };
+    final String[] expectedSavedTags = null;
+
+    doRipperTest(ripper, expectedText, expectedTags, expectedSavedTags);
+    ripper.close();
+  }
+
   public void testHtmlRippingWithEmpties() throws IOException {
     final File file = FileUtil.getFile(this.getClass(), TEST2_XML);
     final XmlTextRipper ripper = XmlTextRipper.buildHtmlRipper(file, true);
 
     final String[] expectedText = new String[] {
-      "", "testing xml text ripper", "", "", "heading 1", "testing 1, 2, 3...", "",
+      "", "testing xml text ripper", "", "", "heading 1", "testing 1, 2, 3...", "", "",
     };
     final String[][] expectedTags = new String[][] {
-      {"html", "head"}, // from unterminated meta
+      {"html", "head", "meta"}, // from unterminated meta
       {"html", "head", "title"},
-      {"html", "head"},  // from unterminated meta
-      {"html", "head"},  // from unterminated meta
+      {"html", "head", "meta"},  // from unterminated meta
+      {"html", "head", "meta"},  // from unterminated meta
       {"html", "body", "h1"},
       {"html", "body"},
+      {"html", "body", "hr"},
       {"html", "body", "address"},
     };
     final String[] expectedSavedTags = new String[] {
@@ -172,7 +191,7 @@ public class TestXmlTextRipper extends TestCase {
     final XmlTextRipper ripper = XmlTextRipper.buildXmlRipper(file, true);
 
     final String[] expectedText = new String[] {
-      "", "testing xml text ripper", "", "", "heading 1", "testing 1, 2, 3...", "",
+      "", "testing xml text ripper", "", "", "heading 1", "testing 1, 2, 3...", "", "",
     };
     final String[][] expectedTags = new String[][] {
       {"html", "head", "meta"},
@@ -181,6 +200,7 @@ public class TestXmlTextRipper extends TestCase {
       {"html", "head", "Meta"},
       {"html", "body", "h1"},
       {"html", "body"},
+      {"html", "body", "hr"},
       {"html", "body", "address"},
     };
     final String[] expectedSavedTags = null;
