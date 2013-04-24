@@ -22,6 +22,7 @@ package org.sd.xml;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Properties;
@@ -53,7 +54,9 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
                        boolean useCapitalization) 
     throws IOException 
   {
-    this.leafRipper = new XmlLeafNodeRipper(FileUtil.getInputStream(htmlFile), true, true, null, false, null);
+    this.leafRipper = new XmlLeafNodeRipper(FileUtil.getInputStream(htmlFile), 
+                                            true, true, null, 
+                                            true, null);
     this.htmlHelper = new HtmlHelper(useFullHeadings);
     this.inProgress = null;
     this.next = getNextPathGroup();
@@ -73,6 +76,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
   public PathGroup next() {
     PathGroup result = next;
     this.next = getNextPathGroup();
+
     return result;
   }
 
@@ -88,7 +92,8 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
       final Tree<XmlLite.Data> leaf = leafRipper.next();
       final TagStack tagStack = leafRipper.getTagStack();
       final Path path = new Path(leaf, tagStack);
-      if (!path.hasText()) continue;
+      if (!path.hasText() && !PathHelper.isBreak(path)) 
+        continue;
 
       if (result == null) result = new PathGroup();
       if (belongs(path, result)) {
@@ -118,10 +123,22 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     else {
       int commonPos = pathGroup.computeCommonPathIndex(path);
       Path lastPath = pathGroup.getLastPath();
+      
+      if(lastPath != null)
+      {
+        // split path group if hr is encountered
+        if(PathHelper.isHorizontalRule(lastPath) ||
+           htmlHelper.manualHeadingStrength(lastPath.getNode()) > 0)
+          return false;
+        // split path group if double br is encountered
+        //else if(PathHelper.isBreak(lastPath) && PathHelper.isBreak(path))
+        //  return false;
+      }
+
       if (commonPos >= 0) {
         final int lastDeepestDiv = 
           (lastPath == null ? -1 : 
-           lastPath.lastIndexOfTag(HtmlHelper.DEFAULT_BLOCK_TAGS));
+           lastPath.lastIndexOfTag(HtmlHelper.EXTENDED_BLOCK_TAGS));
         // todo: if the current path's deepest div is deeper than the last
         //       path's, it is possible that the current div may be nested
         //       in such a case, it might make sense to skip this path
@@ -131,7 +148,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
 
         if (lastDeepestDiv < 0) {  // pathGroup has no div
           // path belongs if it has no div as well
-          if (path.indexOfTag(HtmlHelper.DEFAULT_BLOCK_TAGS) < 0) {
+          if (path.indexOfTag(HtmlHelper.EXTENDED_BLOCK_TAGS) < 0) {
             result = true;
           }
         }
@@ -142,8 +159,8 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
         //else, fail when commonPos < pathGroup's deepest div
       }
       
-      final int lastPathStrength = htmlHelper.computeHeadingStrength(lastPath);
-      final int pathStrength = htmlHelper.computeHeadingStrength(path);
+      final int lastPathStrength = htmlHelper.computeHeadingStrength(lastPath, false, true);
+      final int pathStrength = htmlHelper.computeHeadingStrength(path, false, true);
       // todo: check the path strength if the tag is not inline
       //       even with a tag which is not a block element,
       //       the tag may not share a common root element
@@ -159,7 +176,9 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
 
     return result;
   }
+
   
+
   public boolean isAllCapsPrefix(Path path)
   {
     if(!useCapitalization)
@@ -197,7 +216,10 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     int result = 0;
     for (Path path : group.getPaths())
     {
-      int strength = htmlHelper.computeHeadingStrength(path, useCapitalization);
+      if(PathHelper.isBreak(path))
+        continue;
+
+      int strength = htmlHelper.computeHeadingStrength(path, useCapitalization, true);
       if(strength != HtmlHelper.MAX_STRENGTH && strength > result)
         result = strength;
     }

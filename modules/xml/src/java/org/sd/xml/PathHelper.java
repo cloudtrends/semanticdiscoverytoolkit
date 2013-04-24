@@ -199,11 +199,42 @@ public class PathHelper {
     return true;
   }
 
+  public static final boolean isHorizontalRule(Path path)
+  {
+    if(path == null || path.hasText() || !path.hasTagStack())
+      return false;
+
+    boolean result = false;
+    TagStack stack = path.getTagStack();
+    XmlLite.Tag tag = stack.getTag(stack.depth() - 1);
+    if(tag != null)
+      result = "hr".equals(tag.name);
+    return result;
+  }
+
+  public static final boolean isBreak(Path path)
+  {
+    if(path == null || path.hasText() || !path.hasTagStack())
+      return false;
+
+    boolean result = false;
+    TagStack stack = path.getTagStack();
+    XmlLite.Tag tag = stack.getTag(stack.depth() - 1);
+    if(tag != null)
+      result = HtmlHelper.INLINE_BREAK_TAGS.contains(tag.name);
+    return result;
+  }
+
   // check to see if either path is inline the other
   public static final boolean inlinePaths(Path path1, Path path2)
   {
     if(path1.isInline(path2) || path2.isInline(path1))
-      return true;
+    {
+      if(isBreak(path1))
+        return false;
+      else
+        return true;
+    }
     else
       return false;
   }
