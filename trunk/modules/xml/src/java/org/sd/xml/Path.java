@@ -111,7 +111,7 @@ public class Path {
       if(tag != null)
       {
         result = 
-          !HtmlHelper.DEFAULT_BLOCK_TAGS.contains(tag.name) &&
+          !HtmlHelper.EXTENDED_BLOCK_TAGS.contains(tag.name) &&
           !"p".equals(tag.name);
       }
     }

@@ -77,6 +77,19 @@ public class HtmlHelper {
     "font@size", "em", "b", "strong"
   };
 
+  /** These tags may modify the heading strength if nested in another element. */
+  public static final String[] CUMULATIVE_HEADING_STRENGTH_TAG_STRINGS = 
+    new String[] 
+  {
+    "em", "b", "strong",
+  };
+  public static final Set<String> CUMULATIVE_HEADING_STRENGTH_TAGS = new HashSet<String>();
+  static {
+    for (String str : CUMULATIVE_HEADING_STRENGTH_TAG_STRINGS) {
+      CUMULATIVE_HEADING_STRENGTH_TAGS.add(str);
+    }
+  }
+
   /** These tags are considered block-element. */
   public static final String[] DEFAULT_BLOCK_TAG_STRINGS = 
     new String[] 
@@ -125,11 +138,29 @@ public class HtmlHelper {
     //"layer",
     //"legend",
     //"object",
+
+    //"center",
   };
   public static final Set<String> DEFAULT_BLOCK_TAGS = new HashSet<String>();
   static {
     for (String str : DEFAULT_BLOCK_TAG_STRINGS) {
       DEFAULT_BLOCK_TAGS.add(str);
+    }
+  }
+
+  /** These tags are considered block-element, but may appear inline */
+  public static final String[] EXTENDED_BLOCK_TAG_STRINGS = 
+    new String[] 
+  {
+    "center",
+  };
+  public static final Set<String> EXTENDED_BLOCK_TAGS = new HashSet<String>();
+  static {
+    for (String str : DEFAULT_BLOCK_TAG_STRINGS) {
+      EXTENDED_BLOCK_TAGS.add(str);
+    }
+    for (String str : EXTENDED_BLOCK_TAG_STRINGS) {
+      EXTENDED_BLOCK_TAGS.add(str);
     }
   }
 
@@ -222,6 +253,16 @@ public class HtmlHelper {
     }
   }
 
+  /** These tags are inline and can break text blocks */
+  public static final String[] INLINE_BREAK_TAG_STRINGS = 
+    new String[] { "br", "hr", };
+  public static final Set<String> INLINE_BREAK_TAGS = new HashSet<String>();
+  static {
+    for (String str : INLINE_BREAK_TAG_STRINGS) {
+      INLINE_BREAK_TAGS.add(str);
+    }
+  }
+
   public static final boolean 
     isNestingAllowed(XmlLite.Tag parent, XmlLite.Tag current) 
   {
@@ -232,7 +273,7 @@ public class HtmlHelper {
 
     // only inline tags allowed in other inline tags
     if(DEFAULT_INLINE_TAGS.contains(parent.name) && 
-       !DEFAULT_INLINE_TAGS.contains(current.name))
+       DEFAULT_BLOCK_TAGS.contains(current.name))
       result = false;
     
     return result;
@@ -445,9 +486,11 @@ public class HtmlHelper {
   }
 
   public final int computeHeadingStrength(Path path) {
-    return computeHeadingStrength(path, false);
+    return computeHeadingStrength(path, false, false);
   }
-  public final int computeHeadingStrength(Path path, boolean useTextStrength)
+  public final int computeHeadingStrength(Path path, 
+                                          boolean useTextStrength,
+                                          boolean useCumulativeTags)
   {
     int result = 0;
     if(path.hasTagStack())
@@ -455,8 +498,16 @@ public class HtmlHelper {
       for(XmlLite.Tag tag : path.getTagStack().getTags())
       {
         int strength = computeHeadingStrength(tag);
-        if(strength > result)
-          result = strength;
+        if(useCumulativeTags && 
+           CUMULATIVE_HEADING_STRENGTH_TAGS.contains(tag.name))
+        {
+          result += strength;
+        }
+        else
+        {
+          if(strength > result)
+            result = strength;
+        }
       }
     }
     
@@ -506,7 +557,7 @@ public class HtmlHelper {
       if (text.length() > 3) {
         result = true;
         for (int i = 0; i < 4; ++i) {
-          if (text.charAt(i) != '-') {
+          if (text.charAt(i) != '-' && text.charAt(i) != '_') { 
             result = false;
             break;
           }

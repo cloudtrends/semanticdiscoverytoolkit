@@ -210,7 +210,7 @@ public class XmlStringBuilder {
       xmlString.append("/>");
     }
     else {
-      xmlString.append('>').append(StringEscapeUtils.escapeXml(text));
+      xmlString.append('>').append(escape(text));
 
       if (close) {
         xmlString.append("</").append(getTagName(tag)).append('>');
@@ -218,6 +218,20 @@ public class XmlStringBuilder {
     }
 
     return addXml(xmlString.toString());
+  }
+
+  private String escape(String text)
+  {
+    StringBuilder builder = new StringBuilder();
+    String str = StringEscapeUtils.escapeXml(text);
+    for(char ch : str.toCharArray())
+    {
+      if(ch < 0x20 && ch != 0x09 && ch != 0x0d)
+        builder.append(String.format("&#%02d;", (int)ch));
+      else
+        builder.append(ch);
+    }
+    return builder.toString();
   }
 
   /**
