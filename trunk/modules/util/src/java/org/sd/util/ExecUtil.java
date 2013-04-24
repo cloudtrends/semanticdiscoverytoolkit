@@ -83,6 +83,8 @@ public class ExecUtil {
    * machine.
    */
   public static boolean isMyAddress(String host) {
+    if ("localhost".equals(host)) return true;
+
     boolean result = false;
 
     try {
