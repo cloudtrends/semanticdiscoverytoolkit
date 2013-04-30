@@ -37,6 +37,7 @@ public class PathGroup {
   private int commonPathIndex;
   private StringBuilder text;
   private StatsAccumulator wordCounts;
+  private boolean terminated = false;
 
 //collect or access attributes, tag names, etc.; compute deepest common tag; intersection with another PathGroup
 
@@ -58,6 +59,9 @@ public class PathGroup {
   public int getCommonPathIndex() {
     return commonPathIndex;
   }
+
+  public boolean isTerminated(){ return terminated; }
+  public void terminate(){ terminated = true; }
 
   public void add(Path path) {
     if (path == null) return;
@@ -105,11 +109,16 @@ public class PathGroup {
   }
 
   public Path getLastPath() {
+    return getLastPath(true);
+  }
+  public Path getLastPath(boolean includeEmpties) {
     Path result = null;
 
-    int size = paths.size();
-    if (size > 0) {
-      result = paths.get(size - 1);
+    for(int i = paths.size() - 1; i >= 0 && result == null; i--)
+    {
+      Path path = paths.get(i);
+      if(includeEmpties || path.hasText())
+        result = path;
     }
 
     return result;

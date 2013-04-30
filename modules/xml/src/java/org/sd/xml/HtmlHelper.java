@@ -74,14 +74,14 @@ public class HtmlHelper {
     "title", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "thead", "th",
 
     // these are only considered as heading when found over non consecutive text
-    "font@size", "em", "b", "strong"
+    "font@size", "em", "b", "strong", "i", "a"
   };
 
   /** These tags may modify the heading strength if nested in another element. */
   public static final String[] CUMULATIVE_HEADING_STRENGTH_TAG_STRINGS = 
     new String[] 
   {
-    "em", "b", "strong",
+    "em", "b", "strong", "i", "a"
   };
   public static final Set<String> CUMULATIVE_HEADING_STRENGTH_TAGS = new HashSet<String>();
   static {
@@ -335,8 +335,10 @@ public class HtmlHelper {
     VALUE_TO_STRENGTH_NO_456.put("thead", 2);
     VALUE_TO_STRENGTH_NO_456.put("th", 1);
     VALUE_TO_STRENGTH_NO_456.put("em", 1);
+    VALUE_TO_STRENGTH_NO_456.put("i", 1);
     VALUE_TO_STRENGTH_NO_456.put("strong", 1);
     VALUE_TO_STRENGTH_NO_456.put("b", 1);
+    VALUE_TO_STRENGTH_456.put("a", 1);
     
     VALUE_TO_STRENGTH_NO_456.put("title", 7);
 
@@ -373,8 +375,10 @@ public class HtmlHelper {
     VALUE_TO_STRENGTH_456.put("thead", 0);
     VALUE_TO_STRENGTH_456.put("th", 0);
     VALUE_TO_STRENGTH_456.put("em", 0);
+    VALUE_TO_STRENGTH_456.put("i", 0);
     VALUE_TO_STRENGTH_456.put("strong", 0);
     VALUE_TO_STRENGTH_456.put("b", 0);
+    VALUE_TO_STRENGTH_456.put("a", 0);
     
     VALUE_TO_STRENGTH_456.put("title", 7);
 
@@ -486,10 +490,9 @@ public class HtmlHelper {
   }
 
   public final int computeHeadingStrength(Path path) {
-    return computeHeadingStrength(path, false, false);
+    return computeHeadingStrength(path, false);
   }
   public final int computeHeadingStrength(Path path, 
-                                          boolean useTextStrength,
                                           boolean useCumulativeTags)
   {
     int result = 0;
@@ -510,41 +513,7 @@ public class HtmlHelper {
         }
       }
     }
-    
-    if(useTextStrength)
-      result = Math.max(result, computeTextStrength(path));
 
-    return result;
-  }
-
-  public final int computeTextStrength(Path path)
-  {
-    int result = 0;
-
-    int count = 0;
-    if(path.hasText())
-    {
-      String text = path.getText();
-      for(WordIterator it = new WordIterator(text); it.hasNext();)
-      {
-        String word = it.next();
-        // ignore short words
-        if(word.length() < 3)
-          continue;
-        else if((word.length() > 4 || !StringUtil.isLikelyAbbreviation(word))
-                && StringUtil.allCaps(word))
-        {
-          result = 1;
-          break;
-        }
-        else
-        {
-          result = 0;
-          break;
-        }
-      }
-    }
-    
     return result;
   }
 
