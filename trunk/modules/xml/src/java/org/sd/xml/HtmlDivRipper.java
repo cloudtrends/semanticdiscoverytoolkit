@@ -31,6 +31,7 @@ import org.sd.util.tree.Tree;
 import org.sd.util.PropertiesParser;
 import org.sd.util.StringUtil;
 import org.sd.util.WordIterator;
+import org.sd.util.TextHeadingComparator;
 
 /**
  * A ripper that grabs text blocks under (deepest) div nodes.
@@ -43,8 +44,8 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
   private HtmlHelper htmlHelper;
   private PathGroup inProgress;
   private PathGroup next;
-  private boolean useCapitalization;
-  private boolean useParagraphBlocks;
+  private HtmlDivHeadingComparator htmlDivComparator;
+  private HtmlDivBlockComparator htmlBlockComparator;
 
   public HtmlDivRipper(File htmlFile) throws IOException {
     this(htmlFile, true, true);
@@ -59,10 +60,11 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
                                             true, null);
     this.htmlHelper = new HtmlHelper(useFullHeadings);
     this.inProgress = null;
-    this.next = getNextPathGroup();
 
-    this.useCapitalization = useCapitalization;
-    this.useParagraphBlocks = useParagraphBlocks;
+    this.htmlDivComparator = new HtmlDivHeadingComparator(useFullHeadings, useCapitalization);
+    this.htmlBlockComparator = new HtmlDivBlockComparator(new String[] {"center"});
+
+    this.next = getNextPathGroup();
   }
 
   public boolean hasNext() {
@@ -97,15 +99,34 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
 
       if (result == null) result = new PathGroup();
       if (belongs(path, result)) {
-        result.add(path);
+        if(htmlDivComparator.shouldTerminateGroup(path))
+        {
+          result.terminate();
+          this.inProgress = new PathGroup();
+          break;
+        }
+        else
+          result.add(path);
       }
       else {
         this.inProgress = new PathGroup();
-        this.inProgress.add(path);
+        if(htmlDivComparator.shouldTerminateGroup(path))
+          result.terminate();
+        else
+          this.inProgress.add(path);
         break;
       }
     }
 
+    return result;
+  }
+
+  public boolean shouldTerminateGroup(Path path)
+  {
+    boolean result = false;
+    if(PathHelper.isHorizontalRule(path) ||
+       htmlHelper.manualHeadingStrength(path.getNode()) > 0)
+      result = true;
     return result;
   }
 
@@ -117,97 +138,21 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
   {
     boolean result = false;
 
-    if (pathGroup == null || pathGroup.isEmpty()) {
+    if (pathGroup == null || pathGroup.isEmpty())
       result = true;
-    }
     else {
-      int commonPos = pathGroup.computeCommonPathIndex(path);
       Path lastPath = pathGroup.getLastPath();
-      
-      if(lastPath != null)
-      {
-        // split path group if hr is encountered
-        if(PathHelper.isHorizontalRule(lastPath) ||
-           htmlHelper.manualHeadingStrength(lastPath.getNode()) > 0)
-          return false;
-        // split path group if double br is encountered
-        //else if(PathHelper.isBreak(lastPath) && PathHelper.isBreak(path))
-        //  return false;
-      }
+      if(htmlBlockComparator.compare(lastPath, path) >= 0)
+        result = true;
 
-      if (commonPos >= 0) {
-        final int lastDeepestDiv = 
-          (lastPath == null ? -1 : 
-           lastPath.lastIndexOfTag(HtmlHelper.EXTENDED_BLOCK_TAGS));
-        // todo: if the current path's deepest div is deeper than the last
-        //       path's, it is possible that the current div may be nested
-        //       in such a case, it might make sense to skip this path
-        //       when comparing the next path for common pos, 
-        //       i.e. the header div is considered to be the header for both
-        //       the current block and the next block
-
-        if (lastDeepestDiv < 0) {  // pathGroup has no div
-          // path belongs if it has no div as well
-          if (path.indexOfTag(HtmlHelper.EXTENDED_BLOCK_TAGS) < 0) {
-            result = true;
-          }
-        }
-        // since tag stack is common, this is a div in path, too
-        else if (lastDeepestDiv <= commonPos) {
-          result = true;
-        }
-        //else, fail when commonPos < pathGroup's deepest div
-      }
-      
-      final int lastPathStrength = htmlHelper.computeHeadingStrength(lastPath, false, true);
-      final int pathStrength = htmlHelper.computeHeadingStrength(path, false, true);
-      // todo: check the path strength if the tag is not inline
-      //       even with a tag which is not a block element,
-      //       the tag may not share a common root element
-      if(!PathHelper.inlinePaths(lastPath,path))
+      if(result)
       {
-        if(useCapitalization && lastPathStrength == 0 &&
-           htmlHelper.computeTextStrength(path) > 0)
-          result = false;
-        else if(pathStrength > lastPathStrength)
+        Path lastTextPath = pathGroup.getLastPath(false);
+        if(lastTextPath != null && htmlDivComparator.compare(lastTextPath, path) < 0)
           result = false;
       }
     }
 
-    return result;
-  }
-
-  
-
-  public boolean isAllCapsPrefix(Path path)
-  {
-    if(!useCapitalization)
-      return false;
-
-    boolean result = false;
-    int count = 0;
-    if(path.hasText())
-    {
-      String text = path.getText();
-      for(WordIterator it = new WordIterator(text); it.hasNext();)
-      {
-        String word = it.next();
-        // ignore short words
-        if(word.length() < 3)
-          continue;
-        else if((word.length() > 4 || !StringUtil.isLikelyAbbreviation(word))
-                && StringUtil.allCaps(word))
-        {
-          result = true;
-          break;
-        }
-        else
-        {
-          result = false;
-          break;
-        }
-      }
-    }
     return result;
   }
 
@@ -216,10 +161,10 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     int result = 0;
     for (Path path : group.getPaths())
     {
-      if(PathHelper.isBreak(path))
+      if(PathHelper.isBreak(path) || shouldTerminateGroup(path))
         continue;
 
-      int strength = htmlHelper.computeHeadingStrength(path, useCapitalization, true);
+      int strength = htmlHelper.computeHeadingStrength(path, true);
       if(strength != HtmlHelper.MAX_STRENGTH && strength > result)
         result = strength;
     }
