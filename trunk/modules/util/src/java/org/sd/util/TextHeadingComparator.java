@@ -52,8 +52,10 @@ public class TextHeadingComparator
     // todo: figure out best method for blank lines
     if(p1 < 0.0 || p2 < 0.0)
       return 0;
-    else
+    else if(p1 > 0.75 || p2 > 0.75)
       return Double.compare(p1,p2);
+    else
+      return 0;
   }
 
   private boolean isCandidateWord(String word)
@@ -71,7 +73,7 @@ public class TextHeadingComparator
 
   public int computeHeadingStrength(String text)
   {
-    if(percentCaps(text) > 0.0)
+    if(percentCaps(text) > 0.75)
       return 1;
     else
       return 0;
