@@ -42,12 +42,38 @@ public class TestNFSMount extends TestCase {
   {
     String[] inputs = new String[] {
       "\\path\\to\\file.txt",
+      "path\\to\\file.txt",
     };
     String[] expected = new String[] {
+      "/mnt/test/path/to/file.txt",
       "/mnt/test/path/to/file.txt",
     };
     
     NFSMount mount = new NFSMount("\\\\testunc\\shared\\folder", WIN_8, 
+                                  new File("/mnt/test"));
+    for(int i = 0; i < inputs.length; i++)
+    {
+      String in = inputs[i];
+      String ex = expected[i];
+      
+      assertEquals("input at index "+i+" does not match",
+                   ex, mount.getLocalFile(in).getAbsolutePath());
+    }
+  }
+
+  public void testGetLocalFileLinux() 
+    throws IOException
+  {
+    String[] inputs = new String[] {
+      "/path/to/file.txt",
+      "path/to/file.txt",
+    };
+    String[] expected = new String[] {
+      "/mnt/test/path/to/file.txt",
+      "/mnt/test/path/to/file.txt",
+    };
+    
+    NFSMount mount = new NFSMount("machine:/shared/folder", LINUX, 
                                   new File("/mnt/test"));
     for(int i = 0; i < inputs.length; i++)
     {
@@ -70,6 +96,28 @@ public class TestNFSMount extends TestCase {
     };
     
     NFSMount mount = new NFSMount("\\\\testunc\\shared\\folder", WIN_8, 
+                                  new File("/mnt/test"));
+    for(int i = 0; i < inputs.length; i++)
+    {
+      File in = inputs[i];
+      String ex = expected[i];
+      
+      assertEquals("input at index "+i+" does not match",
+                   ex, mount.buildRemotePath(in));
+    }
+  }
+
+  public void testBuildRemotePathLinux() 
+    throws IOException
+  {
+    File[] inputs = new File[] {
+      new File("/mnt/test/path/to/file.txt"),
+    };
+    String[] expected = new String[] {
+      "machine:/shared/folder/path/to/file.txt",
+    };
+    
+    NFSMount mount = new NFSMount("machine:/shared/folder", LINUX, 
                                   new File("/mnt/test"));
     for(int i = 0; i < inputs.length; i++)
     {
