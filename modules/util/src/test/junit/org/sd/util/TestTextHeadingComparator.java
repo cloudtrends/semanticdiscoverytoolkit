@@ -40,7 +40,8 @@ public class TestTextHeadingComparator extends TestCase {
         "ANGELA BENGFORT",
         "MERRIAM, Kan. ? Angela Bengfort, 92, of Mer-riam, Kan., and formerly of Festina, Iowa, died Sunday (Nov. 9, 2003) at the Trinity Lutheran Manor in Merriam, Kan., following a long illness.",      },
       new String[] {
-        "MERRIAM, Kan. ? Angela Bengfort, 92, of Mer-riam, Kan., and formerly of Festina, Iowa, died Sunday (Nov. 9, 2003) at the Trinity Lutheran Manor in Merriam, Kan., following a long illness.",            "A Mass of Christian Burial was held at 11 a.m. Wednesday, Nov. 12, at Our Lady of Seven Dolors Catholic Church in Festina. Angela was laid to rest in Our Lady of Seven Dolors Cemtery in Festina. ",  
+        "MERRIAM, Kan. ? Angela Bengfort, 92, of Mer-riam, Kan., and formerly of Festina, Iowa, died Sunday (Nov. 9, 2003) at the Trinity Lutheran Manor in Merriam, Kan., following a long illness.",
+        "A Mass of Christian Burial was held at 11 a.m. Wednesday, Nov. 12, at Our Lady of Seven Dolors Catholic Church in Festina. Angela was laid to rest in Our Lady of Seven Dolors Cemtery in Festina. ",  
       },
       new String[] {
         "A Mass of Christian Burial was held at 11 a.m. Wednesday, Nov. 12, at Our Lady of Seven Dolors Catholic Church in Festina. Angela was laid to rest in Our Lady of Seven Dolors Cemtery in Festina. ",
@@ -65,7 +66,7 @@ public class TestTextHeadingComparator extends TestCase {
     };
     final int[] expected = new int[] {
       1,
-      1,
+      0,
       0,
       -1,
       0,

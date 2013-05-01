@@ -46,6 +46,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
   private PathGroup next;
   private HtmlDivHeadingComparator htmlDivComparator;
   private HtmlDivBlockComparator htmlBlockComparator;
+  private boolean skipNonAlphaNum = true;
 
   public HtmlDivRipper(File htmlFile) throws IOException {
     this(htmlFile, true, true);
@@ -86,6 +87,27 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     //do nothing.
   }
 
+  private boolean shouldSkip(Path path)
+  {
+    if (path.hasText())
+    {
+      String text = path.getText().trim();
+      if(skipNonAlphaNum && 
+         text.length() <= 3 && 
+         StringUtil.firstLetterOrDigitPos(text, 0) > 0)
+        return true;
+      else
+        return false;
+    }
+    else
+    {
+      if(PathHelper.isBreak(path))
+        return false;
+      else
+        return true;
+    }
+  }
+
   private PathGroup getNextPathGroup() {
     PathGroup result = this.inProgress;
     this.inProgress = null;
@@ -94,7 +116,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
       final Tree<XmlLite.Data> leaf = leafRipper.next();
       final TagStack tagStack = leafRipper.getTagStack();
       final Path path = new Path(leaf, tagStack);
-      if (!path.hasText() && !PathHelper.isBreak(path)) 
+      if (shouldSkip(path)) 
         continue;
 
       if (result == null) result = new PathGroup();
