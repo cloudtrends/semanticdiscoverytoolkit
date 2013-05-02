@@ -26,12 +26,22 @@ import org.sd.util.TextHeadingComparator;
 public class HtmlDivHeadingComparator 
   implements Comparator<Path> 
 {
+  private final boolean ignoreBreaks;
   private final HtmlHelper htmlHelper;
   private final TextHeadingComparator textComparator;
 
+  public HtmlDivHeadingComparator() {
+    this(true, true, true);
+  }
   public HtmlDivHeadingComparator(boolean useFullHeadings, 
+                                  boolean useTextComparator) {
+    this(true, useFullHeadings, useTextComparator);
+  }
+  public HtmlDivHeadingComparator(boolean ignoreBreaks,
+                                  boolean useFullHeadings, 
                                   boolean useTextComparator)
   {
+    this.ignoreBreaks = ignoreBreaks;
     this.htmlHelper = new HtmlHelper(useFullHeadings);
     if(useTextComparator)
       this.textComparator = new TextHeadingComparator();
@@ -54,6 +64,11 @@ public class HtmlDivHeadingComparator
     
     return result;
   }
+  public Path getLastPath(PathGroup group)
+  {
+    Path lastPath = group.getLastPath(!ignoreBreaks);
+    return lastPath;
+  }
 
   public boolean shouldTerminateGroup(Path path)
   {
@@ -64,11 +79,42 @@ public class HtmlDivHeadingComparator
     return result;
   }
 
-  public int compare(Path path1, Path path2)
+  public int compare(PathGroup group, Path path)
+  {
+    // if ignoreBreaks is turned on, get the last non break path
+    Path last1 = group.getLastPath();
+    Path last2 = group.getLastPath(!ignoreBreaks);
+
+    boolean inlinePaths = false;
+    if(last1 != null)
+      inlinePaths = last1.equals(last2);
+    return compare(last2, path, inlinePaths);
+  }
+
+  public int compare(Path path1, Path path2) {
+    return compare(path1, path2, true);
+  }
+  public int compare(Path path1, Path path2, boolean possibleInlinePaths)
   {
     int result = 0;
-    if(PathHelper.inlinePaths(path1,path2))
+    if(path1 == null)
       return result;
+
+    // ignore inline paths
+    if(possibleInlinePaths)
+    {
+      if(PathHelper.inlinePaths(path1,path2))
+        return 0;
+    }
+
+    // if ignore breaks is on
+    // break is always equivalent to the other path compared
+    if(ignoreBreaks)
+    {
+      if(PathHelper.isBreak(path1) || 
+         PathHelper.isBreak(path2))
+        return 0;
+    }
 
     int strength1 = htmlHelper.computeHeadingStrength(path1, true);
     int strength2 = htmlHelper.computeHeadingStrength(path2, true);
