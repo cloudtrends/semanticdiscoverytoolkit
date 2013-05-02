@@ -41,9 +41,16 @@ public class HtmlDivBlockComparator
     }
   }
 
+  public int compare(PathGroup group, Path path) 
+  {
+    Path last = group.getLastPath();
+    return compare(last, path);
+  }
   public int compare(Path path1, Path path2)
   {
     int result = 0;
+    if(path1 == null)
+      return 0;
 
     // compute common path for path1 and path2
     int commonPos = computeCommonPathIndex(path1, path2);

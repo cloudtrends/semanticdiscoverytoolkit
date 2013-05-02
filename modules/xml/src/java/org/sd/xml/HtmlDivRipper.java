@@ -46,7 +46,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
   private PathGroup next;
   private HtmlDivHeadingComparator htmlDivComparator;
   private HtmlDivBlockComparator htmlBlockComparator;
-  private boolean skipNonAlphaNum = true;
+  private boolean skipNonAlphaNum = false;
 
   public HtmlDivRipper(File htmlFile) throws IOException {
     this(htmlFile, true, true);
@@ -163,16 +163,10 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     if (pathGroup == null || pathGroup.isEmpty())
       result = true;
     else {
-      Path lastPath = pathGroup.getLastPath();
-      if(htmlBlockComparator.compare(lastPath, path) >= 0)
+      if(htmlBlockComparator.compare(pathGroup, path) >= 0)
         result = true;
-
-      if(result)
-      {
-        Path lastTextPath = pathGroup.getLastPath(false);
-        if(lastTextPath != null && htmlDivComparator.compare(lastTextPath, path) < 0)
-          result = false;
-      }
+      if(result && htmlDivComparator.compare(pathGroup, path) != 0)
+        result = false;
     }
 
     return result;

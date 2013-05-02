@@ -200,6 +200,8 @@ public class HtmlHelper {
     "tt",
     "u",
     "var",
+    
+    "nobr",
   };
   public static final Set<String> DEFAULT_INLINE_TAGS = new HashSet<String>();
   static {
@@ -236,7 +238,7 @@ public class HtmlHelper {
       "a", 
       "tt", "i", "b", "big", "small", 
       "em", "strong", "dfn", "code", "samp", "kbd", "var", "cite", "abbr", "acronym", 
-      /*"a",*/ "img", "object", "br", "script", "map", "q", "sub", "sup", "span", "bdo",
+      /*"a",*/ "img", "object", "br", "script", "map", "q", "sub", "sup", "font", "span", "bdo",
       "input", "select", "textarea", "label", "button",
     },
   };
@@ -338,7 +340,7 @@ public class HtmlHelper {
     VALUE_TO_STRENGTH_NO_456.put("i", 1);
     VALUE_TO_STRENGTH_NO_456.put("strong", 1);
     VALUE_TO_STRENGTH_NO_456.put("b", 1);
-    VALUE_TO_STRENGTH_456.put("a", 1);
+    VALUE_TO_STRENGTH_NO_456.put("a", 1);
     
     VALUE_TO_STRENGTH_NO_456.put("title", 7);
 
