@@ -146,6 +146,26 @@ public class MultiTermFinder {
     return result;
   }
 
+  /**
+   * Find all matching expression from this instance's expressions to the given
+   * input string.
+   */
+  public List<LogicalResult<String>> findAllMatches(String inputString) {
+    List<LogicalResult<String>> result = null;
+
+    if (expressions != null) {
+      for (String expression : expressions) {
+        List<LogicalResult<String>> curResult = evaluateLogicalExpression(expression, inputString);
+        if (curResult != null) {
+          if (result == null) result = new ArrayList<LogicalResult<String>>();
+          result.addAll(curResult);
+        }
+      }
+    }
+
+    return result;
+  }
+
   public int getFinderIndex(TruthFunction<String> truthFunction) {
     int result = -1;
 
