@@ -356,7 +356,8 @@ public class XmlLite {
   }
 
   private static final String escape(String string) {
-    return StringEscapeUtils.escapeXml(string);
+    return XmlUtil.escape(string);
+    //return StringEscapeUtils.escapeXml(string);
 //    return EntityConverter.escape(string);
   }
 

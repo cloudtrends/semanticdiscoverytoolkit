@@ -148,7 +148,7 @@ public class DomElement extends DomNode implements Element {
         }
 
         // add the node's text
-        result.append(StringEscapeUtils.escapeXml(text.text));
+        result.append(XmlUtil.escape(text.text));
       }
     }
   }
