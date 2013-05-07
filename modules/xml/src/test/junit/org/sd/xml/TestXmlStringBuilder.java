@@ -93,6 +93,29 @@ public class TestXmlStringBuilder extends TestCase {
     assertEquals("<test b=\"it&apos;s 2\"><a a=\"1\"/></test>", got);
   }
 
+  public void testEscape() 
+  {
+    String[] inputs = new String[] {
+      "She was born Sept. 30, 1915, at Winfield, the daughter of Earle and Edith Youle. She was the oldest of four children, including a brother and two sisters. She attended Winfield public schools and graduated from Winfield High School in 1932. She received her bachelor's degree in public school music with\n"+
+      "                 minors in English and art, from Southwestern College in 1937. A\n"+
+      "                 resident of Wichita since 1967, she taught elementary music and\n"+
+      "                 art in Woodward, Okla., Oxford, Garden City and Pratt.",
+    };
+    String[] expected = new String[] {
+      "<test>She was born Sept. 30, 1915, at Winfield, the daughter of Earle and Edith Youle. She was the oldest of four children, including a brother and two sisters. She attended Winfield public schools and graduated from Winfield High School in 1932. She received her bachelor&apos;s degree in public school music with&#x0A;                 minors in English and art, from Southwestern College in 1937. A&#x0A;                 resident of Wichita since 1967, she taught elementary music and&#x0A;                 art in Woodward, Okla., Oxford, Garden City and Pratt.</test>",
+    };
+    
+    for(int i = 0; i < inputs.length; i++)
+    {
+      String in = inputs[i];
+      String ex = expected[i];
+
+      XmlStringBuilder builder = new XmlStringBuilder();
+      builder.addTagAndText("test", in);
+      assertEquals(ex, builder.getXmlElement().toString().trim());
+    }
+  }
+
   public static Test suite() {
     TestSuite suite = new TestSuite(TestXmlStringBuilder.class);
     return suite;
