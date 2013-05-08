@@ -500,13 +500,14 @@ public class HtmlHelper {
     int result = 0;
     if(path.hasTagStack())
     {
+      int cumulativeTagsStrength = 0;
       for(XmlLite.Tag tag : path.getTagStack().getTags())
       {
         int strength = computeHeadingStrength(tag);
         if(useCumulativeTags && 
            CUMULATIVE_HEADING_STRENGTH_TAGS.contains(tag.name))
         {
-          result += strength;
+          cumulativeTagsStrength += strength;
         }
         else
         {
@@ -514,6 +515,9 @@ public class HtmlHelper {
             result = strength;
         }
       }
+
+      if(useCumulativeTags)
+        result += cumulativeTagsStrength;
     }
 
     return result;
