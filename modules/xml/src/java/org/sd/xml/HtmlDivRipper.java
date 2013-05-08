@@ -181,8 +181,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
         continue;
 
       int strength = htmlHelper.computeHeadingStrength(path, true);
-      if(strength != HtmlHelper.MAX_STRENGTH && strength > result)
-        result = strength;
+      if(strength > result) result = strength;
     }
 
     return result;
