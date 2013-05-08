@@ -61,6 +61,54 @@ public class TestNFSMount extends TestCase {
     }
   }
 
+  public void testGetLocalFile2() 
+    throws IOException
+  {
+    String[] inputs = new String[] {
+      "\\\\isilon9\\automatedcontent\\DropBox\\FsboExtracted\\input\\13"
+    };
+    String[] expected = new String[] {
+      "/automatedcontent/DropBox/FsboExtracted/input/13",
+    };
+    
+    NFSMount mount = new NFSMount("\\\\isilon9\\automatedcontent", WIN_8, 
+                                  new File("/automatedcontent"));
+    for(int i = 0; i < inputs.length; i++)
+    {
+      String in = inputs[i];
+      String ex = expected[i];
+      
+      assertEquals("input at index "+i+" does not match",
+                   ex, mount.getLocalFile(in).getAbsolutePath());
+    }
+  }
+
+  public void testGetLocalFile3() 
+    throws IOException
+  {
+    String[] inputs = new String[] {
+      "\\\\isilon9\\fsbo\\webobits\\cachedpages\\20060418\\20060418\\37\\19\\85\\3719858309781033227",
+      "\\\\isilon9\\fsbo\\webobits\\cachedpages\\20060418\\20060418\\37\\19\\85\\3719858310639568120",
+      "\\\\isilon9\\fsbo\\webobits\\cachedpages\\20060418\\20060418\\37\\19\\85\\3719858307973185840",
+    };
+    String[] expected = new String[] {
+      "/webobits/cachedpages/20060418/20060418/37/19/85/3719858309781033227",
+      "/webobits/cachedpages/20060418/20060418/37/19/85/3719858310639568120",
+      "/webobits/cachedpages/20060418/20060418/37/19/85/3719858307973185840",
+    };
+    
+    NFSMount mount = new NFSMount("\\\\isilon9\\fsbo\\webobits", WIN_8, 
+                                  new File("/webobits"));
+    for(int i = 0; i < inputs.length; i++)
+    {
+      String in = inputs[i];
+      String ex = expected[i];
+      
+      assertEquals("input at index "+i+" does not match",
+                   ex, mount.getLocalFile(in).getAbsolutePath());
+    }
+  }
+
   public void testGetLocalFileLinux() 
     throws IOException
   {

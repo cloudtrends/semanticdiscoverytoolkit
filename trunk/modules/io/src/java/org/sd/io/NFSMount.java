@@ -45,14 +45,17 @@ public class NFSMount
     this.mountDir = mountDir;
   }
 
-  public File getLocalFile(String relPath)
+  public File getLocalFile(String path)
     throws IOException
   {
     File result = mountDir;
 
+    if(path.startsWith(remoteDir))
+      path = path.substring(remoteDir.length());
+
     // split path into folder parts
     String splitChar = (remoteOS.getOSFamily() == WINDOWS ? "\\" : "/");
-    String[]  parts = relPath.split(Pattern.quote(splitChar));
+    String[]  parts = path.split(Pattern.quote(splitChar));
     for(String p : parts)
       result = new File(result, p);
 
