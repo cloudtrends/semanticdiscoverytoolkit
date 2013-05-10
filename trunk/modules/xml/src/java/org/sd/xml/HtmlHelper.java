@@ -274,7 +274,9 @@ public class HtmlHelper {
       return true;
 
     // only inline tags allowed in other inline tags
-    if(DEFAULT_INLINE_TAGS.contains(parent.name) && 
+    if("a".equals(parent.name) && "a".equals(current.name))
+      result = false;
+    else if(DEFAULT_INLINE_TAGS.contains(parent.name) && 
        DEFAULT_BLOCK_TAGS.contains(current.name))
       result = false;
     
@@ -494,8 +496,7 @@ public class HtmlHelper {
   public final int computeHeadingStrength(Path path) {
     return computeHeadingStrength(path, false);
   }
-  public final int computeHeadingStrength(Path path, 
-                                          boolean useCumulativeTags)
+  public final int computeHeadingStrength(Path path, boolean useCumulativeTags)
   {
     int result = 0;
     if(path.hasTagStack())

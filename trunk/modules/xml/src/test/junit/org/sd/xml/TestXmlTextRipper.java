@@ -44,6 +44,7 @@ public class TestXmlTextRipper extends TestCase {
   private static final String TEST1_XML = "resources/xml-text-ripper-test-data-1.xml";
   private static final String TEST2_XML = "resources/xml-text-ripper-test-data-2.html";
   private static final String TEST2B_XML = "resources/xml-text-ripper-test-data-2b.html";
+  private static final String TEST3_XML = "resources/xml-text-ripper-test-data-3.html";
 
   private final void doRipperTest(XmlTextRipper ripper, String[] expectedText, String[][] expectedTags, String[] expectedSavedTags) {
     int index = 0;
@@ -202,6 +203,38 @@ public class TestXmlTextRipper extends TestCase {
       {"html", "body"},
       {"html", "body", "hr"},
       {"html", "body", "address"},
+    };
+    final String[] expectedSavedTags = null;
+
+    doRipperTest(ripper, expectedText, expectedTags, expectedSavedTags);
+    ripper.close();
+  }
+
+  public void testHtmlRippingWithEmpties3() throws IOException {
+    final File file = FileUtil.getFile(this.getClass(), TEST3_XML);
+    final XmlTextRipper ripper = 
+      new XmlTextRipper(FileUtil.getInputStream(file), true,
+                        new ValidatingHtmlTagStack(), 
+                        XmlFactory.HTML_TAG_PARSER_IGNORE_COMMENTS, 
+                        null, null, true);
+    
+    final String[] expectedText = new String[] {
+      "", "Osprey Obituaries", 
+      "", "AYERS, Barbara", "", 
+      "Wednesday, March 07, 2007", 
+      "Obituary", ": AYERS, Barbara - At Marshall Gowland Manor, Sarnia, on Monday, March 5, 2007. BARBARA AYERS (nee Robbins), 67 years, of Sarnia and formerly of ... [", "View", "]"
+    };
+    final String[][] expectedTags = new String[][] {
+      {"html", "head", "meta"},
+      {"html", "head", "title"},
+      {"html", "body", "table", "tr", "td", "b", "a"},
+      {"html", "body", "table", "tr", "td", "b"},
+      {"html", "body", "table", "tr", "td", "br"},
+      {"html", "body", "table", "tr", "td"},
+      {"html", "body", "table", "tr", "td", "b"},
+      {"html", "body", "table", "tr", "td"},
+      {"html", "body", "table", "tr", "td", "a"},
+      {"html", "body", "table", "tr", "td"},
     };
     final String[] expectedSavedTags = null;
 

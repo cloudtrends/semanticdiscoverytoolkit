@@ -63,6 +63,15 @@ public class TestTextHeadingComparator extends TestCase {
         "MABLE F. DALY",
         "",
       },
+      new String[] {
+        "Published: October 25, 2007 06:43 pm Thursday, October 25, 2007 Obituaries Glasgow Daily Times Fred Nation",
+        "GLASGOW - Fred Nation, 87, died Tuesday, Oct. 16, 2007, at his home.",
+      },
+      new String[] {
+        "GLASGOW - Fred Nation, 87, died Tuesday, Oct. 16, 2007, at his home. The Barren County native was retired from General Motors Company and a World War II veteran and survivor of Pearl Harbor, U.S. Arizona. He was born Sept. 7, 1920, in Starks, La., and was the son of Pete and Annie Nation (both deceased). He was preceded in death by his beloved wife, Ruby Nation; brothers: Pat, Ned and Kenneth Nation; one sister: Jane Lawson; and one stepson: Richard Vore. He is survived by two sons: Fred Nation Jr. (Melinda) and Roger Nation (Annette) both of Texas; one stepson; Ron Vore (Virginia) of Florida; sisters: Sadie Pennick of Texas and Belle Lawson of Louisiana; granddaughter, Kathy Hoig, and daughter-in-law: Joan Vore, both of Michigan, as well as many other grandchildren, great-grandchildren, nieces and nephews; also good friends, Jim and Wanda Clement, Dick and Carol Hammontree, Lisa Parke and Jonathan Dubree.",
+        "Per Fred's request there will be no services. A.F. Crow & Son is handling the cremation arrangements.",
+      },
+
     };
     final int[] expected = new int[] {
       1,
@@ -70,7 +79,9 @@ public class TestTextHeadingComparator extends TestCase {
       0,
       -1,
       0,
-      0,
+      -1,
+      1,
+      -1,
       0,
     };
 

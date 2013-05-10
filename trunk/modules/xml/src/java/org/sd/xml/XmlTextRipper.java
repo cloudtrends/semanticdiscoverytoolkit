@@ -432,7 +432,11 @@ public class XmlTextRipper implements Iterator<String> {
 
   // dump the html file text paths, processed incrementally.
   public static void main(String[] args) throws IOException {
-    final XmlTextRipper ripper = new XmlTextRipper(FileUtil.getInputStream(args[0]), true, new HtmlTagStack(), XmlFactory.HTML_TAG_PARSER_IGNORE_COMMENTS, HtmlHelper.DEFAULT_IGNORE_TAGS, null, true);
+    final XmlTextRipper ripper = new XmlTextRipper(FileUtil.getInputStream(args[0]), true, 
+                                                   new HtmlTagStack(), 
+                                                   XmlFactory.HTML_TAG_PARSER_IGNORE_COMMENTS, 
+                                                   HtmlHelper.DEFAULT_IGNORE_TAGS, 
+                                                   null, true);
 
     // dump each string
     while (ripper.hasNext()) {
