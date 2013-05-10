@@ -20,6 +20,7 @@ package org.sd.xml;
 
 import java.util.Comparator;
 import org.sd.util.TextHeadingComparator;
+import org.sd.util.WordIterator;
 
 /**
  */
@@ -27,21 +28,24 @@ public class HtmlDivHeadingComparator
   implements Comparator<Path> 
 {
   private final boolean ignoreBreaks;
+  private final boolean useCumulativeTags;
   private final HtmlHelper htmlHelper;
   private final TextHeadingComparator textComparator;
 
   public HtmlDivHeadingComparator() {
-    this(true, true, true);
+    this(true, true, true, true);
   }
   public HtmlDivHeadingComparator(boolean useFullHeadings, 
                                   boolean useTextComparator) {
-    this(true, useFullHeadings, useTextComparator);
+    this(true, true, useFullHeadings, useTextComparator);
   }
   public HtmlDivHeadingComparator(boolean ignoreBreaks,
+                                  boolean useCumulativeTags,
                                   boolean useFullHeadings, 
                                   boolean useTextComparator)
   {
     this.ignoreBreaks = ignoreBreaks;
+    this.useCumulativeTags = useCumulativeTags;
     this.htmlHelper = new HtmlHelper(useFullHeadings);
     if(useTextComparator)
       this.textComparator = new TextHeadingComparator();
@@ -49,20 +53,13 @@ public class HtmlDivHeadingComparator
       this.textComparator = null;
   }
 
-  public int computeHeadingStrength(PathGroup group)
-  {
-    int result = 0;
-    for (Path path : group.getPaths())
-    {
-      if(PathHelper.isBreak(path) || shouldTerminateGroup(path))
-        continue;
-
-      int strength = htmlHelper.computeHeadingStrength(path, true);
-      if(strength > result) result = strength;
-    }
-    
-    return result;
+  public double computeHeadingStrength(PathGroup group) {
+    return computeHeadingStrength(group, true);
   }
+  public double computeHeadingStrength(Path path) {
+    return computeHeadingStrength(path, true);
+  }
+
   public Path getLastPath(PathGroup group)
   {
     Path lastPath = group.getLastPath(!ignoreBreaks);
@@ -78,9 +75,49 @@ public class HtmlDivHeadingComparator
     return result;
   }
 
+
+  private double computeHeadingStrength(PathGroup group, boolean useText)
+  {
+    double total = 0.0;
+    
+    int count = 0;
+    String gtext = group.getText();
+    for(WordIterator it = new WordIterator(gtext); it.hasNext(); it.next())
+      count++;
+
+    for (Path path : group.getPaths())
+    {
+      if(PathHelper.isBreak(path) || shouldTerminateGroup(path))
+        continue;
+
+      int count2 = 0;
+      String ptext = path.getText();
+      for(WordIterator it = new WordIterator(ptext); it.hasNext(); it.next())
+        count2++;
+
+      double weight = (count != 0 ? (double)count2 / (double)count : 0.0);
+      double strength = computeHeadingStrength(path, useText);
+      total += strength * weight;
+    }
+    return total;
+  }
+
+  private double computeHeadingStrength(Path path, boolean useText) 
+  {
+    double result = 0.0;
+    result = htmlHelper.computeHeadingStrength(path, useCumulativeTags);
+    if(useText && result == 0.0 && textComparator != null)
+    {
+      String text = path.getText();
+      result = textComparator.computeHeadingStrength(text);
+    }
+    return result;
+  }
+  
   public int compare(PathGroup group, Path path)
   {
     // if ignoreBreaks is turned on, get the last non break path
+    /**
     Path last1 = group.getLastPath();
     Path last2 = group.getLastPath(!ignoreBreaks);
 
@@ -88,6 +125,31 @@ public class HtmlDivHeadingComparator
     if(last1 != null)
       inlinePaths = last1.equals(last2);
     return compare(last2, path, inlinePaths);
+    */
+
+    int result = 0;
+    if(group.isEmpty() || group.getLastPath(false) == null)
+      return result;
+    if(ignoreBreaks && PathHelper.isBreak(path))
+      return result;
+
+    Path last = group.getLastPath();
+    if(last != null && PathHelper.inlinePaths(last,path))
+      return result;
+
+    double strength1 = computeHeadingStrength(group, false);
+    double strength2 = computeHeadingStrength(path, false);
+    result = Double.compare(strength1, strength2);
+
+    // if equivalent heading, use the text
+    if(result == 0 && textComparator != null)
+    {
+      String text1 = group.getText();
+      String text2 = path.getText();
+      result = textComparator.compare(text1, text2);
+    }
+
+    return result;
   }
 
   public int compare(Path path1, Path path2) {
@@ -115,10 +177,11 @@ public class HtmlDivHeadingComparator
         return 0;
     }
 
-    int strength1 = htmlHelper.computeHeadingStrength(path1, true);
-    int strength2 = htmlHelper.computeHeadingStrength(path2, true);
-    result = Integer.compare(strength1, strength2);
+    double strength1 = computeHeadingStrength(path1, false);
+    double strength2 = computeHeadingStrength(path2, false);
+    result = Double.compare(strength1, strength2);
 
+    // if equivalent heading, use the text
     if(result == 0 && textComparator != null)
     {
       String text1 = path1.getText();

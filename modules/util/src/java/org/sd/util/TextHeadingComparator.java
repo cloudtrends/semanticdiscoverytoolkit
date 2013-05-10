@@ -50,12 +50,14 @@ public class TextHeadingComparator
     //System.out.println("string("+p2+"): "+str2);
 
     // todo: figure out best method for blank lines
-    if(p1 < 0.0 || p2 < 0.0)
-      return 0;
-    else if(p1 > 0.75 || p2 > 0.75)
+    if(p1 > 0.75 || p2 > 0.75)
       return Double.compare(p1,p2);
     else
-      return 0;
+      return (Double.compare(p1,p2) >= 0 ? 0 : -1);
+  }
+
+  public double computeHeadingStrength(String text) {
+    return percentCaps(text) * 1.0;
   }
 
   private boolean isCandidateWord(String word)
@@ -69,14 +71,6 @@ public class TextHeadingComparator
     
     // non abbrevs are candidates
     return !StringUtil.isLikelyAbbreviation(word);
-  }
-
-  public int computeHeadingStrength(String text)
-  {
-    if(percentCaps(text) > 0.75)
-      return 1;
-    else
-      return 0;
   }
 
   private double percentCaps(String text)
@@ -102,10 +96,7 @@ public class TextHeadingComparator
       }
     }
     
-    if(wordCount > 0)
-      result = (double)capsWordCount/(double)wordCount;
-    else
-      result = -1.0;
+    result = (wordCount == 0 ? 0.0 : (double)capsWordCount/(double)wordCount);
     return result;
   }
 }

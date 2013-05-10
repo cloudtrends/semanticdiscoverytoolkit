@@ -21,6 +21,7 @@ package org.sd.xml;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -172,19 +173,40 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     return result;
   }
 
-  public int getPathGroupHeadingStrength(PathGroup group)
+  public double getPathGroupHeadingStrength(PathGroup group)
   {
-    int result = 0;
+    /**
+    double total = 0.0;
+    int count = 0;
+    int length = group.getText().length();
+    for (Path path : group.getPaths())
+    {
+      if(PathHelper.isBreak(path) || shouldTerminateGroup(path))
+        continue;
+
+      count++;
+      double weight = (double)path.getText().length() / (double)length;
+      int strength = htmlHelper.computeHeadingStrength(path, true);
+      total += strength * weight;
+    }
+    return total;
+    */
+    /**
+    int result = -1;
     for (Path path : group.getPaths())
     {
       if(PathHelper.isBreak(path) || shouldTerminateGroup(path))
         continue;
 
       int strength = htmlHelper.computeHeadingStrength(path, true);
-      if(strength > result) result = strength;
+      if(result == -1 || strength < result) 
+        result = strength;
     }
 
-    return result;
+    return (result < 0 ? 0 : result);
+    */
+    double result = htmlDivComparator.computeHeadingStrength(group);
+    return (result < 0.0 ? 0.0 : result);
   }
 
   public static void main(String[] args) throws IOException {
@@ -196,12 +218,13 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     final boolean capitalization = 
       "true".equalsIgnoreCase(properties.getProperty("capitalization", "true"));
 
+    DecimalFormat df = new DecimalFormat("#.##");
     final HtmlDivRipper ripper = new HtmlDivRipper(new File(args[0]), fullHeadings, capitalization);
-
     int groupNum = 1;
     while (ripper.hasNext()) {
       final PathGroup pathGroup = ripper.next();
-      System.out.println(groupNum + ": " + pathGroup);
+      final double strength = ripper.getPathGroupHeadingStrength(pathGroup);
+      System.out.println(groupNum + "("+df.format(strength)+"): " + pathGroup);
       ++groupNum;
     }
 
