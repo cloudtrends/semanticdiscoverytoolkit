@@ -19,6 +19,7 @@
 package org.sd.atn;
 
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -28,6 +29,7 @@ import java.util.TreeMap;
 import org.sd.token.TokenInfo;
 import org.sd.xml.DomElement;
 import org.sd.xml.DomNode;
+import org.sd.xml.XmlFactory;
 import org.w3c.dom.NodeList;
 
 /**
@@ -104,6 +106,34 @@ public class XmlInputDecoder {
    */
   public XmlInputDecoder(DomElement textElement) {
     this.paragraphs = new ArrayList<Paragraph>();
+    init(textElement);
+  }
+
+  /**
+   * Non-XML constructor.
+   */
+  public XmlInputDecoder(String inputString, boolean oneLine) {
+    this.paragraphs = new ArrayList<Paragraph>();
+    this.defaultOneLine = oneLine;
+
+    boolean handled = false;
+    if (inputString.indexOf("<text") >= 0) {
+      try {
+        final DomElement textElement = XmlFactory.buildDomNode(inputString, false).asDomElement();
+        init(textElement);
+        handled = true;
+      }
+      catch (IOException e) {
+        //handled = false;
+      }
+    }
+
+    if (!handled) {
+      paragraphs.add(new Paragraph(oneLine, inputString, null));
+    }
+  }
+
+  private final void init(DomElement textElement) {
     if (textElement == null) {
       this.defaultOneLine = false;
     }
@@ -115,15 +145,6 @@ public class XmlInputDecoder {
         this.paragraphs.add(p);
       }
     }
-  }
-
-  /**
-   * Non-XML constructor.
-   */
-  public XmlInputDecoder(String inputString, boolean oneLine) {
-    this.paragraphs = new ArrayList<Paragraph>();
-    this.defaultOneLine = oneLine;
-    paragraphs.add(new Paragraph(oneLine, inputString, null));
   }
 
   public List<Paragraph> getParagraphs() {
