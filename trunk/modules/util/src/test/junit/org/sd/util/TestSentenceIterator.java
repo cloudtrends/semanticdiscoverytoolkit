@@ -252,6 +252,41 @@ public class TestSentenceIterator extends TestCase {
            });
   }
 
+  public void testEmbeddedDot() {
+    doTest(new SentenceIterator("2:17 p.m. Tuesday (Dec. 27, 2005)", true, true),
+           new String[] {
+             "2:17 p.m. Tuesday (Dec. 27, 2005)"
+           },
+           new int[][] {
+             {0, 33},
+           });
+    doTest(new SentenceIterator("2:17 p.m. Tuesday (Dec. 27, 2005)", true, false),
+           new String[] {
+             "2:17 p.m. Tuesday (Dec. 27, 2005)"
+           },
+           new int[][] {
+             {0, 33},
+           });
+    doTest(new SentenceIterator("2:17 p.m. Tuesday (Dec. 27, 2005)", false, true),
+           new String[] {
+             "2:17 p.m.",
+             "Tuesday (Dec. 27, 2005)",
+           },
+           new int[][] {
+             {0, 10},
+             {10, 33},
+           });
+    doTest(new SentenceIterator("2:17 p.m. Tuesday (Dec. 27, 2005)", false, false),
+           new String[] {
+             "2:17 p.m.",
+             "Tuesday (Dec. 27, 2005)",
+           },
+           new int[][] {
+             {0, 10},
+             {10, 33},
+           });
+  }
+
   public static Test suite() {
     TestSuite suite = new TestSuite(TestSentenceIterator.class);
     return suite;

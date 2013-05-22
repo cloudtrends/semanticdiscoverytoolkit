@@ -88,6 +88,7 @@ public class AtnParseResult {
 
   private List<AtnParse> _parses;
   private int[] _parsedRange;
+  private List<ParseInterpretation> _selectedInterps;
 
   /**
    * Determine whether all parses have been generated for this result. 
@@ -227,6 +228,21 @@ public class AtnParseResult {
       }
     }
     return _parses;
+  }
+
+  public List<ParseInterpretation> getSelectedInterps() {
+    if (_selectedInterps == null) {
+      _selectedInterps = new ArrayList<ParseInterpretation>();
+      for (AtnParse parse : getParses()) {
+        if (parse.getSelected()) {
+          final List<ParseInterpretation> parseInterps = parse.getParseInterpretations();
+          if (parseInterps != null) {
+            _selectedInterps.addAll(parseInterps);
+          }
+        }
+      }
+    }
+    return _selectedInterps;
   }
 
   /**

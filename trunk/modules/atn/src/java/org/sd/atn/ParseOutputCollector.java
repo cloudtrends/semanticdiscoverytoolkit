@@ -377,6 +377,21 @@ public class ParseOutputCollector {
     return result;
   }
 
+  /**
+   * Collect all selected parse interpretations from all parse results.
+   */
+  public List<ParseInterpretation> collectSelectedInterps() {
+    final List<ParseInterpretation> result = new ArrayList<ParseInterpretation>();
+
+    if (parseResults != null) {
+      for (AtnParseResult parseResult : parseResults) {
+        result.addAll(parseResult.getSelectedInterps());
+      }
+    }
+
+    return result;
+  }
+
 
   private void addParseResult(AtnParseResult parseResult) {
     if (parseResult != null) {
