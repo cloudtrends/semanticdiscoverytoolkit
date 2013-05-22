@@ -118,14 +118,17 @@ public class SentenceIterator extends BaseTextIterator {
       if (end > 0) {
         // scan backwards to whitespace
         int lastWordStart = end;
+        boolean hasEmbeddedDot = false;
 
         for (; lastWordStart > start; --lastWordStart) {
           final char curC = text.charAt(lastWordStart - 1);
           if (Character.isWhitespace(curC)) break;
+          if (curC == '.') hasEmbeddedDot = true;
         }
 
         // reject capitalized abbreviations as a sentence boundary
-        if (Character.isUpperCase(text.charAt(lastWordStart)) && StringUtil.isLikelyAbbreviation(text.substring(lastWordStart, end))) {
+        if ((hasEmbeddedDot || Character.isUpperCase(text.charAt(lastWordStart))) &&
+            StringUtil.isLikelyAbbreviation(text.substring(lastWordStart, end))) {
           result = false;
         }
       }
