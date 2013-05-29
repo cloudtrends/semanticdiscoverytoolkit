@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,6 +40,17 @@ import org.sd.util.tree.Tree;
  */
 public class AtnStateUtil {
   
+  public enum Gravity { POP, LAST_MATCH, FIRST_MATCH, PUSH };
+
+  public static final Map<String, Gravity> GRAVITY_LOOKUP = new HashMap<String, Gravity>();
+  static {
+    GRAVITY_LOOKUP.put("pop", Gravity.POP);
+    GRAVITY_LOOKUP.put("lastmatch", Gravity.LAST_MATCH);
+    GRAVITY_LOOKUP.put("firstmatch", Gravity.FIRST_MATCH);
+    GRAVITY_LOOKUP.put("push", Gravity.PUSH);
+  }
+
+
   // parse node attributes
 
   public static String TOKEN_KEY = "cToken";     // -> cToken:CategorizedToken (leafs' parents)
@@ -714,6 +726,76 @@ public class AtnStateUtil {
     }
 
     return result.toString();
+  }
+
+
+  public static final AtnState getPriorConstituentState(AtnState atnState, AtnStateUtil.Gravity gravity) {
+    AtnState result = null;
+
+    if (atnState != null) {
+      final AtnState curParent = atnState.getPushState();
+      for (AtnState prevState = atnState.getParentState();
+           prevState != null && prevState != curParent;
+           prevState = prevState.getParentState()) {
+
+        if (prevState.isPoppedState()) {
+          final AtnState curPush = prevState.getPushState();
+          if (curPush.getPushState() == curParent) {
+            result = AtnStateUtil.adjustForGravity(prevState, gravity);
+            break;
+          }
+        }
+        else if (prevState.getPushState() != curParent) continue;
+
+        if (prevState.getMatched()) {
+          result = prevState;
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  public static final AtnState adjustForGravity(AtnState selectedState, AtnStateUtil.Gravity gravity) {
+    AtnState result = selectedState;
+
+    if (!selectedState.getMatched() && selectedState.isPoppedState()) {
+      final AtnState pushState = selectedState.getPushState();
+      if (pushState != null) {
+        switch (gravity) {
+          case PUSH :
+            result = pushState; break;
+          case POP :
+            result = selectedState; break;
+          case FIRST_MATCH :
+            // look backwards from selectedState to pushState for match closest to pushState
+            result = findMatchState(selectedState, pushState, true); break;
+          case LAST_MATCH :
+            // look backwards from selectedState to pushState for match closest to selectedState
+            result = findMatchState(selectedState, pushState, false); break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  public static final AtnState findMatchState(AtnState startState, AtnState endState, boolean lastMatch) {
+    AtnState result = lastMatch ? endState : startState;
+
+    for (AtnState curState = startState; curState != null && curState != endState; curState = curState.getParentState()) {
+      if (curState.getMatched()) {
+        result = curState;
+        if (!lastMatch) {
+          // found first matching state
+          break;
+        }
+        //else continue to end to pick up the last match
+      }
+    }
+
+    return result;
   }
 
 

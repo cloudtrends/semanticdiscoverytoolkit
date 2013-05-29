@@ -73,6 +73,8 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
   protected boolean next;
   protected boolean prev;
   protected boolean require;
+  protected String select;  // (prior) state, whose token to select
+  protected StatePath selectPath;
   protected String delimMatch;
   protected boolean verbose;
   protected boolean ignoreLastToken;
@@ -102,6 +104,8 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     this.next = testNode.getAttributeBoolean("next", false);
     this.prev = testNode.getAttributeBoolean("prev", false);
     this.require = testNode.getAttributeBoolean("require", false);
+    this.select = testNode.getAttributeValue("select", null);
+    this.selectPath = (select == null || "".equals(select)) ? null : new StatePath(select);
     this.delimMatch = testNode.getAttributeValue("delimMatch", null);
     this.verbose = testNode.getAttributeBoolean("verbose", false);
 
@@ -181,8 +185,9 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
     // - when next='true', test against the next token
     // - when prev='true', test against the prior token (taken as smallest prior if not available through state)
     // - when require='true', fail if the selected (prev or next) token isn't present
+    // - when select='X', find the prior state identified by X as the basis from which to apply the test. NOTE: this is applied after refToken, but before all other attributes.
     // - when delimMatch='X', test against next or prev only succeeds if delims equal X
-    // - when refToken='X', use indicated token as the reference token ("stepEnd" (default), stepStart, ruleStart)
+    // - when refToken='X', use indicated token as the reference token ("stepEnd" (default), stepStart, ruleStart). NOTE: this is applied before all other attributes.
     //
     // <test reverse='true|false' ignoreLastToken='true|false' ignoreLastToken='true|false' onlyFirstToken='true|false' onlyLastToken='true|false' validTokenLength='integerRangeExpression' next='true|false' prev='true|false' require='true|false' delimMatch="X">
     //   <repeatCheck type='ignore|test|fail'>integer-range-expression</repeatCheck>\n" +
@@ -279,6 +284,42 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
         break;
 
       //else no adjustment necessary.
+    }
+
+    if (selectPath != null) {
+      // Syntax:
+      //  [!]statePath
+      // where,
+      //   ! -- if present, indicates that statePath match is required
+      //   statePath -- a state path expression
+      final StatePath.PathAligner pathAligner = selectPath.getPathAligner(curState);
+
+      // if selected token is not found,
+      if (pathAligner.aligns()) {
+        if (verbose) {
+          System.out.println("***BaseClassifierTest adjusting for select=" + select +
+                             " from state=" + curState + " to state=" +
+                             pathAligner.getAlignedState());
+        }
+        curState = pathAligner.getAlignedState();
+        token = curState.getInputToken();
+      }
+      else {
+        // if required, test fails hard
+        if (selectPath.isRequired()) {
+          if (verbose) {
+            System.out.println("***BaseClassifierTest adjusting for select=" + select + " from state=" + curState + " FAILED");
+          }
+          return PassFail.FAIL;  //failure;
+        }
+        // if not required, test is not applicable
+        else {
+          if (verbose) {
+            System.out.println("***BaseClassifierTest adjusting for select=" + select + " from state=" + curState + " N/A");
+          }
+          return PassFail.NOT_APPLICABLE;  //success;
+        }
+      }
     }
 
     final Token nextToken = token.getNextToken();
