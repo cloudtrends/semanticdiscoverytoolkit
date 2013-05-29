@@ -20,9 +20,7 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.sd.token.Token;
 import org.sd.util.Usage;
 import org.sd.util.range.IntegerRange;
@@ -40,16 +38,6 @@ import org.w3c.dom.NodeList;
 //todo: add @Usage(notes =)
 public class StateSelectionTest extends BaseClassifierTest {
   
-  public enum Gravity { POP, LAST_MATCH, FIRST_MATCH, PUSH };
-
-  public static final Map<String, Gravity> GRAVITY_LOOKUP = new HashMap<String, Gravity>();
-  static {
-    GRAVITY_LOOKUP.put("pop", Gravity.POP);
-    GRAVITY_LOOKUP.put("lastmatch", Gravity.LAST_MATCH);
-    GRAVITY_LOOKUP.put("firstmatch", Gravity.FIRST_MATCH);
-    GRAVITY_LOOKUP.put("push", Gravity.PUSH);
-  }
-
   //
   // Model:
   // - There are 2 active models being referenced for state selection.
@@ -194,73 +182,6 @@ public class StateSelectionTest extends BaseClassifierTest {
     return result;
   }
 
-  private static final AtnState getPriorConstituentState(AtnState atnState, Gravity gravity) {
-    AtnState result = null;
-
-    final AtnState curParent = atnState.getPushState();
-    for (AtnState prevState = atnState.getParentState();
-         prevState != null && prevState != curParent;
-         prevState = prevState.getParentState()) {
-
-      if (prevState.isPoppedState()) {
-        final AtnState curPush = prevState.getPushState();
-        if (curPush.getPushState() == curParent) {
-          result = adjustForGravity(prevState, gravity);
-          break;
-        }
-      }
-      else if (prevState.getPushState() != curParent) continue;
-
-      if (prevState.getMatched()) {
-        result = prevState;
-        break;
-      }
-    }
-
-    return result;
-  }
-
-  private static final AtnState adjustForGravity(AtnState selectedState, Gravity gravity) {
-    AtnState result = selectedState;
-
-    if (!selectedState.getMatched() && selectedState.isPoppedState()) {
-      final AtnState pushState = selectedState.getPushState();
-      if (pushState != null) {
-        switch (gravity) {
-          case PUSH :
-            result = pushState; break;
-          case POP :
-            result = selectedState; break;
-          case FIRST_MATCH :
-            // look backwards from selectedState to pushState for match closest to pushState
-            result = findMatchState(selectedState, pushState, true); break;
-          case LAST_MATCH :
-            // look backwards from selectedState to pushState for match closest to selectedState
-            result = findMatchState(selectedState, pushState, false); break;
-        }
-      }
-    }
-
-    return result;
-  }
-
-  private static final AtnState findMatchState(AtnState startState, AtnState endState, boolean lastMatch) {
-    AtnState result = lastMatch ? endState : startState;
-
-    for (AtnState curState = startState; curState != null && curState != endState; curState = curState.getParentState()) {
-      if (curState.getMatched()) {
-        result = curState;
-        if (!lastMatch) {
-          // found first matching state
-          break;
-        }
-        //else continue to end to pick up the last match
-      }
-    }
-
-    return result;
-  }
-
 
   private static class StateSelector {
     private boolean verbose;
@@ -270,7 +191,7 @@ public class StateSelectionTest extends BaseClassifierTest {
     private IntegerRange constituentDistance;
     private IntegerRange ascend;
     private IntegerRange descend;
-    private Gravity gravity;
+    private AtnStateUtil.Gravity gravity;
     private boolean closestOnly;
     private boolean disallow;
     private boolean hasArg;
@@ -326,14 +247,14 @@ public class StateSelectionTest extends BaseClassifierTest {
       }
     }
 
-    private final Gravity buildGravity(String gravityString) {
-      Gravity result = null;
+    private final AtnStateUtil.Gravity buildGravity(String gravityString) {
+      AtnStateUtil.Gravity result = null;
 
       if (gravityString != null && !"".equals(gravityString)) {
-        result = GRAVITY_LOOKUP.get(gravityString.toLowerCase());
+        result = AtnStateUtil.GRAVITY_LOOKUP.get(gravityString.toLowerCase());
       }
 
-      return result == null ? Gravity.POP : result;
+      return result == null ? AtnStateUtil.Gravity.POP : result;
     }
 
     private final IntegerRange getAttributeRange(DomElement elt, String att, IntegerRange defaultValue) {
@@ -397,7 +318,7 @@ public class StateSelectionTest extends BaseClassifierTest {
             meetsPathConstraint(curState, fromState)) {  // apply final tests
 
           // adjust according to gravity
-          final AtnState theState = adjustForGravity(curState, gravity);
+          final AtnState theState = AtnStateUtil.adjustForGravity(curState, gravity);
 
           if (testContainer.hasFinalTests()) {
 
@@ -433,7 +354,7 @@ public class StateSelectionTest extends BaseClassifierTest {
         }
         else if (testContainer.hasScanTests()) {  // apply scanning tests
           // adjust according to gravity
-          final AtnState theState = adjustForGravity(curState, gravity);
+          final AtnState theState = AtnStateUtil.adjustForGravity(curState, gravity);
 
           if (verbose) {
             System.out.println("***StateSelectionTest.StateSelector verifyingScanTests(" +
@@ -689,8 +610,8 @@ public class StateSelectionTest extends BaseClassifierTest {
       int result = 0;
 
       String curLabel = atnState.getRuleStep().getLabel();
-      for (AtnState curState = getPriorConstituentState(atnState, Gravity.PUSH); curState != null;
-           curState = getPriorConstituentState(curState, Gravity.PUSH)) {
+      for (AtnState curState = AtnStateUtil.getPriorConstituentState(atnState, AtnStateUtil.Gravity.PUSH); curState != null;
+           curState = AtnStateUtil.getPriorConstituentState(curState, AtnStateUtil.Gravity.PUSH)) {
         if (current || !wild) {
           if (!curLabel.equals(curState.getRuleStep().getLabel())) {
             break;
