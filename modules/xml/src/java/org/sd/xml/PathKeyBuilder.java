@@ -29,9 +29,12 @@ import java.util.List;
 public class PathKeyBuilder {
 
   private StringBuilder pathKey;
+  private boolean useIndex;
 
-  public PathKeyBuilder() {
+  public PathKeyBuilder() { this(false); }
+  public PathKeyBuilder(boolean useIndex) {
     this.pathKey = new StringBuilder();
+    this.useIndex = useIndex;
   }
 
   public String getPathKey() {
@@ -55,7 +58,7 @@ public class PathKeyBuilder {
       if (pathKey.length() > 0) pathKey.append('.');
       pathKey.append(tag.name);
 
-      if ("td".equals(tag.name) || "table".equals(tag.name)) {
+      if (useIndex || "td".equals(tag.name) || "table".equals(tag.name)) {
         // special case 'td' and 'table' tags.  todo: make this specific to html only?
         pathKey.append(tag.getChildNum());
       }

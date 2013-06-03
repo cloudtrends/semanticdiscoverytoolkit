@@ -54,7 +54,14 @@ public interface TagStack {
    * Get the names of the tags in this stack from the root (at index 0) down
    * to but not including the given index.
    */
+
   public String getPathKey(int index);
+  /**
+   * Get the names of the tags in this stack from the root (at index 0) down
+   * to but not including the given index.
+   * If useIndex flag is set, the child number will be printed for all tags
+   */
+  public String getPathKey(int index, boolean useIndex);
 
   /**
    * Get this stack's current depth.
