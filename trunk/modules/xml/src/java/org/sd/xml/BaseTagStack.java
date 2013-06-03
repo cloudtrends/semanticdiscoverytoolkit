@@ -79,8 +79,11 @@ public abstract class BaseTagStack implements TagStack {
    * to but not including the given index.
    */
   public String getPathKey(int index) {
+    return getPathKey(index, false);
+  }
+  public String getPathKey(int index, boolean useIndex) {
     if (_pathKey == null) {
-      final PathKeyBuilder result = new PathKeyBuilder();
+      final PathKeyBuilder result = new PathKeyBuilder(useIndex);
       
       for (int i = 0; i < index; ++i) {
         final XmlLite.Tag tag = getTag(i);

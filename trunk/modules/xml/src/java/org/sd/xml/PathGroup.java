@@ -189,22 +189,38 @@ public class PathGroup {
     }
   }
 
-  public String toString() {
+  public String getCommonPathString(boolean includeIndex)
+  {
     final StringBuilder result = new StringBuilder();
 
     if (commonPathIndex < 0) {
       result.append("<empty>");
     }
     else {
-      final List<XmlLite.Tag> tags = getFirstPath().getTagStack().getTags();
-      for (int i = 0; i <= commonPathIndex; ++i) {
-        final XmlLite.Tag tag = tags.get(i);
-        if (result.length() > 0) result.append('.');
-        result.append(tag.name);
+      Path firstPath = getFirstPath();
+      TagStack tstack = firstPath.getTagStack();
+      if(includeIndex)
+        result.append(tstack.getPathKey(commonPathIndex+1, true));
+      else
+      {
+        final List<XmlLite.Tag> tags = tstack.getTags();
+        for (int i = 0; i <= commonPathIndex; ++i) {
+          final XmlLite.Tag tag = tags.get(i);
+          if (result.length() > 0) 
+            result.append('.');
+          result.append(tag.name);
+        }
       }
     }
 
+    return result.toString();
+  }
+
+  public String toString() {
+    final StringBuilder result = new StringBuilder();
+
     result.
+      append(getCommonPathString(false)).
       append('(').
       append(paths.size()).
       append(")=").
