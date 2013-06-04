@@ -188,7 +188,7 @@ public class StatePath {
 
       if (wild || doublewild) return true;
 
-      return category.equals(atnState.getRuleStep().getLabel());
+      return atnState.getRuleStep().matchesCategory(category);
     }
   }
 
@@ -197,6 +197,8 @@ public class StatePath {
     private AtnState fromState;
     private AtnState alignedState;
     private boolean aligns;
+
+    private LinkedList<AtnState> _statepath;
 
     private int pcSize;
     private int pcIdx;
@@ -209,6 +211,8 @@ public class StatePath {
       this.fromState = fromState;
       this.alignedState = null;
       this.aligns = false;
+
+      this._statepath = null;
 
       this.pcSize = pathComponents.size();
       this.pcIdx = pcSize - 1;
@@ -237,6 +241,39 @@ public class StatePath {
       return aligns ? alignedState : null;
     }
 
+    public LinkedList<AtnState> getStatePath() {
+      if (_statepath == null && aligns) {
+        _statepath = new LinkedList<AtnState>();
+        for (AtnState state = fromState; state != alignedState; state = state.getParentState()) {
+          _statepath.add(state);
+        }
+        _statepath.add(alignedState);
+      }
+      return _statepath;
+    }
+
+    public AtnState getState(int offset) {
+      AtnState result = null;
+
+      int idx = getStatePath().size() - offset - 1;
+      if (idx >= 0) {
+        result = getStatePath().get(idx);
+      }
+
+      return result;
+    }
+
+    public String getRuleId(int offset) {
+      String result = null;
+
+      final AtnState state = getState(offset);
+      if (state != null) {
+        result = state.getRule().getRuleId();
+      }
+
+      return result;
+    }
+
 
     private final void setPPC() {
       this.ppc = (pcIdx >= 1) ? pathComponents.get(pcIdx - 1) : null;
@@ -245,11 +282,12 @@ public class StatePath {
     private final void decrementState() {
       AtnState result = null;
 
+      AtnState pushState = (curState == null) ? null : curState.getPushState();
       for (AtnState prevState = (curState == null) ? null : curState.getParentState();
            prevState != null;
            prevState = prevState.getParentState()) {
 
-        if (prevState.getMatched() || prevState.isPoppedState()) {
+        if (prevState == pushState || prevState.getMatched() || prevState.isPoppedState()) {
           result = prevState;
           break;
         }
@@ -283,7 +321,7 @@ public class StatePath {
           if (pc.toFront()) {
             // move curState to front of constituent if warranted
             if (!curState.getMatched() && curState.isPoppedState()) {
-              curState = curState.getPushState();
+              curState = curState.getConstituentTop();
               atFront = true;
             }
           }

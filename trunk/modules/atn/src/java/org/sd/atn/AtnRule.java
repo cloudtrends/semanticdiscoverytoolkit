@@ -90,6 +90,7 @@ public class AtnRule {
   }
   private void addPopStep(AtnRuleStep popStep) {
     if (popSteps == null) popSteps = new ArrayList<AtnRuleStep>();
+    popStep.setPopStep(true);
     popSteps.add(popStep);
   }
 

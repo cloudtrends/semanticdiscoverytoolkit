@@ -57,7 +57,7 @@ import org.w3c.dom.NodeList;
        " are present and/or classifiers match tokens in the current constituent's\n" +
        " (rule's) history."
   )
-public class TokenInclusionTest implements AtnRuleStepTest {
+public class TokenInclusionTest extends BaseClassifierTest {
   
   //
   // Walk back through the states looking for tokens with certain assigned
@@ -80,7 +80,6 @@ public class TokenInclusionTest implements AtnRuleStepTest {
   //
   //NOTE: reverse is applied in the container that runs the tests.
 
-  private boolean verbose;
   private boolean includeAll;
   private List<InclusionContainer> containers;
   private StepTestContainer haltContainer;
@@ -89,7 +88,8 @@ public class TokenInclusionTest implements AtnRuleStepTest {
   private boolean applyHaltAfterTest;
 
   public TokenInclusionTest(DomNode testNode, ResourceManager resourceManager) {
-    this.verbose = testNode.getAttributeBoolean("verbose", false);
+    super(testNode, resourceManager);
+
     final String include = testNode.getAttributeValue("include", "all");
     this.includeAll = "all".equals(include);
     this.containers = loadContainers(testNode);
@@ -149,10 +149,10 @@ public class TokenInclusionTest implements AtnRuleStepTest {
    * This is called as a last check on whether a token matches for the current
    * state after its category has been matched to its containing rule step.
    */
-  public PassFail accept(Token token, AtnState curState) {
+  protected boolean doAccept(Token token, AtnState curState) {
     boolean result = false;
 
-    final AtnState stopState = (unlimit ? null : curState.getPushState());
+    final AtnState stopState = (unlimit ? null : curState.getConstituentTop());
 
     if (verbose) {
       System.out.println("\nTokenInclusionTest starting w/token=" + token + ", stopState=" + stopState);
@@ -160,6 +160,7 @@ public class TokenInclusionTest implements AtnRuleStepTest {
 
     for (InclusionContainer ic : containers) {
       Token priorToken = token;
+      final InclusionContainerContext icContext = new InclusionContainerContext(ic.getTotalCount(), ic.includeAll());
       for (AtnState atnState = curState; atnState != null && atnState != stopState; atnState = atnState.getParentState()) {
         if (haltContainer != null && !applyHaltAfterTest && atnState.getInputToken() != priorToken) {
           priorToken = atnState.getInputToken();
@@ -172,14 +173,14 @@ public class TokenInclusionTest implements AtnRuleStepTest {
           }
         }
 
-        result = ic.appliesTo(atnState);
+        final boolean curResult = ic.appliesTo(atnState, icContext);
 
         if (verbose) {
           final String curCategory = atnState.getRuleStep().getCategory();
-          System.out.println("TokenInclusionTest (" + result + ") visiting state '" + curCategory + "' " + atnState.getInputToken()); 
+          System.out.println("TokenInclusionTest (" + curResult + ") visiting state '" + curCategory + "' " + atnState.getInputToken()); 
         }
 
-        if (result) break;
+        if (icContext.isComplete()) break;
 
         if (haltContainer != null && applyHaltAfterTest && atnState.getInputToken() != priorToken) {
           priorToken = atnState.getInputToken();
@@ -193,6 +194,7 @@ public class TokenInclusionTest implements AtnRuleStepTest {
         }
       }
 
+      result = icContext.isComplete();
       if (isFinalResult(result, includeAll)) break;
     }
 
@@ -200,11 +202,33 @@ public class TokenInclusionTest implements AtnRuleStepTest {
       System.out.println("\nTokenInclusionTest ending w/result=" + result);
     }
 
-    return PassFail.getInstance(result);
+    return result;
   }
   
   private static final boolean isFinalResult(boolean curResult, boolean includeAll) {
     return ((includeAll && !curResult) || (!includeAll && curResult));
+  }
+
+
+  private static final class InclusionContainerContext {
+
+    private int totalCount;
+    private boolean includeAll;
+    private Set<String> got;
+
+    InclusionContainerContext(int totalCount, boolean includeAll) {
+      this.totalCount = totalCount;
+      this.includeAll = includeAll;
+      this.got = new HashSet<String>();
+    }
+
+    void add(String item) {
+      got.add(item);
+    }
+
+    boolean isComplete() {
+      return includeAll ? got.size() == totalCount : got.size() > 0;
+    }
   }
 
   private static abstract class InclusionContainer {
@@ -215,11 +239,13 @@ public class TokenInclusionTest implements AtnRuleStepTest {
       this.includeAll = "all".equals(include);
     }
 
-    boolean scanIsComplete(boolean curResult) {
-      return isFinalResult(curResult, includeAll);
+    boolean includeAll() {
+      return includeAll;
     }
 
-    abstract boolean appliesTo(AtnState atnState);
+    abstract int getTotalCount();
+
+    abstract boolean appliesTo(AtnState atnState, InclusionContainerContext icContext);
   }
 
   // <category values="cat1,...,catN" [include='any|all'] />
@@ -240,13 +266,22 @@ public class TokenInclusionTest implements AtnRuleStepTest {
       }
     }
 
-    boolean appliesTo(AtnState atnState) {
-      boolean result = categories.contains(atnState.getRuleStep().getCategory());
+    int getTotalCount() {
+      return stepRequirements.length;
+    }
+
+    boolean appliesTo(AtnState atnState, InclusionContainerContext icContext) {
+      final String cat = atnState.getRuleStep().getCategory();
+      boolean result = categories.contains(cat);
+      if (result) icContext.add(cat);
 
       if (!result) {
         for (StepRequirement requirement : stepRequirements) {
           result = AtnStateUtil.matchesCategory(atnState, requirement);
-          if (scanIsComplete(result)) break;
+          if (result) {
+            icContext.add(requirement.getCategory());
+            if (icContext.isComplete()) break;
+          }
         }
       }
 
@@ -266,8 +301,14 @@ public class TokenInclusionTest implements AtnRuleStepTest {
       for (String value : values) classifierIds.add(value);
     }
 
-    boolean appliesTo(AtnState atnState) {
-      boolean result = classifierIds.contains(atnState.getRuleStep().getCategory());
+    int getTotalCount() {
+      return classifierIds.size();
+    }
+
+    boolean appliesTo(AtnState atnState, InclusionContainerContext icContext) {
+      final String cat = atnState.getRuleStep().getCategory();
+      boolean result = classifierIds.contains(cat);
+      if (result) icContext.add(cat);
 
       if (!result) {
         for (String classifierId : classifierIds) {
@@ -275,10 +316,13 @@ public class TokenInclusionTest implements AtnRuleStepTest {
           if (classifiers != null) {
             for (AtnStateTokenClassifier classifier : classifiers) {
               result = classifier.classify(atnState.getInputToken(), atnState).matched();
-              if (result) break;
+              if (result) {
+                icContext.add(classifierId);
+                if (icContext.isComplete()) break;
+              }
             }
           }
-          if (scanIsComplete(result)) break;
+          if (icContext.isComplete()) break;
         }
       }
 

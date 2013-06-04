@@ -342,14 +342,14 @@ public class AtnStateUtil {
   }
 
   /**
-   * Get the first state of the state's constituent.
+   * Get the first state of the state's constituent (just under the constituent top).
    */
   public static final AtnState getConstituentStartState(AtnState curState) {
     AtnState result = null;
 
-    final AtnState refPush = curState.getPushState();
+    final AtnState refPush = curState.getConstituentTop();
     for (result = curState; result != null; result = result.getParentState()) {
-      final AtnState curPush = result.getPushState();
+      final AtnState curPush = result.getConstituentTop();
       if (curPush == refPush && curPush == result.getParentState()) break;
     }
 
@@ -376,7 +376,7 @@ public class AtnStateUtil {
   public static final LinkedList<AtnState> getConstituentMatchStates(AtnState endState) {
     final LinkedList<AtnState> result = new LinkedList<AtnState>();
 
-    final AtnState refPush = endState.getPushState();
+    final AtnState refPush = endState.getConstituentTop();
     for (AtnState curState = endState; curState != null; curState = curState.getParentState()) {
       if (curState.getMatched()) {
         result.add(0, curState);

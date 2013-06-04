@@ -298,17 +298,21 @@ public class DelimTest extends BaseClassifierTest {
   private String getDelim(Token token, AtnState curState) {
     String delim = null;
 
+    if (verbose) {
+      final boolean stopHere = true;
+    }
+
     if (isPre) {  // predelim
       final AtnState parentState = curState != null ? curState.getParentState() : null;
       final boolean constituent =
-        !ignoreConstituents &&
-        (parentState != null && parentState.isPoppedState()) &&
+        !ignoreConstituents && parentState != null &&
+        (curState.isPoppedState() || parentState.isPoppedState()) &&
         curState.getRuleStep().getCategory().equals(parentState.getRule().getRuleName());
 
       if (constituent) {
         // we're looking at a pre-test on the result of a constituent pop
         // get the delimiter string that precedes the constituent, not the token
-        final AtnState startState = AtnStateUtil.getConstituentStartState(parentState);
+        final AtnState startState = AtnStateUtil.getConstituentStartState(curState);
         final Token startToken = startState.getInputToken();
         delim = startToken.getPreDelim();
       }
