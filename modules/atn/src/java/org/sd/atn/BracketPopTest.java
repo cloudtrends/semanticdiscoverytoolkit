@@ -50,6 +50,7 @@ public class BracketPopTest implements AtnRuleStepTest {
   private boolean allowBalanced;
   private boolean includeEnds;
   private boolean requireEnds;
+  private boolean verbose;
 
   private List<Bracket> brackets;
   List<Bracket> getBrackets() {
@@ -76,6 +77,7 @@ public class BracketPopTest implements AtnRuleStepTest {
     this.allowBalanced = testNode.getAttributeBoolean("allowBalanced", true);
     this.includeEnds = testNode.getAttributeBoolean("includeEnds", false);
     this.requireEnds = testNode.getAttributeBoolean("requireEnds", false);
+    this.verbose = testNode.getAttributeBoolean("verbose", false);
 
     //     <brackets>
     //       <!-- -->
@@ -199,6 +201,10 @@ public class BracketPopTest implements AtnRuleStepTest {
       if (requireEnds) {
         result = verifyRequireEnds(curState, curState);
       }
+    }
+
+    if (verbose) {
+      System.out.println("***BracketPopTest " + curState.showStateContext() + " result=" + result);
     }
 
     return PassFail.getInstance(result);

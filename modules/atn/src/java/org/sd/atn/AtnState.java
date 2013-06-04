@@ -97,6 +97,48 @@ public class AtnState {
     return pushState;
   }
 
+  /** Get the state at the top of the branch */
+  private AtnState topState;
+  public AtnState getTopState() {
+    AtnState result = topState;
+
+    if (result == null && parentStateNode != null) {
+      for (AtnState parentState = getParentState(); parentState != null; parentState = parentState.getParentState()) {
+        result = parentState;
+      }
+      topState = result;
+    }
+
+    return result;
+  }
+
+  /** Get the top of this state's constituent */
+  public AtnState getConstituentTop() {
+    AtnState result = pushState;
+
+    //NOTE: the constituent top for a state associated with a popStep is the
+    //      popStep's pushState since the popStep is not a constituent
+
+    if (!isPopping() && result == null) {
+      final AtnState parentState = getParentState();
+      if (parentState != null) {
+        result = parentState.getPushState();
+      }
+      if (result == null) {
+        result = getTopState();
+      }
+    }
+    return result;
+  }
+
+  private boolean popping;
+  boolean isPopping() {
+    return popping;
+  }
+  void setPopping(boolean popping) {
+    this.popping = popping;
+  }
+
   private boolean isPoppedState;
   boolean isPoppedState() {
     return isPoppedState;
@@ -649,14 +691,14 @@ public class AtnState {
   /**
    * Show the states from this up to the root.
    */
-  private String showStatePath() {
+  public String showStatePath() {
     return AtnStateUtil.showStatePath(this);
   }
 
   /**
    * Show this state with its push path and constituent start.
    */
-  private String showStateContext() {
+  public String showStateContext() {
     final StringBuilder result = new StringBuilder();
 
     final List<AtnState> pushPath = getPushPath();
@@ -745,6 +787,7 @@ public class AtnState {
     boolean matched = false;
 
     final AtnRuleStep ruleStep = getRuleStep();
+
     if (ruleStep.getIgnoreToken()) {
       matched = ruleStep.verify(inputToken, this);
     }
@@ -868,10 +911,27 @@ public class AtnState {
         // apply popState test
         result = popState.applyTests();
         
+        if (result) {
+          popVerified = popState.verifyPop();
+        }
+        else {
+          // back out of popping
+          while (states.size() > statesSize) {
+            if (trace || getRuleStep().getVerbose() || popState.getRuleStep().getVerbose()) {
+              System.out.println("Failed pop backup ... removing queued state:\n  " + states.getLast().showStateContext() /*states.getLast().showStatePath()*/);
+            }
+            states.removeLast();
+          }
+          while (skipStates.size() > skipStatesSize) skipStates.removeLast();
+        }
+
+/*
         if (!result) {
           popState.popFailed = true;
-          if (trace || getRuleStep().getVerbose()) {
-            System.out.println("POP tests FAILED\t" + popState.showStateContext() /*popState.showStateTree(true)*/);
+          popStateNode.addChild(popState);
+
+          if (trace || getRuleStep().getVerbose() || popState.getRuleStep().getVerbose()) {
+            System.out.println("POP tests FAILED\t" + popState.showStateContext());
             popState.applyTests();  // NOTE: this is here for debug stepping when tests fail unexpectedly
           }
         }
@@ -883,8 +943,8 @@ public class AtnState {
             popState.popFailed = true;
             popStateNode.addChild(popState);
 
-            if (trace || getRuleStep().getVerbose()) {
-              System.out.println("POP verification FAILED\t" + popState.showStateContext() /*popState.showStateTree(true)*/);
+            if (trace || getRuleStep().getVerbose() || popState.getRuleStep().getVerbose()) {
+              System.out.println("POP verification FAILED\t" + popState.showStateContext());
             }
 
             if (popState.getPopCount() != 1) {
@@ -899,21 +959,34 @@ public class AtnState {
             break;
           }
         }
+*/
 
         if (!result || !popVerified) {
-          // back out of popping
-          while (states.size() > statesSize) {
-            if (trace || getRuleStep().getVerbose()) System.out.println("Failed pop backup ... removing queued state:\n" + states.getLast().showStateContext() /*states.getLast().showStatePath()*/);
-            states.removeLast();
-          }
-          while (skipStates.size() > skipStatesSize) skipStates.removeLast();
+            // note: result is still true because match succeeded; only the pop failed
+            popState.popFailed = true;
+            popStateNode.addChild(popState);
+
+            if (trace || getRuleStep().getVerbose() || popState.getRuleStep().getVerbose()) {
+              System.out.println("POP " + (!result ? "tests" : "verification") + " FAILED\t" + popState.showStateContext());
+            }
+
+            if (popState.getPopCount() != 1) {
+              // first pop has popCount 1 and is same as matching token, which will have
+              // states added due to the match.
+              popStateNode = popStateNode.addChild(popState);  //NOTE: this looks redundant, but isn't!
+
+              if (result) {
+                // After the first pop, we need to consider forward states from each pop.
+                addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList, true);
+              }
+            }
 
           break;
         }
 
         popStateNode = popStateNode.addChild(popState);
 
-        if (trace || getRuleStep().getVerbose()) {
+        if (trace || getRuleStep().getVerbose() || popState.getRuleStep().getVerbose()) {
           System.out.println("POP \t" + popState.showStateContext() /*popState.showStateTree(true)*/);
         }
 
@@ -926,13 +999,16 @@ public class AtnState {
 
           // After the first pop, we need to consider forward states from each pop.
           if (addNextStates(grammar, states, skipStates, popState, popStateNode, true, true, stopList, true)) {
+            statesSize = states.size();
+            skipStatesSize = skipStates.size();
+
             if (!popState.isRuleEnd(false)) {
-              // we need to stop popping when we get to one that isn't a rule end
-              popState = null;
-              
-              if (trace || getRuleStep().getVerbose()) {
+              if (trace || getRuleStep().getVerbose() || popState.getRuleStep().getVerbose()) {
                 System.out.println("\t *** POP not ruleEnd!");
               }
+
+              // we need to stop popping when we get to one that isn't a rule end
+              popState = null;
             }
           }
         }
@@ -958,13 +1034,24 @@ public class AtnState {
       }
     }
     else {
-      if (trace || getRuleStep().getVerbose()) {
+      if (trace || getRuleStep().getVerbose() || nextStateNode.getData().getRuleStep().getVerbose()) {
         System.out.println("POP FAIL (NotRuleEnd)\t" + nextStateNode.getData().showStateContext() /*nextStateNode.getData().showStateTree(true)*/);
       }
     }
 
     return result;
   }
+
+  // private final void backOutOfPopping(int statesSize, int skipStatesSize) {
+  //   while (states.size() > statesSize) {
+  //     if (trace || getRuleStep().getVerbose() || popState.getRuleStep().getVerbose()) {
+  //       System.out.println("Failed pop backup ... removing queued state:\n  " + states.getLast().showStateContext() /*states.getLast().showStatePath()*/);
+  //     }
+  //     states.removeLast();
+  //   }
+  //   while (skipStates.size() > skipStatesSize) skipStates.removeLast();
+  // }
+
 
   /**
    * Determine whether this state's input token encompasses the given token.
@@ -1094,7 +1181,9 @@ public class AtnState {
       final Tree<AtnState> forwardMatchNode = findNode(forwardStateNode, curCat, tokenStart, tokenEnd, hasClusterFlag);
       if (forwardMatchNode != null) {
         if (hasClusterFlag) {
-          if (trace || getRuleStep().getVerbose()) {
+          if (trace || getRuleStep().getVerbose() ||
+              forwardMatchNode.getData().getRuleStep().getVerbose() ||
+              parentStateNode.getData().getRuleStep().getVerbose()) {
             System.out.println("Forward cluster failure ... moving state:\n" +
                                forwardMatchNode.getData().showStateContext() /*forwardMatchNode.getData().showStatePath()*/ +
                                "\n\tto\n" +
@@ -1168,7 +1257,7 @@ public class AtnState {
 
           if (thisPrecedes) {
             // if this comes sooner, remove state and don't fail to add this
-            if (trace || getRuleStep().getVerbose()) {
+            if (trace || getRuleStep().getVerbose() || state.getRuleStep().getVerbose()) {
               System.out.println("Failed cluster condition ... removing queued state:\n" + state.showStateContext() /*state.showStatePath()*/);
             }
             stateIter.remove();
@@ -1221,7 +1310,7 @@ public class AtnState {
 
           if (thisPrecedes) {
             // if this doesn't come sooner, remove state and don't fail to add this
-            if (trace || getRuleStep().getVerbose()) {
+            if (trace || getRuleStep().getVerbose() || state.getRuleStep().getVerbose()) {
               System.out.println("Failed cluster condition ... removing queued state:\n" + state.showStateContext() /*state.showStatePath()*/);
             }
             stateIter.remove();
@@ -1374,24 +1463,26 @@ public class AtnState {
         System.out.println("match=" + matches + "\t" + curstate.showStateContext() /*curstate.showStateTree(matches)*/);
       }
 
+      boolean pops = false;
+
       if (matches) {
 
         if (traceflow || curstate.getRuleStep().getVerbose()) {
           System.out.println("traceflow--AtnState MATCH " + curstate.toString());
         }
 
-        matches = curstate.applyAllPops(nextStateNode, states, skipStates, stopList);
+        pops = curstate.applyAllPops(nextStateNode, states, skipStates, stopList);
 
-        if ((traceflow || curstate.getRuleStep().getVerbose()) && !matches) {
-          System.out.println("traceflow--AtnState DROPPED match " + curstate.toString());
-        }
+        // if ((traceflow || curstate.getRuleStep().getVerbose()) && !pops) {
+        //   System.out.println("traceflow--AtnState DROPPED match " + curstate.toString());
+        // }
       }
 
       if (matches) {
         success = true;
         curstate.setMatchResult(matchResult);
 
-        if (curstate.isValidEnd(stopList)) {
+        if (pops && curstate.isValidEnd(stopList)) {
           // found a valid full parse
           result = true;
         }

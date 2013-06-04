@@ -116,6 +116,10 @@ public class TextTest extends BaseClassifierTest {
     String text = null;
     Token startToken = token;
 
+    if (verbose) {
+      final boolean stopHere = true;
+    }
+
     if (curState.isPoppedState()) {
       final AtnState startState = AtnStateUtil.getConstituentStartState(curState);
 

@@ -55,14 +55,14 @@ public class StepTestWrapper {
 
     if (conditions != null) {
       if (verboseTag != null) {
-        System.out.println("***StepTestWrapper.condition(" + curState + "): " + verboseTag + " START");
+        System.out.println("***StepTestWrapper.condition(" + curState.showStateContext() + "): " + verboseTag + " START");
       }
 
       result = conditions.verify(token, curState).conditionalAccept();
 
       // condition not met 
       if (verboseTag != null) {
-        System.out.println("***StepTestWrapper.condition(" + curState + "): " + verboseTag + " END (result=" +
+        System.out.println("***StepTestWrapper.condition(" + curState.showStateContext() + "): " + verboseTag + " END (result=" +
                            (result ? "SUCCESS" : "FAILED") + ")");
       }
     }
@@ -75,13 +75,13 @@ public class StepTestWrapper {
 
     if (test != null) {
       if (verboseTag != null) {
-        System.out.println("***StepTestWrapper.verify(" + curState + "): " + verboseTag + " START");
+        System.out.println("***StepTestWrapper.verify(" + curState.showStateContext() + "): " + verboseTag + " START");
       }
 
       result = test.accept(token, curState);
 
       if (verboseTag != null) {
-        System.out.println("***StepTestWrapper.verify(" + curState + "): " + verboseTag + " END (result=" +
+        System.out.println("***StepTestWrapper.verify(" + curState.showStateContext() + "): " + verboseTag + " END (result=" +
                            result + ")");
       }
     }

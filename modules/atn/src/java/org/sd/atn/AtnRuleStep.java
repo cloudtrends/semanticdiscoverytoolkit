@@ -46,9 +46,27 @@ public class AtnRuleStep {
     return label == null ? category : label;
   }
 
+  public boolean matchesCategory(String cat) {
+    boolean result = category.equals(cat);
+
+    if (!result && label != null) {
+      result = label.equals(cat);
+    }
+
+    return result;
+  }
+
   private String requireString;
   public String getRequireString() {
     return requireString;
+  }
+
+  private boolean popStep;
+  public boolean isPopStep() {
+    return popStep;
+  }
+  void setPopStep(boolean popStep) {
+    this.popStep = popStep;
   }
 
   private StepRequirement[] require;
@@ -172,7 +190,10 @@ public class AtnRuleStep {
    * the postDelim and test constraints.
    */
   boolean verify(Token token, AtnState curState) {
-    return testContainer.verify(token, curState).accept();
+    if (isPopStep()) curState.setPopping(true);
+    final boolean result = testContainer.verify(token, curState).accept();
+    if (isPopStep()) curState.setPopping(false);
+    return result;
   }
 
   void setIsTerminal(boolean isTerminal) {
