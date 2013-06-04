@@ -100,12 +100,14 @@ public class XmlInputDecoder {
 
   private boolean defaultOneLine;
   private List<Paragraph> paragraphs;
+  private Map<String, String> attributes;
 
   /**
    * Construct with the "text" element.
    */
   public XmlInputDecoder(DomElement textElement) {
     this.paragraphs = new ArrayList<Paragraph>();
+    this.attributes = null;
     init(textElement);
   }
 
@@ -115,6 +117,7 @@ public class XmlInputDecoder {
   public XmlInputDecoder(String inputString, boolean oneLine) {
     this.paragraphs = new ArrayList<Paragraph>();
     this.defaultOneLine = oneLine;
+    this.attributes = null;
 
     boolean handled = false;
     if (inputString.indexOf("<text") >= 0) {
@@ -138,6 +141,9 @@ public class XmlInputDecoder {
       this.defaultOneLine = false;
     }
     else {
+      if (textElement.hasAttributes()) {
+        this.attributes = textElement.getDomAttributes().getAttributes();
+      }
       this.defaultOneLine = textElement.getAttributeBoolean("oneLine", false);
 
       final Paragraph p = loadParagraphs(buildParagraph(textElement), textElement);
@@ -145,6 +151,14 @@ public class XmlInputDecoder {
         this.paragraphs.add(p);
       }
     }
+  }
+
+  public boolean hasAttributes() {
+    return attributes != null && attributes.size() > 0;
+  }
+
+  public Map<String, String> getAttributes() {
+    return attributes;
   }
 
   public List<Paragraph> getParagraphs() {
