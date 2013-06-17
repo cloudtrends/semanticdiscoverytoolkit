@@ -166,6 +166,25 @@ public class MultiTermFinder {
     return result;
   }
 
+  /**
+   * Convenience method to extract match positions from match results.
+   */
+  public List<int[]> getMatchPositions(List<LogicalResult<String>> matches) {
+    List<int[]> result = null;
+
+    if (matches != null) {
+      result = new ArrayList<int[]>();
+      for (LogicalResult<String> match : matches) {
+        if (match instanceof TermFinderLogicalResult) {
+          final TermFinderLogicalResult tfResult = (TermFinderLogicalResult)match;
+          result.add(tfResult.getPatternPos());
+        }
+      }
+    }
+
+    return result;
+  }
+
   public int getFinderIndex(TruthFunction<String> truthFunction) {
     int result = -1;
 

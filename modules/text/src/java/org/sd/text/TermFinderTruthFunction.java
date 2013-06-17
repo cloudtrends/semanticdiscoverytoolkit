@@ -19,6 +19,7 @@
 package org.sd.text;
 
 
+import org.sd.nlp.NormalizedString;
 import org.sd.util.logic.LogicalResult;
 import org.sd.util.logic.TruthFunction;
 
@@ -51,6 +52,17 @@ public class TermFinderTruthFunction extends TruthFunction<String> {
   }
 
   public LogicalResult<String> evaluateInput(String input) {
-    return new TermFinderLogicalResult(input, termFinder.findPatternPos(input, acceptPartial), this);
+    final NormalizedString nstring = termFinder.normalize(input);
+    final int[] nppos = termFinder.findPatternPos(nstring, acceptPartial);  // normalized position
+
+    // translate normalized positions back to original positions
+    if (nppos != null) {
+      final int oStart = nstring.getOriginalIndex(nppos[0]);
+      final int oEnd = nstring.getOriginalIndex(nppos[0] + nppos[1] - 1);
+      nppos[0] = oStart;
+      nppos[1] = oEnd - oStart + 1;
+    }
+
+    return new TermFinderLogicalResult(input, nppos, this);
   }
 }
