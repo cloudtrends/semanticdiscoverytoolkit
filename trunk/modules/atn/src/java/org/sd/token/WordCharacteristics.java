@@ -34,9 +34,13 @@ public class WordCharacteristics {
   public enum Type { LOWER, UPPER, DIGIT, OTHER };
 
 
+  private static final boolean ALL_UPPER_WITH_SYMBOLS_IS_ALL_CAPS = true;
+
+
   private String word;
   private int len;
   private Map<Integer, Type> pos2type;
+  private Map<Type, Integer> type2maxConsecutive;
 
   private TreeSet<Integer> lowers;
   private TreeSet<Integer> uppers;
@@ -53,6 +57,7 @@ public class WordCharacteristics {
     this.word = word;
     this.len = word.length();
     this.pos2type = new HashMap<Integer, Type>();
+    this.type2maxConsecutive = new HashMap<Type, Integer>();
     this.lowers = null;
     this.uppers = null;
     this.digits = null;
@@ -60,23 +65,27 @@ public class WordCharacteristics {
     this._startDelims = null;
     this._endDelims = null;
 
+    Type curType = null;
+    Type lastType = null;
+    int numConsecutive = 1;
+
     for (int i = 0; i < len; ++i) {
       final char c = word.charAt(i);
       boolean isOther = false;
 
       if (Character.isLetterOrDigit(c)) {
         if (Character.isDigit(c)) {
-          pos2type.put(i, Type.DIGIT);
+          pos2type.put(i, curType = Type.DIGIT);
           if (digits == null) digits = new TreeSet<Integer>();
           digits.add(i);
         }
         else if (Character.isLowerCase(c)) {
-          pos2type.put(i, Type.LOWER);
+          pos2type.put(i, curType = Type.LOWER);
           if (lowers == null) lowers = new TreeSet<Integer>();
           lowers.add(i);
         }
         else if (Character.isUpperCase(c)) {
-          pos2type.put(i, Type.UPPER);
+          pos2type.put(i, curType = Type.UPPER);
           if (uppers == null) uppers = new TreeSet<Integer>();
           uppers.add(i);
         }
@@ -89,10 +98,27 @@ public class WordCharacteristics {
       }
 
       if (isOther) {
-        pos2type.put(i, Type.OTHER);
+        pos2type.put(i, curType = Type.OTHER);
         if (others ==  null) others = new TreeSet<Integer>();
         others.add(i);
       }
+
+      if (curType == lastType) {
+        ++numConsecutive;
+      }
+      else {
+        tally(curType, numConsecutive);
+        lastType = curType;
+        numConsecutive = 1;
+      }
+    }
+    tally(curType, numConsecutive);
+  }
+
+  private final void tally(Type curType, int numConsecutive) {
+    if (numConsecutive > 0) {
+      Integer curMax = type2maxConsecutive.get(curType);
+      type2maxConsecutive.put(curType, curMax == null ? numConsecutive : Math.max(curMax, numConsecutive));
     }
   }
 
@@ -390,10 +416,25 @@ public class WordCharacteristics {
       }
 
       // NOTE: hasLower=false && hasDigit=false here
-      else if (!hasOther()) {
+      else if (ALL_UPPER_WITH_SYMBOLS_IS_ALL_CAPS || !hasOther()) {
         result = KeyLabel.AllCaps;
       }
       // otherwise, upper w/symbols is special
+    }
+
+    // Treat strings like "J.J." as SingleUpper instead of AllCaps
+    if (result == KeyLabel.AllCaps) {
+      final Integer max = type2maxConsecutive.get(Type.UPPER);
+      if (max != null && max == 1) {
+        result = KeyLabel.SingleUpper;
+      }
+    }
+    // Treat strings like "j.j." as SingleLower instead of AllLower
+    else if (result == KeyLabel.AllLower) {
+      final Integer max = type2maxConsecutive.get(Type.LOWER);
+      if (max != null && max == 1) {
+        result = KeyLabel.SingleLower;
+      }
     }
 
     return result;

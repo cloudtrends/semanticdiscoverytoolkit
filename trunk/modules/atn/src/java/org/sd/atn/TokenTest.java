@@ -370,7 +370,7 @@ public class TokenTest extends BaseClassifierTest {
       this.prevToken = elt.getAttributeBoolean("prevToken", true);
       this.curToken = elt.getAttributeBoolean("curToken", true);
       this.nextToken = elt.getAttributeBoolean("nextToken", true);
-      this.forwardLogic = forwardLogic;
+      this.forwardLogic = elt.getAttributeBoolean("logicOverride", forwardLogic);
     }
 
     public final boolean accept(Token token, boolean verbose) {
@@ -425,13 +425,13 @@ public class TokenTest extends BaseClassifierTest {
       final KeyLabel[] labels1 = token1.getKeyLabels();
       final KeyLabel[] labels2 = token2.getKeyLabels();
 
-      // return true if there is a change
-      final boolean result = matcher.matches(labels1, labels2);
-
       if (verbose) {
         System.out.println("\t" + token1 + " " + asString(labels1));
         System.out.println("\t" + token2 + " " + asString(labels2));
       }
+
+      // return true if there is a change
+      final boolean result = matcher.matches(labels1, labels2);
 
       return result;
     }
