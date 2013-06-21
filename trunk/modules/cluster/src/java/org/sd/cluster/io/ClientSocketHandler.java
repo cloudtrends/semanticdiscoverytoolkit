@@ -92,6 +92,11 @@ class ClientSocketHandler implements Runnable {
     }
     catch (IOException ioe) {
       this.ioe = ioe;
+
+      //NOTE: serverAddres.toString() will display hostName for unresolved addresses.
+      System.err.println(new Date() + ": ClientSocketHandler communication failed w/server=" +
+                         serverAddress.toString() + "\n" + ioe.toString());
+      ioe.printStackTrace(System.err);
     }
     finally {
       try {

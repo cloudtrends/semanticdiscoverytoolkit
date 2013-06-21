@@ -138,8 +138,8 @@ public class NodeClient extends Thread {
    */
   public Message sendMessage(InetSocketAddress serverAddress, Message message, int checkInterval, int timeout, int timeLimit) {
     final LinkedBlockingQueue<Message> responses = new LinkedBlockingQueue<Message>();
-    doSendMessage(serverAddress, message, checkInterval, responses, timeLimit);
-    final Message[] result = waitForResponses(responses, 1, timeout, timeLimit);
+    final ClientSocketHandler csh = doSendMessage(serverAddress, message, checkInterval, responses, timeLimit);
+    final Message[] result = (csh.getIOException() == null) ? waitForResponses(responses, 1, timeout, timeLimit) : null;
     return result == null ? null : result[0];
   }
 
@@ -166,10 +166,13 @@ public class NodeClient extends Thread {
    */
   public Message[] sendMessage(InetSocketAddress[] serverAddresses, Message message, int checkInterval, int timeout, int timeLimit) {
     final LinkedBlockingQueue<Message> responses = new LinkedBlockingQueue<Message>();
+    boolean allFailed = true;
     for (int i = 0; i < serverAddresses.length; ++i) {
-      doSendMessage(serverAddresses[i], message, checkInterval, responses, timeLimit);
+      if (doSendMessage(serverAddresses[i], message, checkInterval, responses, timeLimit).getIOException() == null) {
+        allFailed = false;
+      }
     }
-    final Message[] result = waitForResponses(responses, serverAddresses.length, timeout, timeLimit);
+    final Message[] result = !allFailed ? waitForResponses(responses, serverAddresses.length, timeout, timeLimit) : null;
     return result;
   }
 
@@ -182,10 +185,13 @@ public class NodeClient extends Thread {
    */
   public Message[] sendMessages(InetSocketAddress[] serverAddresses, Message[] messages, int checkInterval, int timeout, int timeLimit) {
     final LinkedBlockingQueue<Message> responses = new LinkedBlockingQueue<Message>();
+    boolean allFailed = true;
     for (int i = 0; i < serverAddresses.length; ++i) {
-      doSendMessage(serverAddresses[i], messages[i], checkInterval, responses, timeLimit);
+      if (doSendMessage(serverAddresses[i], messages[i], checkInterval, responses, timeLimit).getIOException() == null) {
+        allFailed = false;
+      }
     }
-    final Message[] result = waitForResponses(responses, serverAddresses.length, timeout, timeLimit);
+    final Message[] result = !allFailed ? waitForResponses(responses, serverAddresses.length, timeout, timeLimit) : null;
     return result;
   }
 
@@ -204,10 +210,11 @@ public class NodeClient extends Thread {
     return waitForResponses(asyncResponses, numWaitingFor, timeout, timeLimit);
   }
 
-  private void doSendMessage(InetSocketAddress serverAddress, Message message, int checkInterval, LinkedBlockingQueue<Message> responses, int timeLimit) {
+  private ClientSocketHandler doSendMessage(InetSocketAddress serverAddress, Message message, int checkInterval, LinkedBlockingQueue<Message> responses, int timeLimit) {
     final ClientSocketHandler csh = new ClientSocketHandler(serverAddress, message, checkInterval, responses, timeLimit);
     clientSocketHandlers.add(csh);
     socketPool.execute(csh);
+    return csh;
   }
 
 //todo: determine how to link responses with the server that sent them; need to add server id + message id in server to link response to its server index?
