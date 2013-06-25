@@ -38,6 +38,7 @@ public class PathGroup {
   private StringBuilder text;
   private StatsAccumulator wordCounts;
   private boolean terminated = false;
+  private int blockIdx;
 
 //collect or access attributes, tag names, etc.; compute deepest common tag; intersection with another PathGroup
 
@@ -46,6 +47,7 @@ public class PathGroup {
     this.commonPathIndex = -1;
     this.text = new StringBuilder();
     this.wordCounts = new StatsAccumulator("wordCounts");
+    this.blockIdx = -1;
   }
 
   public boolean isEmpty() {
@@ -72,6 +74,10 @@ public class PathGroup {
       this.commonPathIndex = idx;
     this.paths.add(path);
     addText(path);
+  }
+
+  public void setBlockIndex(int idx) {
+    this.blockIdx = idx;
   }
 
   public int computeCommonPathIndex(Path path) {
@@ -212,6 +218,10 @@ public class PathGroup {
         }
       }
     }
+
+    // include the index for the text block
+    if(includeIndex && blockIdx >= 0)
+      result.append('.').append(blockIdx);
 
     return result.toString();
   }
