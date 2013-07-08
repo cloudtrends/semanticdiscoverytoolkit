@@ -28,6 +28,7 @@ import java.util.List;
  */
 public class PathKeyBuilder {
 
+  private XmlLite.Tag lastTag;
   private StringBuilder pathKey;
   private boolean useIndex;
 
@@ -38,7 +39,10 @@ public class PathKeyBuilder {
   }
 
   public String getPathKey() {
-    return pathKey.toString();
+    StringBuilder result = new StringBuilder(pathKey);
+    if (useIndex && lastTag != null)
+      result.append('.').append(lastTag.getTextNum());
+    return result.toString();
   }
 
   /**
@@ -62,13 +66,15 @@ public class PathKeyBuilder {
         // special case 'td' and 'table' tags.  todo: make this specific to html only?
         pathKey.append(tag.getChildNum());
       }
+
+      lastTag = tag;
     }
   }
 
   /**
    * Add an already constructed pathKey to this pathKey.
    */
-  public void add(String otherPathKey) {
+  public void add(String otherPathKey, XmlLite.Tag otherLastTag) {
     if (otherPathKey != null) {
       if (pathKey.length() > 0) pathKey.append('.');
       pathKey.append(otherPathKey);
@@ -76,6 +82,9 @@ public class PathKeyBuilder {
   }
 
   public String toString() {
-    return pathKey.toString();
+    StringBuilder result = new StringBuilder(pathKey);
+    if (useIndex && lastTag != null)
+      result.append('.').append(lastTag.getTextNum());
+    return result.toString();
   }
 }

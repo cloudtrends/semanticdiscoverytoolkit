@@ -378,6 +378,7 @@ public class XmlTextRipper implements Iterator<String> {
               }
               else {
                 // this is the tag after the text, so it'll apply the next go'round.
+                tagStack.pushText();
                 nextTag = theTag;
               }
             }
