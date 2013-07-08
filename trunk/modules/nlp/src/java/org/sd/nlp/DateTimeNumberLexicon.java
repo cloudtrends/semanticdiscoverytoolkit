@@ -81,7 +81,7 @@ public class DateTimeNumberLexicon extends AbstractLexicon {
     setMaxNumWords(2);  // "00A.M." -> "00A"  "M"
   }
 
-  public DateTimeNumberLexicon(Tree<XmlLite.Data> lexiconNode, CategoryFactory categoryFactory, Normalizer normalizer) {
+  public DateTimeNumberLexicon(Tree<XmlLite.Data> lexiconNode, CategoryFactory categoryFactory, AbstractNormalizer normalizer) {
     this(categoryFactory, 0);
 
     final String myString = getAttribute("minYear");
@@ -171,7 +171,7 @@ public class DateTimeNumberLexicon extends AbstractLexicon {
    * @param subString   The substring to define.
    * @param normalizer  The normalizer to use.
    */
-  protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+  protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
     final StringWrapper sw = subString.stringWrapper;
 
     // must start with a digit to apply.

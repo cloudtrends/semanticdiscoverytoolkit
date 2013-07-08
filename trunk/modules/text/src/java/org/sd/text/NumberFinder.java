@@ -48,11 +48,11 @@ public class NumberFinder extends AbstractPatternFinder {
 
     if (input == null || input.getNormalizedLength() == 0) return null;
     
-    NormalizedString.Token firstNumber = null;
-    NormalizedString.Token lastNumber = null;
+    NormalizedString.NormalizedToken firstNumber = null;
+    NormalizedString.NormalizedToken lastNumber = null;
     boolean gotMoreThanJustSymbols = false;
 
-    for (NormalizedString.Token token = input.getToken(fromPos, true); token != null; token = token.getNext(true)) {
+    for (NormalizedString.NormalizedToken token = input.getToken(fromPos, true); token != null; token = token.getNext(true)) {
       if (token.getStartPos() >= toPos || token.getEndPos() > toPos) break;
 
       final boolean[] isNumber = isNumber(token, lastNumber);
@@ -84,7 +84,7 @@ public class NumberFinder extends AbstractPatternFinder {
 
   // lastNumber is the prior token if classified as a number or null.
   // return {isNumber, onlySymbols}
-  private final boolean[] isNumber(NormalizedString.Token token, NormalizedString.Token lastNumber) {
+  private final boolean[] isNumber(NormalizedString.NormalizedToken token, NormalizedString.NormalizedToken lastNumber) {
     final String normalized = token.getNormalized();
     boolean isNumber = TextNumber.isNumber(normalized);  // check for "one, two, three, ..., first, second, ..."
     boolean onlySymbols = false;

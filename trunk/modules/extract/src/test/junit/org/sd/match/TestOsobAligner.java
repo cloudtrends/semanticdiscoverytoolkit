@@ -23,8 +23,8 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.GeneralNormalizer;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.NormalizingTokenizer;
 import org.sd.nlp.StringWrapper;
 
@@ -41,7 +41,7 @@ public class TestOsobAligner extends TestCase {
     super(name);
   }
   
-  private final InputWrapper getInputWrapper(Normalizer normalizer, String inputString) {
+  private final InputWrapper getInputWrapper(AbstractNormalizer normalizer, String inputString) {
     final List<StringWrapper.SubString> inputWords = new NormalizingTokenizer(normalizer, inputString).getTokens();
     return new InputWrapper(normalizer, inputWords);
   }
@@ -69,7 +69,7 @@ public class TestOsobAligner extends TestCase {
 
   public void testAlignment1() {
     final OsobAligner aligner = new OsobAligner();
-    final Normalizer normalizer = new GeneralNormalizer(true);
+    final AbstractNormalizer normalizer = new GeneralNormalizer(true);
 
     Osob osob = null;
     InputWrapper inputWrapper = null;
@@ -115,7 +115,7 @@ public class TestOsobAligner extends TestCase {
 
   public void testAlignment2() {
     final OsobAligner aligner = new OsobAligner();
-    final Normalizer normalizer = new GeneralNormalizer(true);
+    final AbstractNormalizer normalizer = new GeneralNormalizer(true);
 
     Osob osob = null;
     InputWrapper inputWrapper = null;
@@ -131,7 +131,7 @@ public class TestOsobAligner extends TestCase {
 
   public void testAlignment3() {
     final OsobAligner aligner = new OsobAligner();
-    final Normalizer normalizer = new GeneralNormalizer(true);
+    final AbstractNormalizer normalizer = new GeneralNormalizer(true);
 
     Osob osob = null;
     InputWrapper inputWrapper = null;
@@ -147,7 +147,7 @@ public class TestOsobAligner extends TestCase {
 
   public void testAlignment4() {
     final OsobAligner aligner = new OsobAligner();
-    final Normalizer normalizer = new GeneralNormalizer(true);
+    final AbstractNormalizer normalizer = new GeneralNormalizer(true);
 
     Osob osob = null;
     InputWrapper inputWrapper = null;
@@ -173,7 +173,7 @@ public class TestOsobAligner extends TestCase {
 
   public void testAlignment5() {
     final OsobAligner aligner = new OsobAligner();
-    final Normalizer normalizer = new GeneralNormalizer(true);
+    final AbstractNormalizer normalizer = new GeneralNormalizer(true);
 
     Osob osob = null;
     InputWrapper inputWrapper = null;
@@ -210,7 +210,7 @@ public class TestOsobAligner extends TestCase {
 
   public void testSingleWordAlignment() {
     final OsobAligner aligner = new OsobAligner();
-    final Normalizer normalizer = new GeneralNormalizer(true);
+    final AbstractNormalizer normalizer = new GeneralNormalizer(true);
 
     Osob osob = null;
     InputWrapper inputWrapper = null;

@@ -39,7 +39,7 @@ public abstract class AbstractLexicon implements Lexicon {
   public static final String NORMALIZED_ATTRIBUTE = "NORMALIZED";
 
 
-  private Normalizer normalizer;
+  private AbstractNormalizer normalizer;
   private AtomicInteger maxNumWords;
   private Tree<XmlLite.Data> lexiconNode;
   private Map<String, Category> namedCategories;
@@ -51,19 +51,19 @@ public abstract class AbstractLexicon implements Lexicon {
     this.namedCategories = null;
   }
 
-  protected AbstractLexicon(Normalizer normalizer) {
+  protected AbstractLexicon(AbstractNormalizer normalizer) {
     this();
     this.normalizer = normalizer;
   }
 
-  protected AbstractLexicon(Tree<XmlLite.Data> lexiconNode, CategoryFactory categoryFactory, Normalizer normalizer) {
+  protected AbstractLexicon(Tree<XmlLite.Data> lexiconNode, CategoryFactory categoryFactory, AbstractNormalizer normalizer) {
     this();
     this.lexiconNode = lexiconNode;
 
     final boolean normalize = "true".equals(getAttribute("normalize"));
     final String normalizerClasspath = getAttribute("normalizer");
     if (normalize && normalizerClasspath != null && normalizerClasspath.length() > 0) {
-      normalizer = (Normalizer)ReflectUtil.buildInstance(normalizerClasspath);
+      normalizer = (AbstractNormalizer)ReflectUtil.buildInstance(normalizerClasspath);
     }
     this.normalizer = normalize ? normalizer : null;
 
@@ -114,7 +114,7 @@ public abstract class AbstractLexicon implements Lexicon {
    *
    * @return this lexicon's normalizer. null when no normalization occurs.
    */
-  public Normalizer getNormalizer() {
+  public AbstractNormalizer getNormalizer() {
     return normalizer;
   }
 
@@ -181,7 +181,7 @@ public abstract class AbstractLexicon implements Lexicon {
    * @param subString   The substring to define.
    * @param normalizer  The normalizer to use.
    */
-  protected abstract void define(StringWrapper.SubString subString, Normalizer normalizer);
+  protected abstract void define(StringWrapper.SubString subString, AbstractNormalizer normalizer);
 
   /**
    * Determine whether the categories container already has category type(s)

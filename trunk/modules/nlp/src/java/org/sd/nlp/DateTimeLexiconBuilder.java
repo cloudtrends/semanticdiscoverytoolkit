@@ -28,7 +28,7 @@ import java.io.IOException;
  */
 public class DateTimeLexiconBuilder {
 
-  public static Lexicon buildLexicon(CategoryFactory categoryFactory, Normalizer normalizer, int minYear) throws IOException {
+  public static Lexicon buildLexicon(CategoryFactory categoryFactory, AbstractNormalizer normalizer, int minYear) throws IOException {
 
     final Category ampm = categoryFactory.getCategory("AMPM");
     final Category month = categoryFactory.getCategory("MONTH");
@@ -55,7 +55,7 @@ public class DateTimeLexiconBuilder {
     return new LexiconPipeline(lexicons);
   }
 
-  private static final GenericLexicon loadMonthLexicon(Normalizer normalizer, Category monthCategory) throws IOException {
+  private static final GenericLexicon loadMonthLexicon(AbstractNormalizer normalizer, Category monthCategory) throws IOException {
     final GenericLexicon result = GenericLexicon.loadGenericLexicon(        // full month names are not case sensitive
       DateTimeLexiconBuilder.class, "resources/months.txt", normalizer, monthCategory,
       false, true, true, null);

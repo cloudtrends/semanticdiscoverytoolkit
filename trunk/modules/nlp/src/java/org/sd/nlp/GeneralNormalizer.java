@@ -66,7 +66,7 @@ public class GeneralNormalizer extends AbstractNormalizer {
    * Normalize the substring's original text.
    */
   public NormalizedString normalize(StringWrapper.SubString subString) {
-    if (subString == null) return NormalizedString.EMPTY;
+    if (subString == null) return GeneralNormalizedString.EMPTY;
 
     final StringBuilder normalized = new StringBuilder();
     final List<Integer> n2oIndexList = new ArrayList<Integer>();
@@ -191,7 +191,7 @@ public class GeneralNormalizer extends AbstractNormalizer {
       n2oIndexes[pos++] = n2oIndex;
     }
 
-    return new NormalizedString(subString.stringWrapper, normalized.toString(), n2oIndexes, true);
+    return new GeneralNormalizedString(subString.stringWrapper, normalized.toString(), n2oIndexes, true);
   }
 
   public boolean equals(Object o) {

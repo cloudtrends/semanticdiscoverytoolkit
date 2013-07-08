@@ -114,7 +114,7 @@ public class StringWrapper {
     return subString;
   }
 
-  public final String getNormalizedString(int startPos, int endPos, Normalizer normalizer) {
+  public final String getNormalizedString(int startPos, int endPos, AbstractNormalizer normalizer) {
     final SubString subString = getSubString(startPos, endPos);
     return (subString == null) ? null : subString.getNormalizedString(normalizer);
   }
@@ -351,8 +351,8 @@ public class StringWrapper {
     public final int endPos;
     public final String originalSubString;
 
-    private Map<Normalizer, String> n2ns;
-    private Map<Normalizer, char[]> n2nc;
+    private Map<AbstractNormalizer, String> n2ns;
+    private Map<AbstractNormalizer, char[]> n2nc;
     private char[] _originalChars;
 
     private Categories categories;
@@ -370,8 +370,8 @@ public class StringWrapper {
       this.startPos = startPos;
       this.endPos = endPos;
       this.originalSubString = originalSubString;
-      this.n2ns = new HashMap<Normalizer, String>();
-      this.n2nc = new HashMap<Normalizer, char[]>();
+      this.n2ns = new HashMap<AbstractNormalizer, String>();
+      this.n2nc = new HashMap<AbstractNormalizer, char[]>();
       this._numWords = -1;
       this._wordNum = -1;
       this.categories = null;
@@ -423,7 +423,7 @@ public class StringWrapper {
       return result;
     }
 
-    public String getNormalizedString(Normalizer normalizer) {
+    public String getNormalizedString(AbstractNormalizer normalizer) {
       if (normalizer == null) return originalSubString;
 
       String result = n2ns.get(normalizer);
@@ -434,7 +434,7 @@ public class StringWrapper {
       return result;
     }
 
-    public char[] getNormalizedChars(Normalizer normalizer) {
+    public char[] getNormalizedChars(AbstractNormalizer normalizer) {
       if (normalizer == null) return getOriginalChars();
 
       char[] result = n2nc.get(normalizer);

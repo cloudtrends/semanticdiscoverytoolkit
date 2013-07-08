@@ -19,8 +19,8 @@
 package org.sd.extract;
 
 
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.BreakStrategy;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.StringWrapper;
 
 /**
@@ -35,14 +35,14 @@ public abstract class AbstractExtractor implements Extractor {
   private TextSplitter textSplitter;
   private boolean needsDocTextCache;
   private boolean stopAtFirst;
-  private Normalizer normalizer;
+  private AbstractNormalizer normalizer;
   private BreakStrategy breakStrategy;
   private Disambiguator disambiguator;
 
   private String _didFirstPropertyName;
 
   protected AbstractExtractor(String extractionType, TextAcceptor textAcceptor, TextSplitter textSplitter,
-                              boolean needsDocTextCache, boolean stopAtFirst, Normalizer normalizer,
+                              boolean needsDocTextCache, boolean stopAtFirst, AbstractNormalizer normalizer,
                               BreakStrategy breakStrategy, Disambiguator disambiguator) {
 
     this.extractionType = extractionType;
@@ -98,7 +98,7 @@ public abstract class AbstractExtractor implements Extractor {
   /**
    * Provide access to this extractor's normalizer.
    */
-  public Normalizer getNormalizer() {
+  public AbstractNormalizer getNormalizer() {
     return normalizer;
   }
 

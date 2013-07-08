@@ -60,7 +60,7 @@ public class TestGenericLexicon extends TestCase {
     cfactory.defineCategory("ADDRESS", false);
 
     //Test case-insensitive
-    final Normalizer normalizer = GeneralNormalizer.getCaseSensitiveInstance();
+    final AbstractNormalizer normalizer = GeneralNormalizer.getCaseSensitiveInstance();
 //     final Normalizer normalizer = new Normalizer() {
 //         public final NormalizedString normalize(StringWrapper.SubString subString) {
 //           return normalize(subString.originalSubString);

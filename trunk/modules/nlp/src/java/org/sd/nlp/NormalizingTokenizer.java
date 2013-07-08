@@ -29,26 +29,26 @@ import java.util.List;
  */
 public class NormalizingTokenizer {
   
-  private Normalizer normalizer;
+  private AbstractNormalizer normalizer;
   private BreakStrategy breakStrategy;
   private StringWrapper stringWrapper;
   private TokenPointerFactory tokenPointerFactory;
   private LexicalTokenizer lexicalTokenizer;
   private List<StringWrapper.SubString> tokens;
 
-  public NormalizingTokenizer(Normalizer normalizer, StringWrapper.SubString subString) {
+  public NormalizingTokenizer(AbstractNormalizer normalizer, StringWrapper.SubString subString) {
     this(null, subString.getNormalizedString(normalizer));
   }
 
-  public NormalizingTokenizer(Normalizer normalizer, String inputString) {
+  public NormalizingTokenizer(AbstractNormalizer normalizer, String inputString) {
     this(normalizer, GeneralBreakStrategy.getInstance(), inputString);
   }
 
-  public NormalizingTokenizer(Normalizer normalizer, BreakStrategy breakStrategy, String inputString) {
+  public NormalizingTokenizer(AbstractNormalizer normalizer, BreakStrategy breakStrategy, String inputString) {
     this(normalizer, new StringWrapper(inputString, breakStrategy));
   }
 
-  public NormalizingTokenizer(Normalizer normalizer, StringWrapper stringWrapper) {
+  public NormalizingTokenizer(AbstractNormalizer normalizer, StringWrapper stringWrapper) {
     this.normalizer = normalizer;
     this.breakStrategy = stringWrapper.getBreakStrategy();
     this.stringWrapper = stringWrapper;
@@ -101,7 +101,7 @@ public class NormalizingTokenizer {
   }
 
 
-  public static Lexicon buildStubLexicon(Normalizer normalizer) {
+  public static Lexicon buildStubLexicon(AbstractNormalizer normalizer) {
     return new StubLexicon(normalizer);
   }
 
@@ -113,11 +113,11 @@ public class NormalizingTokenizer {
    */
   private static final class StubLexicon extends AbstractLexicon {
 
-    public StubLexicon(Normalizer normalizer) {
+    public StubLexicon(AbstractNormalizer normalizer) {
       super(normalizer);
     }
 
-    protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+    protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
       subString.addCategories(CATEGORIES);
     }
 
@@ -127,7 +127,7 @@ public class NormalizingTokenizer {
   }
 
   public static void main(String[] args) {
-    final Normalizer normalizer = new GeneralNormalizer(true);
+    final AbstractNormalizer normalizer = new GeneralNormalizer(true);
     final BreakStrategy breakStrategy = GeneralBreakStrategy.getInstance();
 
     for (int i = 0; i < args.length; ++i) {

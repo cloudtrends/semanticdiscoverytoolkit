@@ -20,6 +20,7 @@ package org.sd.text.align;
 
 
 import org.sd.nlp.AbstractNormalizer;
+import org.sd.nlp.GeneralNormalizedString;
 import org.sd.nlp.NormalizedString;
 import org.sd.nlp.StringWrapper;
 import org.sd.util.StringSplitter;
@@ -113,7 +114,7 @@ public class AlignmentNormalizer extends AbstractNormalizer {
 
     }
 
-    return new NormalizedString(subString.stringWrapper, normalized.toString(), n2oIndexList);
+    return new GeneralNormalizedString(subString.stringWrapper, normalized.toString(), n2oIndexList);
   }
 
   private final boolean isNormal(int codePoint) {

@@ -20,6 +20,7 @@ package org.sd.extract.datetime;
 
 
 import org.sd.extract.AbstractExtractorFSM;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.Category;
 import org.sd.nlp.CategoryFactory;
 import org.sd.nlp.DateTimeBreakStrategy;
@@ -27,7 +28,6 @@ import org.sd.nlp.DateTimeLexiconBuilder;
 import org.sd.nlp.GeneralNormalizer;
 import org.sd.nlp.LexicalTokenizer;
 import org.sd.nlp.Lexicon;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.Parser;
 import org.sd.nlp.StringWrapper;
 import org.sd.nlp.StringWrapperLexicalTokenizer;
@@ -44,7 +44,7 @@ import java.util.List;
 public class DateTimeExtractor extends AbstractExtractorFSM {
   
   public static final String EXTRACTION_TYPE = "DateTime";
-  private static final Normalizer NORMALIZER = GeneralNormalizer.getCaseInsensitiveInstance();
+  private static final AbstractNormalizer NORMALIZER = GeneralNormalizer.getCaseInsensitiveInstance();
 
   private int minYear;
 
@@ -84,7 +84,7 @@ public class DateTimeExtractor extends AbstractExtractorFSM {
     return result;
   }
 
-  protected Lexicon buildLexicon(CategoryFactory categoryFactory, Normalizer normalizer) throws IOException {
+  protected Lexicon buildLexicon(CategoryFactory categoryFactory, AbstractNormalizer normalizer) throws IOException {
     return DateTimeLexiconBuilder.buildLexicon(categoryFactory, normalizer, minYear);
   }
 

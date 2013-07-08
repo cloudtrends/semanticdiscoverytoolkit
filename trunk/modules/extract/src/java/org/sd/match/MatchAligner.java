@@ -19,7 +19,7 @@
 package org.sd.match;
 
 
-import org.sd.nlp.Normalizer;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.StringWrapper;
 import org.sd.util.tree.Tree;
 
@@ -37,13 +37,13 @@ import java.util.Map;
  */
 public class MatchAligner {
   
-  private Normalizer normalizer;
+  private AbstractNormalizer normalizer;
   private List<StringWrapper.SubString> inputWords;
 
   private ConceptModel.MatchConcept matchConcept;
   private MatchResult _matchResult;
 
-  public MatchAligner(Normalizer normalizer, List<StringWrapper.SubString> inputWords, ConceptModel conceptModel) {
+  public MatchAligner(AbstractNormalizer normalizer, List<StringWrapper.SubString> inputWords, ConceptModel conceptModel) {
     this.normalizer = normalizer;
     this.inputWords = inputWords;
     this.matchConcept = conceptModel.getMatchConcept();

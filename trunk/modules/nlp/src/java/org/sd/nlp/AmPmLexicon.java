@@ -36,7 +36,7 @@ public class AmPmLexicon extends AbstractLexicon {
     setMaxNumWords(2);
   }
 
-  public AmPmLexicon(Tree<XmlLite.Data> lexiconNode, CategoryFactory categoryFactory, Normalizer normalizer) {
+  public AmPmLexicon(Tree<XmlLite.Data> lexiconNode, CategoryFactory categoryFactory, AbstractNormalizer normalizer) {
     super(lexiconNode, categoryFactory, normalizer);
 
     this.category = getNamedCategory(getAttribute("category"));
@@ -69,7 +69,7 @@ public class AmPmLexicon extends AbstractLexicon {
    * @param subString   The substring to define.
    * @param normalizer  The normalizer to use.
    */
-  protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+  protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
     final StringWrapper sw = subString.stringWrapper;
 
     boolean sawFirst = false;

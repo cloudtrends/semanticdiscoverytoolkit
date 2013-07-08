@@ -34,7 +34,7 @@ public class TestNormalizingTokenizer extends TestCase {
     super(name);
   }
   
-  private void verify(Normalizer normalizer, BreakStrategy breakStrategy, String inputString,
+  private void verify(AbstractNormalizer normalizer, BreakStrategy breakStrategy, String inputString,
                       String[] expectedOriginals, String[] expectedNormalized) {
     final NormalizingTokenizer tokenizer = new NormalizingTokenizer(normalizer, breakStrategy, inputString);
 
@@ -64,7 +64,7 @@ public class TestNormalizingTokenizer extends TestCase {
   }
 
   public void testBehavior() {
-    final Normalizer normalizer = new GeneralNormalizer(true);
+    final AbstractNormalizer normalizer = new GeneralNormalizer(true);
     final BreakStrategy breakStrategy = GeneralBreakStrategy.getInstance();
 
     verify(normalizer, breakStrategy, "Very simple test.",

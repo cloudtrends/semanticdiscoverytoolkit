@@ -19,13 +19,13 @@
 package org.sd.lang.english;
 
 
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.Category;
 import org.sd.nlp.CategoryFactory;
 import org.sd.nlp.GenericLexicon;
 import org.sd.nlp.Lexicon;
 import org.sd.nlp.LexiconBuilder;
 import org.sd.nlp.LexiconPipeline;
-import org.sd.nlp.Normalizer;
 //import org.sd.qtag.QtagLexicon;
 import org.sd.wn.ConjugationLexicon;
 import org.sd.wn.POS;
@@ -52,7 +52,7 @@ public class EnglishLexiconBuilder implements LexiconBuilder {
     this.properties = properties;
   }
 
-  public Lexicon buildLexicon(CategoryFactory categoryFactory, Normalizer normalizer) throws IOException {
+  public Lexicon buildLexicon(CategoryFactory categoryFactory, AbstractNormalizer normalizer) throws IOException {
 
     final Category noun = categoryFactory.getCategory("N");
     final Category verb = categoryFactory.getCategory("V");

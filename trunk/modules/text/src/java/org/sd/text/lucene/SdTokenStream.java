@@ -42,7 +42,7 @@ public class SdTokenStream extends Tokenizer {
   private BufferedStringReader reader = new BufferedStringReader(IO_BUFFER_SIZE);
   private Normalizer normalizer;
   private int baseOffset;
-  private NormalizedString.Token nextToken;
+  private NormalizedString.NormalizedToken nextToken;
   private TermAttribute termAtt;
   private OffsetAttribute offsetAtt;
 

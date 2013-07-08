@@ -19,6 +19,7 @@
 package org.sd.extract;
 
 
+import org.sd.nlp.GeneralNormalizedString;
 import org.sd.nlp.NormalizedString;
 import org.sd.nlp.Normalizer;
 
@@ -81,7 +82,7 @@ public abstract class BaseWordAcceptor implements WordAcceptor {
    * Default splitting uses the normalized string split method.
    */
   public String[] split(String text, boolean isNormalized) {
-    final NormalizedString normalizedString = isNormalized ? new NormalizedString(text) : normalize(text);
+    final NormalizedString normalizedString = isNormalized ? new GeneralNormalizedString(text) : normalize(text);
     return normalizedString.split();
   }
 
@@ -89,7 +90,7 @@ public abstract class BaseWordAcceptor implements WordAcceptor {
    * Normalize the text.
    */
   public final NormalizedString normalize(String text) {
-    return (normalizer == null) ? new NormalizedString(text) : normalizer.normalize(text);
+    return (normalizer == null) ? new GeneralNormalizedString(text) : normalizer.normalize(text);
   }
 
   /**

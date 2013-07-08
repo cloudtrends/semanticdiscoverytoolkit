@@ -19,8 +19,8 @@
 package org.sd.extract;
 
 
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.BreakStrategy;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.StringWrapper;
 
 import java.util.ArrayList;
@@ -51,7 +51,7 @@ public class RegexExtractor extends AbstractExtractor {
   public RegexExtractor(String extractionType, String pattern,
                         TextAcceptor textAcceptor, TextSplitter textSplitter,
                         boolean needsDocTextCache, boolean stopAtFirst,
-                        Normalizer normalizer, BreakStrategy breakStrategy,
+                        AbstractNormalizer normalizer, BreakStrategy breakStrategy,
                         Disambiguator disambiguator) {
     super(extractionType, textAcceptor, textSplitter, needsDocTextCache, stopAtFirst, normalizer, breakStrategy, disambiguator);
 

@@ -29,11 +29,6 @@ package org.sd.nlp;
 public interface Normalizer {
   
   /**
-   * Normalize the substring's original text.
-   */
-  public NormalizedString normalize(StringWrapper.SubString subString);
-
-  /**
    * Utility interface to normalize an arbitrary string.
    */
   public NormalizedString normalize(String string);

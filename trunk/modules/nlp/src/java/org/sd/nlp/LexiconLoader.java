@@ -38,7 +38,7 @@ public class LexiconLoader {
    * <p>
    * Blank lines and those beginning with '#' are ignored.
    */
-  public static Lexicon loadCsvLexicon(CategoryFactory categoryFactory, Class clazz, String resource, Normalizer normalizer) throws IOException {
+  public static Lexicon loadCsvLexicon(CategoryFactory categoryFactory, Class clazz, String resource, AbstractNormalizer normalizer) throws IOException {
     return loadCsvLexicon(categoryFactory, FileUtil.getInputStream(clazz, resource), normalizer);
   }
 
@@ -49,7 +49,7 @@ public class LexiconLoader {
    * <p>
    * Blank lines and those beginning with '#' are ignored.
    */
-  public static Lexicon loadCsvLexicon(CategoryFactory categoryFactory, InputStream inputStream, Normalizer normalizer) throws IOException {
+  public static Lexicon loadCsvLexicon(CategoryFactory categoryFactory, InputStream inputStream, AbstractNormalizer normalizer) throws IOException {
     final LexiconImpl result = new LexiconImpl(normalizer);
     final BufferedReader reader = FileUtil.getReader(inputStream);
     String line = null;

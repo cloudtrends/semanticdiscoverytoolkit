@@ -83,7 +83,7 @@ public class ParserWrapper {
     }
 
     final CategoryFactory categoryFactory = new CategoryFactory(categories);
-    final Normalizer normalizer = normalizerClass == null ? GeneralNormalizer.getCaseInsensitiveInstance() : (Normalizer)ReflectUtil.buildInstance(normalizerClass, properties);
+    final AbstractNormalizer normalizer = normalizerClass == null ? GeneralNormalizer.getCaseInsensitiveInstance() : (AbstractNormalizer)ReflectUtil.buildInstance(normalizerClass, properties);
     final BreakStrategy breakStrategy = breakStrategyClass == null ? GeneralBreakStrategy.getInstance() : (BreakStrategy)ReflectUtil.buildInstance(breakStrategyClass, properties);
     final TokenizationStrategy.Type tokenizationStrategyType = tokenizationStrategyTypeName == null ? TokenizationStrategy.Type.LONGEST_TO_SHORTEST : Enum.valueOf(TokenizationStrategy.Type.class, tokenizationStrategyTypeName);
     final InputStream grammarInputStream = FileUtil.getInputStream(grammarPath);
@@ -101,7 +101,7 @@ public class ParserWrapper {
   private CategoryFactory categoryFactory;
   private Category[] topLevelCategories;
   private TokenizationStrategy.Type tokenizationStrategyType;
-  private Normalizer normalizer;
+  private AbstractNormalizer normalizer;
   private BreakStrategy breakStrategy;
   private Grammar grammar;
   private boolean ignoreExtraInput;
@@ -115,7 +115,7 @@ public class ParserWrapper {
                        CategoryFactory categoryFactory,
                        String[] topLevelCategoryNames,
                        TokenizationStrategy.Type tokenizationStrategyType,
-                       Normalizer normalizer,
+                       AbstractNormalizer normalizer,
                        BreakStrategy breakStrategy,
                        InputStream grammarInputStream,
                        boolean ignoreExtraInput,
@@ -174,7 +174,7 @@ public class ParserWrapper {
     return tokenizationStrategyType;
   }
 
-  public final Normalizer getNormalizer() {
+  public final AbstractNormalizer getNormalizer() {
     return normalizer;
   }
 

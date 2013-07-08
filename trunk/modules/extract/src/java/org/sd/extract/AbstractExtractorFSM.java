@@ -22,6 +22,7 @@ package org.sd.extract;
 import org.sd.fsm.Grammar;
 import org.sd.fsm.impl.GrammarImpl;
 import org.sd.io.FileUtil;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.BreakStrategy;
 import org.sd.nlp.Category;
 import org.sd.nlp.CategoryFactory;
@@ -29,7 +30,6 @@ import org.sd.nlp.ExtendedGrammarTokenFactory;
 import org.sd.nlp.GenericLexicon;
 import org.sd.nlp.LexicalTokenizer;
 import org.sd.nlp.Lexicon;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.ParseStateDecoder;
 import org.sd.nlp.Parser;
 import org.sd.nlp.StringWrapper;
@@ -51,7 +51,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class AbstractExtractorFSM extends AbstractExtractor {
 
   protected abstract CategoryFactory buildCategoryFactory();
-  protected abstract Lexicon buildLexicon(CategoryFactory categoryFactory, Normalizer normalizer) throws IOException;
+  protected abstract Lexicon buildLexicon(CategoryFactory categoryFactory, AbstractNormalizer normalizer) throws IOException;
   protected abstract Category[] buildTopLevelCategories(CategoryFactory categoryFactory);
   protected abstract LexicalTokenizer buildLexicalTokenizer(StringWrapper stringWrapper, Lexicon lexicon, int skipUpTo);
 
@@ -70,7 +70,7 @@ public abstract class AbstractExtractorFSM extends AbstractExtractor {
   private boolean allowSkipAfterFirst;
 
   protected AbstractExtractorFSM(String extractionType, TextAcceptor textAcceptor, TextSplitter textSplitter,
-                                 boolean needsDocTextCache, boolean stopAtFirst, Normalizer normalizer,
+                                 boolean needsDocTextCache, boolean stopAtFirst, AbstractNormalizer normalizer,
                                  BreakStrategy breakStrategy, Class relativeGrammarClass, String grammarResource,
                                  boolean ignoreExtraInput, int skipUpTo, boolean allowSkipAfterFirst,
                                  Disambiguator disambiguator) {
@@ -193,7 +193,7 @@ public abstract class AbstractExtractorFSM extends AbstractExtractor {
   }
 
   // load resources relative to this class
-  protected GenericLexicon loadGenericLexicon(String resourceName, Normalizer normalizer,
+  protected GenericLexicon loadGenericLexicon(String resourceName, AbstractNormalizer normalizer,
                                               Category category, boolean caseSensitive,
                                               boolean isDefinitive, boolean hasAttributes) throws IOException {
     return GenericLexicon.loadGenericLexicon(this.getClass(), resourceName, normalizer, category,

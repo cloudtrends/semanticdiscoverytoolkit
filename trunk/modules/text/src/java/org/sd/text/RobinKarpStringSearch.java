@@ -20,6 +20,7 @@ package org.sd.text;
 
 
 import org.sd.io.DataHelper;
+import org.sd.nlp.GeneralNormalizedString;
 import org.sd.nlp.NormalizedString;
 
 import java.io.DataInput;
@@ -261,7 +262,7 @@ public class RobinKarpStringSearch {
    *         and its length (at index 1) or null.
    */
   public int[] search(String string, int acceptPartial) {
-    return search(new NormalizedString(string), acceptPartial);
+    return search(new GeneralNormalizedString(string), acceptPartial);
   }
 
   /**
@@ -296,7 +297,7 @@ public class RobinKarpStringSearch {
    *         and its length (at index 1) or null.
    */
   public int[] search(String string, int fromPos, int toPos, int acceptPartial) {
-    return search(new NormalizedString(string), fromPos, toPos, acceptPartial);
+    return search(new GeneralNormalizedString(string), fromPos, toPos, acceptPartial);
   }
 
   /**
