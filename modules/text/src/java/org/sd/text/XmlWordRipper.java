@@ -20,10 +20,10 @@ package org.sd.text;
 
 
 import org.sd.io.FileUtil;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.BreakStrategy;
 import org.sd.nlp.GeneralBreakStrategy;
 import org.sd.nlp.GeneralNormalizer;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.NormalizingTokenizer;
 import org.sd.xml.HtmlHelper;
 import org.sd.xml.HtmlTagStack;
@@ -49,7 +49,7 @@ public class XmlWordRipper {
   private List<String> words;
 
   private int count;
-  private Normalizer normalizer;
+  private AbstractNormalizer normalizer;
   private BreakStrategy breakStrategy;
   private MutableTagStack tagStack;
   private XmlTagParser xmlTagParser;
@@ -77,7 +77,7 @@ public class XmlWordRipper {
    * @param ignoreTags     Tags to ignore the text under. Only applied when
    *                       tagStack and xmlTagParser are non-null.
    */
-  public XmlWordRipper(int count, Normalizer normalizer, BreakStrategy breakStrategy,
+  public XmlWordRipper(int count, AbstractNormalizer normalizer, BreakStrategy breakStrategy,
                        MutableTagStack tagStack, XmlTagParser xmlTagParser, Set<String> ignoreTags) {
     this.words = new ArrayList<String>();
 

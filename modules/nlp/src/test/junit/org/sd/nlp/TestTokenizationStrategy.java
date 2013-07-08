@@ -46,7 +46,7 @@ public class TestTokenizationStrategy extends TestCase {
     protected boolean alreadyHasTypes(Categories categories) {
       return categories.hasType(category);
     }
-    protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+    protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
       subString.addCategory(category);
     }
   }

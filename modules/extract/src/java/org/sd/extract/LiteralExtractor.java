@@ -20,8 +20,8 @@ package org.sd.extract;
 
 
 import org.sd.io.FileUtil;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.BreakStrategy;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.StringWrapper;
 
 import java.io.BufferedReader;
@@ -60,7 +60,7 @@ public abstract class LiteralExtractor extends AbstractExtractor {
   public LiteralExtractor(String extractionType, File literalFile,
                           TextAcceptor textAcceptor, TextSplitter textSplitter,
                           boolean needsDocTextCache, boolean stopAtFirst,
-                          Normalizer normalizer, BreakStrategy breakStrategy,
+                          AbstractNormalizer normalizer, BreakStrategy breakStrategy,
                           Disambiguator disambiguator, boolean haltPipelineWhenMatch) throws IOException {
     super(extractionType, textAcceptor, textSplitter, needsDocTextCache, stopAtFirst, normalizer, breakStrategy, disambiguator);
 
@@ -88,7 +88,7 @@ public abstract class LiteralExtractor extends AbstractExtractor {
    * NOTE: The normalizer will be applied to the key.
    */
   protected final String getMapping(String key) {
-    final Normalizer normalizer = getNormalizer();
+    final AbstractNormalizer normalizer = getNormalizer();
     if (normalizer != null) {
       key = normalizer.normalize(key).getNormalized();
     }
@@ -101,7 +101,7 @@ public abstract class LiteralExtractor extends AbstractExtractor {
    * NOTE: The normalizer will be applied to the key.
    */
   protected final void addMapping(String key, String value) {
-    final Normalizer normalizer = getNormalizer();
+    final AbstractNormalizer normalizer = getNormalizer();
     if (normalizer != null) {
       key = normalizer.normalize(key).getNormalized();
     }
@@ -120,7 +120,7 @@ public abstract class LiteralExtractor extends AbstractExtractor {
    */
   public List<Extraction> extract(DocText docText, AtomicBoolean die) {
     List<Extraction> result = null;
-    final Normalizer normalizer = getNormalizer();
+    final AbstractNormalizer normalizer = getNormalizer();
 
     // perform the extraction
     final StringWrapper[] textToParse = extractTextStrings(docText);

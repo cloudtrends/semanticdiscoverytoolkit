@@ -36,6 +36,11 @@ import java.io.IOException;
  */
 public abstract class AbstractNormalizer implements Normalizer {
   
+  /**
+   * Normalize the substring's original text.
+   */
+  public abstract NormalizedString normalize(StringWrapper.SubString subString);
+
   //NOTE: We used to have an LRU cache here but it was found to be the source
   //      of a memory leak. If the cache is needed in the future, provisions
   //      must be added to properly clear out the entries to prevent a future
@@ -50,7 +55,7 @@ public abstract class AbstractNormalizer implements Normalizer {
   public NormalizedString normalize(String string) {
     NormalizedString result = null;
 
-    if (string == null || string.length() == 0) return NormalizedString.EMPTY;
+    if (string == null || string.length() == 0) return GeneralNormalizedString.EMPTY;
 
     final StringWrapper.SubString subString = new StringWrapper(string).getSubString(0);
     if (subString != null) {

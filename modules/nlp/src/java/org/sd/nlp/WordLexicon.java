@@ -57,7 +57,7 @@ public class WordLexicon extends AbstractLexicon {
    * @param subString   The substring to define.
    * @param normalizer  The normalizer to use.
    */
-  protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+  protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
     final String string = subString.getNormalizedString(normalizer);
 
     // First, make sure it is not already defined as something else (like prep or det.)

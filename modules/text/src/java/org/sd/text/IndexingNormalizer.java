@@ -20,6 +20,7 @@ package org.sd.text;
 
 
 import org.sd.nlp.AbstractNormalizer;
+import org.sd.nlp.GeneralNormalizedString;
 import org.sd.nlp.NormalizedString;
 import org.sd.nlp.StringWrapper;
 import org.sd.util.StringSplitter;
@@ -371,7 +372,7 @@ public class IndexingNormalizer extends AbstractNormalizer {
       startPos = s2e[END_POS];
     }
 
-    return new NormalizedString(stringWrapper, normalized.toString(), n2oIndexList, splitOnCamelCase);
+    return new GeneralNormalizedString(stringWrapper, normalized.toString(), n2oIndexList, splitOnCamelCase);
   }
 
   private static final boolean isRomanDigit(int codePoint) {

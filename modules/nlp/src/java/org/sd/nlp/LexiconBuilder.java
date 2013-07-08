@@ -31,5 +31,5 @@ public interface LexiconBuilder {
   /**
    * Build a lexicon using the given category factory and normalizer.
    */
-  public Lexicon buildLexicon(CategoryFactory categoryFactory, Normalizer normalizer) throws IOException;
+  public Lexicon buildLexicon(CategoryFactory categoryFactory, AbstractNormalizer normalizer) throws IOException;
 }

@@ -20,9 +20,9 @@ package org.sd.text;
 
 
 import org.sd.nlp.AbstractLexicon;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.Categories;
 import org.sd.nlp.Category;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.StringWrapper;
 
 /**
@@ -35,7 +35,7 @@ public class TrieLexicon extends AbstractLexicon {
   private Category category;
   private Trie trie;
 
-  public TrieLexicon(Normalizer normalizer, Category category, Trie trie) {
+  public TrieLexicon(AbstractNormalizer normalizer, Category category, Trie trie) {
     super(normalizer);
     this.category = category;
     this.trie = trie;
@@ -64,7 +64,7 @@ public class TrieLexicon extends AbstractLexicon {
    * @param subString   The substring to define.
    * @param normalizer  The normalizer to use.
    */
-  protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+  protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
     final String string = subString.getNormalizedString(normalizer);
 
     if (trie.contains(string)) {

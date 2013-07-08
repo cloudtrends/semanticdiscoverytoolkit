@@ -75,7 +75,7 @@ public class HasDigitLexicon extends AbstractLexicon {
    * @param subString   The substring to define.
    * @param normalizer  The normalizer to use.
    */
-  protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+  protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
     final String string = subString.getNormalizedString(normalizer);
 
     // has a digit or is a single letter

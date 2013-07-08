@@ -39,13 +39,13 @@ public class LowerCasingNormalizer implements Normalizer {
    * Normalize the substring's original text.
    */
   public NormalizedString normalize(StringWrapper.SubString subString) {
-    return NormalizedString.buildLowerCaseInstance(subString.originalSubString);  //was subString.stringWrapper.string;
+    return GeneralNormalizedString.buildLowerCaseInstance(subString.originalSubString);  //was subString.stringWrapper.string;
   }
 
   /**
    * Normalize the string.
    */
   public NormalizedString normalize(String string) {
-    return NormalizedString.buildLowerCaseInstance(string);
+    return GeneralNormalizedString.buildLowerCaseInstance(string);
   }
 }

@@ -195,7 +195,7 @@ public class RbiNormalizer extends AbstractNormalizer {
       //else: drop all other symbols
     }
 
-    return new NormalizedString(subString.stringWrapper, normalized.toString(), n2oIndexList, false);
+    return new GeneralNormalizedString(subString.stringWrapper, normalized.toString(), n2oIndexList, false);
   }
 
   private final boolean isNormal(int codePoint) {

@@ -20,11 +20,11 @@ package org.sd.wn;
 
 
 import org.sd.nlp.AbstractLexicon;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.Categories;
 import org.sd.nlp.Category;
 import org.sd.nlp.CategoryFactory;
 import org.sd.nlp.GeneralNormalizer;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.StringWrapper;
 
 import java.io.File;
@@ -51,7 +51,7 @@ public class ConjugationLexicon extends AbstractLexicon {
   private IrregularInflections irregularInflections;
   private Map<POS, Category> pos2cat;
 
-  public ConjugationLexicon(Normalizer normalizer, Category nounCategory, Category verbCategory, Category adjCategory, Category advCategory) {
+  public ConjugationLexicon(AbstractNormalizer normalizer, Category nounCategory, Category verbCategory, Category adjCategory, Category advCategory) {
     super(normalizer);
 
     this.nounCategory = nounCategory;
@@ -79,7 +79,7 @@ public class ConjugationLexicon extends AbstractLexicon {
    * @param subString   The substring to define.
    * @param normalizer  The normalizer to use.
    */
-  protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+  protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
 //todo: define appropriately
     // run string through the same normalizer as used on construction.
     final String string = subString.getNormalizedString(normalizer);

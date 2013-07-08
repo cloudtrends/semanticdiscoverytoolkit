@@ -33,20 +33,20 @@ import java.io.IOException;
  * <p>
  * @author Spence Koehler
  */
-public class TestNormalizedString extends TestCase {
+public class TestGeneralNormalizedString extends TestCase {
 
-  public TestNormalizedString(String name) {
+  public TestGeneralNormalizedString(String name) {
     super(name);
   }
   
   private final void doTokenizingTest(String input, boolean skipToBreak, String[] expectedOriginal, String[] expectedNormalized) {
-    final NormalizedString nString = GeneralNormalizer.getCaseInsensitiveInstance().normalize(input);
+    final GeneralNormalizedString nString = (GeneralNormalizedString)GeneralNormalizer.getCaseInsensitiveInstance().normalize(input);
     doTokenizingTest(nString, skipToBreak, expectedOriginal, expectedNormalized);
   }
     
-  private final void doTokenizingTest(NormalizedString nString, boolean skipToBreak, String[] expectedOriginal, String[] expectedNormalized) {
+  private final void doTokenizingTest(GeneralNormalizedString nString, boolean skipToBreak, String[] expectedOriginal, String[] expectedNormalized) {
     int index = 0;
-    for (NormalizedString.Token token = nString.getToken(0, skipToBreak); token != null; token = token.getNext(skipToBreak)) {
+    for (GeneralNormalizedString.NormalizedToken token = nString.getToken(0, skipToBreak); token != null; token = token.getNext(skipToBreak)) {
       if (expectedOriginal == null && expectedNormalized == null) {
         System.out.println(index + ": o(" + token.getOriginal() + ") n(" + token.getNormalized() + ")");
       }
@@ -78,7 +78,7 @@ public class TestNormalizedString extends TestCase {
 //   }
 
   public void testGetPrecedingIndex() {
-    final NormalizedString nString = new NormalizedString("this is a test of get preceding index");
+    final NormalizedString nString = new GeneralNormalizedString("this is a test of get preceding index");
     final int nPos = 32;
 
     assertEquals(22, nString.getPrecedingIndex(nPos, 1));
@@ -100,7 +100,7 @@ public class TestNormalizedString extends TestCase {
   }
 
   public void testSplitCamelCase() {
-    final NormalizedString nString = NormalizedString.buildLowerCaseInstance("thisIsATest");
+    final GeneralNormalizedString nString = GeneralNormalizedString.buildLowerCaseInstance("thisIsATest");
     String[] tokens = null;
 
     tokens = nString.split();
@@ -143,7 +143,7 @@ public class TestNormalizedString extends TestCase {
 
 
   public static Test suite() {
-    TestSuite suite = new TestSuite(TestNormalizedString.class);
+    TestSuite suite = new TestSuite(TestGeneralNormalizedString.class);
     return suite;
   }
 

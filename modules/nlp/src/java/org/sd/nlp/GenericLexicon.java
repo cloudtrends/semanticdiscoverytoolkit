@@ -41,7 +41,7 @@ public class GenericLexicon extends AbstractLexicon {
    * Convenience method for loading a lexicon from a resource.
    */
   public static final GenericLexicon loadGenericLexicon(Class clazz, String resourceName,
-                                                        Normalizer normalizer, Category category,
+                                                        AbstractNormalizer normalizer, Category category,
                                                         boolean caseSensitive, boolean isDefinitive,
                                                         boolean hasAttributes, String commonAttributes) throws IOException {
     return new GenericLexicon(FileUtil.getInputStream(clazz, resourceName), normalizer,
@@ -52,7 +52,7 @@ public class GenericLexicon extends AbstractLexicon {
    * Convenience method for loading a lexicon from a resource.
    */
   public static final GenericLexicon loadGenericLexicon(InputStream lexiconInputStream,
-                                                        Normalizer normalizer, Category category,
+                                                        AbstractNormalizer normalizer, Category category,
                                                         boolean caseSensitive, boolean isDefinitive,
                                                         boolean hasAttributes, String commonAttributes) throws IOException {
     return new GenericLexicon(lexiconInputStream, normalizer,
@@ -63,7 +63,7 @@ public class GenericLexicon extends AbstractLexicon {
    * Convenience method for loading a lexicon from a resource.
    */
   public static final GenericLexicon loadGenericLexicon(InputStream lexiconInputStream,
-                                                        Normalizer normalizer,
+                                                        AbstractNormalizer normalizer,
                                                         CategoryFactory categoryFactory,
                                                         String categoryString,
                                                         boolean caseSensitive, boolean isDefinitive,
@@ -95,7 +95,7 @@ public class GenericLexicon extends AbstractLexicon {
    *                          otherwise, terms are not parsed.
    * @param commonAttributes  attributes of the form "att1=val1,att2=val2,..." to attach with every term.
    */
-  public GenericLexicon(InputStream roteListStream, Normalizer normalizer, Category category,
+  public GenericLexicon(InputStream roteListStream, AbstractNormalizer normalizer, Category category,
                         boolean caseSensitive, boolean isDefinitive, boolean hasAttributes, String commonAttributes) throws IOException {
     super(normalizer);
     init(category, caseSensitive, isDefinitive, hasAttributes, commonAttributes);
@@ -105,7 +105,7 @@ public class GenericLexicon extends AbstractLexicon {
   /**
    * Construct with the given terms.
    */
-  public GenericLexicon(String[] terms, Normalizer normalizer, Category category, boolean caseSensitive, boolean isDefinitive, boolean hasAttributes, String commonAttributes) {
+  public GenericLexicon(String[] terms, AbstractNormalizer normalizer, Category category, boolean caseSensitive, boolean isDefinitive, boolean hasAttributes, String commonAttributes) {
     super(normalizer);
     init(category, caseSensitive, isDefinitive, hasAttributes, commonAttributes);
     initializeTerms(terms, caseSensitive);
@@ -114,7 +114,7 @@ public class GenericLexicon extends AbstractLexicon {
   /**
    * Construct with the given attributes.
    */
-  public GenericLexicon(Tree<XmlLite.Data> lexiconNode, CategoryFactory categoryFactory, Normalizer normalizer) throws IOException {
+  public GenericLexicon(Tree<XmlLite.Data> lexiconNode, CategoryFactory categoryFactory, AbstractNormalizer normalizer) throws IOException {
     super(lexiconNode, categoryFactory, normalizer);
 
     final Category category = getNamedCategory(getAttribute("category"));
@@ -275,7 +275,7 @@ public class GenericLexicon extends AbstractLexicon {
    * @param subString   The substring to define.
    * @param normalizer  The normalizer to use.
    */
-  protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+  protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
     // run string through the same normalizer as used on construction.
     final String string = subString.getNormalizedString(normalizer);
     Definition definition = doBaseLookup(string);

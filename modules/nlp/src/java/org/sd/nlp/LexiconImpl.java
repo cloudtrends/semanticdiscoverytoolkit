@@ -36,7 +36,7 @@ public class LexiconImpl extends AbstractLexicon {
     this(null);
   }
 
-  public LexiconImpl(Normalizer normalizer) {
+  public LexiconImpl(AbstractNormalizer normalizer) {
     super(normalizer);
     this.string2def = new HashMap<String, Categories>();
   }
@@ -60,7 +60,7 @@ public class LexiconImpl extends AbstractLexicon {
    * @param subString   The substring to define.
    * @param normalizer  The normalizer to use.
    */
-  protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+  protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
     final String string = subString.getNormalizedString(normalizer);
 
     final Categories curDef = string2def.get(string);

@@ -19,7 +19,7 @@
 package org.sd.match;
 
 
-import org.sd.nlp.Normalizer;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.NormalizingTokenizer;
 import org.sd.nlp.StringWrapper;
 
@@ -40,10 +40,10 @@ public class InputWrapper {
     return INPUT_ORDER_COMPARATOR;
   }
 
-  private Normalizer normalizer;
+  private AbstractNormalizer normalizer;
   private SortableWord[] inputWords;
 
-  public InputWrapper(Normalizer normalizer, List<StringWrapper.SubString> inputWords) {
+  public InputWrapper(AbstractNormalizer normalizer, List<StringWrapper.SubString> inputWords) {
     this.normalizer = normalizer;
 
     final TreeSet<SortableWord> sortedWords = new TreeSet<SortableWord>();
@@ -54,7 +54,7 @@ public class InputWrapper {
     this.inputWords = sortedWords.toArray(new SortableWord[sortedWords.size()]);
   }
 
-  public InputWrapper(Normalizer normalizer, String inputString) {
+  public InputWrapper(AbstractNormalizer normalizer, String inputString) {
     this(normalizer, new NormalizingTokenizer(normalizer, inputString).getTokens());
   }
 
@@ -102,10 +102,10 @@ public class InputWrapper {
     public final StringWrapper.SubString word;
     public final char[] wordChars;
 
-    private Normalizer normalizer;
+    private AbstractNormalizer normalizer;
     private Boolean _looksLikeAcronym;
 
-    public SortableWord(int wordNum, StringWrapper.SubString word, Normalizer normalizer) {
+    public SortableWord(int wordNum, StringWrapper.SubString word, AbstractNormalizer normalizer) {
       this.wordNum = wordNum;
       this.word = word;
       this.normalizer = normalizer;

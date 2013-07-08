@@ -23,8 +23,8 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.GeneralNormalizer;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.NormalizingTokenizer;
 import org.sd.nlp.RbiNormalizer;
 
@@ -39,7 +39,7 @@ public class TestMatchAligner extends TestCase {
     super(name);
   }
   
-  private final void doAlignmentTest(Normalizer normalizer, ConceptModel conceptModel,
+  private final void doAlignmentTest(AbstractNormalizer normalizer, ConceptModel conceptModel,
                                      String inputString, String expectedAlignedString,
                                      String expectedNormalizedAlignedString,
                                      String expectedExplanation,
@@ -67,7 +67,7 @@ public class TestMatchAligner extends TestCase {
   }
 
   public void testAlignment1() {
-    final Normalizer normalizer = new GeneralNormalizer(true);
+    final AbstractNormalizer normalizer = new GeneralNormalizer(true);
 
     // Concept: Valves, Butterfly, Ethylene Propylene Diene Monomer (EPDM) Seat, Lugged and Tapped
     final ConceptModel conceptModel = TestConceptModel.buildTestModel();
@@ -117,7 +117,7 @@ public class TestMatchAligner extends TestCase {
   }
 
   public void testAlignment2() {
-    final Normalizer normalizer = RbiNormalizer.getInstance();
+    final AbstractNormalizer normalizer = RbiNormalizer.getInstance();
 
     final ConceptModel conceptModel = new ConceptModel();
     final String treeString = "(C195561 (F2 (T1 (S0 (V0 W0|dictionaries))) (T2 (S0 (V0 W0|english W2|to W0|german))) (T15 (S0 (V0 W0|publications)))))";
@@ -132,7 +132,7 @@ public class TestMatchAligner extends TestCase {
   }
 
   public void testAlignment3() {
-    final Normalizer normalizer = RbiNormalizer.getInstance();
+    final AbstractNormalizer normalizer = RbiNormalizer.getInstance();
 
     final ConceptModel conceptModel = new ConceptModel();
     final String treeString = "(C43700 (F2 (T1 (S0 (V0 W0|gauges))) (T2 (S0 (V0 W0|electronic))) (T9 (S0 (V0 W0|boiler W0|drum W2|and W0|feedwater W0|heater)))) (F2 (T1 (S0 (V0 W0|gauges))) (T2 (S0 (V0 W0|electronic))) (T9 (S0 (V0 W0|boiler W0|drum W2|and W0|feed W0|water W0|heating W0|equipment)))) (F2 (T1 (S0 (V0 W0|gauges))) (T2 (S0 (V0 W0|electronic))) (T9 (S0 (V0 W0|boiler W0|drum W2|and W0|feed W0|water W0|heater)))) (F2 (T1 (S0 (V0 W0|gauges))) (T2 (S0 (V0 W0|electronic))) (T9 (S0 (V0 W0|boiler W0|drum W2|and W0|feedwater W0|heating W0|equipment)))) (F2 (T1 (S0 (V0 W0|gages))) (T2 (S0 (V0 W0|electronic))) (T9 (S0 (V0 W0|boiler W0|drum W2|and W0|feedwater W0|heater)))) (F2 (T1 (S0 (V0 W0|gages))) (T2 (S0 (V0 W0|electronic))) (T9 (S0 (V0 W0|boiler W0|drum W2|and W0|feed W0|water W0|heating W0|equipment)))) (F2 (T1 (S0 (V0 W0|gages))) (T2 (S0 (V0 W0|electronic))) (T9 (S0 (V0 W0|boiler W0|drum W2|and W0|feed W0|water W0|heater)))) (F2 (T1 (S0 (V0 W0|gages))) (T2 (S0 (V0 W0|electronic))) (T9 (S0 (V0 W0|boiler W0|drum W2|and W0|feedwater W0|heating W0|equipment)))) (F0 (T0 (S0 (V0 W0|gauges))) (T0 (S0 (V0 W0|electronic))) (T0 (S0 (V0 W0|boiler W0|drums W2|and W0|feedwater W0|heater)))) (F1 (T0 (S0 (V0 W0|gages))) (T0 (S0 (V0 W0|electronic))) (T0 (S0 (V0 W0|boiler W0|drums W2|and W0|feedwater W0|heater)))) (F4 (T0 (S0 (V0 W0|kalibers))) (T0 (S0 (V0 W0|elektronisch))) (T0 (S0 (V0 W0|ketel W0|trommels W2|en W0|voedingswater W0|heater)))))";
@@ -147,7 +147,7 @@ public class TestMatchAligner extends TestCase {
   }
 
   public void testAlignment4() {
-    final Normalizer normalizer = RbiNormalizer.getInstance();
+    final AbstractNormalizer normalizer = RbiNormalizer.getInstance();
 
     ConceptModel conceptModel = null;
     String treeString = null;
@@ -187,7 +187,7 @@ public class TestMatchAligner extends TestCase {
   }
 
   public void testAlignment5() {
-    final Normalizer normalizer = RbiNormalizer.getInstance();
+    final AbstractNormalizer normalizer = RbiNormalizer.getInstance();
 
     final ConceptModel conceptModel = new ConceptModel();
     final String treeString = "(C99960 (F2 (T1 (S0 (V0 W0|valves))) (T2 (S0 (V0 W0|butterfly)))) (F3 (T0 (S0 (V0 W0|vlinderkleppen)))) (F4 (T0 (S0 (V0 W4|vlinderkleppen) (V0 W5|vlinder W5|kleppen)))))";

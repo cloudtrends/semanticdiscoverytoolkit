@@ -20,10 +20,10 @@ package org.sd.wn;
 
 
 import org.sd.nlp.AbstractLexicon;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.Categories;
 import org.sd.nlp.Category;
 import org.sd.nlp.GeneralNormalizer;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.StringWrapper;
 import org.sd.wn.POS;
 
@@ -40,7 +40,7 @@ public class WordNetLexicon extends AbstractLexicon {
   private WordNetIndex nounIndex;
   private Category category;
 
-  public WordNetLexicon(File wnDictDir, POS partOfSpeech, Category category, Normalizer normalizer) throws IOException {
+  public WordNetLexicon(File wnDictDir, POS partOfSpeech, Category category, AbstractNormalizer normalizer) throws IOException {
     super(normalizer == null ? GeneralNormalizer.getCaseInsensitiveInstance() : normalizer);
 
     this.nounIndex = WordNetIndex.getInstance(wnDictDir, partOfSpeech);
@@ -53,7 +53,7 @@ public class WordNetLexicon extends AbstractLexicon {
    * @param subString   The substring to define.
    * @param normalizer  The normalizer to use.
    */
-  protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+  protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
     final String string = subString.getNormalizedString(normalizer);
     
     final WordNetIndex.Entry entry = nounIndex.lookup(string);

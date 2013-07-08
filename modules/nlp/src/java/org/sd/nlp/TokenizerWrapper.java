@@ -79,7 +79,7 @@ public class TokenizerWrapper {
     }
 
     final CategoryFactory categoryFactory = new CategoryFactory(categories);
-    final Normalizer normalizer = normalizerClass == null ? GeneralNormalizer.getCaseInsensitiveInstance() : (Normalizer)ReflectUtil.buildInstance(normalizerClass, properties);
+    final AbstractNormalizer normalizer = normalizerClass == null ? GeneralNormalizer.getCaseInsensitiveInstance() : (AbstractNormalizer)ReflectUtil.buildInstance(normalizerClass, properties);
     final BreakStrategy breakStrategy = breakStrategyClass == null ? GeneralBreakStrategy.getInstance() : (BreakStrategy)ReflectUtil.buildInstance(breakStrategyClass, properties);
     final TokenizationStrategy.Type tokenizationStrategyType = tokenizationStrategyTypeName == null ? TokenizationStrategy.Type.LONGEST_TO_SHORTEST : Enum.valueOf(TokenizationStrategy.Type.class, tokenizationStrategyTypeName);
     final LexiconBuilder lexiconBuilder = (LexiconBuilder)ReflectUtil.buildInstance(lexiconBuilderClass, properties);
@@ -95,7 +95,7 @@ public class TokenizerWrapper {
   private Lexicon lexicon;
   private CategoryFactory categoryFactory;
   private TokenizationStrategy.Type tokenizationStrategyType;
-  private Normalizer normalizer;
+  private AbstractNormalizer normalizer;
   private BreakStrategy breakStrategy;
   private boolean ignoreExtraInput;
   private int skipUpTo;
@@ -106,7 +106,7 @@ public class TokenizerWrapper {
   public TokenizerWrapper(Lexicon lexicon,
                           CategoryFactory categoryFactory,
                           TokenizationStrategy.Type tokenizationStrategyType,
-                          Normalizer normalizer,
+                          AbstractNormalizer normalizer,
                           BreakStrategy breakStrategy,
                           boolean ignoreExtraInput,
                           int skipUpTo,
@@ -199,7 +199,7 @@ public class TokenizerWrapper {
     return tokenizationStrategyType;
   }
 
-  public final Normalizer getNormalizer() {
+  public final AbstractNormalizer getNormalizer() {
     return normalizer;
   }
 

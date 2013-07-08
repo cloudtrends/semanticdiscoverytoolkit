@@ -20,9 +20,9 @@ package org.sd.extract;
 
 
 import org.sd.io.FileUtil;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.BreakStrategy;
-import org.sd.nlp.NormalizedString;
-import org.sd.nlp.Normalizer;
+import org.sd.nlp.GeneralNormalizedString;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,18 +46,18 @@ public class HasWordExtractor extends AbstractExtractor {
   private int maxStringLength;
   private int maxNumWords;
 
-  public HasWordExtractor(String extractionType, File hasWordFile, boolean haltPipelineWhenMatch, Normalizer normalizer) throws IOException {
+  public HasWordExtractor(String extractionType, File hasWordFile, boolean haltPipelineWhenMatch, AbstractNormalizer normalizer) throws IOException {
     this(extractionType, hasWordFile, null, null, false, false, normalizer, null, null, haltPipelineWhenMatch);
   }
 
-  public HasWordExtractor(String extractionType, Set<String> words, boolean haltPipelineWhenMatch, Normalizer normalizer) {
+  public HasWordExtractor(String extractionType, Set<String> words, boolean haltPipelineWhenMatch, AbstractNormalizer normalizer) {
     this(extractionType, words, null, null, false, false, normalizer, null, null, haltPipelineWhenMatch);
   }
 
   public HasWordExtractor(String extractionType, File hasWordFile,
                           TextAcceptor textAcceptor, TextSplitter textSplitter,
                           boolean needsDocTextCache, boolean stopAtFirst,
-                          Normalizer normalizer, BreakStrategy breakStrategy,
+                          AbstractNormalizer normalizer, BreakStrategy breakStrategy,
                           Disambiguator disambiguator, boolean haltPipelineWhenMatch) throws IOException {
     this(extractionType, textAcceptor, textSplitter, needsDocTextCache, stopAtFirst,
          normalizer, breakStrategy, disambiguator, haltPipelineWhenMatch);
@@ -68,7 +68,7 @@ public class HasWordExtractor extends AbstractExtractor {
   public HasWordExtractor(String extractionType, Set<String> words,
                           TextAcceptor textAcceptor, TextSplitter textSplitter,
                           boolean needsDocTextCache, boolean stopAtFirst,
-                          Normalizer normalizer, BreakStrategy breakStrategy,
+                          AbstractNormalizer normalizer, BreakStrategy breakStrategy,
                           Disambiguator disambiguator, boolean haltPipelineWhenMatch) {
     this(extractionType, textAcceptor, textSplitter, needsDocTextCache, stopAtFirst,
          normalizer, breakStrategy, disambiguator, haltPipelineWhenMatch);
@@ -79,7 +79,7 @@ public class HasWordExtractor extends AbstractExtractor {
   private HasWordExtractor(String extractionType,
                            TextAcceptor textAcceptor, TextSplitter textSplitter,
                            boolean needsDocTextCache, boolean stopAtFirst,
-                           Normalizer normalizer, BreakStrategy breakStrategy,
+                           AbstractNormalizer normalizer, BreakStrategy breakStrategy,
                            Disambiguator disambiguator, boolean haltPipelineWhenMatch) {
     super(extractionType, textAcceptor, textSplitter, needsDocTextCache, stopAtFirst, normalizer, breakStrategy, disambiguator);
 
@@ -131,18 +131,18 @@ public class HasWordExtractor extends AbstractExtractor {
    */
   public List<Extraction> extract(DocText docText, AtomicBoolean die) {
     List<Extraction> result = null;
-    final Normalizer normalizer = getNormalizer();
+    final AbstractNormalizer normalizer = getNormalizer();
 
     // perform the extraction
     final String string = docText.getString();
     if (string != null && !"".equals(string)) {
       if (maxStringLength > 0 && string.length() > maxStringLength) return result;
 
-      final NormalizedString nString = normalizer.normalize(string);
+      final GeneralNormalizedString nString = (GeneralNormalizedString)normalizer.normalize(string);
 
       if (preQualify(nString)) {
         int numTokens = 0;
-        for (NormalizedString.Token token = nString.getToken(0, true); token != null; token = token.getNext(true)) {
+        for (GeneralNormalizedString.NormalizedToken token = nString.getToken(0, true); token != null; token = token.getNext(true)) {
           final String normalizedWord = token.getNormalized();
           if (words.contains(normalizedWord)) {
             // found one!
@@ -171,7 +171,7 @@ public class HasWordExtractor extends AbstractExtractor {
    * Extenders may override. Default behavior prequalifies all normalized
    * strings.
    */
-  protected boolean preQualify(NormalizedString nString) {
+  protected boolean preQualify(GeneralNormalizedString nString) {
     return true;
   }
 }

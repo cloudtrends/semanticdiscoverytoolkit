@@ -1,5 +1,5 @@
 /*
-    Copyright 2009 Semantic Discovery, Inc. (www.semanticdiscovery.com)
+    Copyright 2013 Semantic Discovery, Inc. (www.semanticdiscovery.com)
 
     This file is part of the Semantic Discovery Toolkit.
 
@@ -16,38 +16,36 @@
     You should have received a copy of the GNU Lesser General Public License
     along with The Semantic Discovery Toolkit.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.sd.nlp;
+package org.sd.token;
 
+
+import org.sd.nlp.Normalizer;
+import org.sd.nlp.NormalizedString;
 
 /**
- * A normalizer for asian character strings.
+ * An nlp.Normalizer implementation based on this package's tokenization.
  * <p>
- * This leads to "breaks" after every character.
- *
  * @author Spence Koehler
  */
-public class AsianNormalizer implements Normalizer {
+public class TokenizerBasedNormalizer implements Normalizer {
+  
+  private StandardTokenizerOptions tokenizerOptions;
+  private boolean lowerCaseFlag;
 
-  private static final AsianNormalizer INSTANCE = new AsianNormalizer();
-
-  public static final AsianNormalizer getInstance() {
-    return INSTANCE;
+  public TokenizerBasedNormalizer(StandardTokenizerOptions tokenizerOptions, boolean lowerCaseFlag) {
+    this.tokenizerOptions = tokenizerOptions;
+    this.lowerCaseFlag = lowerCaseFlag;
   }
 
-  private AsianNormalizer() {
+  public StandardTokenizerOptions getTokenizerOptions() {
+    return tokenizerOptions;
   }
 
-  /**
-   * Normalize the substring's original text.
-   */
-  public NormalizedString normalize(StringWrapper.SubString subString) {
-    return new GeneralNormalizedString(subString.originalSubString);
+  public boolean getLowerCaseFlag() {
+    return lowerCaseFlag;
   }
 
-  /**
-   * Normalize the string.
-   */
   public NormalizedString normalize(String string) {
-    return new GeneralNormalizedString(string);
+    return new TokenizerNormalizedString(this, new StandardTokenizer(string, tokenizerOptions), lowerCaseFlag);
   }
 }

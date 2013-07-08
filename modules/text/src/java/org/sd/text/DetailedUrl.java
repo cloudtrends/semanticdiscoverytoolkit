@@ -19,7 +19,7 @@
 package org.sd.text;
 
 
-import org.sd.nlp.NormalizedString;
+import org.sd.nlp.GeneralNormalizedString;
 import org.sd.util.PathWrapper;
 import org.sd.util.StringUtil;
 
@@ -839,7 +839,7 @@ public class DetailedUrl {
     if (_domainNameWords == null) {
 //todo: caching this is a "bug" in that 'normalized' will be ignored after the first access! fix it!
       final String[] xhost = splitHostExtensions(normalized);
-      _domainNameWords = new NormalizedString(xhost[0]).split();
+      _domainNameWords = new GeneralNormalizedString(xhost[0]).split();
     }
     return _domainNameWords;
   }
@@ -848,10 +848,10 @@ public class DetailedUrl {
     if (_urlPathWords == null) {
       _urlPathWords = new HashSet<String>();
 
-      final String[] pathWords = new NormalizedString(getPath(false)).split();
+      final String[] pathWords = new GeneralNormalizedString(getPath(false)).split();
       for (String pathWord : pathWords) _urlPathWords.add(pathWord);
 
-      final String[] targetWords = new NormalizedString(getTarget(false)).split();
+      final String[] targetWords = new GeneralNormalizedString(getTarget(false)).split();
       for (String targetWord : targetWords) _urlPathWords.add(targetWord);
     }
     return _urlPathWords;

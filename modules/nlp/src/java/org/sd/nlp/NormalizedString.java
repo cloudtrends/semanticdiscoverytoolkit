@@ -19,141 +19,29 @@
 package org.sd.nlp;
 
 
-import org.sd.util.StringUtil;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 /**
  * Container for a normalized string mapping it back to its original form.
- * <p>
- * Typically, a Normalizer will create an appropriate NormalizedString, but
- * the "buildLowerCaseInstance" factory method is available for use in trivial
- * cases.
  *
  * @author Spence Koehler
  */
-public final class NormalizedString {
-
-  public static final NormalizedString EMPTY = new NormalizedString();
-
-  public static final NormalizedString buildLowerCaseInstance(String string) {
-    return (string == null) ? EMPTY : new NormalizedString(new StringWrapper(string), string.toLowerCase(), (int[])null, true);
-  }
-
-  private enum CharClass {UPPER, LOWER, DIGIT, ASIAN, OTHER};
-
-  private StringWrapper fullOriginal;       // full original string
-  private String normalized;         // normalized (sub)string
-  private int[] n2oIndexes;          // normalized char index to original char index (based on full original string)
-  private boolean splitOnCamelCase;  // flag for whether to split on camel-case
-  private int nlen;                  // normalized (sub)string length
-  private int olen;                  // original (sub)string length
-  private int[] normalizedCodePoints;  // code points of normalized string
-  private String _original;          // original (sub)string
-  private char[] _nchars;            // normalized chars
+public interface NormalizedString {
 
   /**
-   * Construct an empty normalized string.
+   * Set a flag indicating whether to split on camel-casing.
    */
-  public NormalizedString() {
-    this.fullOriginal = null;
-    this.normalized = "";
-    this.n2oIndexes = null;
-    this.nlen = 0;
-    this.olen = 0;
-    this.normalizedCodePoints = new int[0];
-    this._original = null;
-    this._nchars = null;
-  }
+  public void setSplitOnCamelCase(boolean splitOnCamelCase);
 
   /**
-   * Construct an instance where the string is its own normalization.
+   * Get the flag indicating whether to split on camel-casing.
    */
-  public NormalizedString(String string) {
-    this(new StringWrapper(string), string, (int[])null, true);
-  }
-
-  /**
-   * Construct a normalized string with the given data.
-   */
-  public NormalizedString(StringWrapper fullOriginal, String normalized, List<Integer> n2oIndexList) {
-    this(fullOriginal, normalized, convert(n2oIndexList, normalized.length()), true);
-  }
-
-  /**
-   * Construct a normalized string with the given data.
-   */
-  public NormalizedString(StringWrapper fullOriginal, String normalized, List<Integer> n2oIndexList, boolean splitOnCamelCase) {
-    this(fullOriginal, normalized, convert(n2oIndexList, normalized.length()), splitOnCamelCase);
-  }
-
-  /**
-   * Construct a normalized string with the given data.
-   */
-  public NormalizedString(StringWrapper fullOriginal, String normalized, int[] n2oIndexes, boolean splitOnCamelCase) {
-    this.fullOriginal = fullOriginal;
-    this.normalized = normalized;
-    this.n2oIndexes = n2oIndexes;
-    this.splitOnCamelCase = splitOnCamelCase;
-    this.olen = fullOriginal.length();
-    this.normalizedCodePoints = StringUtil.toCodePoints(normalized);
-    this.nlen = normalizedCodePoints.length;
-    this._original = null;
-  }
-
-// method for debugging
-  protected final void dump() {
-    System.out.println(normalized.length() + ": " + normalized);
-    System.out.println(fullOriginal.string);
-
-    System.out.println("ncp=" + normalizedCodePoints.length + ", n2o=" + n2oIndexes.length);
-
-    for (int i = 0; i < nlen; ++i) {
-      final int ncp = (i < normalizedCodePoints.length) ? normalizedCodePoints[i] : -1;
-      final int n2o = (i < n2oIndexes.length) ? n2oIndexes[i] : -1;
-      final int oi = getOriginalIndex(i);
-
-      final int ocp = fullOriginal.getCodePoint(oi);
-
-      System.out.println(i + ": " + ncp + "(" + ((char)ncp) + ") [" + n2o + "/" + oi + "] " + ocp + "(" + ((char)ocp) + ")");
-    }
-  }
-
-  protected static final int[] convert(List<Integer> n2oIndexList, int len) {
-    if (n2oIndexList == null) return null;
-    final int[] n2oIndexes = new int[Math.max(len, n2oIndexList.size())];
-    int pos = 0;
-    for (Integer n2oIndex : n2oIndexList) {
-      n2oIndexes[pos++] = n2oIndex;
-    }
-    return n2oIndexes;
-  }
-
-  /**
-   * Set the split on camel case flag.
-   */
-  public final void setSplitOnCamelCase(boolean splitOnCamelCase) {
-    this.splitOnCamelCase = splitOnCamelCase;
-  }
-
-  /**
-   * Get the full original string.
-   * <p>
-   * Note that the normalized string may apply to only a portion of the full
-   * original string.
-   */
-  public final StringWrapper getFullOriginal() {
-    return fullOriginal;
-  }
+  public boolean getSplitOnCamelCase();
 
   /**
    * Get the length of the normalized string.
    */
-  public final int getNormalizedLength() {
-    return nlen;
-  }
+  public int getNormalizedLength();
 
   /**
    * Get the normalized string.
@@ -161,9 +49,7 @@ public final class NormalizedString {
    * Note that the normalized string may apply to only a portion of the full
    * original string.
    */
-  public final String getNormalized() {
-    return normalized;
-  }
+  public String getNormalized();
 
   /**
    * Get the normalized string from the start (inclusive) to end (exclusive).
@@ -171,89 +57,45 @@ public final class NormalizedString {
    * Note that the normalized string may apply to only a portion of the full
    * original string.
    */
-  public final String getNormalized(int startPos, int endPos) {
-    final StringBuilder result = new StringBuilder();
-
-    for (int i = startPos; i < endPos; ++i) {
-      result.appendCodePoint(normalizedCodePoints[i]);
-    }
-
-    return result.toString();
-  }
+  public String getNormalized(int startPos, int endPos);
 
   /**
    * Get the original string that applies to the normalized string.
    */
-  public final String getOriginal() {
-    if (_original == null) {
-      _original = getOriginal(0, nlen);
-    }
-    return _original;
-  }
+  public String getOriginal();
 
   /**
    * Get the original string that applies to the normalized string from the
    * given index for the given number of normalized characters.
    */
-  public final String getOriginal(int normalizedStartIndex, int normalizedLength) {
-    if (normalizedLength == 0) return null;
+  public String getOriginal(int normalizedStartIndex, int normalizedLength);
 
-    String result = null;
+  /**
+   * Get the index in the original string corresponding to the normalized index.
+   */
+  public int getOriginalIndex(int normalizedIndex);
 
-    int oStart = getOriginalIndex(normalizedStartIndex);
-    int oEnd = getOriginalIndex(normalizedStartIndex + normalizedLength - 1);
-    final StringWrapper.SubString substring = fullOriginal.getSubString(oStart, oEnd + 1);
-    if (substring != null) {
-      result = substring.originalSubString;
-    }
-
-    return result;
-  }
-
-  public final StringWrapper.SubString asSubString() {
-    return fullOriginal.getSubString(0);
-  }
-
-  public final int getOriginalIndex(int normalizedIndex) {
-    int result = normalizedIndex;
-
-    if (n2oIndexes != null) {
-      result = normalizedIndex == nlen ? olen : n2oIndexes[normalizedIndex];
-    }
-
-    return result;
-  }
+  /**
+   * Get a new normalized string for the portion of this normalized string
+   * preceding the normalized start index (exclusive). Remove extra whitespace
+   * at the end of the returned string. Ensure that the returned string ends
+   * on an end token boundary.
+   *
+   * @return the preceding normalized string or null if empty (after skipping white).
+   */
+  public NormalizedString getPreceding(int normalizedStartIndex);
 
   /**
    * Get a new normalized string for the portion of this normalized string
    * preceding the normalized start index (exclusive). Remove extra whitespace
    * at the end of the returned string.
    *
-   * @return the preceding normalized string or null if empty (after skipping white).
-   */
-  public final NormalizedString getPreceding(int normalizedStartIndex) {
-    return getPreceding(normalizedStartIndex, true);
-  }
-
-  /**
-   * Get a new normalized string for the portion of this normalized string
-   * preceding the normalized start index (exclusive). Remove extra whitespace
-   * at the end of the returned string.
+   * @param normalizedStartIndex  a token start position in the normalized string beyond the result
+   * @param checkEndBreak  when true, skip back over non breaking chars to ensure result ends at a break.
    *
    * @return the preceding normalized string or null if empty (after skipping white).
    */
-  public final NormalizedString getPreceding(int normalizedStartIndex, boolean checkEndBreak) {
-    NormalizedString result = null;
-
-    // skip back until starting from an end break.
-    while (normalizedStartIndex > 0 && (normalizedCodePoints[normalizedStartIndex] == ' ' || (checkEndBreak && !isEndBreak(normalizedStartIndex)))) --normalizedStartIndex;
-    
-    if (normalizedStartIndex > 0) {
-      result = buildNormalizedString(0, normalizedStartIndex);
-    }
-
-    return result;
-  }
+  public NormalizedString getPreceding(int normalizedStartIndex, boolean checkEndBreak);
 
   /**
    * Find the (normalized) index of the nth token preceding the normalizedPos.
@@ -262,32 +104,16 @@ public final class NormalizedString {
    * If the beginning of the string is fewer than numTokens prior to normalizedPos,
    * return the beginning of the string.
    */
-  public final int getPrecedingIndex(int normalizedPos, int numTokens) {
-    int index = normalizedPos < 0 ? nlen : normalizedPos;
-
-    int numStarts = 0;
-
-    // skip back to the numTokens-th start break.
-    for (; index > 0 && numStarts < numTokens; index = findPrecedingTokenStart(index)) {
-      ++numStarts;
-    }
-
-    return index;
-  }
+  public int getPrecedingIndex(int normalizedPos, int numTokens);
 
   /**
    * Find the start of the token before the normalizedPos.
    * <p>
-   * If normalizedPos is at a token start, the prior token will be returned;
-   * otherwise, the start of the token of which normalizedPos is a part will
-   * be returned.
+   * If normalizedPos is at a token start, the prior token (or -1 if there is
+   * no prior token) will be returned; otherwise, the start of the token of
+   * which normalizedPos is a part will be returned.
    */
-  public final int findPrecedingTokenStart(int normalizedPos) {
-    for (normalizedPos--; normalizedPos > 0; --normalizedPos) {
-      if (isLetterOrDigit(normalizedPos) && isStartBreak(normalizedPos)) break;
-    }
-    return normalizedPos;
-  }
+  public int findPrecedingTokenStart(int normalizedPos);
 
   /**
    * Get a new normalized string for the portion of this normalized string
@@ -296,64 +122,31 @@ public final class NormalizedString {
    *
    * @return the following normalized string or null if empty (after skipping white).
    */
-  public final NormalizedString getRemaining(int normalizedStartIndex) {
-    NormalizedString result = null;
-
-    // skip back until starting from an end break.
-    while (normalizedStartIndex < nlen && (normalizedCodePoints[normalizedStartIndex] == ' ' || !isStartBreak(normalizedStartIndex))) ++normalizedStartIndex;
-    
-    if (normalizedStartIndex < nlen) {
-      result = buildNormalizedString(normalizedStartIndex, nlen);
-    }
-
-    return result;
-  }
+  public NormalizedString getRemaining(int normalizedStartIndex);
 
   /**
    * Build a normalized string from this using the given normalized index range.
    */
-  public final NormalizedString buildNormalizedString(int normalizedStartIndex, int normalizedEndIndex) {
-    final int normalizedLength = normalizedEndIndex - normalizedStartIndex;
-    final StringWrapper newFullOriginal = fullOriginal;
-
-    final String newNormalized = getNormalized(normalizedStartIndex, normalizedEndIndex);
-
-    final int[] newN2oIndexes = new int[normalizedLength];
-    for (int i = normalizedStartIndex; i < normalizedEndIndex; ++i) {
-      newN2oIndexes[i - normalizedStartIndex] = n2oIndexes[i];
-    }
-
-    return new NormalizedString(newFullOriginal, newNormalized, newN2oIndexes, splitOnCamelCase);
-  }
+  public NormalizedString buildNormalizedString(int normalizedStartIndex, int normalizedEndIndex);
 
   /**
-   * Lowercase the normalized string.
+   * Lowercase the normalized form in this instance.
+   *
+   * @return this instance.
    */
-  public final NormalizedString toLowerCase() {
-    this.normalized = normalized.toLowerCase();
-    this._nchars = null;  // reset
-    return this;
-  }
+  public NormalizedString toLowerCase();
 
   /**
    * Get the normalized string's chars.
    */
-  public final char[] getNormalizedChars() {
-    if (_nchars == null) {
-      _nchars = normalized.toCharArray();
-    }
-    return _nchars;
-  }
+  public char[] getNormalizedChars();
 
   /**
    * Get the normalized char at the given (normalized) index.
    * <p>
    * NOTE: Bounds checking is left up to the caller.
    */
-  public final char getNormalizedChar(int index) {
-    final char[] nchars = getNormalizedChars();
-    return nchars[index];
-  }
+  public char getNormalizedChar(int index);
 
   /**
    * Get the original code point corresponding to the normalized char at the
@@ -361,28 +154,13 @@ public final class NormalizedString {
    * <p>
    * NOTE: Bounds checking is left up to the caller.
    */
-  public final int getOriginalCodePoint(int nIndex) {
-    int result = 0;
-
-    try {
-      result = fullOriginal.getCodePoint(n2oIndexes == null ? nIndex : n2oIndexes[nIndex]);
-    }
-    catch (ArrayIndexOutOfBoundsException e) {
-      System.err.println("NormalizedString: original '" + fullOriginal.string + "', normalized '" + normalized + "' nIndex=" + nIndex);
-      e.printStackTrace(System.err);
-    }
-
-    return result;
-  }
+  public int getOriginalCodePoint(int nIndex);
 
   /**
    * Determine whether the original character corresponding to the normalized
    * index is a letter or digit.
    */
-  public final boolean isLetterOrDigit(int nIndex) {
-    final CharClass charClass = getCharClass(getOriginalCodePoint(nIndex));
-    return (charClass != CharClass.OTHER);
-  }
+  public boolean isLetterOrDigit(int nIndex);
 
   /**
    * Get the ORIGINAL index of the first symbol (non-letter, digit, or white
@@ -391,172 +169,48 @@ public final class NormalizedString {
    * @return -1 if no symbol is found or the index of the found symbol in the
    *         original input string.
    */
-  public final int findPreviousSymbolIndex(int nIndex) {
-    int oIndex = (n2oIndexes == null) ? nIndex : n2oIndexes[nIndex];
-    for (--oIndex; oIndex >= 0; --oIndex) {
-      final int cp = fullOriginal.getCodePoint(oIndex);
-      if (cp != ' ' && !Character.isLetterOrDigit(cp)) break;
-    }
-    return oIndex;
-  }
+  public int findPreviousSymbolIndex(int nIndex);
 
-  public final boolean hasDigit(int nStartIndex, int nEndIndex) {
-    for (int i = nStartIndex; i < nEndIndex; ++i) {
-      final int c = normalizedCodePoints[i];
-      if (c <= '9' && c >= '0') return true;
-    }
-    return false;
-  }
+  /**
+   * Determine whether the normalized string has a digit between the normalized
+   * start (inclusive) and end (exclusive).
+   */
+  public boolean hasDigit(int nStartIndex, int nEndIndex);
 
-  public final int numWords(int nStartIndex, int nEndIndex) {
-    // don't count first space
-    while (nStartIndex < nEndIndex && normalizedCodePoints[nStartIndex] == ' ') ++nStartIndex;
-
-    if (nEndIndex <= nStartIndex) return 0;
-    int result = 1;
-    int c = 0;
-
-    for (int i = nStartIndex; i < nEndIndex; ++i) {
-      c = normalizedCodePoints[i];
-      if (c == ' ') ++result;
-    }
-
-    if (c == ' ') --result;  // don't count last space
-
-    return result;
-  }
+  /**
+   * Count the number of normalized words in the given range.
+   */
+  public int numWords(int nStartIndex, int nEndIndex);
 
   /**
    * Determine whether there is a break before the normalized startIndex.
    */
-  public final boolean isStartBreak(int startIndex) {
-    if (startIndex <= 0) return true;
-
-    final CharClass prevClass = getCharClass(getOriginalCodePoint(startIndex - 1));
-    final CharClass startClass = getCharClass(getOriginalCodePoint(startIndex));
-
-    boolean result = (startClass == CharClass.ASIAN);  // break at every asian char
-
-    if (!result) {
-      if (prevClass != startClass) {  // usually signifies a start break
-        // except when dealing with capitalized words.
-        result = !(prevClass == CharClass.UPPER && startClass == CharClass.LOWER);
-      }
-    }
-
-    return result;
-  }
+  public boolean isStartBreak(int startIndex);
 
   /**
-   * Determine whether there is a break before the normalized endIndex.
+   * Determine whether there is a break after the normalized endIndex.
    */
-  public final boolean isEndBreak(int endIndex) {
-    if (endIndex >= nlen) return true;
-
-    final CharClass nextClass = getCharClass(getOriginalCodePoint(endIndex));
-    final CharClass endClass = getCharClass(getOriginalCodePoint(endIndex - 1));
-
-    // non-equal char classes except upper followed by lower.
-    boolean result = nextClass != endClass;
-
-    if (result) {
-      if (endClass == CharClass.UPPER && nextClass == CharClass.LOWER) {
-        result = false;
-      }
-    }
-    else {
-      result = endClass == CharClass.ASIAN;
-    }
-
-    return result;
-  }
+  public boolean isEndBreak(int endIndex);
 
   /**
    * Get the normalized index that best corresponds to the original index.
    */
-  public final int getNormalizedIndex(int originalIndex) {
-    int result = -1;
-
-    for (int nIndex = 0; nIndex < n2oIndexes.length; ++nIndex) {
-      final int oIndex = n2oIndexes[nIndex];
-      if (oIndex >= originalIndex) {
-        result = nIndex;
-        break;
-      }
-    }
-
-    return result;
-  }
-
-  private final CharClass getCharClass(int cp) {
-    CharClass result = null;
-
-    if (StringUtil.isAsianCodePoint(cp)) {
-      result = CharClass.ASIAN;
-    }
-    else if (!splitOnCamelCase && Character.isLetter(cp)) {
-      result = CharClass.LOWER;
-    }
-    else if (Character.isUpperCase(cp)) {
-      result = CharClass.UPPER;
-    }
-    else if (Character.isLowerCase(cp)) {
-      result = CharClass.LOWER;
-    }
-    else if (Character.isDigit(cp)) {
-      result = CharClass.DIGIT;
-    }
-    else {
-      result = CharClass.OTHER;
-    }
-
-    return result;
-  }
-
-  /**
-   * Get this instance as a string.
-   * <p>
-   * The normalized string is returned.
-   */
-  public final String toString() {
-    return normalized;
-  }
-
-  /**
-   * Split this normalized string into tokens.
-   */
-  public Token[] tokenize() {
-    final List<Token> result = new ArrayList<Token>();
-    for (Token token = getToken(0, true); token != null; token = token.getNext(true)) {
-      result.add(token);
-    }
-    return result.toArray(new Token[result.size()]);
-  }
+  public int getNormalizedIndex(int originalIndex);
 
   /**
    * Split into normalized token strings.
    */
-  public String[] split() {
-    final List<String> result = new ArrayList<String>();
-    for (Token token = getToken(0, true); token != null; token = token.getNext(true)) {
-      result.add(token.getNormalized());
-    }
-    return result.toArray(new String[result.size()]);
-  }
+  public String[] split();
 
   /**
    * Split into normalized token strings, removing stopwords.
    */
-  public String[] split(Set<String> stopwords) {
-    final List<String> result = new ArrayList<String>();
-    for (Token token = getToken(0, true); token != null; token = token.getNext(true)) {
-      final String ntoken = token.getNormalized();
-      if (stopwords == null || !stopwords.contains(ntoken)) {
-        result.add(ntoken);
-      }
-    }
-    return result.toArray(new String[result.size()]);
-  }
+  public String[] split(Set<String> stopwords);
+
+  /**
+   * Split this normalized string into tokens.
+   */
+  public NormalizedToken[] tokenize();
 
   /**
    * Get the token starting from the start position, optionally skipping to a
@@ -564,46 +218,28 @@ public final class NormalizedString {
    *
    * @return the token or null if there are no tokens to get.
    */
-  public Token getToken(int startPos, boolean skipToBreak) {
-    Token result = null;
+  public NormalizedToken getToken(int startPos, boolean skipToBreak);
 
-    if (skipToBreak) {
-      while (startPos < nlen && (!isLetterOrDigit(startPos) || !isStartBreak(startPos))) ++startPos;
-    }
 
-    if (startPos < nlen) {
-      int endPos = startPos + 1;
-      while (endPos < nlen && normalizedCodePoints[endPos] != ' ' && !isEndBreak(endPos)) ++endPos;
+  /**
+   * Get the token after the given token, optionally skipping to a start
+   * break first.
+   */
+  public NormalizedToken getNextToken(NormalizedToken curToken, boolean skipToBreak);
 
-      result = new Token(this, startPos, endPos);
-
-//System.out.println("[" + startPos + "," + endPos + "] n=" + result.getNormalized() + " (o=" + result.getOriginal() + ")");
-    }
-
-    return result;
-  }
 
   /**
    * Container class for a normalized string token.
    */
-  public final class Token {
+  public static class NormalizedToken {
     private NormalizedString nString;
     private int startPos;
     private int endPos;
-    private Token _next;
-    private boolean _gotAlt;
 
-    Token(NormalizedString nString, int startPos, int endPos) {
+    public NormalizedToken(NormalizedString nString, int startPos, int endPos) {
       this.nString = nString;
       this.startPos = startPos;
       this.endPos = endPos;
-      this._next = null;
-      this._gotAlt = false;
-    }
-
-    private Token(NormalizedString nString, int startPos, int endPos, Token next) {
-      this(nString, startPos, endPos);
-      this._next = next;
     }
 
     /**
@@ -652,91 +288,8 @@ public final class NormalizedString {
      * Get the normalized token following this token, optionally skipping to a
      * start break first.
      */
-    public Token getNext(boolean skipToBreak) {
-      Token result = null;
-
-      if (splitOnCamelCase) {
-        if (_next != null) {
-          // this is an alt token. time to get deferred from _next
-          result = _next.doGetNext(skipToBreak);
-          //System.out.println("next(" + getNormalized() + ")=" + (result != null ? result.getNormalized() : "<null>") + " [from alt]");
-        }
-        else if (hasAlt()) {
-          // defer next until after getting the alt token
-          result = getAltToken();
-          //System.out.println("next(" + getNormalized() + ")=" + (result != null ? result.getNormalized() : "<null>") + " [to alt]");
-        }
-      }
-
-      if (result == null) {
-        result = doGetNext(skipToBreak);
-        //System.out.println("next(" + getNormalized() + ")=" + (result != null ? result.getNormalized() : "<null>") + " [no alt]");
-      }
-
-      return result;
-    }
-
-    private final Token doGetNext(boolean skipToBreak) {
-      return nString.getToken(endPos, skipToBreak);
-    }
-
-    /**
-     * Determine whether this token has a meaningful alternate
-     * presentation.
-     * <p>
-     * This occurs for initial partial camel-cased tokens, where the
-     * alternate is the full word as if camel-casing had not been
-     * applied to split the token.
-     */
-    public boolean hasAlt() {
-      // true if startPos is a letter and its prior is not and
-      // after endPos is a letter.
-      return
-        (Character.isLetter(getNormalizedChar(startPos)) &&
-         (startPos == 0 || !Character.isLetter(getNormalizedChar(startPos - 1))) &&
-         (endPos < nlen && Character.isLetter(getNormalizedChar(endPos))));
-    }
-
-    /**
-     * Get this token's alternate presentation, which is the token's
-     * start position up to a non-char.
-     * <p>
-     * This is useful for initial partial camel-cased tokens, where
-     * the alternate is the full word as if camel-casing had not been
-     * applied to split the token. But there is no limitation on
-     * accessing the alternate form.
-     */
-    public Token getAltToken() {
-      int newEndPos = endPos;
-      while (newEndPos < nlen && Character.isLetter(getNormalizedChar(newEndPos))) ++newEndPos;
-      return new Token(nString, startPos, newEndPos, this);
-    }
-
-    /**
-     * Get this token's alternate presentation, which is the token's
-     * start position up to a non-char.
-     * <p>
-     * This is useful for initial partial camel-cased tokens, where
-     * the alternate is the full word as if camel-casing had not been
-     * applied to split the token. But there is no limitation on
-     * accessing the alternate form.
-     */
-    public String getAlt() {
-      return getAltToken().getNormalized();
-    }
-  }
-
-
-  public static void main(String[] args) {
-    for (String arg : args) {
-      final NormalizedString nstring = NormalizedString.buildLowerCaseInstance(arg);
-      final String[] pieces = nstring.split();
-
-      final org.sd.util.LineBuilder builder = new org.sd.util.LineBuilder();
-      builder.append(arg);
-      for (String piece : pieces) builder.append(piece);
-
-      System.out.println(builder.toString());
+    public NormalizedToken getNext(boolean skipToBreak) {
+      return nString.getNextToken(this, skipToBreak);
     }
   }
 }

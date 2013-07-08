@@ -20,6 +20,7 @@ package org.sd.text;
 
 import org.sd.io.FileUtil;
 import org.sd.nlp.AbstractLexicon;
+import org.sd.nlp.AbstractNormalizer;
 import org.sd.nlp.Break;
 import org.sd.nlp.BreakStrategy;
 import org.sd.nlp.Categories;
@@ -29,7 +30,6 @@ import org.sd.nlp.GeneralNormalizer;
 import org.sd.nlp.GenericLexicon;
 import org.sd.nlp.Lexicon;
 import org.sd.nlp.LexiconPipeline;
-import org.sd.nlp.Normalizer;
 import org.sd.nlp.TokenizationStrategy;
 import org.sd.nlp.TokenizerWrapper;
 import org.sd.nlp.StringWrapper;
@@ -73,7 +73,7 @@ public class MungedWordFinder {
     CONSTITUENT,
   };
 
-  private static final Normalizer NORMALIZER = GeneralNormalizer.getCaseInsensitiveInstance();
+  private static final AbstractNormalizer NORMALIZER = GeneralNormalizer.getCaseInsensitiveInstance();
   private static final BreakStrategy BREAK_STRATEGY = new MyBreakStrategy();
   private static final Comparator<WordSequence> SEQUENCE_COMPARATOR = new Comparator<WordSequence>() {
     public int compare(WordSequence ws1, WordSequence ws2) {
@@ -314,7 +314,7 @@ public class MungedWordFinder {
      * @param subString   The substring to define.
      * @param normalizer  The normalizer to use.
      */
-    protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+    protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
       if (!subString.hasDefinitiveDefinition()) {
         boolean isNumber = true;
         int lastNumberPos = -1;
@@ -379,7 +379,7 @@ public class MungedWordFinder {
      * @param subString   The substring to define.
      * @param normalizer  The normalizer to use.
      */
-    protected void define(StringWrapper.SubString subString, Normalizer normalizer) {
+    protected void define(StringWrapper.SubString subString, AbstractNormalizer normalizer) {
       if (!subString.hasDefinitiveDefinition() && subString.length() == 1) {
         subString.addCategory(category);
         subString.setAttribute("name", UNDETERMINED_WORD);
