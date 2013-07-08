@@ -31,6 +31,12 @@ public abstract class MutableTagStack extends BaseTagStack {
   }
 
   /**
+   * Push a text block onto this stack
+   * This can affect child number or indexes, but not the stack of tags itself
+   */
+  public abstract void pushText();
+
+  /**
    * Push the given tag onto this stack.
    */
   public abstract void pushTag(XmlLite.Tag tag);

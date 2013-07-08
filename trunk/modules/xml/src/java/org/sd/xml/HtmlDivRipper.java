@@ -50,7 +50,6 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
   private boolean skipNonAlphaNum = false;
 
   private String lastPathId = null;
-  private int currentBlockIndex = -1;
 
   public HtmlDivRipper(File htmlFile) throws IOException {
     this(htmlFile, true, true);
@@ -142,21 +141,6 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
           this.inProgress.add(path);
         break;
       }
-    }
-
-    // the block index is used to differentiate the path ids for blocks which
-    // are segmented due to capitalization cues
-    if(result != null)
-    {
-      // reset block index if path changes
-      String pathId = result.getCommonPathString(true);
-      if(lastPathId != null && lastPathId.equals(pathId)) {
-        currentBlockIndex++;
-      } else {
-        currentBlockIndex = 0;
-        lastPathId = pathId;
-      }
-      result.setBlockIndex(currentBlockIndex);
     }
 
     return result;

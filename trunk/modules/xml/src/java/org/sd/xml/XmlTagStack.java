@@ -53,6 +53,15 @@ public class XmlTagStack extends MutableTagStack {
     return _tags;
   }
 
+  public void pushText() {
+    if (tags.size() > 0) {
+      final XmlLite.Tag lastTag = tags.getLast();
+      lastTag.incTextNum();
+    }
+
+    clearPathKey();
+  }
+
   /**
    * Push the given tag onto this stack.
    */
@@ -63,6 +72,7 @@ public class XmlTagStack extends MutableTagStack {
     }
 
     tags.addLast(tag);
+
     clearPathKey();
     _tags = null;
   }
@@ -105,6 +115,7 @@ public class XmlTagStack extends MutableTagStack {
     if (tags.size() > 0) {
       result = tags.removeLast();
     }
+
     clearPathKey();
     _tags = null;
     return result;
