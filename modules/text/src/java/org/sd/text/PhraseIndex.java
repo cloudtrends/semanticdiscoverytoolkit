@@ -37,15 +37,27 @@ public class PhraseIndex <T> {
 
   private Map<String, Set<T>> word2items;
   private Map<T, List<String[]>> item2words;
+  private Set<String> mandatoryWords;
 
   public PhraseIndex() {
     this.word2items = new HashMap<String, Set<T>>();
     this.item2words = new HashMap<T, List<String[]>>();
+    this.mandatoryWords = new HashSet<String>();
   }
 
   public void clear() {
     this.word2items.clear();
     this.item2words.clear();
+    this.mandatoryWords.clear();
+  }
+
+  /**
+   * Add words that when present in input must match a retrieved value.
+   */
+  public void addMandatoryWords(String[] mandatoryWords) {
+    for (String mandatoryWord : mandatoryWords) {
+      this.mandatoryWords.add(mandatoryWord);
+    }
   }
 
   /**
@@ -120,7 +132,7 @@ public class PhraseIndex <T> {
       for (Map.Entry<String, WordWrapper> entry : wordWrappers.entrySet()) {
         final String word = entry.getKey();
         final WordWrapper wordWrapper = entry.getValue();
-        if (wordWrapper.cardinality() == minCardinality) {
+        if (mandatoryWords.contains(word) || wordWrapper.cardinality() == minCardinality) {
           mustHaveWords.add(word);
         }
       }

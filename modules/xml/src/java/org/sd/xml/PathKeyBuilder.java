@@ -74,7 +74,7 @@ public class PathKeyBuilder {
   /**
    * Add an already constructed pathKey to this pathKey.
    */
-  public void add(String otherPathKey, XmlLite.Tag otherLastTag) {
+  public void add(String otherPathKey) {
     if (otherPathKey != null) {
       if (pathKey.length() > 0) pathKey.append('.');
       pathKey.append(otherPathKey);

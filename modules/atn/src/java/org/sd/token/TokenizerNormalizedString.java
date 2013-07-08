@@ -103,10 +103,7 @@ public class TokenizerNormalizedString implements NormalizedString {
    * original string.
    */
   public String getNormalized() {
-    if (!computed) {
-      computeNormalization();
-    }
-    return _normalization.getNormalized();
+    return getNormalization().getNormalized();
   }
 
   public String toString() {
@@ -144,11 +141,7 @@ public class TokenizerNormalizedString implements NormalizedString {
    * Get the index in the original string corresponding to the normalized index.
    */
   public int getOriginalIndex(int normalizedIndex) {
-    if (!computed) {
-      computeNormalization();
-    }
-
-    final Integer result = _normalization.getOriginalIndex(normalizedIndex);
+    final Integer result = getNormalization().getOriginalIndex(normalizedIndex);
     return result == null ? -1 : result;
   }
 
@@ -202,11 +195,7 @@ public class TokenizerNormalizedString implements NormalizedString {
    * return the beginning of the string.
    */
   public int getPrecedingIndex(int normalizedPos, int numTokens) {
-    if (!computed) {
-      computeNormalization();
-    }
-
-    int result = normalizedPos < 0 ? _normalization.getNormalizedLength() : normalizedPos;
+    int result = normalizedPos < 0 ? getNormalization().getNormalizedLength() : normalizedPos;
 
     // skip back to the numTokens-th start break.
     int numStarts = 0;
@@ -226,11 +215,7 @@ public class TokenizerNormalizedString implements NormalizedString {
    * which normalizedPos is a part will be returned.
    */
   public int findPrecedingTokenStart(int normalizedPos) {
-    if (!computed) {
-      computeNormalization();
-    }
-
-    Integer priorStart = _normalization.getBreaks().lower(normalizedPos);
+    final Integer priorStart = getNormalization().getBreaks().lower(normalizedPos);
     return priorStart == null ? -1 : priorStart;
   }
 
@@ -287,12 +272,7 @@ public class TokenizerNormalizedString implements NormalizedString {
    * @return this instance.
    */
   public NormalizedString toLowerCase() {
-    if (!computed) {
-      computeNormalization();
-    }
-
-    _normalization.toLowerCase();
-
+    getNormalization().toLowerCase();
     return this;
   }
 
@@ -300,11 +280,7 @@ public class TokenizerNormalizedString implements NormalizedString {
    * Get the normalized string's chars.
    */
   public char[] getNormalizedChars() {
-    if (!computed) {
-      computeNormalization();
-    }
-
-    return _normalization.getNormalizedChars();
+    return getNormalization().getNormalizedChars();
   }
 
   /**
@@ -313,11 +289,7 @@ public class TokenizerNormalizedString implements NormalizedString {
    * NOTE: Bounds checking is left up to the caller.
    */
   public char getNormalizedChar(int index) {
-    if (!computed) {
-      computeNormalization();
-    }
-
-    return _normalization.getNormalizedChars()[index];
+    return getNormalization().getNormalizedChars()[index];
   }
 
   /**
@@ -379,10 +351,7 @@ public class TokenizerNormalizedString implements NormalizedString {
   public boolean hasDigit(int nStartIndex, int nEndIndex) {
     boolean result = false;
 
-    if (!computed) {
-      computeNormalization();
-    }
-    final char[] nchars = _normalization.getNormalizedChars();
+    final char[] nchars = getNormalization().getNormalizedChars();
     nEndIndex = Math.min(nEndIndex, nchars.length);
     for (int idx = Math.max(nStartIndex, 0); idx < nEndIndex; ++idx) {
       final char c = nchars[idx];
@@ -401,11 +370,9 @@ public class TokenizerNormalizedString implements NormalizedString {
   public int numWords(int nStartIndex, int nEndIndex) {
     int result = 0;
 
-    if (!computed) {
-      computeNormalization();
-    }
-    final TreeSet<Integer> breaks = _normalization.getBreaks();
-    final int nLen = _normalization.getNormalizedLength();
+    final Normalization normalization = getNormalization();
+    final TreeSet<Integer> breaks = normalization.getBreaks();
+    final int nLen = normalization.getNormalizedLength();
     nEndIndex = Math.min(nEndIndex, nLen);
     for (int idx = Math.max(nStartIndex, 0); idx < nEndIndex && idx >= 0; idx = breaks.higher(idx)) {
       if (idx == nEndIndex - 1) break; // nEndIdex as at the beginning of a word -- doesn't count
@@ -419,44 +386,28 @@ public class TokenizerNormalizedString implements NormalizedString {
    * Determine whether there is a break before the normalized startIndex.
    */
   public boolean isStartBreak(int startIndex) {
-    if (!computed) {
-      computeNormalization();
-    }
-
-    return _normalization.isBreak(startIndex - 1);
+    return getNormalization().isBreak(startIndex - 1);
   }
 
   /**
    * Determine whether there is a break after the normalized endIndex.
    */
   public boolean isEndBreak(int endIndex) {
-    if (!computed) {
-      computeNormalization();
-    }
-
-    return _normalization.isBreak(endIndex + 1);
+    return getNormalization().isBreak(endIndex + 1);
   }
 
   /**
    * Get (first) the normalized index that best corresponds to the original index.
    */
   public int getNormalizedIndex(int originalIndex) {
-    if (!computed) {
-      computeNormalization();
-    }
-
-    return _normalization.getNormalizedIndex(originalIndex);
+    return getNormalization().getNormalizedIndex(originalIndex);
   }
 
   /**
    * Split into normalized token strings.
    */
   public String[] split() {
-    if (!computed) {
-      computeNormalization();
-    }
-
-    return _normalization.getNormalized().split("\\s+");
+    return getNormalization().getNormalized().split("\\s+");
   }
 
   /**
@@ -494,7 +445,7 @@ public class TokenizerNormalizedString implements NormalizedString {
     NormalizedToken result = null;
 
     startPos = getTokenStart(startPos, skipToBreak);
-    if (startPos < _normalization.getNormalizedLength()) {
+    if (startPos < getNormalization().getNormalizedLength()) {
       final int endPos = getTokenEnd(startPos);
       result = new NormalizedToken(this, startPos, endPos);
     }
@@ -510,14 +461,12 @@ public class TokenizerNormalizedString implements NormalizedString {
     NormalizedToken result = null;
 
     if (curToken != null) {
-      if (!computed) {
-        computeNormalization();
-      }
-      final TreeSet<Integer> breaks = _normalization.getBreaks();
-      final int nLen = _normalization.getNormalizedLength();
+    final Normalization normalization = getNormalization();
+      final TreeSet<Integer> breaks = normalization.getBreaks();
+      final int nLen = normalization.getNormalizedLength();
 
       int curEndPos = curToken.getEndPos();
-      if (skipToBreak && !_normalization.isBreak(curEndPos)) {
+      if (skipToBreak && !normalization.isBreak(curEndPos)) {
         final Integer nextBreak = breaks.higher(curEndPos);
         curEndPos = (nextBreak == null) ? nLen : nextBreak;
       }
@@ -540,11 +489,9 @@ public class TokenizerNormalizedString implements NormalizedString {
    * at one.)
    */
   private final int getTokenStart(int startPos, boolean skipToBreak) {
-    if (!computed) {
-      computeNormalization();
-    }
-    final TreeSet<Integer> breaks = _normalization.getBreaks();
-    final int nLen = _normalization.getNormalizedLength();
+    final Normalization normalization = getNormalization();
+    final TreeSet<Integer> breaks = normalization.getBreaks();
+    final int nLen = normalization.getNormalizedLength();
 
     if (skipToBreak && !isStartBreak(startPos)) {
       final Integer nextBreak = breaks.ceiling(startPos);
@@ -558,16 +505,21 @@ public class TokenizerNormalizedString implements NormalizedString {
    * Get the normalized index just after the token starting at (normalized) startPos.
    */
   private final int getTokenEnd(int startPos) {
-    if (!computed) {
-      computeNormalization();
-    }
-    final TreeSet<Integer> breaks = _normalization.getBreaks();
-    final int nLen = _normalization.getNormalizedLength();
+    final Normalization normalization = getNormalization();
+    final TreeSet<Integer> breaks = normalization.getBreaks();
+    final int nLen = normalization.getNormalizedLength();
     final Integer endPos = breaks.higher(startPos);
 
     return endPos == null ? nLen : endPos;
   }
 
+
+  protected final Normalization getNormalization() {
+    if (!computed) {
+      computeNormalization();
+    }
+    return _normalization;
+  }
 
   private final void computeNormalization() {
     this._normalization = buildNewNormalization(tokenizer, lowerCaseFlag);
@@ -579,20 +531,20 @@ public class TokenizerNormalizedString implements NormalizedString {
     this.computed = true;
   }
 
-  protected Normalization buildNewNormalization(Tokenizer tokenizer, boolean lowerCaseFlag) {
+  protected Normalization buildNewNormalization(StandardTokenizer tokenizer, boolean lowerCaseFlag) {
     return new Normalization(tokenizer, lowerCaseFlag);
   }
 
 
-  protected static class Normalization {
-    private Tokenizer tokenizer;
+  public static class Normalization {
+    private StandardTokenizer tokenizer;
     private boolean lowerCaseFlag;
     private StringBuilder normalized;
     private Map<Integer, Integer> norm2orig;
     private TreeSet<Integer> breaks;
     private char[] _nchars;
 
-    protected Normalization(Tokenizer tokenizer, boolean lowerCaseFlag) {
+    public Normalization(StandardTokenizer tokenizer, boolean lowerCaseFlag) {
       this.tokenizer = tokenizer;
       this.lowerCaseFlag = lowerCaseFlag;
       this.normalized = new StringBuilder();
@@ -601,7 +553,7 @@ public class TokenizerNormalizedString implements NormalizedString {
       this._nchars = null;
     }
 
-    public final Tokenizer getTokenizer() {
+    public final StandardTokenizer getTokenizer() {
       return tokenizer;
     }
 
