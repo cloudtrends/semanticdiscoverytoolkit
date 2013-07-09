@@ -94,17 +94,41 @@ public class PhraseIndex <T> {
     // - Looking up each word, find values that are common across words
     //   - Consider only the values that appeared most frequently across all words
     //   - Consider only phrases including words with the lowest cardinality lookups
+    //   - If a "mandatory" word is in the input, then it must be present in
+    //     a phrase in the index to match.
+    //     - this has the effect that words that tend to mark a split between phrases
+    //       when present in the input, can still have that effect while still allowing
+    //       stored phrases to contain these words. Thus, these words need not be
+    //       filtered out (or otherwise managed) during normalization, etc.
+    //   - Consider each stored phrase of words against the input words as if though
+    //     each unique word is a unique character and perform a string edit distance
+    //     between these "phrase words" to compute an alignment score (the lower the
+    //     better.)
+    //     - The overridable default EditDistance uses the Levenshtein algorithm.
+    //     - See "getEditDistance".
+    //     - Keep the best distance score across all phrases for an item.
+    //     - This edit distance score, e, is used to compute the retrieval score, r, as:
+    //       - r = m - e,
+    //         - where m is the maximum number of word intersections between the input
+    //           and the phrase
+    //         - note that this inverts scoring such that higher scores correspond to
+    //           better matches.
+    //       - for strict applications, retrieval scores <= 0 would be considerd to be
+    //         poor matches.
+    //   - Return matching results in sorted order from best (highest) to worst (lowest).
 
     Map<T, Integer> values = null;  // values w/inst freq across words
     int maxIxCount = 0;
     int minCardinality = Integer.MAX_VALUE;
 
-    final Map<String, WordWrapper> wordWrappers = new HashMap<String, WordWrapper>();
+    // map each input word to the number of phrases it participates in in the index
+    final Map<String, Integer> word2cardinality = new HashMap<String, Integer>();
     for (String word : words) {
       final Set<T> items = word2items.get(word);
-      wordWrappers.put(word, new WordWrapper<T>(word, items));
       if (items != null) {
         final int numItems = items.size();
+        word2cardinality.put(word, numItems);
+
         if (numItems < minCardinality) {
           minCardinality = numItems;
         }
@@ -127,12 +151,11 @@ public class PhraseIndex <T> {
       final char[] inputChars = dictionary.lookup(words);
       result = new ArrayList<RetrievalResult<T>>();
 
-      // Words that must be present in retrieved phrase
+      // Identify words that must be present in retrieved phrase
       final Set<String> mustHaveWords = new HashSet<String>();
-      for (Map.Entry<String, WordWrapper> entry : wordWrappers.entrySet()) {
-        final String word = entry.getKey();
-        final WordWrapper wordWrapper = entry.getValue();
-        if (mandatoryWords.contains(word) || wordWrapper.cardinality() == minCardinality) {
+      for (String word : words) {
+        final Integer cardinality = word2cardinality.get(word);
+        if (mandatoryWords.contains(word) || (cardinality != null && cardinality == minCardinality)) {
           mustHaveWords.add(word);
         }
       }
@@ -160,6 +183,9 @@ public class PhraseIndex <T> {
               final char wordChar = dictionary.lookup(word);
               storedChars[i] = wordChar;
               if (mustHaveWordChars.contains(wordChar)) {
+                // currently: true if *any* (not necessarily *all*) are present.
+                // note that this allows for loose alternatives, probably with
+                // lower scores, to be considered.
                 hasMustHave = true;
               }
             }
@@ -222,24 +248,6 @@ public class PhraseIndex <T> {
 
     public String[] getInputWords() {
       return inputWords;
-    }
-  }
-
-  private static final class WordWrapper <T> {
-    public final String word;
-    public final Set<T> items;
-
-    public WordWrapper(String word, Set<T> items) {
-      this.word = word;
-      this.items = items;
-    }
-
-    public boolean hasItems() {
-      return items != null && items.size() > 0;
-    }
-
-    public int cardinality() {
-      return (items == null) ? 0 : items.size();
     }
   }
 
