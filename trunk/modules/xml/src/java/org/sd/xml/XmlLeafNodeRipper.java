@@ -39,6 +39,7 @@ public class XmlLeafNodeRipper implements XmlRipper {
   private XmlTextRipper textRipper;
   private TagStack tagStack;
   private int index;
+  private boolean useTagEquivalents = false;
 
   public XmlLeafNodeRipper(InputStream inputStream) throws IOException {
     this(inputStream, true, HtmlHelper.DEFAULT_IGNORE_TAGS, false, null);
@@ -54,19 +55,24 @@ public class XmlLeafNodeRipper implements XmlRipper {
                            String[] tagsToSave) 
     throws IOException 
   {
-    this(inputStream, isHtml, false, ignoreTags, keepEmpties, tagsToSave);
+    this(inputStream, isHtml, false, false, ignoreTags, keepEmpties, tagsToSave);
   }
   public XmlLeafNodeRipper(InputStream inputStream, 
-                           boolean isHtml, boolean isValidated, 
+                           boolean isHtml, boolean isValidated, boolean useTagEquiv,
                            Set<String> ignoreTags, 
                            boolean keepEmpties, 
                            String[] tagsToSave) 
     throws IOException 
   {
     this.textRipper = new XmlTextRipper(inputStream, isHtml,
-                                        isHtml ? (isValidated ? new ValidatingHtmlTagStack() : new HtmlTagStack()) : new XmlTagStack(),
-                                        isHtml ? XmlFactory.HTML_TAG_PARSER_IGNORE_COMMENTS : XmlFactory.XML_TAG_PARSER_IGNORE_COMMENTS,
-                                        ignoreTags, tagsToSave, keepEmpties);
+                                        isHtml ? (isValidated ? new ValidatingHtmlTagStack(useTagEquiv) : 
+                                                                new HtmlTagStack(useTagEquiv)) : 
+                                                 new XmlTagStack(useTagEquiv),
+                                        isHtml ? XmlFactory.HTML_TAG_PARSER_IGNORE_COMMENTS : 
+                                                 XmlFactory.XML_TAG_PARSER_IGNORE_COMMENTS,
+                                        ignoreTags, tagsToSave, 
+                                        keepEmpties, false, useTagEquiv);
+    this.useTagEquivalents = useTagEquiv;
     this.tagStack = null;
     this.index = -1;
   }
@@ -101,7 +107,7 @@ public class XmlLeafNodeRipper implements XmlRipper {
       final List<XmlLite.Tag> tags = textRipper.getTags();
       if (tags != null) {
         final List<XmlLite.Tag> savedTags = textRipper.getSavedTags();
-        tagStack = new ImmutableTagStack(tags, savedTags);
+        tagStack = new ImmutableTagStack(tags, savedTags, useTagEquivalents);
       }
     }
     return tagStack;

@@ -33,8 +33,10 @@ public class ValidatingHtmlTagStack extends HtmlTagStack
   //public HtmlTagStack getValidTagStack() { return validStack; }
 
   public ValidatingHtmlTagStack() {
-    super();
-    //validStack = new HtmlTagStack();
+    this(false);
+  }
+  public ValidatingHtmlTagStack(boolean useTagEquivalents) {
+    super(useTagEquivalents);
   }
 
   /**

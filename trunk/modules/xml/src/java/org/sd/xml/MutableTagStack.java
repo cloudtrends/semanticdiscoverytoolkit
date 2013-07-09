@@ -27,14 +27,11 @@ package org.sd.xml;
 public abstract class MutableTagStack extends BaseTagStack {
   
   protected MutableTagStack() {
-    super();
+    this(false);
   }
-
-  /**
-   * Push a text block onto this stack
-   * This can affect child number or indexes, but not the stack of tags itself
-   */
-  public abstract void pushText();
+  protected MutableTagStack(boolean useTagEquivalents) {
+    super(useTagEquivalents);
+  }
 
   /**
    * Push the given tag onto this stack.

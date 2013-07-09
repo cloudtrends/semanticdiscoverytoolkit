@@ -41,7 +41,7 @@ public class PathKeyBuilder {
   public String getPathKey() {
     StringBuilder result = new StringBuilder(pathKey);
     if (useIndex && lastTag != null)
-      result.append('.').append(lastTag.getTextNum());
+      result.append('.').append(lastTag.getNumChildren());
     return result.toString();
   }
 
@@ -84,7 +84,7 @@ public class PathKeyBuilder {
   public String toString() {
     StringBuilder result = new StringBuilder(pathKey);
     if (useIndex && lastTag != null)
-      result.append('.').append(lastTag.getTextNum());
+      result.append('.').append(lastTag.getNumChildren());
     return result.toString();
   }
 }

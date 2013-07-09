@@ -34,7 +34,10 @@ public class XmlTagStack extends MutableTagStack {
   private List<XmlLite.Tag> _tags;
 
   public XmlTagStack() {
-    super();
+    this(false);
+  }
+  protected XmlTagStack(boolean useTagEquivalents) {
+    super(useTagEquivalents);
     this.tags = new LinkedList<XmlLite.Tag>();
     this._tags = null;
   }
@@ -51,15 +54,6 @@ public class XmlTagStack extends MutableTagStack {
       _tags = new ArrayList<XmlLite.Tag>(tags);
     }
     return _tags;
-  }
-
-  public void pushText() {
-    if (tags.size() > 0) {
-      final XmlLite.Tag lastTag = tags.getLast();
-      lastTag.incTextNum();
-    }
-
-    clearPathKey();
   }
 
   /**
