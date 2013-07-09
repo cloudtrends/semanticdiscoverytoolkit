@@ -60,7 +60,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
     throws IOException 
   {
     this.leafRipper = new XmlLeafNodeRipper(FileUtil.getInputStream(htmlFile), 
-                                            true, true, null, 
+                                            true, true, true, null, 
                                             true, null);
     this.htmlHelper = new HtmlHelper(useFullHeadings);
     this.inProgress = null;

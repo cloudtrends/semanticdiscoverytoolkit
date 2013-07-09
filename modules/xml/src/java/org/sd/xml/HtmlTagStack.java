@@ -27,7 +27,10 @@ package org.sd.xml;
 public class HtmlTagStack extends XmlTagStack {
   
   public HtmlTagStack() {
-    super();
+    this(false);
+  }
+  public HtmlTagStack(boolean useTagEquivalents) {
+    super(useTagEquivalents);
   }
 
   /**

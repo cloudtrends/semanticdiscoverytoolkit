@@ -59,8 +59,10 @@ public class XmlTextRipper implements Iterator<String> {
    * data.
    */
   public static final XmlTextRipper buildHtmlRipper(File htmlFile, boolean keepEmpties, boolean requireXmlTag) throws IOException {
-    return new XmlTextRipper(FileUtil.getInputStream(htmlFile), true, new HtmlTagStack(), XmlFactory.HTML_TAG_PARSER_IGNORE_COMMENTS, HtmlHelper.DEFAULT_IGNORE_TAGS,
-                             new String[] {"meta"}, keepEmpties, requireXmlTag);
+    return new XmlTextRipper(FileUtil.getInputStream(htmlFile), true, new HtmlTagStack(), 
+                             XmlFactory.HTML_TAG_PARSER_IGNORE_COMMENTS, 
+                             HtmlHelper.DEFAULT_IGNORE_TAGS,
+                             new String[] {"meta"}, keepEmpties, requireXmlTag, false);
   }
 
   public static final XmlTextRipper buildXmlRipper(File xmlFile, boolean keepEmpties) throws IOException {
@@ -87,6 +89,7 @@ public class XmlTextRipper implements Iterator<String> {
   private boolean keepEmpties;
   private boolean sawBeginTag;
   private boolean commonCase;
+  private boolean useTagEquivalents;
 
   /**
    * Construct an instance to rip text from the given xml file without
@@ -125,9 +128,14 @@ public class XmlTextRipper implements Iterator<String> {
    *                      otherwise, only non-empty text nodes will be
    *                      returned.
    */
-  public XmlTextRipper(InputStream inputStream, boolean commonCase, MutableTagStack tagStack, XmlTagParser xmlTagParser,
-                       Set<String> ignoreTags, String[] tagsToSave, boolean keepEmpties) throws IOException {
-    this(inputStream, commonCase, tagStack, xmlTagParser, ignoreTags, tagsToSave, keepEmpties, false);
+  public XmlTextRipper(InputStream inputStream, boolean commonCase, 
+                       MutableTagStack tagStack, XmlTagParser xmlTagParser,
+                       Set<String> ignoreTags, String[] tagsToSave, boolean keepEmpties) 
+    throws IOException 
+  {
+    this(inputStream, commonCase, 
+         tagStack, xmlTagParser, 
+         ignoreTags, tagsToSave, keepEmpties, false, false);
   }
 
   /**
@@ -153,9 +161,16 @@ public class XmlTextRipper implements Iterator<String> {
    * @param requireXmlTag true if finding an xml tag in the stream is required.
    *                      NOTE: if this is true and an xml tag is not found, the ripper will behave
    *                      as if an encoding exception was hit and will appear empty.
+   * @param useTagEquiv   true to use equivalent tag for comparison instead of reference copy
+   *                      if this flag is set, the tag stack will create a copy, instead
+   *                      of a direct reference
    */
-  public XmlTextRipper(InputStream inputStream, boolean commonCase, MutableTagStack tagStack, XmlTagParser xmlTagParser,
-                       Set<String> ignoreTags, String[] tagsToSave, boolean keepEmpties, boolean requireXmlTag) throws IOException {
+  public XmlTextRipper(InputStream inputStream, boolean commonCase, 
+                       MutableTagStack tagStack, XmlTagParser xmlTagParser,
+                       Set<String> ignoreTags, String[] tagsToSave, 
+                       boolean keepEmpties, boolean requireXmlTag, boolean useTagEquiv) 
+    throws IOException 
+  {
     this.hitEnd = false;
     this.xmlInputStream = new XmlInputStream(inputStream);
     this.commonCase = commonCase;
@@ -180,6 +195,7 @@ public class XmlTextRipper implements Iterator<String> {
       this.savedTags = null;
       this.keepEmpties = keepEmpties;
       this.sawBeginTag = false;
+      this.useTagEquivalents = useTagEquiv;
 
       if (tagsToSave != null) {
         this.tagsToSave = new HashSet<String>();
@@ -217,7 +233,20 @@ public class XmlTextRipper implements Iterator<String> {
     final String result = next;
     this.curHitEncodingException = nextHitEncodingException;
     if (tagStack != null) {
-      this.curTags = tagStack.getTags();
+      if(!useTagEquivalents)
+        this.curTags = tagStack.getTags();
+      else
+      {
+        List<XmlLite.Tag> tags = tagStack.getTags();
+        if(tags == null)
+          this.curTags = null;
+        else
+        {
+          this.curTags = new ArrayList<XmlLite.Tag>();
+          for(XmlLite.Tag tag : tags)
+            this.curTags.add(new XmlLite.Tag(tag));
+        }
+      }
     }
     this.curTagStack = null;
 
@@ -252,7 +281,7 @@ public class XmlTextRipper implements Iterator<String> {
    */
   public TagStack getTagStack() {
     if (curTagStack == null && curTags != null) {
-      this.curTagStack = new ImmutableTagStack(curTags, getSavedTags());
+      this.curTagStack = new ImmutableTagStack(curTags, getSavedTags(), useTagEquivalents);
     }
     return curTagStack;
   }
@@ -378,7 +407,6 @@ public class XmlTextRipper implements Iterator<String> {
               }
               else {
                 // this is the tag after the text, so it'll apply the next go'round.
-                tagStack.pushText();
                 nextTag = theTag;
               }
             }

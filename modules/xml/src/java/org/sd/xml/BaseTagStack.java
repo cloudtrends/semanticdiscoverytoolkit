@@ -33,6 +33,7 @@ public abstract class BaseTagStack implements TagStack {
 
   private String _pathKey = null;
   private List<XmlLite.Tag> savedTags;
+  private boolean useTagEquivalents = false;
 
   /**
    * Get a handle on the instance's tags list ordered from the (top) root
@@ -41,10 +42,17 @@ public abstract class BaseTagStack implements TagStack {
   protected abstract List<XmlLite.Tag> getTagsList();
 
   protected BaseTagStack() {
+    this(false);
   }
-
+  protected BaseTagStack(boolean useTagEquivalents) {
+    this.useTagEquivalents = useTagEquivalents;
+  }
   protected BaseTagStack(List<XmlLite.Tag> savedTags) {
+    this(savedTags, false);
+  }
+  protected BaseTagStack(List<XmlLite.Tag> savedTags, boolean useTagEquivalents) {
     this.savedTags = savedTags;
+    this.useTagEquivalents = useTagEquivalents;
   }
 
   /**
@@ -233,6 +241,24 @@ public abstract class BaseTagStack implements TagStack {
     return result >= tags.size() ? -1 : result;
   }
 
+  private boolean equivalentTags(XmlLite.Tag a, XmlLite.Tag b) 
+  {
+    if(useTagEquivalents)
+    {
+      if(a == b) 
+        return true;
+      else if(a == null && b != null)
+        return false;
+      
+      boolean result = false;
+      if (a != null && a.equals(b))
+        result = a.getChildNum() == b.getChildNum();
+      return result;
+    }      
+    else
+      return a == b;
+  }
+
   /**
    * Find the deepest tag this stack has in common with the other.
    */
@@ -248,7 +274,7 @@ public abstract class BaseTagStack implements TagStack {
       final XmlLite.Tag myTag = myTagsIter.next();
       final XmlLite.Tag otherTag = otherTagsIter.next();
 
-      if (myTag != otherTag) {
+      if (!equivalentTags(myTag, otherTag)) {
         break;
       }
       else {
@@ -279,7 +305,7 @@ public abstract class BaseTagStack implements TagStack {
 
       ++result;
 
-      if (myTag != otherTag) {
+      if (!equivalentTags(myTag, otherTag)) {
         match = false;
         break;
       }

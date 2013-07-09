@@ -35,7 +35,11 @@ public class ImmutableTagStack extends BaseTagStack {
   }
 
   public ImmutableTagStack(List<XmlLite.Tag> tags, List<XmlLite.Tag> savedTags) {
-    super(savedTags);
+    this(tags, savedTags, false);
+  }
+  public ImmutableTagStack(List<XmlLite.Tag> tags, List<XmlLite.Tag> savedTags, 
+                           boolean useTagEquivalents) {
+    super(savedTags, useTagEquivalents);
     this.tags = tags;
   }
 

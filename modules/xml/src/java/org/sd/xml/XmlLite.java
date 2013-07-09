@@ -732,7 +732,6 @@ public class XmlLite {
     public final Map<String, String> attributes;
     private boolean selfTerminating;
     private int numChildren;
-    private int textNum;
     private int childNum;
     private DomElement domElement;
 
@@ -744,7 +743,6 @@ public class XmlLite {
       this.attributes = new LinkedHashMap<String, String>();
       this.selfTerminating = false;
       this.numChildren = 0;
-      this.textNum = 0;
       this.childNum = 0;
 
       final int len = nameAndAttributesString.length();
@@ -819,8 +817,14 @@ public class XmlLite {
       return numChildren++;
     }
 
-    public int incTextNum() { return textNum++; }
-    public int getTextNum() { return textNum; }
+    /**
+     * Utility to help keep track of the number of children this tag has.
+     * <p>
+     * Used by XmlTagStack to determine the current child index, for output of non-tag nodes
+     */
+    public int getNumChildren() { 
+      return numChildren; 
+    }
 
     /**
      * Utility to help keep track of the child position of this tag.
