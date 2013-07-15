@@ -1,5 +1,5 @@
 /*
-    copyright 2013 Semantic Discovery, Inc. (www.semanticdiscovery.com)
+    Copyright 2013 Semantic Discovery, Inc. (www.semanticdiscovery.com)
 
     This file is part of the Semantic Discovery Toolkit.
 
