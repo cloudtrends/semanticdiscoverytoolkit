@@ -120,6 +120,12 @@ public class TestFileUtil extends TestCase {
     assertEquals("foo", FileUtil.getBaseName(filename, null));
   }
 
+  public void testGetBasePath() {
+    assertEquals("/foo/bar/bash/", 
+                 FileUtil.getBasePath("/foo/bar/bash/"));
+    assertEquals("/foo/bar/", 
+                 FileUtil.getBasePath("/foo/bar/bash"));
+  }
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestFileUtil.class);
