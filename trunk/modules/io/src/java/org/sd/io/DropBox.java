@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Semantic Discovery, Inc. (www.semanticdiscovery.com)
+    copyright 2013 Semantic Discovery, Inc. (www.semanticdiscovery.com)
 
     This file is part of the Semantic Discovery Toolkit.
 
@@ -48,10 +48,15 @@ public class DropBox
     this.outDir = new File(location, OUTDIR_NAME);
     this.procDir = new File(location, PROCDIR_NAME);
     this.errDir = new File(location, ERRDIR_NAME);
-    this.inDir.mkdirs();
-    this.outDir.mkdirs();
-    this.procDir.mkdirs();
-    this.errDir.mkdirs();
+
+    if(!inDir.exists() && !inDir.mkdirs())
+      System.err.println("unable to create input dir: "+inDir.getAbsolutePath());
+    if(!outDir.exists() && !outDir.mkdirs())
+      System.err.println("unable to create output dir: "+outDir.getAbsolutePath());
+    if(!procDir.exists() && !procDir.mkdirs())
+      System.err.println("unable to create process dir: "+procDir.getAbsolutePath());
+    if(!errDir.exists() && !errDir.mkdirs())
+      System.err.println("unable to create error dir: "+errDir.getAbsolutePath());
   }
 
   public File[] getInputFiles() { return inDir.listFiles(); }
