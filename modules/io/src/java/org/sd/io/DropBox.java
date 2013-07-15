@@ -64,15 +64,17 @@ public class DropBox
   public File[] getProcessFiles() { return procDir.listFiles(); }
   public File[] getErrorFiles() { return errDir.listFiles(); }
 
-  private void moveToDir(File file, File dir, String id)
+  private File moveToDir(File file, File dir, String id)
   {
     String filePath = file.getAbsolutePath();
     File newFile = new File(dir, file.getName());
     if(!file.renameTo(newFile))
       throw new IllegalArgumentException("unable to move to "+id+" directory: " + filePath);
+
     System.out.println("move to "+id+" file path: "+newFile.getAbsolutePath()+", "+filePath);
+    return newFile;
   }
-  private void moveToSubdir(File file, File subdir, File dir, String id)
+  private File moveToSubdir(File file, File subdir, File dir, String id)
   {
     if(subdir == null || !subdir.isDirectory())
       throw new IllegalArgumentException("sub-directory is not a valid folder: " + subdir.getAbsolutePath());
@@ -87,8 +89,9 @@ public class DropBox
       throw new IllegalArgumentException("unable to move to "+id+" directory: " + filePath);
     
     System.out.println("move to "+id+" file path: "+newFile.getAbsolutePath()+", "+filePath);
+    return newFile;
   }
-  private void mergeToDir(File dir, File subdir, String id)
+  private File mergeToDir(File dir, File subdir, String id)
   {
     String dirPath = dir.getAbsolutePath();
     File newDir = new File(dir, subdir.getName());
@@ -98,38 +101,48 @@ public class DropBox
     catch(Exception ex) {
       throw new IllegalArgumentException("unable to merge with "+id+" directory: " + dirPath, ex);
     }
+
     System.out.println("move to "+id+" dir path: "+newDir.getAbsolutePath()+", "+dirPath);
+    return newDir;
   }
 
-  public void moveToInput(File file) { 
+  public File moveToInput(File file) { 
     if(file.isDirectory())
-      mergeToDir(file, inDir, "input"); 
+      return mergeToDir(file, inDir, "input"); 
     else
-      moveToDir(file, inDir, "input"); 
+      return moveToDir(file, inDir, "input"); 
   }
-  public void moveToOutput(File file) { 
+  public File moveToOutput(File file) { 
     if(file.isDirectory())
-      mergeToDir(file, outDir, "output"); 
+      return mergeToDir(file, outDir, "output"); 
     else
-      moveToDir(file, outDir, "output"); 
+      return moveToDir(file, outDir, "output"); 
   }
-  public void moveToProcess(File file) { 
+  public File moveToProcess(File file) { 
     if(file.isDirectory())
-      mergeToDir(file, procDir, "process"); 
+      return mergeToDir(file, procDir, "process"); 
     else
-      moveToDir(file, procDir, "process"); 
+      return moveToDir(file, procDir, "process"); 
   }
-  public void moveToError(File file) { 
+  public File moveToError(File file) { 
     if(file.isDirectory())
-      mergeToDir(file, errDir, "error"); 
+      return mergeToDir(file, errDir, "error"); 
     else
-      moveToDir(file, errDir, "error"); 
+      return moveToDir(file, errDir, "error"); 
   }
 
-  public void moveToInput(File file, File subdir) { moveToSubdir(file, subdir, inDir, "input"); }
-  public void moveToOutput(File file, File subdir) { moveToSubdir(file, subdir, outDir, "output"); }
-  public void moveToProcess(File file, File subdir) { moveToSubdir(file, subdir, procDir, "process"); }
-  public void moveToError(File file, File subdir) { moveToSubdir(file, subdir, errDir, "error"); }
+  public File moveToInput(File file, File subdir) { 
+    return moveToSubdir(file, subdir, inDir, "input"); 
+  }
+  public File moveToOutput(File file, File subdir) { 
+    return moveToSubdir(file, subdir, outDir, "output"); 
+  }
+  public File moveToProcess(File file, File subdir) { 
+    return moveToSubdir(file, subdir, procDir, "process"); 
+  }
+  public File moveToError(File file, File subdir) { 
+    return moveToSubdir(file, subdir, errDir, "error"); 
+  }
 
   public String toString() {
     return dir.getAbsolutePath();
