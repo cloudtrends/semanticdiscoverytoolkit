@@ -172,6 +172,34 @@ public class DataProperties extends BaseDataProperties {
   }
 
   /**
+   * Add a dom element as a property.
+   */
+  public void addDomElement(DomElement domElement) {
+    if (domElement != null) {
+      final DomDataProperties ddp = new DomDataProperties(domElement);
+      doAddDataProperties(ddp);
+    }
+  }
+
+  /**
+   * Get the first (most recently added) DomElement with the given name
+   * (or null).
+   */
+  public DomElement getDomElement(String name) {
+    DomElement result = null;
+
+    for (DomDataProperties ddp : domDataProperties) {
+      final DomElement curElt = ddp.getDomElement();
+      if (name.equals(curElt.getLocalName())) {
+        result = curElt;
+        break;
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Build an instance of the domNode's class specified by its relative
    * classXPath that takes the domNode object as its sole construction
    * parameter.
