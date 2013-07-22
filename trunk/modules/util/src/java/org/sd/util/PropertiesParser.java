@@ -155,6 +155,10 @@ public class PropertiesParser {
       else if (arg.endsWith(".properties")) {
         loadFileProperties(this.properties, arg, workingDir);
       }
+      else if (arg.length() > 2 && arg.charAt(0) == '<' && arg.charAt(arg.length() - 1) == '>') {
+        // add xml argument
+        remainingArgs.add(arg);
+      }
       else if (arg.indexOf('=') > 0) {
         setProperty(this.properties, arg);
       }
