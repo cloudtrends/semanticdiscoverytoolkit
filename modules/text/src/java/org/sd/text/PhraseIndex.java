@@ -192,7 +192,7 @@ public class PhraseIndex <T> {
             if (!hasMustHave) continue;
 
 
-            final int dist = getEditDistance(storedChars, inputChars);
+            final int dist = getEditDistance(item, storedChars, inputChars);
             if (dist < bestDist) {
               bestDist = dist;
               bestWords = wordList;
@@ -211,7 +211,7 @@ public class PhraseIndex <T> {
     return result;
   }
 
-  protected int getEditDistance(char[] storedChars, char[] inputChars) {
+  protected int getEditDistance(T storedItem, char[] storedChars, char[] inputChars) {
     return EditDistance.lev(storedChars, inputChars);
   }
 
