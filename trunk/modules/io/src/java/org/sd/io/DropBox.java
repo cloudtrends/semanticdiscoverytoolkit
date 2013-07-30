@@ -91,7 +91,7 @@ public class DropBox
     System.out.println("move to "+id+" file path: "+newFile.getAbsolutePath()+", "+filePath);
     return newFile;
   }
-  private File mergeToDir(File dir, File subdir, String id)
+  private File mergeToDir(File subdir, File dir, String id)
   {
     String dirPath = dir.getAbsolutePath();
     File newDir = new File(dir, subdir.getName());
