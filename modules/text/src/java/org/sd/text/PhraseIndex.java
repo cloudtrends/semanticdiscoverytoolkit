@@ -45,6 +45,18 @@ public class PhraseIndex <T> {
     this.mandatoryWords = new HashSet<String>();
   }
 
+  public Map<String, Set<T>> getWord2Items() {
+    return word2items;
+  }
+
+  public Map<T, List<String[]>> getItem2Words() {
+    return item2words;
+  }
+
+  public Set<String> getMandatoryWords() {
+    return mandatoryWords;
+  }
+
   public void clear() {
     this.word2items.clear();
     this.item2words.clear();
