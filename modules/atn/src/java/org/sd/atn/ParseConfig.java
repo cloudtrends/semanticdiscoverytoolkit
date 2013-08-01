@@ -110,9 +110,11 @@ public class ParseConfig {
     final File parseConfigFile = options.getFile("parseConfig", "workingDir");
 
     if (parseConfigFile != null) {
-      System.out.println(new Date() + ": ParseConfig loading '" +
-                         parseConfigFile.getAbsolutePath() +
-                         "' (exists=" + parseConfigFile.exists() + ")");
+      if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+        System.out.println(new Date() + ": ParseConfig loading '" +
+                           parseConfigFile.getAbsolutePath() +
+                           "' (exists=" + parseConfigFile.exists() + ")");
+      }
     }
 
     if (parseConfigFile == null || !parseConfigFile.exists()) {
@@ -123,7 +125,9 @@ public class ParseConfig {
     final DomElement parseElement = (DomElement)domDocument.getDocumentElement();
     final StringBuilder description = new StringBuilder();
 
-    System.out.println(new Date() + ": ParseConfig init(" + parseConfigFile + ")");
+    if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+      System.out.println(new Date() + ": ParseConfig init(" + parseConfigFile + ")");
+    }
     final ParseConfig result = new ParseConfig(parseElement);
 
     description.append(parseConfigFile.getName());
@@ -134,7 +138,9 @@ public class ParseConfig {
       final String[] supplements = supplementsString.split("\\s*;\\s*");
       for (String supplement : supplements) {
         final File supplementFile = options.getWorkingFile(supplement, "workingDir");
-        System.out.println(new Date() + ": ParseConfig supplement(" + supplementFile + ")");
+        if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          System.out.println(new Date() + ": ParseConfig supplement(" + supplementFile + ")");
+        }
         final DomDocument supDocument = XmlFactory.loadDocument(supplementFile, false, options);
         final DomElement supElement = (DomElement)supDocument.getDocumentElement();
         result.supplement(supElement);
@@ -191,12 +197,16 @@ public class ParseConfig {
 
 
   public ParseConfig(String filename) throws IOException {
-    System.out.println(new Date() + ": ParseConfig init(" + filename + ")");
+    if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+      System.out.println(new Date() + ": ParseConfig init(" + filename + ")");
+    }
     init(new DataProperties(new File(filename)));
   }
 
   public ParseConfig(File configFile) throws IOException {
-    System.out.println(new Date() + ": ParseConfig init(" + configFile + ")");
+    if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+      System.out.println(new Date() + ": ParseConfig init(" + configFile + ")");
+    }
     init(new DataProperties(configFile));
   }
 

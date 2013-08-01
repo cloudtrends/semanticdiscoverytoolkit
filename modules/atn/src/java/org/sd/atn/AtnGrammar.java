@@ -30,6 +30,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.sd.token.Feature;
+import org.sd.token.Features;
 import org.sd.token.Normalizer;
 import org.sd.token.StandardNormalizer;
 import org.sd.token.StandardNormalizerOptions;
@@ -79,6 +81,10 @@ import org.w3c.dom.NodeList;
       "    <!-- -->\n" +
       "  </classifiers>\n" +
       "\n" +
+      "  <immutables>\n" +
+      "    <!-- -->\n" +
+      "  </immutables>\n" +
+      "\n" +
       "  <rules>\n" +
       "    <!-- -->\n" +
       "  </rules>\n" +
@@ -107,7 +113,9 @@ public class AtnGrammar {
           final DomDocument domDocument = XmlFactory.loadDocument(grammarFile, false, dataProperties);
           grammarElement = (DomElement)domDocument.getDocumentElement();
 
-          System.out.println(new Date() + ": AtnGrammar file(" + grammarFile + ")");
+          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+            System.out.println(new Date() + ": AtnGrammar file(" + grammarFile + ")");
+          }
         }
         catch (IOException e) {
           throw new IllegalStateException(e);
@@ -148,6 +156,26 @@ public class AtnGrammar {
   private Map<String, List<AtnRule>> cat2Rules;
   Map<String, List<AtnRule>> getCat2Rules() {
     return cat2Rules;
+  }
+
+  private List<Feature> immutables;
+  List<Feature> getImmutables() {
+    return immutables;
+  }
+  boolean isImmutable(Token token) {
+    boolean result = false;
+
+    if (immutables != null && token.hasFeatures()) {
+      final Features features = token.getFeatures();
+      for (Feature immutable : immutables) {
+        if (features.hasFeature(immutable)) {
+          result = true;
+          break;
+        }
+      }
+    }
+
+    return result;
   }
 
   private ResourceManager resourceManager;
@@ -227,6 +255,9 @@ public class AtnGrammar {
     // load classifiers
     loadClassifiers(grammarNode);
 
+    // load immutables
+    loadImmutables(grammarNode);
+
     // load rules
     final DomElement rulesNode = (DomElement)grammarNode.selectSingleNode("rules");
 
@@ -274,7 +305,9 @@ public class AtnGrammar {
     }
 
     if (result == null || result.size() == 0) {
-      System.out.println("***WARNING: No startRules found or specified!");
+      if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+        System.out.println("***WARNING: No startRules found or specified!");
+      }
     }
 
     return result;
@@ -491,15 +524,65 @@ public class AtnGrammar {
             classifiers.add(classifier);
           }
           else {
-            System.out.println(new Date() + ": AtnGrammar supplementing classifier (" + classifierId + ")");
+            if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+              System.out.println(new Date() + ": AtnGrammar supplementing classifier (" + classifierId + ")");
+            }
             classifier.supplement(classifierElement);
           }
         }
         else {
-          System.out.println("***WARNING: Couldn't load classifier '" + classifierId + "'!");
+          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+            System.out.println("***WARNING: Couldn't load classifier '" + classifierId + "'!");
+          }
         }
       }
     }
+  }
+
+  private void loadImmutables(DomNode grammarNode) {
+
+    //<immutables>
+    //  <...immutable-feature-name... />
+    //  ...
+    //</immutables>
+
+
+    DomElement immutablesElement = (DomElement)grammarNode.selectSingleNode("immutables");
+    if (immutablesElement == null) return;
+
+    final NodeList childNodes = immutablesElement.getChildNodes();
+    for (int i = 0; i < childNodes.getLength(); ++i) {
+      final Node curNode = childNodes.item(i);
+      if (curNode.getNodeType() != DomNode.ELEMENT_NODE) continue;
+      if (this.immutables == null) this.immutables = new ArrayList<Feature>();
+      final Feature feature = buildImmutableFeature((DomElement)curNode);
+      if (feature != null) this.immutables.add(feature);
+    }
+  }
+
+  private final Feature buildImmutableFeature(DomElement immutableElt) {
+    Feature result = null;
+
+    final String featureType = immutableElt.getLocalName();
+    String valueType = immutableElt.getAttribute("valueType");
+    String pValue = immutableElt.getAttribute("p");
+    String value = immutableElt.getTextContent();
+
+
+    // handle default case: when just an elt name w/no attributes or text content
+    // create a feature of type=name, value=(Boolean)true, p=1.0 to match against
+    // AtnParseBasedTokenizer feature for a parse from a prior grammar.
+    if ((value == null || "".equals(value)) && valueType == null && (pValue == null || "".equals(pValue))) {
+      result = new Feature();
+      result.setType(featureType);
+      result.setValue(new Boolean(true));
+      result.setP(1.0);
+    }
+    else {
+      //todo: support building other features if/when necessary
+    }
+
+    return result;
   }
 
   private void loadRules(DomElement rulesElement) {
