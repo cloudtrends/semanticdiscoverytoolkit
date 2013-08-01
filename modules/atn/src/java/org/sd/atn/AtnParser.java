@@ -130,7 +130,7 @@ public class AtnParser {
     result.continueParsing();
 
     while (result.getNumParses() == 0 && !options.getConsumeAllText()) {
-      firstToken = firstToken.getTokenizer().getSmallestToken(firstToken.getStartIndex()).getNextToken();
+      firstToken = getSmallestToken(firstToken).getNextToken();
       if (firstToken == null) break;
 
       if (AtnState.getTraceFlow()) {
@@ -222,5 +222,18 @@ public class AtnParser {
   private final AtnParseResult buildParseResult(Token firstToken, int seekStartIndex, AtnParseOptions options,
                                                 Set<Integer> stopList, DataProperties overrides, AtomicBoolean die) {
     return new AtnParseResult(grammar, firstToken, seekStartIndex, options, stopList, overrides, die);
+  }
+
+  private final Token getSmallestToken(Token firstToken) {
+    Token result = null;
+
+    if (grammar.isImmutable(firstToken)) {
+      result = firstToken;
+    }
+    else {
+      result = firstToken.getTokenizer().getSmallestToken(firstToken.getStartIndex());
+    }
+
+    return result;
   }
 }
