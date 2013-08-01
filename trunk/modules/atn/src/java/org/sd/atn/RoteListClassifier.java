@@ -813,8 +813,10 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
           }
         }
         else {
-          System.out.println(new Date() + ": WARNING : Unrecognized 'classifiers' sub-element '" +
-                             nodeName + "'. Expecting 'classifier' or 'feature'.");
+          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+            System.out.println(new Date() + ": WARNING : Unrecognized 'classifiers' sub-element '" +
+                               nodeName + "'. Expecting 'classifier' or 'feature'.");
+          }
         }
       }
     }
@@ -1214,7 +1216,9 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
       final Object classifierObject = classifierName != null && !"".equals(classifierName) ? resourceManager.getResource(classifierName) : null;
       if (classifierObject == null) {
-        System.out.println(new Date() + ": WARNING : RoteListClassifier unknown classifier '" + classifierName + "'");
+        if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          System.out.println(new Date() + ": WARNING : RoteListClassifier unknown classifier '" + classifierName + "'");
+        }
       }
       else {
         if (classifierObject instanceof AtnStateTokenClassifier) {
@@ -1222,9 +1226,11 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
           result = (AtnStateTokenClassifier)classifierObject;
         }
         else {
-          System.out.println(new Date() + ": WARNING : classifier '" +
-                             classifierName + "' is *NOT* an AtnStateTokenClassifier (" +
-                             classifierObject.getClass().getName() + ")");
+          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+            System.out.println(new Date() + ": WARNING : classifier '" +
+                               classifierName + "' is *NOT* an AtnStateTokenClassifier (" +
+                               classifierObject.getClass().getName() + ")");
+          }
         }
       }
 

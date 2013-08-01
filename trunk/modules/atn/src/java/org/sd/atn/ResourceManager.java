@@ -178,7 +178,9 @@ public class ResourceManager {
       if (result != null) {
         if (resourceName != null) {
           name2resource.put(resourceName, result);
-          System.out.println(new Date() + ": ResourceManager built/stored '" + resourceName + "' resource.");
+          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+            System.out.println(new Date() + ": ResourceManager built/stored '" + resourceName + "' resource.");
+          }
 
           if (metaData == null) metaData = new LinkedHashSet<MetaData>();
           metaData.add(new XmlMetaData(resourceElement, extraArgs));
@@ -226,7 +228,11 @@ public class ResourceManager {
     if (resourceName != null) {
       result = name2resource.get(resourceName);
 
-      if (result != null) System.out.println(new Date() + ": ResourceManager retrieved '" + resourceName + "' resource.");
+      if (result != null) {
+        if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          System.out.println(new Date() + ": ResourceManager retrieved '" + resourceName + "' resource.");
+        }
+      }
     }
 
     return result;
@@ -273,8 +279,10 @@ public class ResourceManager {
       final DomNode classnameNode = resourceElement.selectSingleNode("jclass");
       if (classnameNode == null) {
         if (disableLoad || disableResources) {
-          System.out.println("*** WARNING: ResourceManager(disabled) missing required xpath 'jclass' relative to '" +
-                             resourceElement.getLocalName() + "' node!");
+          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+            System.out.println("*** WARNING: ResourceManager(disabled) missing required xpath 'jclass' relative to '" +
+                               resourceElement.getLocalName() + "' node!");
+          }
           return null;
         }
         else {
@@ -286,13 +294,17 @@ public class ResourceManager {
       classname = classnameNode.getTextContent().trim();
       final Class theClass = Class.forName(classname);
 
-      System.out.println(new Date() + ": ResourceManager constructing '" + classname + "' resource.");
+      if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+        System.out.println(new Date() + ": ResourceManager constructing '" + classname + "' resource.");
+      }
 
       result = ReflectUtil.constructInstance(theClass, args);
     }
     catch (ClassNotFoundException e) {
       if (disableLoad || disableResources) {
-        System.out.println("*** WARNING : ResourceManager(disabled) unable to load '" + classname + "'");
+        if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          System.out.println("*** WARNING : ResourceManager(disabled) unable to load '" + classname + "'");
+        }
       }
       else {
         throw new IllegalArgumentException(e);

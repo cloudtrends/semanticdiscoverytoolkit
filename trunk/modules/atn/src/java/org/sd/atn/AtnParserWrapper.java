@@ -45,7 +45,9 @@ public class AtnParserWrapper {
     final String parserFileName = parserElement.getAttributeValue("file", null);
     if (parserFileName != null) {
       final File parserFile = resourceManager.getOptions().getWorkingFile(parserFileName, "workingDir");
-      System.out.println(new Date() + ": AtnParserWrapper loading parserFile '" + parserFile.getAbsolutePath() + "'.");
+      if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+        System.out.println(new Date() + ": AtnParserWrapper loading parserFile '" + parserFile.getAbsolutePath() + "'.");
+      }
       if (parserFile.exists()) {
         try {
           final DomElement parserFileElement
@@ -249,7 +251,9 @@ public class AtnParserWrapper {
       if ((tokenBreakLimit == 0 && maxWordCount > 0) || (this.maxWordCount > tokenBreakLimit)) {
         tokenizerOptions.setTokenBreakLimit(maxWordCount);
       }
-      System.out.println(new Date() + ": AtnParserWrapper (" + id + ") tokenBreakLimit=" + tokenizerOptions.getTokenBreakLimit());
+      if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+        System.out.println(new Date() + ": AtnParserWrapper (" + id + ") tokenBreakLimit=" + tokenizerOptions.getTokenBreakLimit());
+      }
     }
   }
 

@@ -168,7 +168,9 @@ public class ConditionalClassifier extends AbstractAtnStateTokenClassifier {
         parentNode.addChild(executor);
       }
       else {
-        System.out.println("WARNING: ConditionalClassifier.loadStatements encountered unrecognized term '" + childNodeName + "'");
+        if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          System.out.println("WARNING: ConditionalClassifier.loadStatements encountered unrecognized term '" + childNodeName + "'");
+        }
       }
 
       // operator recursion

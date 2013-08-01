@@ -771,7 +771,7 @@ public class AtnState {
   private Token computeRevisedToken() {
     Token result = null;
 
-    if (!isSkipped()) {
+    if (!isSkipped() && !rule.getGrammar().isImmutable(inputToken)) {
       result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), inputToken.getRevisedToken(), true, inputToken, true, false, this);
     }
 
