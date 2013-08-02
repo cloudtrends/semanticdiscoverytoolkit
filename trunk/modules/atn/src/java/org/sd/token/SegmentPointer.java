@@ -104,7 +104,7 @@ public class SegmentPointer implements Serializable {
     return _textEnd;
   }
 
-  public void setEntPtr(int endPtr) {
+  public void setEndPtr(int endPtr) {
     this.endPtr = endPtr;
   }
 
@@ -116,7 +116,9 @@ public class SegmentPointer implements Serializable {
   }
   public String getWordText() {
     if (_wordText == null) {
-      _wordText = input.substring(getTextStart(), getTextEnd());
+      final int textStart = getTextStart();
+      final int textEnd = getTextEnd();
+      _wordText = (textStart < textEnd) ? input.substring(textStart, textEnd) : "";
     }
     return _wordText;
   }
