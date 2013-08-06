@@ -98,8 +98,13 @@ public class PhraseIndex <T> {
   /**
    * Get the ranked (from lowest to highest distance) retrieval results for the
    * given string.
+   *
+   * @param inputString  Original input string (for reference).
+   * @param words  Normalized words (for lookup).
+   *
+   * @return retrieval results.
    */
-  public List<RetrievalResult<T>> get(String[] words) {
+  public List<RetrievalResult<T>> get(String inputString, String[] words) {
     List<RetrievalResult<T>> result = null;
 
     // Algorithm:
@@ -159,61 +164,66 @@ public class PhraseIndex <T> {
     }
 
     if (maxIxCount > 0) {
-      final CharDictionary dictionary = new CharDictionary();
-      final char[] inputChars = dictionary.lookup(words);
       result = new ArrayList<RetrievalResult<T>>();
 
-      // Identify words that must be present in retrieved phrase
-      final Set<String> mustHaveWords = new HashSet<String>();
-      for (String word : words) {
-        final Integer cardinality = word2cardinality.get(word);
-        if (mandatoryWords.contains(word) || (cardinality != null && cardinality == minCardinality)) {
-          mustHaveWords.add(word);
+      // hook to bypass default matching for injecting special treatment
+      if (!bypassDefaultMatching(result, inputString, words, word2cardinality, values, maxIxCount)) {
+
+        final CharDictionary dictionary = new CharDictionary();
+        final char[] inputChars = dictionary.lookup(words);
+
+        // Identify words that must be present in retrieved phrase
+        final Set<String> mustHaveWords = new HashSet<String>();
+        for (String word : words) {
+          final Integer cardinality = word2cardinality.get(word);
+          if (mandatoryWords.contains(word) || (cardinality != null && cardinality == minCardinality)) {
+            mustHaveWords.add(word);
+          }
         }
-      }
-      final Set<Character> mustHaveWordChars = new HashSet<Character>();
-      for (String mustHaveWord : mustHaveWords) {
-        mustHaveWordChars.add(dictionary.lookup(mustHaveWord));
-      }
+        final Set<Character> mustHaveWordChars = new HashSet<Character>();
+        for (String mustHaveWord : mustHaveWords) {
+          mustHaveWordChars.add(dictionary.lookup(mustHaveWord));
+        }
 
-      for (Map.Entry<T, Integer> entry : values.entrySet()) {
-        final T item = entry.getKey();
-        final Integer count = entry.getValue();
-        if (count < maxIxCount) continue;  // consider only most frequent values
+        for (Map.Entry<T, Integer> entry : values.entrySet()) {
+          final T item = entry.getKey();
+          final Integer count = entry.getValue();
+          if (count < maxIxCount) continue;  // consider only most frequent values
 
-        final List<String[]> wordLists = item2words.get(item);
-        if (wordLists != null) {
-          String[] bestWords = null;
-          int bestDist = Integer.MAX_VALUE;
-          for (String[] wordList : wordLists) {
-            //final char[] storedChars = dictionary.lookup(wordList);
+          final List<String[]> wordLists = item2words.get(item);
+          if (wordLists != null) {
+            String[] bestWords = null;
+            int bestDist = Integer.MAX_VALUE;
+            for (String[] wordList : wordLists) {
+              //final char[] storedChars = dictionary.lookup(wordList);
 
-            boolean hasMustHave = false;
-            final char[] storedChars = new char[wordList.length];
-            for (int i = 0; i < wordList.length; ++i) {
-              final String word = wordList[i];
-              final char wordChar = dictionary.lookup(word);
-              storedChars[i] = wordChar;
-              if (mustHaveWordChars.contains(wordChar)) {
-                // currently: true if *any* (not necessarily *all*) are present.
-                // note that this allows for loose alternatives, probably with
-                // lower scores, to be considered.
-                hasMustHave = true;
+              boolean hasMustHave = false;
+              final char[] storedChars = new char[wordList.length];
+              for (int i = 0; i < wordList.length; ++i) {
+                final String word = wordList[i];
+                final char wordChar = dictionary.lookup(word);
+                storedChars[i] = wordChar;
+                if (mustHaveWordChars.contains(wordChar)) {
+                  // currently: true if *any* (not necessarily *all*) are present.
+                  // note that this allows for loose alternatives, probably with
+                  // lower scores, to be considered.
+                  hasMustHave = true;
+                }
+              }
+              if (!hasMustHave) continue;
+
+
+              final int dist = getEditDistance(item, storedChars, inputChars);
+              if (dist < bestDist) {
+                bestDist = dist;
+                bestWords = wordList;
+
+                if (dist == 0) break;
               }
             }
-            if (!hasMustHave) continue;
-
-
-            final int dist = getEditDistance(item, storedChars, inputChars);
-            if (dist < bestDist) {
-              bestDist = dist;
-              bestWords = wordList;
-
-              if (dist == 0) break;
+            if (bestDist < Integer.MAX_VALUE) {
+              result.add(new RetrievalResult<T>(item, maxIxCount - bestDist, bestWords, words));
             }
-          }
-          if (bestDist < Integer.MAX_VALUE) {
-            result.add(new RetrievalResult<T>(item, maxIxCount - bestDist, bestWords, words));
           }
         }
       }
@@ -221,6 +231,26 @@ public class PhraseIndex <T> {
 
     if (result != null) Collections.sort(result);
     return result;
+  }
+
+  /**
+   * Hook for extenders to override default matching given lookup info.
+   *
+   * @param result  Output collector for results.
+   * @param inputString  Original input string.
+   * @param words  Normalized input words.
+   * @param word2cardinality  Cardinality of retrieved values for each word.
+   * @param values  Values retrieved w/inst freq across words.
+   * @param maxIxCount  Maximum intersection count (freq) of values across words
+   *                    (note: this is the highest value in values for any key)
+   *
+   * @return true if matching can be bypassed or false to continue with default matching.
+   */
+  protected boolean bypassDefaultMatching(List<RetrievalResult<T>> result,
+                                          String inputString, String[] words,
+                                          Map<String, Integer> word2cardinality,
+                                          Map<T, Integer> values, int maxIxCount) {
+    return false;
   }
 
   protected int getEditDistance(T storedItem, char[] storedChars, char[] inputChars) {
@@ -252,6 +282,10 @@ public class PhraseIndex <T> {
 
     public int getScore() {
       return score;
+    }
+
+    public void setScore(int score) {
+      this.score = score;
     }
 
     public String[] getMatchedWords() {
