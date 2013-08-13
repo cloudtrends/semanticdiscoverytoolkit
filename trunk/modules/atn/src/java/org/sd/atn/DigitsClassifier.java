@@ -123,7 +123,9 @@ public class DigitsClassifier extends RoteListClassifier {
     }
 
     if (result && featureName != null && !"".equals(featureName)) {
-      token.setFeature(featureName, text, this);
+      if (!token.hasFeatures() || !token.getFeatures().hasFeatureType(featureName)) {
+        token.setFeature(featureName, text, this);
+      }
     }
 
     return result;

@@ -124,6 +124,21 @@ public class Features {
     return result;
   }
 
+  public boolean hasFeatureType(String featureType) {
+    boolean result = false;
+
+    if (featureType != null) {
+      for (Feature feature: theFeatures) {
+        if (featureType.equals(feature.getType())) {
+          result = true;
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
   /**
    * Get all features matching the constraint.
    *
