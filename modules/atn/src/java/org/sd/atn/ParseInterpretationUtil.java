@@ -364,6 +364,27 @@ public class ParseInterpretationUtil {
     return result;
   }
 
+  public static final List<String> getInterpAttributes(Tree<XmlLite.Data> interpTree, String fromNode, String attribute) {
+    List<String> result = null;
+
+    for (TraversalIterator<XmlLite.Data> iter = interpTree.iterator(Tree.Traversal.DEPTH_FIRST);
+         iter.hasNext(); ) {
+      final Tree<XmlLite.Data> curNode = iter.next();
+      final XmlLite.Tag tag = curNode.getData().asTag();
+      if (tag != null) {
+        if (fromNode == null || fromNode.equals(tag.name)) {
+          final String att = tag.attributes.get(attribute);
+          if (att != null) {
+            if (result == null) result = new ArrayList<String>();
+            result.add(att);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
   public static final boolean hasInterpNode(Tree<XmlLite.Data> interpTree, String nodeName) {
     return hasInterpAttribute(interpTree, nodeName, null);
   }
