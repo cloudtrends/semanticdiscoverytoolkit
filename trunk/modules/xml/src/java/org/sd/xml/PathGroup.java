@@ -184,7 +184,14 @@ public class PathGroup {
   public void rebuildText() {
     wordCounts.clear();
     this.text.setLength(0);
+
+    this.commonPathIndex = -1;
     for (Path path : paths) {
+      int idx = computeCommonPathIndex(path);
+      if(commonPathIndex >= 0)
+        this.commonPathIndex = Math.min(idx, this.commonPathIndex);
+      else
+        this.commonPathIndex = idx;
       addText(path);
     }
   }
