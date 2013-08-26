@@ -712,6 +712,9 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
           else if (globalAttributes != null) {
             termAttributes = new HashMap<String, String>(globalAttributes);
           }
+          else {
+            termAttributes = null;
+          }
         }
         addTermAttributes(term, termAttributes);
       }
