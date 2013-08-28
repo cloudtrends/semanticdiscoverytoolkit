@@ -192,7 +192,7 @@ public class DomNamedNodeMap implements NamedNodeMap {
     return arg;
   }
 
-  private boolean setAttribute(String name, String value) {
+  public boolean setAttribute(String name, String value) {
     final boolean changed = setValue(null, name, value);
     if (changed) {
       _attributeNodes = null;
@@ -200,7 +200,7 @@ public class DomNamedNodeMap implements NamedNodeMap {
     return changed;
   }
 
-  private boolean setAttributeNS(String nsUri, String prefix, String name, String value) {
+  public boolean setAttributeNS(String nsUri, String prefix, String name, String value) {
     final boolean changed = setValue(prefix, name, value);
     if (changed) {
       _attributeNodes = null;
