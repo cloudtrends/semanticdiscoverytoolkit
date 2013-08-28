@@ -36,6 +36,7 @@ import org.sd.token.Token;
 import org.sd.token.TokenClassifierHelper;
 import org.sd.util.Usage;
 import org.sd.xml.DomElement;
+import org.sd.xml.DomNamedNodeMap;
 import org.sd.xml.DomNode;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -111,12 +112,12 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   //
   // <roteListType name='optionalName' caseSensitive='defaultCaseSensitivity' classFeature='...'>
   //   <jclass>org.sd.atn.RoteListClassifier</jclass>
-  //   <terms caseSensitive='...' classFeature='...' ...collective term attributes...>
+  //   <terms caseSensitive='...' classFeature='...' pluralize='true|false' genitivize='true|false' ...collective term attributes...>
   //     <term ...single term attributes...>...</term>
   //     ...
   //   </terms>
   //   ...
-  //   <textfile caseSensitive='...' classFeature='...' _keyFeature='...' ...collective term attributes...>
+  //   <textfile caseSensitive='...' classFeature='...' _keyFeature='...' pluralize='true|false' genitivize='true|false' ...collective term attributes...>
   //   ...
   //   <regexes ...>   // see RegexData
   //     <regex ...>...</regex>
@@ -196,6 +197,12 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
     final boolean reset = classifierIdElement.getAttributeBoolean("reset", false);
     if (reset) result.reset();
+
+    final boolean pluralize = classifierIdElement.getAttributeBoolean("pluralize", false);
+    if (pluralize) result.pluralize();
+
+    final boolean genitivize = classifierIdElement.getAttributeBoolean("genitivize", false);
+    if (genitivize) result.genitivize();
 
     final NodeList childNodes = classifierIdElement.getChildNodes();
     final int numChildNodes = childNodes.getLength();
@@ -427,6 +434,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private boolean trace;
     private TokenClassifierHelper tokenClassifierHelper;
     private boolean hasOnlyTests;
+    private boolean pluralize;
+    private boolean genitivize;
 
     public Terms(boolean caseSensitive, String classFeature, boolean isStopwords, int userDefinedMaxWordCount, TokenClassifierHelper tokenClassifierHelper) {
       this.caseSensitive = caseSensitive;
@@ -442,6 +451,16 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       this.trace = false;
       this.tokenClassifierHelper = tokenClassifierHelper;
       this.hasOnlyTests = true;
+      this.pluralize = false;
+      this.genitivize = false;
+    }
+
+    public void pluralize() {
+      this.pluralize = true;
+    }
+
+    public void genitivize() {
+      this.genitivize = true;
     }
 
     public void setMaxWordCount(int maxWordCount) {
@@ -533,7 +552,27 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
         if (term2attributes.containsKey(key)) {
           result = true;
+        }
 
+        if (!result && pluralize) {
+          final String dkey = depluralize(key);
+          if (dkey != null && term2attributes.containsKey(dkey)) {
+            key = dkey;
+            result = true;
+            token.setFeature("pluralized", "true", this);
+          }
+        }
+
+        if (!result && genitivize) {
+          final String dkey = degenitivize(key);
+          if (dkey != null && term2attributes.containsKey(dkey)) {
+            key = dkey;
+            result = true;
+            token.setFeature("genitivized", "true", this);
+          }
+        }
+
+        if (result) {
           if (trace) {
             System.out.println("\tfound '" + key + "' in term2attributes");
           }
@@ -627,6 +666,26 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         result = term2attributes.get(key);
       }
 
+      if (!matched && pluralize) {
+        final String dkey = depluralize(key);
+        if (dkey != null && term2attributes.containsKey(dkey)) {
+          matched = true;
+          key = dkey;
+          result = new HashMap<String, String>(term2attributes.get(dkey));
+          result.put("pluralized", "true");
+        }
+      }
+
+      if (!matched && genitivize) {
+        final String dkey = degenitivize(key);
+        if (dkey != null && term2attributes.containsKey(dkey)) {
+          matched = true;
+          key = dkey;
+          result = new HashMap<String, String>(term2attributes.get(dkey));
+          result.put("genitivized", "true");
+        }
+      }
+
       if (!matched && regexes != null) {
         result = regexes.matches(key);
         if (result != null) {
@@ -669,18 +728,56 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       return result;
     }
 
+    private final String depluralize(String key) {
+      String result = null;
+
+      final int keylen = key.length();
+      if (keylen > 0) {
+        final char lastchar = key.charAt(keylen - 1);
+        if ((lastchar == 's' || lastchar == 'S') && keylen > 1) {
+          final char penultimatechar = key.charAt(keylen - 2);
+          if (penultimatechar != '\'') {
+            result = key.substring(0, keylen - 1);
+          }
+        }
+      }
+
+      return result;
+    }
+
+    private final String degenitivize(String key) {
+      String result = null;
+
+      final int keylen = key.length();
+      if (keylen > 2) {
+        final char lastchar = key.charAt(keylen - 1);
+        final char penultimatechar = key.charAt(keylen - 2);
+        if ((lastchar == 's' || lastchar == 'S') && (penultimatechar == '\'')) {
+          result = key.substring(0, keylen - 2);
+        }
+      }
+
+      return result;
+    }
+
     protected final void loadTerms(DomElement termsElement) {
 
-      // get global attributes to apply to each term (ignoring 'caseSensitive' attribute)
+      // get global attributes to apply to each term (ignoring 'caseSensitive', 'pluralize', 'genitivize' attributes)
       Map<String, String> globalAttributes = null;
       if (termsElement.hasAttributes()) {
         final Map<String, String> termsElementAttributes = termsElement.getDomAttributes().getAttributes();
-        final int minAttrCount = termsElementAttributes.containsKey("caseSensitive") ? 2 : 1;
+        int minAttrCount = 1;
+        if (termsElementAttributes.containsKey("caseSensitive")) ++minAttrCount;
+        if (termsElementAttributes.containsKey("pluralize")) ++minAttrCount;
+        if (termsElementAttributes.containsKey("genitivize")) ++minAttrCount;
+
         if (termsElementAttributes.size() >= minAttrCount) {
           globalAttributes = new HashMap<String, String>(termsElementAttributes);
 
-          // ignore caseSensitive attribute
+          // ignore caseSensitive, pluralize, genitivize attributes
           globalAttributes.remove("caseSensitive");
+          globalAttributes.remove("pluralize");
+          globalAttributes.remove("genitivize");
         }
       }
 
@@ -698,16 +795,17 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         // only load attributes for non-stopwords
         if (!isStopwords) {
           if (termElement.hasAttributes()) {
-            termAttributes = termElement.getDomAttributes().getAttributes();
+            final DomNamedNodeMap domNodeMap = termElement.getDomAttributes();
 
             // apply global attributes, but don't clobber term-level overrides
             if (globalAttributes != null) {
               for (Map.Entry<String, String> entry : globalAttributes.entrySet()) {
                 if (!termAttributes.containsKey(entry.getKey())) {
-                  termAttributes.put(entry.getKey(), entry.getValue());
+                  domNodeMap.setAttribute(entry.getKey(), entry.getValue());
                 }
               }
             }
+            termAttributes = domNodeMap.getAttributes();
           }
           else if (globalAttributes != null) {
             termAttributes = new HashMap<String, String>(globalAttributes);
@@ -923,6 +1021,8 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private Terms caseInsensitiveTerms;
     private int maxWordCount;
     private TokenClassifierHelper tokenClassifierHelper;
+    private boolean pluralize;
+    private boolean genitivize;
 
     public TermsBundle(boolean isStopwords, TokenClassifierHelper tokenClassifierHelper) {
       this.isStopwords = isStopwords;
@@ -930,11 +1030,27 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       this.caseInsensitiveTerms = null;
       this.maxWordCount = 0;
       this.tokenClassifierHelper = tokenClassifierHelper;
+      this.pluralize = false;
+      this.genitivize = false;
     }
 
     void setTrace(boolean trace) {
       if (caseSensitiveTerms != null) caseSensitiveTerms.setTrace(trace);
       if (caseInsensitiveTerms != null) caseInsensitiveTerms.setTrace(trace);
+    }
+
+    public void pluralize() {
+      this.pluralize = true;
+
+      if (caseSensitiveTerms != null) caseSensitiveTerms.pluralize();
+      if (caseInsensitiveTerms != null) caseInsensitiveTerms.pluralize();
+    }
+
+    public void genitivize() {
+      this.genitivize = true;
+
+      if (caseSensitiveTerms != null) caseSensitiveTerms.genitivize();
+      if (caseInsensitiveTerms != null) caseInsensitiveTerms.genitivize();
     }
 
     public int getMaxWordCount() {
@@ -1070,6 +1186,22 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         theTerms = this.caseInsensitiveTerms;
       }
 
+      if (pluralize) {
+        theTerms.pluralize();
+      }
+      else {
+        this.pluralize = theElement.getAttributeBoolean("pluralize", false);
+        if (pluralize) theTerms.pluralize();
+      }
+
+      if (genitivize) {
+        theTerms.genitivize();
+      }
+      else {
+        this.genitivize = theElement.getAttributeBoolean("genitivize", false);
+        if (genitivize) theTerms.genitivize();
+      }
+
       return theTerms;
     }
   }
@@ -1077,15 +1209,33 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
   protected static final class TermsWithStopwords {
     private TermsBundle terms;
     private TermsWithStopwords stopwords;
+    private boolean pluralize;
+    private boolean genitivize;
 
     public TermsWithStopwords() {
       this.terms = null;
       this.stopwords = null;
+      this.pluralize = false;
+      this.genitivize = false;
     }
 
     public void reset() {
       if (terms != null) terms.reset();
       if (stopwords != null) stopwords.reset();
+    }
+
+    public void pluralize() {
+      this.pluralize = true;
+
+      if (terms != null) terms.pluralize();
+      if (stopwords != null) stopwords.pluralize();
+    }
+
+    public void genitivize() {
+      this.genitivize = true;
+
+      if (terms != null) terms.genitivize();
+      if (stopwords != null) stopwords.genitivize();
     }
 
     public void setTrace(boolean trace) {
@@ -1103,6 +1253,12 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
     public void setTerms(TermsBundle terms) {
       this.terms = terms;
+      if (pluralize && terms != null) {
+        terms.pluralize();
+      }
+      if (genitivize && terms != null) {
+        terms.genitivize();
+      }
     }
 
     public TermsWithStopwords getStopwords() {
@@ -1111,6 +1267,12 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
     public void setStopwords(TermsWithStopwords stopwords) {
       this.stopwords = stopwords;
+      if (pluralize && stopwords != null) {
+        stopwords.pluralize();
+      }
+      if (genitivize && stopwords != null) {
+        stopwords.genitivize();
+      }
     }
 
     public boolean hasStopwords() {
