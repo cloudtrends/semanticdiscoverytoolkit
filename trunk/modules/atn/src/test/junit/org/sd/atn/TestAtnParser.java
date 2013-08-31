@@ -2186,6 +2186,37 @@ public class TestAtnParser extends TestCase {
                  }, true);
   }
 
+  public void testAmbiguousTokenSucceeds() throws IOException {
+    //
+    // Z <- x? y? z
+    //
+    // where "yz" is either "y" or "z"
+    //
+    // yz
+    // x yz
+    //
+
+    final AtnParser test31_Parser = AtnParseTest.buildParser("<grammar><classifiers><y><jclass>org.sd.atn.RoteListClassifier</jclass><terms><term>yz</term></terms></y><z><jclass>org.sd.atn.RoteListClassifier</jclass><terms><term>yz</term></terms></z></classifiers><rules><Z start='true'><x optional='true'/><y optional='true'/><z /></Z></rules></grammar>", false);
+
+    final StandardTokenizer tokenizer31a = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "yz");
+    runParseTest("parserTest_31a",
+                 test31_Parser,
+                 tokenizer31a,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z (z yz))",
+                 }, true);
+
+    final StandardTokenizer tokenizer31b = AtnParseTest.buildTokenizer("<tokenizer><revisionStrategy>SO</revisionStrategy></tokenizer>", "x yz");
+    runParseTest("parserTest_31b",
+                 test31_Parser,
+                 tokenizer31b,
+                 "<parseOptions><skipTokenLimit>0</skipTokenLimit><consumeAllText>true</consumeAllText></parseOptions>",
+                 new String[] {
+                   "(Z x (z yz))",
+                 }, true);
+  }
+
 /* Not necessary -- essentially same as testTokenTestRuleStartForConstituentStep()
   public void testTokenTestRuleStartForPopTestStep() throws IOException {
     //
