@@ -768,11 +768,28 @@ public class AtnState {
     return result;
   }
 
-  private Token computeRevisedToken() {
+  private final Token computeRevisedToken() {
     Token result = null;
 
     if (!isSkipped() && !rule.getGrammar().isImmutable(inputToken)) {
       result = rule.getGrammar().getAcceptedToken(rule.getTokenFilterId(), inputToken.getRevisedToken(), true, inputToken, true, false, this);
+    }
+
+    return result;
+  }
+
+  private final boolean hasNextToken() {
+    boolean result = true;
+
+    if (getRuleStep().consumeToken()) {
+      result = false;
+
+      if (inputToken.getNextToken() != null) {
+        result = true;
+      }
+      else if (computeRevisedToken() != null) {
+        result = true;
+      }
     }
 
     return result;
@@ -1541,8 +1558,24 @@ public class AtnState {
         }
       }
 
+      // when the last input token matches an optional non-terminal rule step
+      if (inc && !isPop && meetsRequirements && !curstate.hasNextToken() && !curstate.isValidEnd(stopList) && curstate.getRuleStep().isOptional()) {
+        // we need to consider branches (e.g., when the ambiguous token also matches a later terminal step)
+        addNextBranchedStates(grammar, states, skipStates, curstate, nextStateNode, stopList, meetsRequirements);
+      }
+
       return foundOne;
     }
+
+    foundOne = addNextBranchedStates(grammar, states, skipStates, curstate, nextStateNode, stopList, meetsRequirements);
+
+    return foundOne;
+  }
+
+  private static boolean addNextBranchedStates(AtnGrammar grammar, LinkedList<AtnState> states, LinkedList<AtnState> skipStates, AtnState curstate, Tree<AtnState> nextStateNode, Set<Integer> stopList, boolean meetsRequirements) {
+
+    boolean foundOne = false;
+    AtnState nextstate = null;
 
     // revise token
     nextstate = curstate.getNextRevisedState();
