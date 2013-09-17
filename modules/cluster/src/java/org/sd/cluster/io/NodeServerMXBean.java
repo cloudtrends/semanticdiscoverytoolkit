@@ -140,6 +140,12 @@ public interface NodeServerMXBean {
    */
   public long getNumDroppedConnections();
 
+  /**
+   * Get the number of connections dropped by the client before the server dropped them.
+   */
+  public long getNumSeveredConnections();
+
+
 //we can't really count the bytes at this level w/out too much overhead
   // /**
   //  * Get the stats for the request bytes received.
