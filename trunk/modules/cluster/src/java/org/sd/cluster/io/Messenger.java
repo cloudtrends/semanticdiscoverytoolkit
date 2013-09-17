@@ -78,7 +78,9 @@ public class Messenger {
     return response;
   }
 
-  public synchronized Message receiveMessage(Context serverContext, ConnectionContext connectionContext) throws IOException {
+  public synchronized Message receiveMessage(Context serverContext, ConnectionContext connectionContext) 
+    throws IOException, ConnectionSeveredException
+  {
     Message message = null;
     final long starttime = System.currentTimeMillis();
 
@@ -97,10 +99,10 @@ public class Messenger {
       sendMessage(response, dataOutput);
     }
     catch (SocketException se) {
-      System.err.println(new Date() +
-                         ": WARNING Messenger.receiveMessage() response connection dropped for clientIP=" +
-                         connectionContext.getInetAddress().getHostAddress() + " response=\n" +
-                         response);
+      throw new 
+        ConnectionSeveredException(new Date() +
+                                   ": WARNING Messenger.receiveMessage() response connection dropped for clientIP=" +
+                                   connectionContext.getInetAddress().getHostAddress() + " response=\n" + response, se);
     }
     catch (IOException e) {
       System.err.println(new Date() + ": Messenger.receiveMessage() unable to send response (to " +

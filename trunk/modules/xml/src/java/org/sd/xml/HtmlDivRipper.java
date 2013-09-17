@@ -52,11 +52,12 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
   private String lastPathId = null;
 
   public HtmlDivRipper(File htmlFile) throws IOException {
-    this(htmlFile, true, true);
+    this(htmlFile, true, true, true);
   }
   public HtmlDivRipper(File htmlFile, 
                        boolean useFullHeadings,
-                       boolean useCapitalization) 
+                       boolean useCapitalization,
+                       boolean correctEncoding) 
     throws IOException 
   {
     this.leafRipper = new XmlLeafNodeRipper(FileUtil.getInputStream(htmlFile), 
@@ -119,6 +120,7 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
       final Tree<XmlLite.Data> leaf = leafRipper.next();
       final TagStack tagStack = leafRipper.getTagStack();
       final Path path = new Path(leaf, tagStack);
+
       if (shouldSkip(path)) 
         continue;
 
@@ -219,9 +221,11 @@ public class HtmlDivRipper implements Iterator<PathGroup> {
       "true".equalsIgnoreCase(properties.getProperty("fullHeadings", "true"));
     final boolean capitalization = 
       "true".equalsIgnoreCase(properties.getProperty("capitalization", "true"));
+    final boolean correctEncoding = 
+      "true".equalsIgnoreCase(properties.getProperty("correctEncdoing", "true"));
 
     DecimalFormat df = new DecimalFormat("#.##");
-    final HtmlDivRipper ripper = new HtmlDivRipper(new File(args[0]), fullHeadings, capitalization);
+    final HtmlDivRipper ripper = new HtmlDivRipper(new File(args[0]), fullHeadings, capitalization, correctEncoding);
     int groupNum = 1;
     while (ripper.hasNext()) {
       final PathGroup pathGroup = ripper.next();

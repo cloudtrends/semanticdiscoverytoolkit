@@ -91,6 +91,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private StatsAccumulator sendTimeStats;
   private StatsAccumulator handleTimeStats;
   private long numDroppedConnections;
+  private long numSeveredConnections;
   // private StatsAccumulator numInBytesStats;
   // private StatsAccumulator numOutBytesStats;
 
@@ -119,6 +120,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     this.sendTimeStats = new StatsAccumulator("SendTimeStats");
     this.handleTimeStats = new StatsAccumulator("HandleTimeStats");
     this.numDroppedConnections = 0L;
+    this.numSeveredConnections = 0L;
     // this.numInBytesStats = new StatsAccumulator("NumInBytesStats");
     // this.numOutBytesStats = new StatsAccumulator("NumOutBytesStats");
 
@@ -260,6 +262,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
       this.sendTimeStats.clear();
       this.handleTimeStats.clear();
       this.numDroppedConnections = 0L;
+      this.numSeveredConnections = 0L;
       // this.numInBytesStats.clear();
       // this.numOutBytesStats.clear();
 
@@ -363,6 +366,13 @@ public class NodeServer extends Thread implements NodeServerMXBean {
    */
   public long getNumDroppedConnections() {
     return numDroppedConnections;
+  }
+
+  /**
+   * Get the number of connections dropped by the client before the server dropped them.
+   */
+  public long getNumSeveredConnections() {
+    return numSeveredConnections;
   }
 
 //we can't really count the bytes at this level w/out too much overhead
@@ -656,6 +666,9 @@ public class NodeServer extends Thread implements NodeServerMXBean {
           //todo: set an upper-limit queue size and use messageQueue.offer instead of add.
           messageQueue.add(new MessageBundle(message, connectionContext));
         }
+      }
+      catch (ConnectionSeveredException cse) {
+        ++numSeveredConnections;
       }
       catch (IOException e) {
         //todo: determine what to do here... failed receiving message/sending response
