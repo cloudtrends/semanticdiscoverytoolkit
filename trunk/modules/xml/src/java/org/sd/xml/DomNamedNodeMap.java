@@ -107,7 +107,9 @@ public class DomNamedNodeMap implements NamedNodeMap {
 
     if (index >= 0 && index < getLength()) {
       DomNode[] attributeNodes = getAttributeNodes(false);
-      result = attributeNodes[index];
+      if (index < attributeNodes.length) {
+        result = attributeNodes[index];
+      }
     }
 
     return result;
@@ -164,6 +166,10 @@ public class DomNamedNodeMap implements NamedNodeMap {
       result = getNamedItem(name);
     }
 
+    if (result != arg) {
+      _attributeNodes = null;
+    }
+
     return arg;
   }
 
@@ -189,6 +195,10 @@ public class DomNamedNodeMap implements NamedNodeMap {
       result = getNamedItemNS(nsUri, name);
     }
 
+    if (result != arg) {
+      _attributeNodes = null;
+    }
+
     return arg;
   }
 
@@ -210,7 +220,7 @@ public class DomNamedNodeMap implements NamedNodeMap {
 
 
   private DomNode[] getAttributeNodes(boolean usingNamespaces) {
-    if (_attributeNodes == null) {
+    if (_attributeNodes == null || _attributeNodes.length != getLength()) {
       _attributeNodes = new DomNode[getLength()];
 
       int attrIdx = 0;
@@ -315,6 +325,10 @@ public class DomNamedNodeMap implements NamedNodeMap {
     final boolean result = attrMap.containsKey(lookupName) && !value.equals(attrMap.get(lookupName));
 
     attrMap.put(lookupName, value);
+
+    if (result) {
+      _attributeNodes = null;
+    }
 
     return result;
   }
