@@ -25,7 +25,12 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.Executors;
@@ -84,6 +89,9 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private long starttime;
   private long endtime;
 
+  private Timer severedConnectionsTimer;
+  private AtomicBoolean reported = new AtomicBoolean(true);
+
   private final Object statsMutex = new Object();
   private StatsAccumulator totalTimeStats;
   private StatsAccumulator receiveTimeStats;
@@ -91,7 +99,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private StatsAccumulator sendTimeStats;
   private StatsAccumulator handleTimeStats;
   private long numDroppedConnections;
-  private long numSeveredConnections;
+  private AtomicLong numSeveredConnections = new AtomicLong(0L);
   // private StatsAccumulator numInBytesStats;
   // private StatsAccumulator numOutBytesStats;
 
@@ -120,7 +128,6 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     this.sendTimeStats = new StatsAccumulator("SendTimeStats");
     this.handleTimeStats = new StatsAccumulator("HandleTimeStats");
     this.numDroppedConnections = 0L;
-    this.numSeveredConnections = 0L;
     // this.numInBytesStats = new StatsAccumulator("NumInBytesStats");
     // this.numOutBytesStats = new StatsAccumulator("NumOutBytesStats");
 
@@ -140,6 +147,16 @@ public class NodeServer extends Thread implements NodeServerMXBean {
             return new Thread(r, nodeName + "-MessageQueueThread");
           }
         });
+
+    this.severedConnectionsTimer = new Timer("severed connections timer");
+    // schedule the timers to start reporting on the next calendar date at 6am
+    Calendar calendar  = Calendar.getInstance();
+    calendar.add(Calendar.DATE,1);
+    calendar.set(Calendar.HOUR_OF_DAY,6);
+    calendar.set(Calendar.MINUTE,00);
+    calendar.set(Calendar.SECOND,00);
+    severedConnectionsTimer.scheduleAtFixedRate(new SeveredConnectionsTimerTask(),
+                                                calendar.getTime(), 86400000 /* every day */);
 
     // initialize thread pools
     this.starttime = System.currentTimeMillis();
@@ -262,7 +279,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
       this.sendTimeStats.clear();
       this.handleTimeStats.clear();
       this.numDroppedConnections = 0L;
-      this.numSeveredConnections = 0L;
+      this.numSeveredConnections.set(0L);
       // this.numInBytesStats.clear();
       // this.numOutBytesStats.clear();
 
@@ -372,7 +389,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
    * Get the number of connections dropped by the client before the server dropped them.
    */
   public long getNumSeveredConnections() {
-    return numSeveredConnections;
+    return numSeveredConnections.get();
   }
 
 //we can't really count the bytes at this level w/out too much overhead
@@ -668,7 +685,8 @@ public class NodeServer extends Thread implements NodeServerMXBean {
         }
       }
       catch (ConnectionSeveredException cse) {
-        ++numSeveredConnections;
+        numSeveredConnections.incrementAndGet();
+        reported.set(false);
       }
       catch (IOException e) {
         //todo: determine what to do here... failed receiving message/sending response
@@ -697,6 +715,47 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     public MessageBundle(Message message, ConnectionContext connectionContext) {
       this.message = message;
       this.connectionContext = connectionContext;
+    }
+  }
+
+  private final class SeveredConnectionsTimerTask extends TimerTask
+  {
+    public boolean cancel()
+    {
+      if(!reported.get() && numSeveredConnections.get() > 0L)
+        reported.set(true);
+      else
+        return true;
+
+      boolean result = true;
+
+      StringBuilder builder = new StringBuilder();
+      builder.append(new Date());
+      builder.append(": WARNING NodeServer had ");
+      builder.append(numSeveredConnections);
+      builder.append(" response connections dropped by clients");
+
+      System.err.println(builder.toString());
+
+      return result;
+    }
+
+    // run the thread, checking the server for any severed connections 
+    // and log a warning if necessary
+    public void run()
+    {
+      if(!reported.get() && numSeveredConnections.get() > 0L)
+        reported.set(true);
+      else
+        return;
+
+      StringBuilder builder = new StringBuilder();
+      builder.append(new Date());
+      builder.append(": WARNING NodeServer had ");
+      builder.append(numSeveredConnections);
+      builder.append(" response connections dropped by clients");
+
+      System.err.println(builder.toString());
     }
   }
 }
