@@ -64,7 +64,7 @@ public class Histogram <T> {
    *
    * @return the added frequency instance.
    */
-  public Frequency<T> add(T element, int freqCount) {
+  public Frequency<T> add(T element, long freqCount) {
     Frequency<T> freq = map.get(element);
     if (freq == null) {
       freq = new Frequency<T>(element, freqCount);
@@ -81,7 +81,7 @@ public class Histogram <T> {
   /**
    * Set the frequency count for the current element.
    */
-  public Frequency<T> set(T element, int freqCount) {
+  public Frequency<T> set(T element, long freqCount) {
     final Frequency<T> freq = new Frequency<T>(element, freqCount);
     map.put(element, freq);
     _frequencies = null;
@@ -134,18 +134,18 @@ public class Histogram <T> {
   /**
    * Get the number of ranks in this histogram.
    */
-  public int getNumRanks() {
-    return map.size();
+  public long getNumRanks() {
+    return (long)map.size();
   }
 
   /**
    * Get the total count across all frequencies.
    */
-  public int getTotalCount() {
-    int result = 0;
+  public long getTotalCount() {
+    long result = 0;
 
-    final int numRanks = getNumRanks();
-    for (int i = 0; i < numRanks; ++i) {
+    final long numRanks = getNumRanks();
+    for (long i = 0; i < numRanks; ++i) {
       result += getFrequencyCount(i);
     }
 
@@ -167,7 +167,7 @@ public class Histogram <T> {
   /**
    * Convenience method to get the maximum frequency count.
    */
-  public int getMaxFrequencyCount() {
+  public long getMaxFrequencyCount() {
     return getFrequencyCount(0);
   }
 
@@ -177,12 +177,16 @@ public class Histogram <T> {
    *
    * @return the frequency or null if there is no frequency with the given rank.
    */
-  public Frequency<T> getRankFrequency(int rank) {
+  public Frequency<T> getRankFrequency(long rank) {
     Frequency<T> result = null;
+
+    // rank might be larger then the map allows
+    if(rank > Integer.MAX_VALUE)
+      return result;
 
     if (rank < map.size()) {
       final List<Frequency<T>> frequencies = getFrequencies();
-      result = frequencies.get(rank);
+      result = frequencies.get((int)rank);
     }
 
     return result;
@@ -194,7 +198,7 @@ public class Histogram <T> {
    *
    * @return the element or null if there is no element with the given rank.
    */
-  public T getElement(int rank) {
+  public T getElement(long rank) {
     T result = null;
 
     final Frequency<T> freq = getRankFrequency(rank);
@@ -211,8 +215,8 @@ public class Histogram <T> {
    *
    * @return the frequency count or -1 if there is no element with the given rank.
    */
-  public int getFrequencyCount(int rank) {
-    int result = -1;
+  public long getFrequencyCount(long rank) {
+    long result = -1;
 
     final Frequency<T> freq = getRankFrequency(rank);
     if (freq != null) {
@@ -227,8 +231,8 @@ public class Histogram <T> {
    *
    * @return the rank or -1 if the element is not found.
    */
-  public int getRank(T element) {
-    int result = -1;
+  public long getRank(T element) {
+    long result = -1;
 
     final Frequency<T> freq = map.get(element);
     if (freq != null) {
@@ -276,17 +280,17 @@ public class Histogram <T> {
     return toString(20);
   }
 
-  public String toString(int maxRanks) {
+  public String toString(long maxRanks) {
     final StringBuilder result = new StringBuilder();
 
-    final int totalCount = getTotalCount();
-    int cumulativeCount = 0;
+    final long totalCount = getTotalCount();
+    long cumulativeCount = 0;
 
-    int numRanks = getNumRanks();
+    long numRanks = getNumRanks();
     if (maxRanks > 0 && maxRanks < numRanks) numRanks = maxRanks;
     final int maxRankDigits = (int)Math.round(MathUtil.log10(numRanks) + 0.5);
 
-    final int maxFreq = getMaxFrequencyCount();
+    final long maxFreq = getMaxFrequencyCount();
     final int maxFreqDigits = (int)Math.round(MathUtil.log10(maxFreq) + 0.5);
 
     // rank  freq  cumulativePct  pct  label
@@ -300,7 +304,7 @@ public class Histogram <T> {
       append("d  %6.2f  %6.2f  %-40s");
 
     result.append("h(").append(getTotalCount()).append('/').append(getNumRanks()).append(")");
-    for (int i = 0; i < numRanks; ++i) {
+    for (long i = 0; i < numRanks; ++i) {
 
       //result.append("\n  ").append(i).append(": ").append(getRankFrequency(i));
 
@@ -324,16 +328,16 @@ public class Histogram <T> {
 
   public class Frequency <T> implements Comparable<Frequency<T>> {
     public final T element;
-    private int frequency;
+    private long frequency;
     private Map<String, String> attributes;
 
-    private Frequency(T element, int frequency) {
+    private Frequency(T element, long frequency) {
       this.element = element;
       this.frequency = frequency;
       this.attributes = null;
     }
 
-    void inc(int amount) {
+    void inc(long amount) {
       this.frequency += amount;
     }
 
@@ -341,7 +345,7 @@ public class Histogram <T> {
       return element;
     }
 
-    public int getFrequency() {
+    public long getFrequency() {
       return frequency;
     }
 
@@ -389,7 +393,13 @@ public class Histogram <T> {
      * Natural ordering is from highest to lowest frequency.
      */
     public int compareTo(Frequency<T> other) {
-      return other.frequency - this.frequency;
+      long v = other.frequency - this.frequency;
+      if(v < Integer.MIN_VALUE)
+        return Integer.MIN_VALUE;
+      else if(v > Integer.MAX_VALUE)
+        return Integer.MAX_VALUE;
+      else
+        return (int)v;
     }
 
     public String toString() {

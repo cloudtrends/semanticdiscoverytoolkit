@@ -24,63 +24,63 @@ import java.util.Collection;
 import java.util.TreeSet;
 
 /**
- * Class to represent a set of integers.
+ * Class to represent a set of longs.
  * <p>
  * @author Spence Koehler
  */
-public class IntegerRange extends AbstractNumericRange implements Serializable {
+public class LongRange extends AbstractNumericRange implements Serializable {
 
   private static final long serialVersionUID = 42L;
 
   /**
    * Construct an empty instance.
    */
-  public IntegerRange() {
+  public LongRange() {
     super();
   }
 
-  public IntegerRange(Collection<String> values) {
-    super();
-    super.parseValues(values);
-  }
-
-  public IntegerRange(String[] values) {
+  public LongRange(Collection<String> values) {
     super();
     super.parseValues(values);
   }
 
-  public IntegerRange(String value) {
+  public LongRange(String[] values) {
+    super();
+    super.parseValues(values);
+  }
+
+  public LongRange(String value) {
     super();
     super.parseValue(value);
   }
 
-  public IntegerRange(int number) {
+  public LongRange(long number) {
     super();
     add(number);
   }
 
-  public IntegerRange(int left, boolean leftInclusive, int right, boolean rightInclusive) {
+  public LongRange(long left, boolean leftInclusive, long right, boolean rightInclusive) {
     super();
     add(left, leftInclusive, right, rightInclusive);
   }
 
-  public IntegerRange(int lowInclusive, int highInclusive) {
+  public LongRange(long lowInclusive, long highInclusive) {
     super();
     add(lowInclusive, highInclusive);
   }
 
-  public IntegerRange(int base, int tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
+  public LongRange(long base, long tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
     super();
     add(base, tolerance, inclusiveStart, inclusiveEnd);
   }
 
-  public int getLow() {
+  public long getLow() {
     boolean didFirst = false;
-    int result = 0;
+    long result = 0;
 
     for (SimpleRange simpleRange : getSimpleRanges()) {
-      if (!didFirst || simpleRange.getLowAsInt(true) < result) {
-        result = simpleRange.getLowAsInt(true);
+      if (!didFirst || simpleRange.getLowAsLong(true) < result) {
+        result = simpleRange.getLowAsLong(true);
         didFirst = true;
       }
     }
@@ -88,13 +88,13 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
     return result;
   }
 
-  public int getHigh() {
+  public long getHigh() {
     boolean didFirst = false;
-    int result = 0;
+    long result = 0;
 
     for (SimpleRange simpleRange : getSimpleRanges()) {
-      if (!didFirst || simpleRange.getHighAsInt(true) > result) {
-        result = simpleRange.getHighAsInt(true);
+      if (!didFirst || simpleRange.getHighAsLong(true) > result) {
+        result = simpleRange.getHighAsLong(true);
         didFirst = true;
       }
     }
@@ -103,20 +103,20 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
   }
 
   /**
-   * Determine whether the other integer range is included in this integer range.
+   * Determine whether the other long range is included in this long range.
    */
-  public boolean includes(IntegerRange other) {
+  public boolean includes(LongRange other) {
     boolean result = false;
 
-    final TreeSet<Integer> myValues = this.getValues();
-    final TreeSet<Integer> otherValues = other.getValues();
+    final TreeSet<Long> myValues = this.getValues();
+    final TreeSet<Long> otherValues = other.getValues();
 
     if (myValues == null) {
       result = true;
     }
     else if (otherValues != null) {
       if (myValues.size() >= otherValues.size()) {
-        for (Integer otherValue : otherValues) {
+        for (Long otherValue : otherValues) {
           if (!myValues.contains(otherValue)) {
             result = false;
             break;
@@ -129,14 +129,14 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
   }
 
   /**
-   * Compare this integer range to the other with return values:
+   * Compare this long range to the other with return values:
    * <ul>
    * <li>-1: If this range's low is less than the other range's low or this range's high is less than the other range's high</li>
    * <li> 0: If this range is the same as or includes all of the other's values, including if both are infinite</li>
    * <li> 1: If the other range's low is less than this range's low or the other range's high is less than this range's high</li>
    * </ul>
    */
-  public int compareTo(IntegerRange other) {
+  public int compareTo(LongRange other) {
     int result = 0;
 
     if (this.getLow() < other.getLow() && this.getHigh() < other.getHigh()) {
@@ -154,8 +154,8 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
    *
    * @return the discrete values or null.
    */
-  public TreeSet<Integer> getValues() {
-    TreeSet<Integer> result = new TreeSet<Integer>();
+  public TreeSet<Long> getValues() {
+    TreeSet<Long> result = new TreeSet<Long>();
 
     for (SimpleRange range : getSimpleRanges()) {
       final Integer curSize = range.size();
@@ -164,11 +164,11 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
         break;
       }
       else {
-        int low = range.getLowAsInt(false);
+        long low = range.getLowAsLong(false);
         if (!range.includesLow()) ++low;
-        int high = range.getHighAsInt(false);
+        long high = range.getHighAsLong(false);
         if (!range.includesHigh()) --high;
-        for (int i = low; i <= high; ++i) {
+        for (long i = low; i <= high; ++i) {
           result.add(i);
         }
       }
@@ -177,99 +177,99 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
     return result;
   }
 
-  public final IntegerRange add(int singleValue) {
+  public final LongRange add(long singleValue) {
     return add(singleValue, true);
   }
 
-  public final IntegerRange add(int singleValue, boolean combineIfContiguous) {
-    super.addRange(new SimpleIntegerRange(singleValue), combineIfContiguous);
+  public final LongRange add(long singleValue, boolean combineIfContiguous) {
+    super.addRange(new SimpleLongRange(singleValue), combineIfContiguous);
     return this;
   }
 
-  public final IntegerRange add(int lowInclusive, int highInclusive) {
+  public final LongRange add(long lowInclusive, long highInclusive) {
     return add(lowInclusive, highInclusive, true);
   }
 
-  public final IntegerRange add(int lowInclusive, int highInclusive, boolean combineIfContiguous) {
-    super.addRange(new SimpleIntegerRange(lowInclusive, true, highInclusive, true), combineIfContiguous);
+  public final LongRange add(long lowInclusive, long highInclusive, boolean combineIfContiguous) {
+    super.addRange(new SimpleLongRange(lowInclusive, true, highInclusive, true), combineIfContiguous);
     return this;
   }
 
-  public final IntegerRange add(int left, boolean leftInclusive, int right, boolean rightInclusive) {
+  public final LongRange add(long left, boolean leftInclusive, long right, boolean rightInclusive) {
     return add(left, leftInclusive, right, rightInclusive, true);
   }
 
-  public final IntegerRange add(int left, boolean leftInclusive, int right, boolean rightInclusive, boolean combineIfContiguous) {
-    super.addRange(new SimpleIntegerRange(left, leftInclusive, right, rightInclusive), combineIfContiguous);
+  public final LongRange add(long left, boolean leftInclusive, long right, boolean rightInclusive, boolean combineIfContiguous) {
+    super.addRange(new SimpleLongRange(left, leftInclusive, right, rightInclusive), combineIfContiguous);
     return this;
   }
 
-  public final IntegerRange add(int base, int tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
+  public final LongRange add(long base, long tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
     return add(base, tolerance, inclusiveStart, inclusiveEnd, true);
   }
 
-  public final IntegerRange add(int base, int tolerance, boolean inclusiveStart, boolean inclusiveEnd, boolean combineIfContiguous) {
-    super.addRange(new SimpleIntegerRange(base, tolerance, inclusiveStart, inclusiveEnd), combineIfContiguous);
+  public final LongRange add(long base, long tolerance, boolean inclusiveStart, boolean inclusiveEnd, boolean combineIfContiguous) {
+    super.addRange(new SimpleLongRange(base, tolerance, inclusiveStart, inclusiveEnd), combineIfContiguous);
     return this;
   }
 
   protected SimpleRange buildRange(String number) {
-    return new SimpleIntegerRange(number);
+    return new SimpleLongRange(number);
   }
 
   protected SimpleRange buildRange(String left, boolean leftInclusive, String right, boolean rightInclusive) {
-    return new SimpleIntegerRange(left, leftInclusive, right, rightInclusive);
+    return new SimpleLongRange(left, leftInclusive, right, rightInclusive);
   }
 
   protected SimpleRange buildToleranceRange(String base, String tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
-    return new SimpleIntegerRange(base, tolerance, inclusiveStart, inclusiveEnd);
+    return new SimpleLongRange(base, tolerance, inclusiveStart, inclusiveEnd);
   }
 
-  private final class SimpleIntegerRange implements SimpleRange, Serializable  {
+  private final class SimpleLongRange implements SimpleRange, Serializable  {
 
     private static final long serialVersionUID = 42L;
 
-    private int low;
-    private int high;
+    private long low;
+    private long high;
     private boolean includeLow;
     private boolean includeHigh;
     private String string;
 
-    SimpleIntegerRange(String number) {
-      this.low = "".equals(number) ? Integer.MIN_VALUE : Integer.parseInt(number);
-      this.high = "".equals(number) ? Integer.MAX_VALUE : this.low;
+    SimpleLongRange(String number) {
+      this.low = "".equals(number) ? Long.MIN_VALUE : Long.parseLong(number);
+      this.high = "".equals(number) ? Long.MAX_VALUE : this.low;
       this.includeLow = true;
       this.includeHigh = true;
       this.string = number;
     }
 
-    SimpleIntegerRange(String left, boolean leftInclusive, String right, boolean rightInclusive) {
-      init("".equals(left) ? Integer.MIN_VALUE : Integer.parseInt(left),
+    SimpleLongRange(String left, boolean leftInclusive, String right, boolean rightInclusive) {
+      init("".equals(left) ? Long.MIN_VALUE : Long.parseLong(left),
            "".equals(left) ? true : leftInclusive,
-           "".equals(right) ? Integer.MAX_VALUE : Integer.parseInt(right),
+           "".equals(right) ? Long.MAX_VALUE : Long.parseLong(right),
            "".equals(right) ? true : rightInclusive);
     }
 
-    SimpleIntegerRange(String base, String tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
-      final int baseValue = Integer.parseInt(base);
-      final int toleranceValue = "".equals(tolerance) ? 0 : Integer.parseInt(tolerance);
+    SimpleLongRange(String base, String tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
+      final long baseValue = Long.parseLong(base);
+      final long toleranceValue = "".equals(tolerance) ? 0 : Long.parseLong(tolerance);
 
       init(baseValue - toleranceValue, inclusiveStart, baseValue + toleranceValue, inclusiveEnd);
     }
 
-    SimpleIntegerRange(int number) {
+    SimpleLongRange(long number) {
       init(number, true, number, true);
     }
 
-    SimpleIntegerRange(int left, boolean leftInclusive, int right, boolean rightInclusive) {
+    SimpleLongRange(long left, boolean leftInclusive, long right, boolean rightInclusive) {
       init(left, leftInclusive, right, rightInclusive);
     }
 
-    SimpleIntegerRange(int base, int tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
+    SimpleLongRange(long base, long tolerance, boolean inclusiveStart, boolean inclusiveEnd) {
       init(base - tolerance, inclusiveStart, base + tolerance, inclusiveEnd);
     }
 
-    private final void init(int low, boolean includeLow, int high, boolean includeHigh) {
+    private final void init(long low, boolean includeLow, long high, boolean includeHigh) {
       this.low = low;
       this.includeLow = includeLow;
       this.high = high;
@@ -282,7 +282,7 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
       }
       else if (low > high) {
         // swap left/right
-        final int lowValue = this.low;
+        final long lowValue = this.low;
         this.low = this.high;
         this.high = lowValue;
 
@@ -293,15 +293,21 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
     }
 
     public int compareTo(SimpleRange other) {
-      int result = low - other.getLowAsInt(true);
+      long result = low - other.getLowAsLong(true);
       if (result == 0) {
-        result = high - other.getHighAsInt(false);
+        result = high - other.getHighAsLong(false);
       }
-      return result;
+
+      if(result < Integer.MIN_VALUE)
+        return Integer.MIN_VALUE;
+      else if(result > Integer.MAX_VALUE)
+        return Integer.MAX_VALUE;
+      else
+        return (int)result;
     }
 
     /**
-     * Determine whether the integer is in this numeric range.
+     * Determine whether the int is in this numeric range.
      */
     public boolean includes(int value) {
       boolean result = (value > low && value < high);
@@ -348,7 +354,7 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
     public boolean includes(String value) {
       boolean result = false;
       try {
-        result = includes(Integer.parseInt(value));
+        result = includes(Long.parseLong(value));
       }
       catch (NumberFormatException e) {
         // non-numeric isn't in range. result is already false.
@@ -372,13 +378,13 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
     public boolean getUnionIfContinuous(SimpleRange other) {
       boolean result = false;
 
-      final int otherLowAdj = other.includesLow() ? 1 : 0;
-      final int thisLowAdj = this.includesLow() ? 1 : 0;
-      final int otherHighAdj = other.includesHigh() ? 1 : 0;
-      final int thisHighAdj = this.includesHigh() ? 1 : 0;
+      final long otherLowAdj = other.includesLow() ? 1 : 0;
+      final long thisLowAdj = this.includesLow() ? 1 : 0;
+      final long otherHighAdj = other.includesHigh() ? 1 : 0;
+      final long thisHighAdj = this.includesHigh() ? 1 : 0;
 
-      if (this.includes(other.getLowAsInt(false) - otherLowAdj) || other.includes(this.getHighAsInt(false) + thisHighAdj) ||
-          other.includes(this.getLowAsInt(false) - thisLowAdj) || this.includes(other.getHighAsInt(false) + otherHighAdj)) {
+      if (this.includes(other.getLowAsLong(false) - otherLowAdj) || other.includes(this.getHighAsLong(false) + thisHighAdj) ||
+          other.includes(this.getLowAsLong(false) - thisLowAdj) || this.includes(other.getHighAsLong(false) + otherHighAdj)) {
 
         // range extends from min low to max high
         mergeIn(other);
@@ -391,10 +397,10 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
     }
 
     private final void mergeIn(SimpleRange other) {
-      final int otherLowR = other.getLowAsInt(true);
-      final int otherHighR = other.getHighAsInt(true);
-      final int otherLowT = other.getLowAsInt(false);
-      final int otherHighT = other.getHighAsInt(false);
+      final long otherLowR = other.getLowAsLong(true);
+      final long otherHighR = other.getHighAsLong(true);
+      final long otherLowT = other.getLowAsLong(false);
+      final long otherHighT = other.getHighAsLong(false);
 
       if (otherLowR < this.low) {
         this.low = otherLowR;
@@ -430,25 +436,44 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
      * Get this range's low value (as a string).
      */
     public String getLow() {
-      return Integer.toString(low);
+      return Long.toString(low);
     }
 
     /**
      * Get this range's high value (as a string).
      */
     public String getHigh() {
-      return Integer.toString(high);
+      return Long.toString(high);
     }
 
     /**
      * Get the number of integers included in this range.
      *
-     * @return null if the range is infinite; otherwise the size.
+     * @return null if the range is infinite; -1 if the number of integers 
+     * exceeds the maximum integer value, otherwise the size.
      */
     public Integer size() {
-      if (low == Integer.MIN_VALUE || high == Integer.MAX_VALUE) return null;
+      if (low == Long.MIN_VALUE || high == Long.MAX_VALUE) return null;
 
-      int result = high - low - 1;
+      long result = high - low - 1;
+      if (includeLow) ++result;
+      if (includeHigh) ++result;
+
+      if(result > Integer.MAX_VALUE)
+        return new Integer(-1);
+      else
+        return new Integer((int)result);
+    }
+
+    /**
+     * Get the number of longs included in this range.
+     *
+     * @return null if the range is infinite; otherwise the size.
+     */
+    public Long longSize() {
+      if (low == Long.MIN_VALUE || high == Long.MAX_VALUE) return null;
+
+      long result = high - low - 1;
       if (includeLow) ++result;
       if (includeHigh) ++result;
 
@@ -469,17 +494,17 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
           final boolean defaultInclusion = includeLow && includeHigh;
 
           // handle unbounded ranges
-          if (low == Integer.MIN_VALUE || high == Integer.MAX_VALUE) {
-            if (low == Integer.MIN_VALUE && high == Integer.MAX_VALUE) {
+          if (low == Long.MIN_VALUE || high == Long.MAX_VALUE) {
+            if (low == Long.MIN_VALUE && high == Long.MAX_VALUE) {
               result.append('-');
             }
-            else if (low == Integer.MIN_VALUE) {
+            else if (low == Long.MIN_VALUE) {
               result.
                 append("-(").
                 append(high).
                 append(includeHigh ? ']' : ')');
             }
-            else {  // high == Integer.MAX_VALUE
+            else {  // high == Long.MAX_VALUE
               if (!defaultInclusion) result.append(includeLow ? '[' : '(');
               result.
                 append(low).
@@ -509,14 +534,17 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
      * Get the low value as an int.
      */
     public int getLowAsInt(boolean round) {
-      return low;
+      if(low < Integer.MIN_VALUE)
+        throw new IllegalArgumentException("Unable to convert long("+low+") to int");
+      else 
+        return (int)low;
     }
 
     /**
-     * Get the low value as a long.
+     * Get the low value as an long.
      */
     public long getLowAsLong(boolean round) {
-      return (long)low;
+      return low;
     }
 
     /**
@@ -527,17 +555,20 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
     }
 
     /**
-     * Get the high value as an int.
+     * Get the low value as an int.
      */
     public int getHighAsInt(boolean round) {
-      return high;
+      if(high > Integer.MAX_VALUE)
+        throw new IllegalArgumentException("Unable to convert long("+high+") to int");
+      else 
+        return (int)high;
     }
 
     /**
-     * Get the high value as a long.
+     * Get the high value as an long.
      */
     public long getHighAsLong(boolean round) {
-      return (long)high;
+      return high;
     }
 
     /**
@@ -552,8 +583,8 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
      */
     public void shift(double value) {
       string = null;  // need to recompute
-      this.low += (int)value;
-      this.high += (int)value;
+      this.low += (long)value;
+      this.high += (long)value;
     }
   }
 }

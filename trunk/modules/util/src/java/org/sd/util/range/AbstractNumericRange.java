@@ -73,6 +73,22 @@ public abstract class AbstractNumericRange implements NumericRange {
   }
 
   /**
+   * Determine whether the long is in this numeric range.
+   */
+  public boolean includes(long value) {
+    boolean result = false;
+
+    for (SimpleRange range : ranges) {
+      if (range.includes(value)) {
+        result = true;
+        break;
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Determine whether the double is in this numeric range.
    */
   public boolean includes(double value) {
@@ -125,7 +141,8 @@ public abstract class AbstractNumericRange implements NumericRange {
   /**
    * Get the number of integers included in this range.
    *
-   * @return null if the range is infinite; otherwise the size.
+   * @return null if the range is infinite; -1 if the number of integers 
+   * exceeds the maximum integer value, otherwise the size.
    */
   public Integer size() {
     int size = 0;
@@ -134,6 +151,10 @@ public abstract class AbstractNumericRange implements NumericRange {
       final Integer curSize = range.size();
       if (curSize == null) {
         size = 0;
+        break;
+      }
+      else if (curSize == -1) {
+        size = -1;
         break;
       }
       size += curSize;
@@ -406,6 +427,11 @@ public abstract class AbstractNumericRange implements NumericRange {
     public int getLowAsInt(boolean round);
 
     /**
+     * Get the low value as an long.
+     */
+    public long getLowAsLong(boolean round);
+
+    /**
      * Get the low value as a double.
      */
     public double getLowAsDouble();
@@ -414,6 +440,11 @@ public abstract class AbstractNumericRange implements NumericRange {
      * Get the high value as an int.
      */
     public int getHighAsInt(boolean round);
+
+    /**
+     * Get the high value as an long.
+     */
+    public long getHighAsLong(boolean round);
 
     /**
      * Get the high value as a double.

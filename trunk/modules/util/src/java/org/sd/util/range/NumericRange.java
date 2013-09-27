@@ -32,6 +32,11 @@ public interface NumericRange {
   public boolean includes(int value);
 
   /**
+   * Determine whether the long is in this numeric range.
+   */
+  public boolean includes(long value);
+
+  /**
    * Determine whether the double is in this numeric range.
    */
   public boolean includes(double value);
@@ -51,7 +56,8 @@ public interface NumericRange {
   /**
    * Get the number of integers included in this range.
    *
-   * @return null if the range is infinite; otherwise the size.
+   * @return null if the range is infinite; -1 if the number of integers 
+   * exceeds the maximum integer value, otherwise the size.
    */
   public Integer size();
 

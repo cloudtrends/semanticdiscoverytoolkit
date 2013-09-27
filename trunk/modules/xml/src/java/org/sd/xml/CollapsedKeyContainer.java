@@ -40,8 +40,8 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
   public static CollapsedKeyContainer<String> loadFromXml(DomElement xml, int maxSamples) {
 
     String key = null;
-    int origCount = 0;
-    int binCount = 0;
+    long origCount = 0;
+    long binCount = 0;
     Map<String, String> attributes = null;
 
     // load attributes
@@ -53,10 +53,10 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
           key = StringEscapeUtils.unescapeXml(attrVal);
         }
         else if ("origCount".equals(attrKey)) {
-          origCount = Integer.parseInt(attrVal);
+          origCount = Long.parseLong(attrVal);
         }
         else if ("binCount".equals(attrKey)) {
-          binCount = Integer.parseInt(attrVal);
+          binCount = Long.parseLong(attrVal);
         }
         else {
           if (attributes == null) attributes = new HashMap<String, String>();
@@ -88,8 +88,8 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
 
 
   private T key;
-  private int origCount;  // original freq count for key or keys
-  private int binCount;   // original number of buckets w/freq=origCount
+  private long origCount;  // original freq count for key or keys
+  private long binCount;   // original number of buckets w/freq=origCount
   private int maxSamples; // maximum number of samples to collect
   private SampleCollector<T> sampleCollector;
   private Map<String, String> attributes;
@@ -97,11 +97,11 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
   /**
    * Construct an instance backed by a bin key.
    */
-  public CollapsedKeyContainer(T key, int origCount) {
+  public CollapsedKeyContainer(T key, long origCount) {
     this(key, origCount, 1, 0);
   }
 
-  public CollapsedKeyContainer(T key, int origCount, int binCount, int maxSamples) {
+  public CollapsedKeyContainer(T key, long origCount, long binCount, int maxSamples) {
     this.key = key;
     this.origCount = origCount;
     this.binCount = binCount;
@@ -126,15 +126,15 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
     return key != null;
   }
 
-  public int getOrigCount() {
+  public long getOrigCount() {
     return origCount;
   }
 
-  public int getBinCount() {
+  public long getBinCount() {
     return binCount;
   }
 
-  public void setBinCount(int binCount) {
+  public void setBinCount(long binCount) {
     this.binCount = binCount;
   }
 
@@ -142,7 +142,7 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
     ++binCount;
   }
 
-  public int getTotalCount() {
+  public long getTotalCount() {
     return origCount * binCount;
   }
 
@@ -301,13 +301,19 @@ public class CollapsedKeyContainer <T> implements Comparable<CollapsedKeyContain
       result = 17 * result + key.hashCode();
     }
 
-    result = 17 * result + origCount;
+    result = 17 * result + (int)origCount;
 
     return result;
   }
 
   public int compareTo(CollapsedKeyContainer<T> other) {
     // sort by descending origCount regardless of count -vs- normal keys
-    return other.origCount - this.origCount;
+    long v = other.origCount - this.origCount;
+    if(v < Integer.MIN_VALUE)
+      return Integer.MIN_VALUE;
+    else if(v > Integer.MAX_VALUE)
+      return Integer.MAX_VALUE;
+    else
+      return (int)v;
   }
 }
