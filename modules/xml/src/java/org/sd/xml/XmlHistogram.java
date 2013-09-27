@@ -134,7 +134,7 @@ public class XmlHistogram extends Histogram<String> {
       final DomNode childNode = (DomNode)childNodes.item(childIdx);
       if (childNode.getNodeType() == DomNode.ELEMENT_NODE && "key".equals(childNode.getLocalName())) {
         // create entry with count
-        final int count = childNode.getAttributeInt("count", 0);
+        final long count = childNode.getAttributeLong("count", 0L);
         if (count > 0) {
           final String key = childNode.getTextContent();
           if (key != null) {

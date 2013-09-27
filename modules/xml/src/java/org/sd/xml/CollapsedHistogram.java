@@ -27,7 +27,7 @@ import org.sd.util.Histogram;
 import org.sd.util.HistogramDistribution;
 import org.sd.util.MathUtil;
 import org.sd.util.SampleCollector;
-import org.sd.util.range.IntegerRange;
+import org.sd.util.range.LongRange;
 import org.w3c.dom.NodeList;
 
 /**
@@ -92,8 +92,8 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
     final CollapsedHistogram<T> result = new CollapsedHistogram<T>(maxSamples);
 
     for (Histogram<T>.Frequency<T> freq : original.getFrequencies()) {
-      final int curCount = freq.getFrequency();
-      final int numBuckets = distribution.getNumBins(curCount);
+      final long curCount = freq.getFrequency();
+      final long numBuckets = distribution.getNumBins(curCount);
       result.add(numBuckets, freq.getElement(), curCount);
     }
 
@@ -136,8 +136,8 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
     try {
       for (iter = new XmlHistogramIterator(xmlHistogramFile); iter.hasNext(); ) {
         final XmlKeyContainer xmlKeyContainer = iter.next();
-        final int curCount = xmlKeyContainer.getCount();
-        final int numBuckets = distribution.getNumBins(curCount);
+        final long curCount = xmlKeyContainer.getCount();
+        final long numBuckets = distribution.getNumBins(curCount);
         result.add(numBuckets, xmlKeyContainer.getKey(), curCount);
       }
     }
@@ -189,9 +189,9 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
 
   private int maxSamples;
 
-  private Integer _originalTotalCount;
-  private Integer _originalNumRanks;
-  private Integer _originalMaxFrequencyCount;
+  private Long _originalTotalCount;
+  private Long _originalNumRanks;
+  private Long _originalMaxFrequencyCount;
 
   /**
    * Construct an empty instance with no switching, no samples.
@@ -228,7 +228,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
     return add(element, 1);
   }
 
-  public Frequency<CollapsedKeyContainer<T>> add(CollapsedKeyContainer<T> element, int freqCount) {
+  public Frequency<CollapsedKeyContainer<T>> add(CollapsedKeyContainer<T> element, long freqCount) {
     this._originalTotalCount = null;
     this._originalNumRanks = null;
     this._originalMaxFrequencyCount = null;
@@ -245,15 +245,15 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
   /**
    * Get the total count for the original histogram.
    */
-  public int getOriginalTotalCount() {
+  public long getOriginalTotalCount() {
     if (_originalTotalCount == null) {
       _originalTotalCount = computeOriginalTotalCount();
     }
     return _originalTotalCount;
   }
 
-  private final int computeOriginalTotalCount() {
-    int result = 0;
+  private final long computeOriginalTotalCount() {
+    long result = 0;
 
     for (Frequency<CollapsedKeyContainer<T>> freq : getFrequencies()) {
       final CollapsedKeyContainer<T> keyContainer = freq.getElement();
@@ -266,15 +266,15 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
   /**
    * Get the number of ranks in the original histogram.
    */
-  public int getOriginalNumRanks() {
+  public long getOriginalNumRanks() {
     if (_originalNumRanks == null) {
       _originalNumRanks = computeOriginalNumRanks();
     }
     return _originalNumRanks;
   }
 
-  private final int computeOriginalNumRanks() {
-    int result = 0;
+  private final long computeOriginalNumRanks() {
+    long result = 0;
 
     for (Frequency<CollapsedKeyContainer<T>> freq : getFrequencies()) {
       final CollapsedKeyContainer<T> keyContainer = freq.getElement();
@@ -284,15 +284,15 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
     return result;
   }
 
-  public int getOriginalMaxFrequencyCount() {
+  public long getOriginalMaxFrequencyCount() {
     if (_originalMaxFrequencyCount == null) {
       _originalMaxFrequencyCount = getOriginalFrequencyCount(0);
     }
     return _originalMaxFrequencyCount;
   }
 
-  public int getOriginalFrequencyCount(int collapsedRank) {
-    int result = 0;
+  public long getOriginalFrequencyCount(long collapsedRank) {
+    long result = 0;
 
     final Frequency<CollapsedKeyContainer<T>> freq = getRankFrequency(collapsedRank);
     if (freq != null) {
@@ -306,13 +306,13 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
   public String toString() {
     final StringBuilder result = new StringBuilder();
 
-    final int totalCount = getOriginalTotalCount();
-    int cumulativeCount = 0;
+    final long totalCount = getOriginalTotalCount();
+    long cumulativeCount = 0;
 
-    final int numRanks = getOriginalNumRanks();
+    final long numRanks = getOriginalNumRanks();
     final int maxRankDigits = (int)Math.round(MathUtil.log10(numRanks) + 0.5);
 
-    final int maxFreq = getOriginalMaxFrequencyCount();
+    final long maxFreq = getOriginalMaxFrequencyCount();
     final int maxFreqDigits = (int)Math.round(MathUtil.log10(maxFreq) + 0.5);
 
     // rank  freq  cumulativePct  pct  label
@@ -332,11 +332,11 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
       append(getTotalCount()).append('/').append(getNumRanks()).
       append(")");
 
-    for (int i = 0; i < getNumRanks(); ++i) {
+    for (long i = 0; i < getNumRanks(); ++i) {
 
       final Frequency<CollapsedKeyContainer<T>> freq = getRankFrequency(i);
       final CollapsedKeyContainer<T> keyContainer = freq.getElement();
-      final int curRankFrequency = keyContainer.getTotalCount();
+      final long curRankFrequency = keyContainer.getTotalCount();
       final String keyString = keyContainer.buildKeyString();
       cumulativeCount += curRankFrequency;
       final double cumPct = 100.0 * ((double)cumulativeCount / (double)totalCount);
@@ -364,7 +364,7 @@ public class CollapsedHistogram <T> extends Histogram<CollapsedKeyContainer<T>> 
   /**
    * Add an appropriate element to this instance with the given params.
    */
-  public Frequency<CollapsedKeyContainer<T>> add(int numBuckets, T bucketKey, int curCount) {
+  public Frequency<CollapsedKeyContainer<T>> add(long numBuckets, T bucketKey, long curCount) {
     Frequency<CollapsedKeyContainer<T>> result = null;
 
     this._originalTotalCount = null;

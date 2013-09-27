@@ -91,11 +91,11 @@ public class PathHistogram {
   private final Histogram<Integer> buildFreqHistogram(Histogram<Path> h) {
     final Histogram<Integer> result = new Histogram<Integer>();
 
-    final int numRanks = h.getNumRanks();
-    for (int rank = 0; rank < numRanks; ++rank) {
-      final int rankFreq = h.getFrequencyCount(rank);
+    final long numRanks = h.getNumRanks();
+    for (long rank = 0; rank < numRanks; ++rank) {
+      final long rankFreq = h.getFrequencyCount(rank);
       if (rankFreq > 1) {  // only add in for path that occur more than once
-        result.add(rankFreq);
+        result.add((int)rankFreq);
       }
     }
 
@@ -108,9 +108,9 @@ public class PathHistogram {
   private final List<Path> getPathsWithFrequency(int freq) {
     final List<Path> result = new ArrayList<Path>();
 
-    final int numRanks = h.getNumRanks();
-    for (int rank = 0; rank < numRanks; ++rank) {
-      final int rankFreq = h.getFrequencyCount(rank);
+    final long numRanks = h.getNumRanks();
+    for (long rank = 0; rank < numRanks; ++rank) {
+      final long rankFreq = h.getFrequencyCount(rank);
       if (rankFreq == freq) {
         result.add(h.getElement(rank));
       }

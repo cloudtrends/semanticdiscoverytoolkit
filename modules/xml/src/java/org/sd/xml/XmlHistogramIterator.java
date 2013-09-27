@@ -37,8 +37,8 @@ public class XmlHistogramIterator implements Iterator<XmlKeyContainer> {
   private XmlLite.Tag nextTag;
   private String nextKey;
 
-  private Integer total;
-  private Integer bins;
+  private Long total;
+  private Long bins;
 
   public XmlHistogramIterator(File xmlHistogram) throws IOException {
     this.ripper = new XmlTagRipper(xmlHistogram);
@@ -71,7 +71,7 @@ public class XmlHistogramIterator implements Iterator<XmlKeyContainer> {
    * NOTE: This is read from the "total" attribute of the histogram key
    * container element if found.
    */
-  public Integer getTotal() {
+  public Long getTotal() {
     return total;
   }
 
@@ -81,7 +81,7 @@ public class XmlHistogramIterator implements Iterator<XmlKeyContainer> {
    * NOTE: This is read from the "bins" attribute of the histogram key
    * container element if found.
    */
-  public Integer getBins() {
+  public Long getBins() {
     return bins;
   }
 
@@ -121,7 +121,7 @@ public class XmlHistogramIterator implements Iterator<XmlKeyContainer> {
         final String totalString = tag.getAttribute("total");
         if (totalString != null) {
           try {
-            this.total = new Integer(totalString);
+            this.total = new Long(totalString);
           }
           catch (Exception e) {}
         }
@@ -131,7 +131,7 @@ public class XmlHistogramIterator implements Iterator<XmlKeyContainer> {
         final String binsString = tag.getAttribute("bins");
         if (binsString != null) {
           try {
-            this.bins = new Integer(binsString);
+            this.bins = new Long(binsString);
           }
           catch (Exception e) {}
         }

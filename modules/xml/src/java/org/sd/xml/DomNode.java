@@ -534,6 +534,18 @@ public abstract class DomNode implements Node {
     throw new IllegalStateException("Invalid non-DomElement operation!");
   }
 
+  public long getAttributeLong(String attributeName) {
+    // NOTE: this is not a w3c.dom interface!
+    // only valid for Element nodes.
+    throw new IllegalStateException("Invalid non-DomElement operation!");
+  }
+
+  public long getAttributeLong(String attributeName, long defaultValue) {
+    // NOTE: this is not a w3c.dom interface!
+    // only valid for Element nodes.
+    throw new IllegalStateException("Invalid non-DomElement operation!");
+  }
+
   public boolean isAncestor(DomNode descendant, boolean selfIsAncestor) {
     // NOTE: this is not a w3c.dom interface!
     // only valid for Element nodes.

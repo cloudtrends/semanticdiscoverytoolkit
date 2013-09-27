@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import org.sd.util.range.IntegerRange;
+import org.sd.util.range.LongRange;
 
 /**
  * Container for a class representing the distribution of a histogram.
@@ -35,7 +35,7 @@ import org.sd.util.range.IntegerRange;
  * 
  * @author Spence Koehler
  */
-public class HistogramDistribution extends Histogram<Integer> {
+public class HistogramDistribution extends Histogram<Long> {
   
   /**
    * Create a HistogramDistribution instance from the given histogram.
@@ -53,10 +53,10 @@ public class HistogramDistribution extends Histogram<Integer> {
 
   private static final OriginalFreqOrder ORIG_FREQ_ORDER = new OriginalFreqOrder();
 
-  private Integer _switchRank;
-  private Integer _numOriginalRanks;
-  private Integer _numOriginalInstances;
-  private Map<Integer, Integer> _count2rank;
+  private Long _switchRank;
+  private Long _numOriginalRanks;
+  private Long _numOriginalInstances;
+  private Map<Long, Long> _count2rank;
 
   public HistogramDistribution() {
     super();
@@ -69,10 +69,10 @@ public class HistogramDistribution extends Histogram<Integer> {
   /**
    * Get the number of original bins with the given original count.
    */
-  public int getNumBins(int origCount) {
-    int result = 0;
+  public long getNumBins(long origCount) {
+    long result = 0;
 
-    final Frequency<Integer> freq = getElementFrequency(origCount);
+    final Frequency<Long> freq = getElementFrequency(origCount);
     if (freq != null) {
       result = freq.getFrequency();
     }
@@ -83,18 +83,18 @@ public class HistogramDistribution extends Histogram<Integer> {
   /**
    * Get the number of ranks in the *original* histogram.
    */
-  public int getNumOriginalRanks() {
+  public long getNumOriginalRanks() {
     if (_numOriginalRanks == null) {
       _numOriginalRanks = computeNumOriginalRanks();
     }
     return _numOriginalRanks;
   }
 
-  private final int computeNumOriginalRanks() {
-    int result = 0;
+  private final long computeNumOriginalRanks() {
+    long result = 0;
 
-    for (Frequency<Integer> freq : getFrequencies()) {
-      final int numBuckets = freq.getFrequency();
+    for (Frequency<Long> freq : getFrequencies()) {
+      final long numBuckets = freq.getFrequency();
       result += numBuckets;
     }
 
@@ -104,19 +104,19 @@ public class HistogramDistribution extends Histogram<Integer> {
   /**
    * Get the number of instances (totalCount) in the *original* histogram.
    */
-  public int getNumOriginalInstances() {
+  public long getNumOriginalInstances() {
     if (_numOriginalInstances == null) {
       _numOriginalInstances = computeNumOriginalInstances();
     }
     return _numOriginalInstances;
   }
 
-  private final int computeNumOriginalInstances() {
-    int result = 0;
+  private final long computeNumOriginalInstances() {
+    long result = 0;
 
-    for (Frequency<Integer> freq : getFrequencies()) {
-      final int curCount = freq.getElement();
-      final int numBuckets = freq.getFrequency();
+    for (Frequency<Long> freq : getFrequencies()) {
+      final long curCount = freq.getElement();
+      final long numBuckets = freq.getFrequency();
       result += (curCount * numBuckets);
     }
 
@@ -126,18 +126,18 @@ public class HistogramDistribution extends Histogram<Integer> {
   /**
    * Get the *original* histogram rank(s) having the given count.
    */
-  public IntegerRange getOriginalRank(int count) {
-    IntegerRange result = null;
+  public LongRange getOriginalRank(long count) {
+    LongRange result = null;
 
-    final Map<Integer, Integer> count2rank = getCount2Rank();
-    final Integer startRank = count2rank.get(count);
+    final Map<Long, Long> count2rank = getCount2Rank();
+    final Long startRank = count2rank.get(count);
     if (startRank != null) {
-      final Frequency<Integer> freq = getElementFrequency(count);
-      final int numBuckets = freq.getFrequency();
+      final Frequency<Long> freq = getElementFrequency(count);
+      final long numBuckets = freq.getFrequency();
 
-      final int low = startRank;
-      final int high = startRank + numBuckets - 1;
-      result = new IntegerRange(low, high);
+      final long low = startRank;
+      final long high = startRank + numBuckets - 1;
+      result = new LongRange(low, high);
     }
 
     return result;
@@ -147,12 +147,12 @@ public class HistogramDistribution extends Histogram<Integer> {
    * Get the number of *original* histogram instances in the original bucket(s)
    * having the given count.
    */
-  public Integer getNumOriginalInstances(int count) {
-    Integer result = null;
+  public Long getNumOriginalInstances(long count) {
+    Long result = null;
 
-    final Frequency<Integer> freq = getElementFrequency(count);
+    final Frequency<Long> freq = getElementFrequency(count);
     if (freq != null) {
-      final int numBuckets = freq.getFrequency();
+      final long numBuckets = freq.getFrequency();
       result = count * numBuckets;
     }
 
@@ -162,10 +162,10 @@ public class HistogramDistribution extends Histogram<Integer> {
   /**
    * Get the percentage of *original* histogram instances with the given count.
    */
-  public Double getCountPercentage(int count) {
+  public Double getCountPercentage(long count) {
     Double result = null;
 
-    final Integer numInstances = getNumOriginalInstances(count);
+    final Long numInstances = getNumOriginalInstances(count);
     if (numInstances != null) {
       result = (double)numInstances / (double)getNumOriginalInstances();
     }
@@ -182,20 +182,20 @@ public class HistogramDistribution extends Histogram<Integer> {
    * <p>
    * See org.sd.xml.CollapsedHistogram for an example of its use.
    */
-  public int getSwitchRank() {
+  public long getSwitchRank() {
     if (_switchRank == null) {
       _switchRank = computeSwitchRank(0);
     }
     return _switchRank;
   }
 
-  public int computeSwitchRank(int maxNumBuckets) {
-    int result = getNumOriginalRanks();
+  public long computeSwitchRank(long maxNumBuckets) {
+    long result = getNumOriginalRanks();
 
-    // rank order is distribution's (integer) keys sorted from max to min
-    for (Frequency<Integer> freq : getFrequencies()) {
-      final int curCount = freq.getElement();
-      final int numBuckets = freq.getFrequency();
+    // rank order is distribution's (long) keys sorted from max to min
+    for (Frequency<Long> freq : getFrequencies()) {
+      final long curCount = freq.getElement();
+      final long numBuckets = freq.getFrequency();
 
       // original histogram's rank increases by the product
       result -= numBuckets;
@@ -210,22 +210,22 @@ public class HistogramDistribution extends Histogram<Integer> {
    * Get the mapping from an original histogram count to its (first) original
    * rank.
    */
-  public Map<Integer, Integer> getCount2Rank() {
+  public Map<Long, Long> getCount2Rank() {
     if (_count2rank == null) {
       _count2rank = computeCount2Rank();
     }
     return _count2rank;
   }
 
-  private final Map<Integer, Integer> computeCount2Rank() {
-    final Map<Integer, Integer> result = new HashMap<Integer, Integer>();
+  private final Map<Long, Long> computeCount2Rank() {
+    final Map<Long, Long> result = new HashMap<Long, Long>();
 
-    int rank = 0;
-    final Set<Frequency<Integer>> freqs = new TreeSet<Frequency<Integer>>(ORIG_FREQ_ORDER);
+    long rank = 0;
+    final Set<Frequency<Long>> freqs = new TreeSet<Frequency<Long>>(ORIG_FREQ_ORDER);
     freqs.addAll(getFrequencies());
-    for (Frequency<Integer> freq : freqs) {
-      final int curCount = freq.getElement();
-      final int numBuckets = freq.getFrequency();
+    for (Frequency<Long> freq : freqs) {
+      final long curCount = freq.getElement();
+      final long numBuckets = freq.getFrequency();
 
       result.put(curCount, rank);
 
@@ -235,9 +235,19 @@ public class HistogramDistribution extends Histogram<Integer> {
     return result;
   }
 
-  private static final class OriginalFreqOrder implements Comparator<Histogram<Integer>.Frequency<Integer>> {
-    public int compare(Histogram<Integer>.Frequency<Integer> freq1, Histogram<Integer>.Frequency<Integer> freq2) {
-      return freq2.getElement() - freq1.getElement();
+  private static final class OriginalFreqOrder 
+    implements Comparator<Histogram<Long>.Frequency<Long>> 
+  {
+    public int compare(Histogram<Long>.Frequency<Long> freq1, 
+                       Histogram<Long>.Frequency<Long> freq2) 
+    {
+      long v = freq2.getElement() - freq1.getElement();
+      if(v < Integer.MIN_VALUE)
+        return Integer.MIN_VALUE;
+      else if(v > Integer.MAX_VALUE)
+        return Integer.MAX_VALUE;
+      else
+        return (int)v;
     }
   }
 }

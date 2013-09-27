@@ -149,6 +149,20 @@ public class RealRange extends AbstractNumericRange {
     }
 
     /**
+     * Determine whether the long is in this numeric range.
+     */
+    public boolean includes(long value) {
+      boolean result = (value > low && value < high);
+
+      if (!result) {
+        if (includeLow && value == low) result = true;
+        else if (includeHigh && value == high) result = true;
+      }
+
+      return result;
+    }
+
+    /**
      * Determine whether the double is in this numeric range.
      */
     public boolean includes(double value) {
@@ -351,6 +365,13 @@ public class RealRange extends AbstractNumericRange {
     }
 
     /**
+     * Get the low value as an long.
+     */
+    public long getLowAsLong(boolean round) {
+      return round ? (long)Math.ceil(low) : (long)low;
+    }
+
+    /**
      * Get the low value as a double.
      */
     public double getLowAsDouble() {
@@ -362,6 +383,13 @@ public class RealRange extends AbstractNumericRange {
      */
     public int getHighAsInt(boolean round) {
       return round ? (int)Math.floor(high) : (int)high;
+    }
+
+    /**
+     * Get the high value as an long.
+     */
+    public long getHighAsLong(boolean round) {
+      return round ? (long)Math.floor(high) : (long)high;
     }
 
     /**

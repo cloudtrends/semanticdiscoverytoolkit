@@ -32,7 +32,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 public class XmlKeyContainer {
   
   private String key;
-  private int count;
+  private long count;
   private Map<String, String> attributes;
 
   public XmlKeyContainer(String key, Map<String, String> attributes) {
@@ -48,7 +48,7 @@ public class XmlKeyContainer {
 
         if ("count".equals(att.getKey())) {
           try {
-            this.count = Integer.parseInt(val);
+            this.count = Long.parseLong(val);
           }
           catch (Exception e) {}
         }
@@ -63,7 +63,7 @@ public class XmlKeyContainer {
     return key;
   }
 
-  public int getCount() {
+  public long getCount() {
     return count;
   }
 
