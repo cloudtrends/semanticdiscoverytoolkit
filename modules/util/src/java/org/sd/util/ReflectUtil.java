@@ -317,8 +317,25 @@ public class ReflectUtil {
   /**
    * Construct an instance of the class from its constructor taking a single
    * argument of the object parameter's type.
+   * <p>
+   * NOTES:
+   * - Superclasses of the arg are considered when searching for a constructor.
+   * - If a constructor taking the arg is not found, empty constructors are ignored.
    */
   public static Object constructInstance(Class<?> theClass, Object arg) {
+    return constructInstance(theClass, arg, false);
+  }
+
+  /**
+   * Construct an instance of the class from its constructor taking a single
+   * argument of the object parameter's type.
+   * <p>
+   * NOTES:
+   * - Superclasses of the arg are considered when searching for a constructor.
+   * - If a constructor taking the arg is not found, the empty constructor will
+   *   be attempted if fallbackToEmptyConstructor is true.
+   */
+  public static Object constructInstance(Class<?> theClass, Object arg, boolean fallbackToEmptyConstructor) {
     Object result = null;
 
     Class argClass = arg.getClass();
@@ -332,7 +349,12 @@ public class ReflectUtil {
         argClass = argClass.getSuperclass();
 
         if (argClass == null) {
-          throw new IllegalArgumentException(theClass.getName() + "(" + arg.getClass().getName() + " " + arg + ")", e);
+          if (fallbackToEmptyConstructor) {
+            result = newInstance(theClass);
+          }
+          else {
+            throw new IllegalArgumentException(theClass.getName() + "(" + arg.getClass().getName() + " " + arg + ")", e);
+          }
         }
       }
       catch (IllegalAccessException e) {
