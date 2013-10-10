@@ -228,7 +228,7 @@ public class XmlHistogram extends Histogram<String> {
       }
 
       tag.setLength(0);
-      tag.append('<').append(rootTag).append(">\n");
+      tag.append("</").append(rootTag).append(">\n");
       writer.write(tag.toString());
     }
     finally {
