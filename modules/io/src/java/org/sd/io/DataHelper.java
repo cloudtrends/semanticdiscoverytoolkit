@@ -97,6 +97,16 @@ public class DataHelper {
     return result;
   }
 
+  public static String readString(DataInput dataInput, int maxLen) throws IOException {
+    String result = null;
+
+    final byte[] bytes = readBytes(dataInput, maxLen);
+    if (bytes != null) {
+      result = new String(bytes, UTF_8);
+    }
+    return result;
+  }
+
   public static void writeStrings(DataOutput dataOutput, String[] strings) throws IOException {
     if (strings == null) {
       dataOutput.writeInt(-1);
@@ -170,6 +180,23 @@ public class DataHelper {
 
     final int len = dataInput.readInt();
     if (len >= 0) {
+      result = new byte[len];
+      dataInput.readFully(result);
+    }
+
+    return result;
+  }
+
+  /**
+   * Read the byte array from data input as written by writeBytes.
+   * <p>
+   * If the bytes to read is greater than maxLen, then return null.
+   */
+  public static final byte[] readBytes(DataInput dataInput, int maxLen) throws IOException {
+    byte[] result = null;
+
+    final int len = dataInput.readInt();
+    if (len >= 0 && len <= maxLen) {
       result = new byte[len];
       dataInput.readFully(result);
     }

@@ -52,6 +52,9 @@ import java.util.Set;
  */
 public class MessageHelper extends DataHelper {
   
+  /** The maximum allowable classpath length for publishables. */
+  public static final int MAX_CLASSPATH_LEN = 1024;
+
   public static void writePublishable(DataOutput dataOutput, Publishable publishable) throws IOException {
     if (publishable == null) {
       dataOutput.writeBoolean(false);
@@ -114,9 +117,11 @@ public class MessageHelper extends DataHelper {
     Publishable result = null;
     final boolean hasPublishable = dataInput.readBoolean();
     if (hasPublishable) {
-      final String classname = readString(dataInput);
-      result = (Publishable)ReflectUtil.newInstance(classname);
-      result.read(dataInput);
+      final String classname = readString(dataInput, MAX_CLASSPATH_LEN);
+      if (classname != null) {
+        result = (Publishable)ReflectUtil.newInstance(classname);
+        result.read(dataInput);
+      }
     }
     return result;
   }
