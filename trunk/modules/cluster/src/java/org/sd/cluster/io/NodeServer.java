@@ -100,6 +100,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private StatsAccumulator handleTimeStats;
   private long numDroppedConnections;
   private AtomicLong numSeveredConnections = new AtomicLong(0L);
+  private AtomicLong numBadMessages = new AtomicLong(0L);
   // private StatsAccumulator numInBytesStats;
   // private StatsAccumulator numOutBytesStats;
 
@@ -280,6 +281,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
       this.handleTimeStats.clear();
       this.numDroppedConnections = 0L;
       this.numSeveredConnections.set(0L);
+      this.numBadMessages.set(0L);
       // this.numInBytesStats.clear();
       // this.numOutBytesStats.clear();
 
@@ -390,6 +392,13 @@ public class NodeServer extends Thread implements NodeServerMXBean {
    */
   public long getNumSeveredConnections() {
     return numSeveredConnections.get();
+  }
+
+  /**
+   * Get the number of bad message attempts made to this server.
+   */
+  public long getNumBadMessages() {
+    return numBadMessages.get();
   }
 
 //we can't really count the bytes at this level w/out too much overhead
@@ -571,6 +580,37 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     }
   }
 
+  /**
+   * Build an error message for the log for intermittently reported stats.
+   * <p>
+   * @return null if there is no message.
+   */
+  private final String buildErrorMessage() {
+    if (!reported.get() && (numSeveredConnections.get() > 0L || numBadMessages.get() > 0L)) {
+      reported.set(true);
+    }
+    else {
+      return null;
+    }
+
+    final StringBuilder result = new StringBuilder();
+
+    result.append(new Date());
+    result.append(": WARNING NodeServer had");
+    if (numSeveredConnections.get() > 0L) {
+      result.append(' ').
+        append(numSeveredConnections).
+        append(" response connections dropped by clients");
+    }
+    if (numBadMessages.get() > 0L) {
+      result.append(' ').
+        append(numBadMessages).
+        append(" ill-formed messages ignored");
+    }
+
+    return result.toString();
+  }
+
   private final class SocketListener implements Runnable {
     private ServerSocket serverSocket;
 
@@ -674,14 +714,21 @@ public class NodeServer extends Thread implements NodeServerMXBean {
           final Messenger messenger = new Messenger(dataOut, dataIn);
           final Message message = messenger.receiveMessage(context, connectionContext);  // does both receive and response
 
-          // tally stats
-          addStats(messenger.getReceiveTime(), messenger.getResponseGenTime(), messenger.getSendTime()/*,
-                   messenger.getNumInBytes(), messenger.getNumOutBytes*/);
+          if (message == null) {
+            // count/log "bad" messages
+            numBadMessages.incrementAndGet();
+            reported.set(false);
+          }
+          else {
+            // tally stats
+            addStats(messenger.getReceiveTime(), messenger.getResponseGenTime(), messenger.getSendTime()
+                     /*,messenger.getNumInBytes(), messenger.getNumOutBytes*/);
 
-          //todo: split up receiving message and sending response so that if the message
-          //      queue is full we can report that in the response to the client.
-          //todo: set an upper-limit queue size and use messageQueue.offer instead of add.
-          messageQueue.add(new MessageBundle(message, connectionContext));
+            //todo: split up receiving message and sending response so that if the message
+            //      queue is full we can report that in the response to the client.
+            //todo: set an upper-limit queue size and use messageQueue.offer instead of add.
+            messageQueue.add(new MessageBundle(message, connectionContext));
+          }
         }
       }
       catch (ConnectionSeveredException cse) {
@@ -722,40 +769,24 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   {
     public boolean cancel()
     {
-      if(!reported.get() && numSeveredConnections.get() > 0L)
-        reported.set(true);
-      else
-        return true;
+      final String logMessage = buildErrorMessage();
 
-      boolean result = true;
+      if (logMessage != null) {
+        System.err.println(logMessage);
+      }
 
-      StringBuilder builder = new StringBuilder();
-      builder.append(new Date());
-      builder.append(": WARNING NodeServer had ");
-      builder.append(numSeveredConnections);
-      builder.append(" response connections dropped by clients");
-
-      System.err.println(builder.toString());
-
-      return result;
+      return true;
     }
 
     // run the thread, checking the server for any severed connections 
     // and log a warning if necessary
     public void run()
     {
-      if(!reported.get() && numSeveredConnections.get() > 0L)
-        reported.set(true);
-      else
-        return;
+      final String logMessage = buildErrorMessage();
 
-      StringBuilder builder = new StringBuilder();
-      builder.append(new Date());
-      builder.append(": WARNING NodeServer had ");
-      builder.append(numSeveredConnections);
-      builder.append(" response connections dropped by clients");
-
-      System.err.println(builder.toString());
+      if (logMessage != null) {
+        System.err.println(logMessage);
+      }
     }
   }
 }

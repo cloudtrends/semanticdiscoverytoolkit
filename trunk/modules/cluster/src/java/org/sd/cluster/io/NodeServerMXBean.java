@@ -145,6 +145,11 @@ public interface NodeServerMXBean {
    */
   public long getNumSeveredConnections();
 
+  /**
+   * Get the number of bad message attempts made to this server.
+   */
+  public long getNumBadMessages();
+
 
 //we can't really count the bytes at this level w/out too much overhead
   // /**
