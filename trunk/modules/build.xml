@@ -1,4 +1,4 @@
-<project name="modules" default="compile">
+<project name="modules" default="compile" xmlns:jacoco="antlib:org.jacoco.ant">
 
   <property environment="env"/>
   <property file="build.properties"/>
@@ -44,6 +44,11 @@
   <property name="env.JARS_ROOT" value="${env.JARS_ROOT_FROM_MODULES_ROOT}"/>
   <property name="env.MODULES_ROOT" value="."/>
   <import file="${env.CORE_ROOT_FROM_MODULES_ROOT}/antscripts/common-properties.xml"/>
+
+
+  <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+    <classpath path="${ext}/jacocoant.jar" />
+  </taskdef>
 
 
   <!-- module targets: all, compile, test, javadoc, clean, clean-compile, clean-test, clean-all, showdeps, p4chkn, update-modlib, compile-test -->
@@ -106,6 +111,10 @@
 
   <target name="clean-dist" description="Run each module's 'clean-dist' target in order.">
     <iterate target="clean-dist"/>
+  </target>
+
+  <target name="report" description="Run each module's 'report' target in order.">
+    <iterate target="report"/>
   </target>
 
   <target name="showdeps" description="Run each module's 'showdeps' target in order.">

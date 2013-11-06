@@ -113,7 +113,7 @@ public class AtnGrammar {
           final DomDocument domDocument = XmlFactory.loadDocument(grammarFile, false, dataProperties);
           grammarElement = (DomElement)domDocument.getDocumentElement();
 
-          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          if (GlobalConfig.verboseLoad()) {
             System.out.println(new Date() + ": AtnGrammar file(" + grammarFile + ")");
           }
         }
@@ -305,7 +305,7 @@ public class AtnGrammar {
     }
 
     if (result == null || result.size() == 0) {
-      if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+      if (GlobalConfig.verboseLoad()) {
         System.out.println("***WARNING: No startRules found or specified!");
       }
     }
@@ -524,14 +524,14 @@ public class AtnGrammar {
             classifiers.add(classifier);
           }
           else {
-            if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+            if (GlobalConfig.verboseLoad()) {
               System.out.println(new Date() + ": AtnGrammar supplementing classifier (" + classifierId + ")");
             }
             classifier.supplement(classifierElement);
           }
         }
         else {
-          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          if (GlobalConfig.verboseLoad()) {
             System.out.println("***WARNING: Couldn't load classifier '" + classifierId + "'!");
           }
         }
