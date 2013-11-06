@@ -178,7 +178,7 @@ public class ResourceManager {
       if (result != null) {
         if (resourceName != null) {
           name2resource.put(resourceName, result);
-          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          if (GlobalConfig.verboseLoad()) {
             System.out.println(new Date() + ": ResourceManager built/stored '" + resourceName + "' resource.");
           }
 
@@ -229,7 +229,7 @@ public class ResourceManager {
       result = name2resource.get(resourceName);
 
       if (result != null) {
-        if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+        if (GlobalConfig.verboseLoad()) {
           System.out.println(new Date() + ": ResourceManager retrieved '" + resourceName + "' resource.");
         }
       }
@@ -279,7 +279,7 @@ public class ResourceManager {
       final DomNode classnameNode = resourceElement.selectSingleNode("jclass");
       if (classnameNode == null) {
         if (disableLoad || disableResources) {
-          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          if (GlobalConfig.verboseLoad()) {
             System.out.println("*** WARNING: ResourceManager(disabled) missing required xpath 'jclass' relative to '" +
                                resourceElement.getLocalName() + "' node!");
           }
@@ -294,7 +294,7 @@ public class ResourceManager {
       classname = classnameNode.getTextContent().trim();
       final Class theClass = Class.forName(classname);
 
-      if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+      if (GlobalConfig.verboseLoad()) {
         System.out.println(new Date() + ": ResourceManager constructing '" + classname + "' resource.");
       }
 
@@ -302,7 +302,7 @@ public class ResourceManager {
     }
     catch (ClassNotFoundException e) {
       if (disableLoad || disableResources) {
-        if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+        if (GlobalConfig.verboseLoad()) {
           System.out.println("*** WARNING : ResourceManager(disabled) unable to load '" + classname + "'");
         }
       }

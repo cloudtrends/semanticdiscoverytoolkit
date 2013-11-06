@@ -1,4 +1,4 @@
-<project>
+<project xmlns:jacoco="antlib:org.jacoco.ant">
   <!--
     - This common file should be imported by a module's build.xml.
     -
@@ -129,6 +129,11 @@
     <classpath refid="anttasks"/>
   </taskdef>
   
+
+  <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+    <classpath path="${ext}/jacocoant.jar" />
+  </taskdef>
+
 
   <import file="loadlines.xml"/>
 
@@ -343,6 +348,8 @@
   <target name="run-junit" depends="compile" if="has.junit.tests" description="Execute all junit tests">
     <mkdir dir="${junit.results}"/>
 
+    <jacoco:coverage destfile="${jacoco.exec}">
+
     <junit printsummary="on" haltonfailure="off" fork="on" showoutput="false"
       errorProperty="unittest.failed.flag"
       failureProperty="unittest.failed.flag">
@@ -356,6 +363,9 @@
         </fileset>
       </batchtest>
     </junit>
+
+    </jacoco:coverage>
+
     <junitreport todir="${junit.results}">
       <fileset dir="${junit.results}">
         <include name="TEST-*.xml"/>
@@ -390,6 +400,33 @@
 
   <target name="test" depends="run-junit"
           description="Execute all tests"/>
+
+  <target name='clean-report'>
+    <delete dir="${jacoco}"/>
+  </target>
+
+  <target name="jacoco-check">
+    <available property="jacoco.exists" file="${jacoco.exec}" />
+  </target>
+
+  <target name="report" depends="clean-report,test,jacoco-check" if="jacoco.exists">
+    <jacoco:report>
+      <executiondata>
+        <file file="${jacoco.exec}" />
+      </executiondata>
+      <structure name="JaCoCo Report">
+        <classfiles>
+          <fileset dir="${classoutdir}"/>
+        </classfiles>
+        <sourcefiles encoding="UTF-8">
+          <fileset dir="${srcdir}" />
+        </sourcefiles>
+      </structure>
+      <html destdir="${jacoco.html}" />
+      <csv destfile="${jacoco.csv}" />
+      <xml destfile="${jacoco.xml}" />
+    </jacoco:report>
+  </target>
 
   <target name="jar" depends="compile" if="build.modlib">
     <mkdir dir="${jaroutdir}"/>
@@ -508,7 +545,7 @@
           depends="compile,test,javadoc,jar,dist"
           description="Performs a build; runs tests; builds javadocs, jar, dist"/>
 
-  <target name="p4chkn" depends="clean,run-junit,dist,update-modlib" description="Executes targets required to pass prior to checkin"/>
+  <target name="p4chkn" depends="clean,report,dist,update-modlib" description="Executes targets required to pass prior to checkin"/>
   <target name="p4checkin" depends="p4chkn" description="Because typing p4chkn requires to much thinking on my part ;)"/>
 
   <target name="clean-localdist" description="clean localdist area">

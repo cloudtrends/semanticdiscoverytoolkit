@@ -42,4 +42,11 @@
   <property name="junit.tests" value="Test*"/>
   <available property="has.junit.tests" file="${junit.test}" type="dir"/>
 
+  <!-- setup code coverage (jacoco) properties -->
+  <property name="jacoco" value="${bldoutdir}/jacoco" />
+  <property name="jacoco.exec" value="${jacoco}/jacoco.exec" />
+  <property name="jacoco.html" value="${jacoco}/report" />
+  <property name="jacoco.csv" value="${jacoco.html}/report.csv" />
+  <property name="jacoco.xml" value="${jacoco.html}/report.xml" />
+
 </project>

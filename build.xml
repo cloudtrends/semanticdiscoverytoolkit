@@ -41,6 +41,10 @@
     <ant antfile="modules/build.xml" target="clean-dist" inheritall="false"/>
   </target>
 
+  <target name="report">
+    <ant antfile="modules/build.xml" target="report" inheritall="false"/>
+  </target>
+
   <target name="dop4chkn" depends="init">
     <ant dir="tools/anttasks" antfile="build.xml" target="dist" inheritall="false"/>
     <ant antfile="modules/build.xml" target="p4chkn" inheritall="false"/>

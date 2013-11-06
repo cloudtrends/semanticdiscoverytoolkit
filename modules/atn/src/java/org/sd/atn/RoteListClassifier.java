@@ -914,7 +914,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
           }
         }
         else {
-          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          if (GlobalConfig.verboseLoad()) {
             System.out.println(new Date() + ": WARNING : Unrecognized 'classifiers' sub-element '" +
                                nodeName + "'. Expecting 'classifier' or 'feature'.");
           }
@@ -1381,7 +1381,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
       final Object classifierObject = classifierName != null && !"".equals(classifierName) ? resourceManager.getResource(classifierName) : null;
       if (classifierObject == null) {
-        if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+        if (GlobalConfig.verboseLoad()) {
           System.out.println(new Date() + ": WARNING : RoteListClassifier unknown classifier '" + classifierName + "'");
         }
       }
@@ -1391,7 +1391,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
           result = (AtnStateTokenClassifier)classifierObject;
         }
         else {
-          if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+          if (GlobalConfig.verboseLoad()) {
             System.out.println(new Date() + ": WARNING : classifier '" +
                                classifierName + "' is *NOT* an AtnStateTokenClassifier (" +
                                classifierObject.getClass().getName() + ")");

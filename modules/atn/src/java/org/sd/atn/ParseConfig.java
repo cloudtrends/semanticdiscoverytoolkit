@@ -110,7 +110,7 @@ public class ParseConfig {
     final File parseConfigFile = options.getFile("parseConfig", "workingDir");
 
     if (parseConfigFile != null) {
-      if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+      if (GlobalConfig.verboseLoad()) {
         System.out.println(new Date() + ": ParseConfig loading '" +
                            parseConfigFile.getAbsolutePath() +
                            "' (exists=" + parseConfigFile.exists() + ")");
@@ -125,7 +125,7 @@ public class ParseConfig {
     final DomElement parseElement = (DomElement)domDocument.getDocumentElement();
     final StringBuilder description = new StringBuilder();
 
-    if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+    if (GlobalConfig.verboseLoad()) {
       System.out.println(new Date() + ": ParseConfig init(" + parseConfigFile + ")");
     }
     final ParseConfig result = new ParseConfig(parseElement);
@@ -138,7 +138,7 @@ public class ParseConfig {
       final String[] supplements = supplementsString.split("\\s*;\\s*");
       for (String supplement : supplements) {
         final File supplementFile = options.getWorkingFile(supplement, "workingDir");
-        if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+        if (GlobalConfig.verboseLoad()) {
           System.out.println(new Date() + ": ParseConfig supplement(" + supplementFile + ")");
         }
         final DomDocument supDocument = XmlFactory.loadDocument(supplementFile, false, options);
@@ -197,14 +197,14 @@ public class ParseConfig {
 
 
   public ParseConfig(String filename) throws IOException {
-    if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+    if (GlobalConfig.verboseLoad()) {
       System.out.println(new Date() + ": ParseConfig init(" + filename + ")");
     }
     init(new DataProperties(new File(filename)));
   }
 
   public ParseConfig(File configFile) throws IOException {
-    if (!"true".equals(System.getenv("DISABLE_ATN_LOAD_VERBOSITY"))) {
+    if (GlobalConfig.verboseLoad()) {
       System.out.println(new Date() + ": ParseConfig init(" + configFile + ")");
     }
     init(new DataProperties(configFile));
