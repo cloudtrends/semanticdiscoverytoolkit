@@ -88,6 +88,13 @@ public class ParseInterpretation implements Publishable, Serializable {
   }
 
   /**
+   * Determine whether this interp has a source parse.
+   */
+  public boolean hasSourceParse() {
+    return _sourceParse != null;
+  }
+
+  /**
    * Set the source parse for this interpretation.
    */
   public void setSourceParse(AtnParse sourceParse) {

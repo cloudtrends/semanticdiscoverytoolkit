@@ -85,6 +85,7 @@ public class IdentityParseInterpreter implements ParseInterpreter {
     final Tree<XmlLite.Data> interpTree = asInterpTree(context, parse.getParseTree(), null);
     final ParseInterpretation parseInterp = buildParseInterpretationHook(context, interpTree);
     parseInterp.setParse(parse);
+    if (parse.hasAtnParse()) parseInterp.setSourceParse(parse.getAtnParse());
     result.add(parseInterp);
     return result;
   }

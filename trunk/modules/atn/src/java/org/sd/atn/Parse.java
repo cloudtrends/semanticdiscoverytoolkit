@@ -67,6 +67,8 @@ public class Parse implements Publishable, Serializable {
   private List<CategorizedToken> _cTokens;
   private DomElement _domElement;
 
+  private transient AtnParse _atnParse = null;
+
   private static final long serialVersionUID = 42L;
 
   private static IdentityParseInterpreter _ipi = null;
@@ -128,6 +130,8 @@ public class Parse implements Publishable, Serializable {
 
     this.remainingText = parse.getRemainingText();
     this.immediatePostParseDelims = parse.getImmediatePostParseDelims();
+
+    this._atnParse = parse;
   }
 
   public LiteralTokenizer getTokenizer() {
@@ -208,6 +212,14 @@ public class Parse implements Publishable, Serializable {
       result = cTokens.get(cTokens.size() - 1);
     }
     return result;
+  }
+
+  public boolean hasAtnParse() {
+    return _atnParse != null;
+  }
+
+  public AtnParse getAtnParse() {
+    return _atnParse;
   }
 
   /**
