@@ -152,7 +152,8 @@ public class TokenInclusionTest extends BaseClassifierTest {
   protected boolean doAccept(Token token, AtnState curState) {
     boolean result = false;
 
-    final AtnState stopState = (unlimit ? null : curState.getConstituentTop());
+    AtnState stopState = (unlimit ? null : curState.getConstituentTop());
+    if (stopState != null) stopState = stopState.getParentState();  // back-up one to include constit top itself in search
 
     if (verbose) {
       System.out.println("\nTokenInclusionTest starting w/token=" + token + ", stopState=" + stopState);
