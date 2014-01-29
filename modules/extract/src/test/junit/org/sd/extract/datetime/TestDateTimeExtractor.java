@@ -84,7 +84,11 @@ public class TestDateTimeExtractor extends TestCase {
 
     verify(extractor, "Gobbledygook: 12 Dec 2005", new String[]{"(DATE (YEAR '12') (MONTH 'Dec'))", "(DATE (DAY '12') (MONTH 'Dec') (YEAR '2005'))"});
     verify(extractor, "September 2005(11)", new String[]{"(DATE (MONTH 'September') (YEAR '2005'))"});
-    verify(extractor, "MyFinances.co.uk, UK - Jun 15, 2005", new String[]{"(DATE (MONTH 'Jun') (DAY '15') (YEAR '2005'))"});
+    verify(extractor, "MyFinances.co.uk, UK - Jun 15, 2005",
+           DateUtil.CURRENT_YEAR >= 2014 ?           
+           new String[]{"(DATE (MONTH 'Jun') (YEAR '15'))", "(DATE (MONTH 'Jun') (DAY '15') (YEAR '2005'))" } :
+           new String[]{"(DATE (MONTH 'Jun') (DAY '15') (YEAR '2005'))" }
+      );
     verify(extractor, "Published: December 24, 2005", new String[]{"(DATE (MONTH 'December') (DAY '24') (YEAR '2005'))"});
     verify(extractor, "Posted: Tue Dec 27, 2005 3:35 pm", new String[]{"(DATE_TIME (DATE (WEEKDAY 'Tue') (MONTH 'Dec') (DAY '27') (YEAR '2005')) (TIME (HOUR '3') (MINUTE '35') (AMPM 'pm')))"});
     verify(extractor, "since January 21, 2004", new String[]{"(DATE (MONTH 'January') (DAY '21') (YEAR '2004'))"});
@@ -99,6 +103,8 @@ public class TestDateTimeExtractor extends TestCase {
 
     //todo: fix date parser to get this date right?
     verify(extractor, ", by uosae11 (Dec 15)",
+           DateUtil.CURRENT_YEAR >= 2014 ?
+           new String[]{"(DATE (YEAR '11') (MONTH 'Dec') (DAY '15'))", "(DATE (DAY '11') (MONTH 'Dec') (YEAR '15'))"} :
            DateUtil.CURRENT_YEAR >= 2010 ?
            new String[]{"(DATE (YEAR '11') (MONTH 'Dec') (DAY '15'))"} :
            new String[]{"(DATE (MONTH 'Dec') (DAY '15'))"});
