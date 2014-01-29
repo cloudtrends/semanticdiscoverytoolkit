@@ -1,0 +1,98 @@
+Attribute model
+
+- Design for mixed canonical and free attributes with provisions for ambiguity (in both attributes and values), multiple associated values, and meta-data.
+
+Terminology
+
+- Attribute: The attribute, or "type", to be associated with a value.
+  - Canonized attribute: An known, pre-defined, and enumerated attribute.
+  - Free attribute: An arbitrary attribute defined on the fly.
+- Value: The object associated with an attribute
+- Attribute value pair (avp): The pairing of an attribute with its value(s).
+- Attribute classifier: A classifier that converts a free-text attribute string to its canonized attribute enumeration, if possible.
+- Ambiguity: Having multiple entities (or differing versions of an entity), where only one entity is allowed.
+- Disambiguation: Selecting a single version from multiples for an entity.
+- Multiple values: Allowing multiple entities to be valid at the same time.
+- Meta-data: Descriptive data about avp's and containers that accompany them.
+
+Features
+
+- This model supports:
+  - strong typing for canonized attributes
+    - through the [AvpContainer] enumerated type accessors
+      - note that this uses generic methods with strongly typed (canonical) arguments.
+    - optionally through a [StrongTypeDecorator] implementation that gives method-level typing.
+      - which would define strongly typed methods for each canonical attribute.
+  - free attributes, seamlessly coexisting with canonized attributes
+    - through the [AvpContainer] generic String-argument accessors
+      - which also allow access to canonized attributes using the [AttributeClassifier]
+  - ambiguity in attribute classification
+    - manifest through the [Attribute] result of classification through the [AttributeClassifier]
+      - by implementing the [AmbiguousEntity<E>] interface for the enumerated (canonized) attributes.
+  - multiple values associated with a single attribute in an [AttributeValuePair]
+    - by adding each value to avp
+      - through the [MultipleValues] interface methods
+  - ambiguity in values
+    - by setting [AttValPair]'s templated type, V, as an object implementing the [AmbiguousEntity] interface
+  - nested "record" values
+    - by setting [AttValPair]'s templated type, V, as an [AvpContainer]
+  - client access to [AttValPair<E, V>] with or without the ability to manage ambiguity or multiple values
+    - all clients access the simple core [AttValPair<E, V>] methods directly and ignore ambiguity and multiple values
+    - ambiguity-aware clients can access [AmbiguousEntity<AttValPair<E, V>>] interface methods.
+    - multiple-value-aware clients can access [AmbiguousValues<V>] interface methods.
+  - meta-data can be carried with attribute value pairs and their containers.
+
+Usage
+
+- Create an enumeration class of canonized attributes, e.g., [AttType]
+  - must implement the "Canonical" interface
+  - include a constant for each canonized attribute
+    - reporting "true" from the "isCanonical" method for each
+  - zero or more constants designating "Other" un-canonized attributes are allowed, but unnecessary
+    - reporting "false" from the "isCanonical" method for each
+
+- Create (extend) an [AttributeClassifier<AttType>] e.g., [AttributeClassifierImpl]
+  - maps free-text input values to their associated [Attribute<AttType>]
+    - note that ambiguity in the classification is allowed through the [Attribute<AttType>]
+
+- (optionally)
+  - Create a [StrongTypeAccessor] by extending [AvpContainer] and adding accessor methods for each [AttType].
+  - Note that with or without the [StrongTypeAccessor], the generic get(attType:AttType) method provides for strong typing at the argument level.
+
+- (optionally)
+  - Attach meta-data to attributes and their containers.
+    - This should be kept very simple, even though deep complexity is possible.
+
+- [AttValPair] instances are aggregated and classified within an [AvpContainer].
+  - [AttValPair] instances are constructed with or without canonized attTypes
+  - The [AvpContainer] is constructed with the appropriate [AttributeClassifierImpl]
+  - As [AttValPair] instances are added to the [AvpContainer], attTypes are classified when possible.
+
+- The [AvpContainer] stores copies of the submitted [AttValPair] instances
+  - these are classified when necessary and possible
+  - each ambiguous classification has a mapping to a version (copy) of the [AttValPair]
+  - multiple [AttValPair] instances with the same classification ([AttType]) are represented as ambiguous [AttValPair] instances.
+  - multiple [AttValPair] instances with the same "otherType" text are represented as ambiguous [AttValPair] instances.
+  - NOTE that multiple values, when needed, must be contained within (added to) the [AttValPair] instances that are added to the container
+    - and not by adding multiple [AttValPair] instances to the [AvpContainer]
+
+
+Class Diagram Walkthrough
+
+- The primary class in this design is the user-defined enumeration of canonical attribute types, [AttType].
+- Next are the containers:
+  - [AttValPair] that associates instances of attributes (canonical or free) paired with values
+    - including provisions for
+      - ambiguity through the [AmbiguousEntity] interface
+      - multiple values through the [MultipleValues] interface
+      - meta-data through the metaData field
+  - [AvpContainer] that
+    - contains and organizes [AttValPair] instances
+      - provides strong and weak type (argument) accessor methods
+      - carries container-level meta-data
+      - contains and applies an [AttributeClassifier] for conversion from weak to strong typing
+- Next, the user-defined [AttributeClassifierImpl] implements the [AttributeClassifier] that
+  - converts arbitrary attribute strings to the enumerated types
+  - encapsulates potential ambiguity in the classification process through the [Attribute] wrapper
+    - by implementing [AmbiguousEntity]
+- Extending the [AvpContainer] with a [StrongTypeAccessor] gives the user a means for method-level strong type access.

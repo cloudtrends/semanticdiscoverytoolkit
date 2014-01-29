@@ -1,0 +1,170 @@
+package org.sd.util.attribute;
+
+
+import java.util.LinkedList;
+
+/**
+ * Helper class for implementation of the AmbiguousEntity interface.
+ * <p>
+ * @author Spence Koehler
+ */
+public class AmbiguityChain <T> {
+
+  private LinkedList<AmbiguousEntity<T>> ambiguities;
+
+  /**
+   * Construct an empty instance.
+   */
+  public AmbiguityChain() {
+    this.ambiguities = new LinkedList<AmbiguousEntity<T>>();
+  }
+
+  /**
+   * Get the size of (number of entities in) this ambiguity chain.
+   */
+  public int size() {
+    return ambiguities.size();
+  }
+
+  /**
+   * Get the entity at the given precedence, or null.
+   */
+  public AmbiguousEntity<T> get(int precedence) {
+    return (precedence >= 0 && precedence < ambiguities.size()) ? ambiguities.get(precedence) : null;
+  }
+
+  /**
+   * Remove the given entity from this chain.
+   * <p>
+   * If entity is not in this chain, an IllegalArgumentException is thrown.
+   */
+  public void remove(AmbiguousEntity<T> entity) {
+    if (entity != null) {
+      final int idx = entity.getPrecedence();
+      if (idx >= 0 && idx < ambiguities.size() && ambiguities.get(idx) == entity) {
+        removeAt(idx);
+      }
+      else if (entity.isAmbiguous()) {
+        throw new IllegalArgumentException("Can't remove entity that's not in this chain! Remove from its own chain.");
+      }
+    }
+  }
+
+  /**
+   * Add the given entry to the end of this chain.
+   * <p>
+   * If the entity is already ambiguous, an IllegalArgumentException is thrown.
+   *
+   * @return the precedence of the added entity.
+   */
+  public int add(AmbiguousEntity<T> entity) {
+    int result = -1;
+
+    if (entity != null) {
+      if (entity.isAmbiguous()) {
+        throw new IllegalArgumentException("Can't add already ambiguous entity! Must disambiguate before adding here.");
+      }
+      else {
+        result = ambiguities.size();
+        ambiguities.add(entity);
+        entity._setPrecedence(result);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Insert the given entity immediately after the existing entity.
+   * <p>
+   * If existingEntity is null, then insert newEntity at the beginning of this chain.
+   * <p>
+   * If the existingEntity is in a different chain, an IllegalArgumentException is thrown.
+   * <p>
+   * If the existing entity isn't in this chain, then it will be added to the
+   * end followed by the newEntity.
+   * <p>
+   * If the newEntity is already ambiguous, an IllegalArgumentException is thrown.
+   */
+  public void insertAfter(AmbiguousEntity<T> existingEntity, AmbiguousEntity<T> newEntity) {
+    if (newEntity == null || existingEntity == newEntity) return;
+
+    int addIdx = -1;
+    int removeIdx = -1;
+
+    // find current index of newEntity in this chain (removeIdx)
+    if (newEntity.isAmbiguous()) {
+      removeIdx = newEntity.getPrecedence();
+      if (removeIdx >= 0 && removeIdx < ambiguities.size() && newEntity == ambiguities.get(removeIdx)) {
+        // we may need to remove newEntity from removeIdx
+      }
+      else {
+        throw new IllegalArgumentException("Can't insertAfter because newEntity is in a different chain! Must disambiguate before adding here.");
+      }
+    }
+
+    // find index after existingEntity in this chain (addIdx)
+    if (existingEntity == null) {
+      addIdx = 0;
+    }
+    else {
+      final int existingIdx = existingEntity.getPrecedence();
+      if (existingIdx >= 0 && existingIdx < ambiguities.size() && existingEntity == ambiguities.get(existingIdx)) {
+        addIdx = existingIdx + 1;
+      }
+      else if (!existingEntity.isAmbiguous()) {
+        // add existingEntity to this chain
+        addIdx = add(existingEntity) + 1;
+      }
+      else {
+        throw new IllegalArgumentException("Can't insertAfter because existingEntity is in a different chain!");
+      }
+    }
+
+    // add newEntity, moving if needed
+    if (addIdx != removeIdx) {
+
+      if (removeIdx >= 0) {
+        // need to move
+        if (addIdx > removeIdx) {
+          // addIdx will shift left after remove
+          --addIdx;
+        }
+    
+        // remove newEntity from old location
+        removeAt(removeIdx);
+      }
+
+      if (addIdx >= 0) {
+        // insert newEntity to new location
+        insertAt(addIdx, newEntity);
+      }
+    }
+  }
+
+  private final void insertAt(int idx, AmbiguousEntity<T> newEntity) {
+    if (idx == ambiguities.size()) {
+      add(newEntity);
+    }
+    else {
+      // shift entities up one in precedence
+      final int size = ambiguities.size();
+      for (int shiftIdx = idx; shiftIdx < size; ++shiftIdx) {
+        ambiguities.get(shiftIdx)._setPrecedence(shiftIdx + 1);
+      }
+      ambiguities.add(idx, newEntity);
+      newEntity._setPrecedence(idx);
+    }
+  }
+
+  private final void removeAt(int idx) {
+    // shift entities down one in precedence
+    final int size = ambiguities.size();
+    for (int shiftIdx = idx; shiftIdx < size; ++shiftIdx) {
+      ambiguities.get(shiftIdx)._setPrecedence(shiftIdx - 1);
+    }
+
+    final AmbiguousEntity<T> ambiguity = ambiguities.remove(idx);
+    ambiguity._setPrecedence(-1);
+  }
+}
