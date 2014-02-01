@@ -111,6 +111,11 @@ public class AvpContainer <E extends Canonical, V, M> {
 
     if (attType != null && attType.isCanonical() && strongAVPs != null) {
       result = strongAVPs.get(attType);
+
+      // check for an unclassifiedAVP that now maps to a strongAVP
+      if (result == null && unclassifiedAVPs != null) {
+        result = get(attType.toString());
+      }
     }
 
     return result;
