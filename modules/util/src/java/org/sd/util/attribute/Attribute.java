@@ -40,6 +40,11 @@ public class Attribute <E> extends AbstractAmbiguousEntity<Attribute<E>> {
     return attType;
   }
 
+  ////////
+  ///
+  /// Implement AmbiguousEntity interface
+  ///
+
   /** Simple typecasting helper auxiliary for getting the next ambiguity. */
   public Attribute<E> nextAmbiguity() {
     return (Attribute<E>)getNextAmbiguity();
@@ -50,16 +55,20 @@ public class Attribute <E> extends AbstractAmbiguousEntity<Attribute<E>> {
     return (Attribute<E>)getFirstAmbiguity();
   }
 
-  ////////
-  ///
-  /// Implement AmbiguousEntity interface
-  ///
-
   /**
-   * Safely and efficiently typecast this to an AttValPair.
+   * Safely and efficiently typecast this to an Attribute.
    */
   public Attribute<E> getEntity() {
     return this;
+  }
+
+  /** Determine whether this ambiguous entity matches (is a duplicate of) the other */
+  public boolean matches(AmbiguousEntity<Attribute<E>> other) {
+    boolean result = (this == other);
+    if (!result && other != null) {
+      result = (this.attType == other.getEntity().attType);
+    }
+    return result;
   }
 
   ///

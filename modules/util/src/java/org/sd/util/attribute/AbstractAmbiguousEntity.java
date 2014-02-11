@@ -51,7 +51,20 @@ public abstract class AbstractAmbiguousEntity <T> implements AmbiguousEntity<T> 
 
   /** Determine whether the current instance is ambiguous. */
   public boolean isAmbiguous() {
-    return ambiguityChain != null && ambiguityChain.size() > 1;
+    boolean result = false;
+
+    if (ambiguityChain != null) {
+      int count = 0;
+      for (AmbiguousEntity<T> entity = getFirstAmbiguity(); entity != null; entity = entity.getNextAmbiguity()) {
+        ++count;
+        if (count > 1) {
+          result = true;
+          break;
+        }
+      }
+    }
+
+    return result;
   }
 
   /** Determine whether there is a next (less likely than this) ambiguous entity. */
@@ -69,7 +82,15 @@ public abstract class AbstractAmbiguousEntity <T> implements AmbiguousEntity<T> 
 
   /** Get the number of ambiguities. */
   public int getAmbiguityCount() {
-    return isAmbiguous() ? ambiguityChain.size() : 0;
+    int result = 0;
+
+    if (ambiguityChain != null) {
+      for (AmbiguousEntity<T> entity = getFirstAmbiguity(); entity != null; entity = entity.getNextAmbiguity()) {
+        ++result;
+      }
+    }
+
+    return result;
   }
 
   /** Rule out this as a valid entity in its ambiguity chain. */
@@ -90,13 +111,13 @@ public abstract class AbstractAmbiguousEntity <T> implements AmbiguousEntity<T> 
     }
   }
 
-
   /** Get the next (less likely than this) ambiguous entity. */
   public AmbiguousEntity<T> getNextAmbiguity() {
     AmbiguousEntity<T> result = null;
 
     if (ambiguityChain != null) {
-      result = ambiguityChain.getNext(this);
+      // get the next ambiguity that doesn't match this
+      for (result = ambiguityChain.getNext(this); result != null && result.matches(this); result = ambiguityChain.getNext(result));
     }
 
     return result;
@@ -129,9 +150,16 @@ public abstract class AbstractAmbiguousEntity <T> implements AmbiguousEntity<T> 
   public void insertAmbiguity(AmbiguousEntity<T> lessLikelyEntity) {
     if (lessLikelyEntity == null) return;
     if (ambiguityChain == null) {
-      this.ambiguityChain = new AmbiguityChain<T>();
-      this.ambiguityChain.add(this);
-      this.ambiguityChain.add(lessLikelyEntity);
+      if (lessLikelyEntity.isAmbiguous()) {
+        final AbstractAmbiguousEntity<T> other = (AbstractAmbiguousEntity<T>)lessLikelyEntity;
+        other.ambiguityChain.insertAfter(null, this);
+        this.ambiguityChain = other.ambiguityChain;
+      }
+      else {
+        this.ambiguityChain = new AmbiguityChain<T>();
+        this.ambiguityChain.add(this);
+        this.ambiguityChain.add(lessLikelyEntity);
+      }
     }
     else {
       ambiguityChain.insertAfter(this, lessLikelyEntity);

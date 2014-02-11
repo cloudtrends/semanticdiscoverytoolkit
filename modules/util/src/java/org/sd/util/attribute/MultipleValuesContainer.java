@@ -160,4 +160,29 @@ public class MultipleValuesContainer <T> implements MultipleValues<T> {
 
     return result.toString();
   }
+
+  public boolean equals(Object other) {
+    boolean result = (this == other);
+
+    if (!result && (other instanceof MultipleValuesContainer)) {
+      final MultipleValuesContainer otherMVC = (MultipleValuesContainer)other;
+      if (this.getValuesCount() == otherMVC.getValuesCount()) {
+        result = this.getValues().equals(otherMVC.getValues());
+      }
+    }
+
+    return result;
+  }
+
+  public int hashCode() {
+    int result = 11;
+
+    final int count = this.getValuesCount();
+    if (count != 0) {
+      result = result * 11 + count;
+      result = result * 11 + getValues().hashCode();
+    }
+
+    return result;
+  }
 }

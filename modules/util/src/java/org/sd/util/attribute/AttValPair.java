@@ -273,6 +273,31 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
     }
   }
 
+  /** Determine whether this ambiguous entity matches (is a duplicate of) the other */
+  public boolean matches(AmbiguousEntity<AttValPair<E, V, M>> other) {
+    boolean result = (this == other);
+    if (!result && other != null) {
+      // types must match
+      final AttValPair<E, V, M> otherAVP = other.getEntity();
+      if (this.attType == null && otherAVP.attType == null) {
+        // rely on otherType
+        result = ((this.otherType == otherAVP.otherType) ||
+                  (this.otherType != null && this.otherType.equals(otherAVP.otherType)));
+      }
+      else {
+        // rely on attType
+        result = (this.attType == otherAVP.attType);
+      }
+
+      // and values must match
+      if (result) {
+        result = this.values.equals(otherAVP.values);
+      }
+    }
+
+    return result;
+  }
+
   ///
   /// end of AmbiguousEntity interface implementation
   ///
