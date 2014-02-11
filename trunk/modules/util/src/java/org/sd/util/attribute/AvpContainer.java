@@ -40,10 +40,13 @@ import java.util.Map;
  * <p>
  * An attribute classifier is required for the accessors that require a generic
  * string to be converted to a canonical attribute.
+ * <p>
+ * Note that the container itself can be ambiguous (or have multiple ambiguous
+ * manifestations).
  *
  * @author Spence Koehler
  */
-public class AvpContainer <E extends Canonical, V, M> {
+public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousEntity<AvpContainer<E, V, M>> {
 
   private AttributeClassifier<E> attributeClassifier;
   private Map<E, AttValPair<E, V, M>> strongAVPs;
@@ -201,17 +204,32 @@ public class AvpContainer <E extends Canonical, V, M> {
    * As a side-effect, the avp's non-canonical attType may be updated and the
    * avp may become ambiguous.
    * <p>
+   * An unambiguous avp when added will be inserted to the front of the
+   * ambiguity chain. To add to the end, use "addNext" instead.
+   * <p>
    * NOTE: this container stores copies of the submitted avp's.
    */
   public void add(AttValPair<E, V, M> avp) {
-    doAdd(avp, false);
+    doAdd(avp, false, false);
   }
 
   /**
    * Convenience method to add a generic AttValPair.
+   * <p>
+   * Note that as an unambiguous avp when added, the new avp will be inserted
+   * to the front of the ambiguity chain. To add to the end, use "addNext"
+   * instead.
    */
   public void add(String attType, V value) {
     this.add(new AttValPair<E, V, M>(attType, value));
+  }
+
+  public void addNext(AttValPair<E, V, M> avp) {
+    doAdd(avp, false, true);
+  }
+
+  public void addNext(String attType, V value) {
+    this.addNext(new AttValPair<E, V, M>(attType, value));
   }
 
   /**
@@ -219,10 +237,10 @@ public class AvpContainer <E extends Canonical, V, M> {
    * in this container (instead of adding as ambiguous).
    */
   public void override(AttValPair<E, V, M> avp) {
-    doAdd(avp, true);
+    doAdd(avp, true, false);
   }
 
-  private final void doAdd(AttValPair<E, V, M> avp, boolean override) {
+  private final void doAdd(AttValPair<E, V, M> avp, boolean override, boolean next) {
     if (avp != null) {
       Map<String, Attribute<E>> classifications = null;
 
@@ -238,7 +256,7 @@ public class AvpContainer <E extends Canonical, V, M> {
       // if avp has a canonical attribute (strongly typed), then add all
       // (unique) ambiguities for strong reference
       while (avp != null) {
-        doAddInstance(avp, classifications);
+        doAddInstance(avp, classifications, next);
         avp = avp.nextAmbiguity();
       }
     }
@@ -469,7 +487,7 @@ public class AvpContainer <E extends Canonical, V, M> {
     return result.toString();
   }
 
-  private final void doAddInstance(AttValPair<E, V, M> avp, Map<String, Attribute<E>> classifications) {
+  private final void doAddInstance(AttValPair<E, V, M> avp, Map<String, Attribute<E>> classifications, boolean next) {
 
     // update strongAVPs
     final E attType = avp.getAttType();
@@ -484,7 +502,7 @@ public class AvpContainer <E extends Canonical, V, M> {
         strongAVPs.put(attType, copyToAdd);
       }
       else {
-        if (!avp.isAmbiguous()) {
+        if (!avp.isAmbiguous() && !next) {
           // insert non-ambiguous new to the front of the ambiguity chain
           //
           // NOTE: this has the effect that later unambiguous adds with the
@@ -731,4 +749,79 @@ public class AvpContainer <E extends Canonical, V, M> {
 
     return result;
   }
+
+  ////////
+  ///
+  /// Implement AmbiguousEntity interface
+  ///
+
+  /** Simple typecasting helper auxiliary for getting the next ambiguity. */
+  public AvpContainer<E, V, M> nextAmbiguity() {
+    return (AvpContainer<E, V, M>)getNextAmbiguity();
+  }
+
+  /** Simple typecasting helper auxiliary for getting the first ambiguity. */
+  public AvpContainer<E, V, M> firstAmbiguity() {
+    return (AvpContainer<E, V, M>)getFirstAmbiguity();
+  }
+
+  /**
+   * Safely and efficiently typecast this to an AvpContainer.
+   */
+  public AvpContainer<E, V, M> getEntity() {
+    return this;
+  }
+
+  /** Determine whether this ambiguous entity matches (is a duplicate of) the other */
+  public boolean matches(AmbiguousEntity<AvpContainer<E, V, M>> other) {
+    boolean result = (this == other);
+    if (!result && other != null) {
+      final AvpContainer<E, V, M> otherAvpC = other.getEntity();
+      if (this.attributeClassifier == otherAvpC.attributeClassifier ||
+          (this.attributeClassifier != null && this.attributeClassifier.equals(otherAvpC.attributeClassifier))) {
+        if (matches(this.strongAVPs, otherAvpC.strongAVPs) && matches(this.unclassifiedAVPs, otherAvpC.unclassifiedAVPs)) {
+          result = true;
+        }
+      }
+    }
+    return result;
+  }
+
+  private static <X, E extends Canonical, V, M> boolean matches(Map<X, AttValPair<E, V, M>> map1, Map<X, AttValPair<E, V, M>> map2) {
+    boolean result = (map1 == map2);
+
+    if (!result && map1 != null && map2 != null && map1.size() == map2.size()) {
+      result = true;
+      for (Map.Entry<X, AttValPair<E, V, M>> entry1 : map1.entrySet()) {
+        AttValPair<E, V, M> avp1 = entry1.getValue();
+        AttValPair<E, V, M> avp2 = map2.get(entry1.getKey());
+
+        if (avp1 == avp2) continue;
+        else if (avp1 == null || avp2 == null) {
+          result = false;
+        }
+        else {
+          while (result && avp1 != null && avp2 != null) {
+            if (!avp1.matches(avp2)) {
+              result = false;
+              break;
+            }
+            else {
+              avp1 = avp1.nextAmbiguity();
+              avp2 = avp2.nextAmbiguity();
+            }
+          }
+          if (result && (avp1 != null || avp2 != null)) result = false;  // one has extras
+        }
+        if (!result) break;
+      }
+    }
+
+    return result;
+  }
+
+  ///
+  /// end of AmbiguousEntity interface implementation
+  ///
+  ////////
 }

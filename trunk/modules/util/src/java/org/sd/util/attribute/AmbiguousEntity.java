@@ -83,4 +83,7 @@ public interface AmbiguousEntity <T> {
 
   /** Remove this instance from its ambiguity chain. */
   public void remove();
+
+  /** Determine whether this ambiguous entity matches (is a duplicate of) the other */
+  public boolean matches(AmbiguousEntity<T> other);
 }

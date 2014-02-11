@@ -393,6 +393,17 @@ public abstract class BaseClassifierTest implements AtnRuleStepTest {
       }
     }
 
+    if (onlyLastToken) {
+      applyTest = false;
+      if (curState.isPoppedState() || isLastToken) {
+        applyTest = true;
+      }
+
+      if (!applyTest) {
+        result = success;
+      }
+    }
+
 
     if (applyTest) {
       // make the context switch here for applying the test to prev/next token

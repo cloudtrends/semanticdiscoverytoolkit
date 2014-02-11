@@ -160,7 +160,7 @@ public class AmbiguityChain <T> {
     }
 
     if (existingLink == null) {
-      if (!existingEntity.isAmbiguous()) {
+      if (existingEntity == null || !existingEntity.isAmbiguous()) {
         insertAt(0, newEntity);
       }
       else {

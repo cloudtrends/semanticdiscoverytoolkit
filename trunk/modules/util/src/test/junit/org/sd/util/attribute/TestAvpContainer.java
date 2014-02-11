@@ -92,6 +92,43 @@ public class TestAvpContainer extends TestCase {
     assertFalse(avpContainer.hasAmbiguity());
   }
 
+  public void testMultipleAmbiguities() {
+    final MyTestClassifier classifier = new MyTestClassifier();
+    final AvpContainer<MyTestEnum, String, Object> avpContainer = new AvpContainer<MyTestEnum, String, Object>(classifier);
+
+    final String[][] record1 = new String[][] {
+      {"make", "hyundai"},
+      {"model", "sonata"},
+      {"style", "sedan"},
+      {"year", "2010"},
+    };
+    addRecord(avpContainer, record1);
+    
+    final String[][] record2 = new String[][] {
+      {"make", "hyundai"},
+      {"model", "sonata"},
+      {"style", "sedan"},
+      {"year", "2011"},
+    };
+    addRecord(avpContainer, record2);
+    
+    final String[][] record3 = new String[][] {
+      {"make", "hyundai"},
+      {"model", "sonata"},
+      {"style", "sedan"},
+      {"year", "2012"},
+    };
+    addRecord(avpContainer, record3);
+    
+    assertTrue(avpContainer.hasAmbiguity());
+    final List<AttValPair<MyTestEnum, String, Object>> ambiguities = avpContainer.getAmbiguities();
+    assertEquals(1, ambiguities.size());
+    final AttValPair<MyTestEnum, String, Object> avp = ambiguities.get(0);
+    assertTrue(avp.isAmbiguous());
+    assertEquals(MyTestEnum.YEAR, avp.getAttType());
+    assertEquals(3, avp.getAmbiguityCount());
+  }
+
   public void testResolveAmbiguity1() {
     final MyTestClassifier classifier = new MyTestClassifier();
     final AvpContainer<MyTestEnum, String, Object> avpContainer = new AvpContainer<MyTestEnum, String, Object>(classifier);
@@ -165,9 +202,7 @@ public class TestAvpContainer extends TestCase {
 
   private final void doRecordTest(AvpContainer<MyTestEnum, String, Object> avpContainer, String[][] record,
                                   MyTestEnum[] expectedEnums) {
-    for (String[] attVal : record) {
-      avpContainer.add(attVal[0], attVal[1]);
-    }
+    addRecord(avpContainer, record);
 
     // test weak access
     for (String[] attVal : record) {
@@ -178,6 +213,12 @@ public class TestAvpContainer extends TestCase {
     int i = 0;
     for (MyTestEnum e : expectedEnums) {
       assertEquals(e.toString(), record[i++][1], avpContainer.get(e).getValue());
+    }
+  }
+
+  private final void addRecord(AvpContainer<MyTestEnum, String, Object> avpContainer, String[][] record) {
+    for (String[] attVal : record) {
+      avpContainer.add(attVal[0], attVal[1]);
     }
   }
 
