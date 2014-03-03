@@ -217,13 +217,19 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   }
 
   /**
-   * Get the duration of time during which this server has been "up"
-   * as a human readable string.
+   * Get the duration of time (milliseconds) that this server has been "up".
    */
-  public String getUpTime() {
+  public long getUpTime() {
     final long curtime = endtime > 0 ? endtime : System.currentTimeMillis();
-    final long result = curtime - starttime;
-    return MathUtil.timeString(result, false);
+    return curtime - starttime;
+  }
+
+  /**
+   * Get the duration of time which this server has been "up" as a human readable
+   * string.
+   */
+  public String getUpTimeString() {
+    return MathUtil.timeString(getUpTime(), false);
   }
 
   /**
