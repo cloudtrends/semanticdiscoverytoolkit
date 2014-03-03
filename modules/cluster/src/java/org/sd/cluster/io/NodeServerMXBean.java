@@ -29,10 +29,15 @@ import org.sd.util.StatsAccumulator;
 public interface NodeServerMXBean {
 
   /**
-   * Get the duration of time during which this server has been "up"
-   * as a human readable string.
+   * Get the duration of time (milliseconds) that this server has been "up".
    */
-  public String getUpTime();
+  public long getUpTime();
+
+  /**
+   * Get the duration of time this server has been "up" as a human readable
+   * string.
+   */
+  public String getUpTimeString();
 
   /**
    * Get the number of socket threads for this server.

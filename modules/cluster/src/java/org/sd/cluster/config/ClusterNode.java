@@ -183,6 +183,11 @@ public class ClusterNode implements ClusterContext {
     return clusterDef;
   }
 
+  /** Get the amount of time this node has been up in milliseconds. */
+  public long getUpTime() {
+    return listener.getUpTime();
+  }
+
   /**
    * Get the (possibly null) designated groups for this node.
    */

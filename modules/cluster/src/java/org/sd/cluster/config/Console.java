@@ -505,14 +505,20 @@ public class Console {
 
     private Config config;
     private ClusterDefinition clusterDefinition;
+    private long starttime;
 
     ConsoleClusterContext(Config config, ClusterDefinition clusterDefinition) {
       this.config = config;
       this.clusterDefinition = clusterDefinition;
+      this.starttime = System.currentTimeMillis();
     }
 
     public String getName() {
       return "ConsoleClusterContext";
+    }
+
+    public long getUpTime() {
+      return System.currentTimeMillis() - starttime;
     }
 
     public Config getConfig() {

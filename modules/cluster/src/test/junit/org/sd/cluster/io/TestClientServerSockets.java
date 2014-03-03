@@ -360,13 +360,19 @@ public class TestClientServerSockets extends BaseTestCase {
 
   private final class SimpleContext implements Context {
     private String name;
+    private long starttime;
 
     public SimpleContext(String name) {
       this.name = name;
+      this.starttime = System.currentTimeMillis();
     }
 
     public String getName() {
       return name;
+    }
+
+    public long getUpTime() {
+      return System.currentTimeMillis() - starttime;
     }
   }
 

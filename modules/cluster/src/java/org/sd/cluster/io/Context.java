@@ -31,4 +31,7 @@ public interface Context {
    */
   public String getName();
 
+  /** Get the amount of time this node has been up in milliseconds. */
+  public long getUpTime();
+
 }
