@@ -30,6 +30,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -240,6 +241,15 @@ public class PageCrawler {
         conn.setConnectTimeout(theSettings.getConnectTimeout());
         conn.setReadTimeout(theSettings.getReadTimeout());
 
+        if (urlData.hasRequestMethod()) {
+          conn.setRequestMethod(urlData.getRequestMethod());
+        }
+        if (urlData.hasRequestProperties()) {
+          for (Map.Entry<String, String> entry : urlData.getRequestProperties().entrySet()) {
+            conn.setRequestProperty(entry.getKey(), entry.getValue());
+          }
+        }
+ 
         final long startDownloadHeaderTime = System.currentTimeMillis();
         final int responseCode = conn.getResponseCode();
         final String responseMessage = conn.getResponseMessage();
