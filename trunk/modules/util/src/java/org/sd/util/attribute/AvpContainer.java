@@ -272,7 +272,13 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
   public void removeAll(AttValPair<E, V, M> avp) {
     if (avp == null) return;
 
-    for (avp = avp.firstAmbiguity(); avp != null; avp = avp.nextAmbiguity()) {
+    if (avp.isAmbiguous()) {
+      for (avp = avp.firstAmbiguity(); avp != null; avp = avp.nextAmbiguity()) {
+        avp.setContainer(null);
+        doRemoveAll(avp);
+      }
+    }
+    else {
       avp.setContainer(null);
       doRemoveAll(avp);
     }
@@ -375,6 +381,7 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
         if (strongAVPs.containsKey(att)) {
           result = remove(att);
         }
+        attribute = attribute.nextAmbiguity();
       }
     }
 

@@ -24,6 +24,8 @@ import org.sd.util.PathWrapper;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Container for url information.
@@ -42,6 +44,9 @@ public class UrlData {
 
   private String referringUrl;
   private String referringLinkText;
+
+  private String requestMethod;
+  private Map<String, String> requestProperties;
 
   /**
    * Construct with the given url string.
@@ -64,6 +69,9 @@ public class UrlData {
     this._cleanString = null;
     this.crawlDelay = null;
     this.forceRefreshTime = null;
+
+    this.requestMethod = null;
+    this.requestProperties = null;
   }
 
   /**
@@ -75,12 +83,15 @@ public class UrlData {
 
     this._error = null;
     this._dUrl = null;
-    this._cleanString = null;
+    this._cleanString = this.urlString;
     this.crawlDelay = null;
     this.forceRefreshTime = null;
 
     this.referringUrl = null;
     this.referringLinkText = null;
+
+    this.requestMethod = null;
+    this.requestProperties = null;
   }
 
   /**
@@ -109,6 +120,31 @@ public class UrlData {
    */
   public String getReferringLinkText() {
     return referringLinkText;
+  }
+
+  public boolean hasRequestMethod() {
+    return requestMethod != null && !"".equals(requestMethod);
+  }
+
+  public String getRequestMethod() {
+    return requestMethod;
+  }
+
+  public void setRequestMethod(String requestMethod) {
+    this.requestMethod = requestMethod;
+  }
+
+  public boolean hasRequestProperties() {
+    return requestProperties != null && requestProperties.size() > 0;
+  }
+
+  public void setRequestProperty(String property, String value) {
+    if (requestProperties == null) requestProperties = new LinkedHashMap<String, String>();
+    requestProperties.put(property, value);
+  }
+
+  public Map<String, String> getRequestProperties() {
+    return requestProperties;
   }
 
   /**
