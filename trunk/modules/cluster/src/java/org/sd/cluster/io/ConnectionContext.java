@@ -44,7 +44,7 @@ public class ConnectionContext {
   }
 
   public boolean isConnected() {
-    return socket.isConnected();
+    return socket.isConnected() && !socket.isClosed();
   }
 
   public SocketAddress getRemoteAddress() {
