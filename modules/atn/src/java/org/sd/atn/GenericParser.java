@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sd.xml.DataProperties;
 
 /**
@@ -111,12 +112,12 @@ public class GenericParser {
     this.localOptions = new DataProperties(originalOptions);
   }
 
-  public GenericParseResults parse(String inputText, DataProperties options) {
+  public GenericParseResults parse(String inputText, DataProperties options, AtomicBoolean die) {
     ParseOutputCollector parseOutput = null;
 
     if (inputText != null && !"".equals(inputText)) {
       try {
-        parseOutput = parseRunner.parseInputString(inputText, options, null);
+        parseOutput = parseRunner.parseInputString(inputText, options, die);
       }
       catch (IOException e) {
         throw new IllegalStateException(e);
