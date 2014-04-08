@@ -23,6 +23,7 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -154,6 +155,50 @@ public class FileUtil {
     }
 
     return result;
+  }
+
+  /**
+   * Find files whose names match the pattern in the given dir and are 
+   * descendants under the given dir.
+   *
+   * @return the files matching the pattern or null if dir doesn't exist or an
+   *         error occurs.
+   */
+  public static final File[] findSubFiles(File dir, final Pattern namePattern) 
+  {
+    if(dir == null)
+      return null;
+
+    List<File> result = new ArrayList<File>();
+    File[] files = dir.listFiles(
+      new FilenameFilter() {
+        public boolean accept(File dir, String name) {
+          final Matcher m = namePattern.matcher(name);
+          return m.matches();
+        }
+      });
+    if(files != null)
+      result.addAll(Arrays.asList(files));
+    
+    
+    File[] subfiles = dir.listFiles();
+    if(subfiles == null)
+      return null;
+
+    for(File file : subfiles)
+    {
+      if(file.isDirectory())
+      {
+        File[] subFiles = findSubFiles(file, namePattern);
+        if(subFiles != null)
+          result.addAll(Arrays.asList(subFiles));
+      }
+    }
+    
+    if(result.size() > 0)
+      return result.toArray(new File[0]);
+    else
+      return new File[] {};
   }
 
   /**
