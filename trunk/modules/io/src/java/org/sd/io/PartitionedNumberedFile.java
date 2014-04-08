@@ -21,6 +21,7 @@ package org.sd.io;
 import java.io.IOException;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -29,26 +30,50 @@ import java.util.regex.Pattern;
 /**
  * Utility class to work with numbered files.
  * <p>
- * @author Spence Koehler
+ * @author Abe Sanderson
  */
-public class NumberedFile 
+public class PartitionedNumberedFile 
   extends BaseNumberedFile
 {
-  public NumberedFile(File dir, String namePrefix, String nameSuffix) {
+  private static final int PARTITION_DEPTH = 2;
+  private static final int PARTITION_SIZE = 1024;
+  
+  public PartitionedNumberedFile(File dir, 
+                                 String namePrefix, 
+                                 String nameSuffix) 
+  {
     this(dir, namePrefix, nameSuffix, false);
   }
-  public NumberedFile(File dir, String namePrefix, String nameSuffix,
-                      boolean useFileLocks) 
+  public PartitionedNumberedFile(File dir, 
+                                 String namePrefix, 
+                                 String nameSuffix,
+                                 boolean useFileLocks) 
   {
     super(dir, namePrefix, nameSuffix, useFileLocks);
   }
 
   protected File[] findFiles() 
   {
-    return FileUtil.findFiles(this.dir, this.namePattern);
+    return FileUtil.findSubFiles(this.dir, this.namePattern);
   }
   protected File newFile(int number) 
   {
-    return new File(this.dir, this.namePrefix + number + this.nameSuffix);
+    int[] splits = partitionNumber(number, PARTITION_DEPTH, PARTITION_SIZE);
+    File partitionDir = new File(this.dir.getAbsolutePath());
+    for(int split : splits)
+      partitionDir = new File(partitionDir, String.valueOf(split));
+    partitionDir.mkdirs();
+    return new File(partitionDir, this.namePrefix + number + this.nameSuffix);
+  }
+
+  private int[] partitionNumber(int x, int depth, int partitionMax) 
+	{
+    int[] splits = new int[depth];
+    for(int i = depth; i > 0; i--)
+    {
+      int max = (int)Math.pow(partitionMax, i);
+      splits[depth-i] = (x/max) * max;
+    }
+    return splits;
   }
 }
