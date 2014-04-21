@@ -116,6 +116,7 @@ public class IntegerRange extends AbstractNumericRange implements Serializable {
     }
     else if (otherValues != null) {
       if (myValues.size() >= otherValues.size()) {
+        result = true;
         for (Integer otherValue : otherValues) {
           if (!myValues.contains(otherValue)) {
             result = false;
