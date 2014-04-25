@@ -90,7 +90,7 @@ public class Messenger {
     this.receiveTime = postReceiveTime - starttime;
 
     // send a response through dataOutput
-    Message response = message.getResponse(serverContext, connectionContext);
+    Message response = message == null ? null : message.getResponse(serverContext, connectionContext);
     if (response == null) response = new NullMessage();
     final long postResponseGenTime = System.currentTimeMillis();
     this.responseGenTime = postResponseGenTime - postReceiveTime;
