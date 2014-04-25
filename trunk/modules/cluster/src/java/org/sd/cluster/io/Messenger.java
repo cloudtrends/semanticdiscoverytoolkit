@@ -85,32 +85,47 @@ public class Messenger {
     final long starttime = System.currentTimeMillis();
 
     // listen for a message to receive on dataInput
-    message = receiveMessage(dataInput);
+    try {
+      message = receiveMessage(dataInput);
+    }
+    catch (Exception e) {
+      System.err.println(new Date() + ": Messenger.receiveMessage() received bad message from clientIP=" +
+                         connectionContext.getInetAddress().getHostAddress());
+      e.printStackTrace(System.err);
+      message = null;
+    }
     final long postReceiveTime = System.currentTimeMillis();
     this.receiveTime = postReceiveTime - starttime;
 
-    // send a response through dataOutput
-    Message response = message == null ? null : message.getResponse(serverContext, connectionContext);
-    if (response == null) response = new NullMessage();
-    final long postResponseGenTime = System.currentTimeMillis();
-    this.responseGenTime = postResponseGenTime - postReceiveTime;
+    long postResponseGenTime = 0L;
+    if (message != null) {
+      // send a response through dataOutput
+      Message response = message.getResponse(serverContext, connectionContext);
+      if (response == null) response = new NullMessage();
+      postResponseGenTime = System.currentTimeMillis();
+      this.responseGenTime = postResponseGenTime - postReceiveTime;
 
-    try {
-      sendMessage(response, dataOutput);
+      try {
+        sendMessage(response, dataOutput);
+      }
+      catch (SocketException se) {
+        throw new 
+          ConnectionSeveredException(new Date() +
+                                     ": WARNING Messenger.receiveMessage() response connection dropped for clientIP=" +
+                                     connectionContext.getInetAddress().getHostAddress() + " response=\n" + response, se);
+      }
+      catch (IOException e) {
+        System.err.println(new Date() + ": Messenger.receiveMessage() unable to send response (to " +
+                           connectionContext.getInetAddress().getHostAddress() +
+                           ")! received=" + message + " response=\n" + response);
+        throw e;
+      }
+      dataOutput.flush();
     }
-    catch (SocketException se) {
-      throw new 
-        ConnectionSeveredException(new Date() +
-                                   ": WARNING Messenger.receiveMessage() response connection dropped for clientIP=" +
-                                   connectionContext.getInetAddress().getHostAddress() + " response=\n" + response, se);
+    else {
+      postResponseGenTime = System.currentTimeMillis();
+      this.responseGenTime = postResponseGenTime - postReceiveTime;
     }
-    catch (IOException e) {
-      System.err.println(new Date() + ": Messenger.receiveMessage() unable to send response (to " +
-                         connectionContext.getInetAddress().getHostAddress() +
-                         ")! received=" + message + " response=\n" + response);
-      throw e;
-    }
-    dataOutput.flush();
 
     this.sendTime = System.currentTimeMillis() - postResponseGenTime;
 
