@@ -136,6 +136,69 @@ public class Tableizer {
   }
 
   public void generateTextTable(PrintStream out, String[][] data) {
+    final int numCols = computeNumCols(data);
+    final int[] colWidths = computeColWidths(numCols, data);
+    final String[] formats = buildFormats(colWidths);
+    for (int row = 0; row < data.length ; ++row) {
+      final String[] rowData = data[row];
+      for (int col = 0; col < rowData.length; ++col) {
+        final String cellData = rowData[col];
+        out.printf(formats[col], cellData == null ? "" : cellData);
+      }
+    }
+  }
+
+  private final int computeNumCols(String[][] data) {
+    int result = 0;
+    for (int row = 0; row < data.length ; ++row) {
+      final String[] rowData = data[row];
+      if (rowData.length > result) {
+        result = rowData.length;
+      }
+    }
+    return result;
+  }
+
+  private final int[] computeColWidths(int numCols, String[][] data) {
+    final int[] result = new int[numCols];
+    for (int i = 0; i < result.length; ++i) result[i] = 0;
+    for (int row = 0; row < data.length ; ++row) {
+      final String[] rowData = data[row];
+      for (int col = 0; col < rowData.length; ++col) {
+        final String cellData = rowData[col];
+        if (cellData != null) {
+          if (cellData.length() > result[col]) {
+            result[col] = cellData.length();
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  private final String[] buildFormats(int[] colWidths) {
+    final String[] result = new String[colWidths.length];
+    final StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < colWidths.length; ++i) {
+      builder.setLength(0);
+      if (i > 0) builder.append("  ");  // add spacer (todo: parameterize spacer size)
+      buildFormat(builder, colWidths[i]);
+      if (i == colWidths.length - 1) builder.append("\n");
+      result[i] = builder.toString();
+    }
+    return result;
+  }
+
+  private final String buildFormat(StringBuilder builder, int colWidth) {
+    builder.
+      append('%').
+      append(colWidth).
+      append('s');
+    return builder.toString();
+  }
+
+/*
+  public void generateTextTable(PrintStream out, String[][] data) {
     for (int col = 0; col < data.length; ++col) {
       for (int row = 0; row < data[col].length; ++row) {
         if (data[col][row] != null) {
@@ -153,4 +216,5 @@ public class Tableizer {
       out.println();
     }
   }
+*/
 }
