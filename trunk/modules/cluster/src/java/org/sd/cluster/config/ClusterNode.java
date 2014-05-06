@@ -172,7 +172,7 @@ public class ClusterNode implements ClusterContext {
       System.err.println(new Date() + ": ERROR : ClusterNode Can't find output log!");
     }
 
-    this.logVisitor = new ClusterLogVisitor(config, clusterDef, jobManager == null ? null : jobManager.getConsole());
+    this.logVisitor = new ClusterLogVisitor(config, clusterDef, this);
   }
 
   /**
