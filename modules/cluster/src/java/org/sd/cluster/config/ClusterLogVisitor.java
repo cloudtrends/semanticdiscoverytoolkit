@@ -25,6 +25,7 @@ import org.sd.cluster.util.LogManager;
 import org.sd.cluster.util.LogManager.LogInfo;
 import org.sd.cluster.util.LogManager.LogVisitor;
 import org.sd.io.FileUtil;
+import org.sd.cluster.job.JobManager;
 import org.sd.util.EmailUtil;
 import org.sd.util.StringUtil;
 
@@ -112,7 +113,7 @@ public class ClusterLogVisitor implements LogVisitor {
   private File logSettingsFile;
   private Config config;
   private ClusterDefinition clusterDef;
-  private Console console;
+  private ClusterNode clusterNode;
   private long lastModified;
 
   private Settings outSettings;
@@ -121,11 +122,11 @@ public class ClusterLogVisitor implements LogVisitor {
   private String poGroup;  // post-office group (or node in form nodeName-jvmNum)
   private int poTimeout;   // timeout when sending message to poGroup
 
-  public ClusterLogVisitor(Config config, ClusterDefinition clusterDef, Console console) {
+  public ClusterLogVisitor(Config config, ClusterDefinition clusterDef, ClusterNode clusterNode) {
     this.logSettingsFile = new File(ConfigUtil.getClusterConfDir() + LOG_SETTINGS_FILENAME);
     this.config = config;
     this.clusterDef = clusterDef;
-    this.console = console;
+    this.clusterNode = clusterNode;
     this.lastModified = 0L;
 
     this.outSettings = new Settings();
@@ -234,10 +235,14 @@ public class ClusterLogVisitor implements LogVisitor {
   }
 
   private final void sendEmailMessage(String from, String emailRecipientString, String subject, String theMessage, boolean isHtml) {
-    if (console == null) {
-      // if there is no console, then try to send the message directly from this node.
-      // note that if the machine is not properly set up with a tunnel through the host "mailserver", this will fail.
+    final JobManager jobManager = clusterNode.getJobManager();
+    final Console console = jobManager == null ? null : jobManager.getConsole();
+    
+    if (console == null || clusterNode.hasGroup(poGroup)) {
+      // if there is no console or this node is in the post office group,
+      // then try to send the message directly from this node.
       try {
+        // note that if the machine is not properly set up with a tunnel through the host "mailserver", this will fail.
         EmailUtil.sendEmail(from, emailRecipientString, subject, theMessage, isHtml);
       }
       catch (MessagingException e) {
