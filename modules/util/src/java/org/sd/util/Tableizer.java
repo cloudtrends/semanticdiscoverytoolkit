@@ -192,7 +192,7 @@ public class Tableizer {
   private final String buildFormat(StringBuilder builder, int colWidth) {
     builder.
       append('%').
-      append(colWidth).
+      append(Math.max(1, colWidth)).
       append('s');
     return builder.toString();
   }
