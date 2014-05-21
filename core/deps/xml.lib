@@ -1,5 +1,4 @@
 testonly:junit.jar
 commons-lang.jar
-xalan.jar
 xercesImpl.jar
 xml-apis.jar

@@ -172,6 +172,7 @@ public class NodeClient extends Thread {
         allFailed = false;
       }
     }
+    //NOTE: not waiting for responses may lead to socket exceptions on some servers.
     final Message[] result = !allFailed ? waitForResponses(responses, serverAddresses.length, timeout, timeLimit) : null;
     return result;
   }
