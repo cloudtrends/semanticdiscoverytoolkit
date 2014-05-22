@@ -1,0 +1,81 @@
+<project>
+
+  <!--
+    - Definitions and targets to compile .NET dlls with ikvm
+    -
+    - The following targets are defined:
+    -   Top-level targets:
+    -     dist-dll : 
+    -
+    -->
+
+  <!-- load in the environment variables prefixed with "env." -->
+  <property environment="env"/>
+
+  <target name="build-ext-dlls" >
+    <property name="ext.dlls" location="${ext.dlls}" />
+    <property name="env.IKVM_REFS" value="" />
+    
+    <apply executable="ikvmc" dest="${ext.dlls}" failonerror="true">
+      <arg value="-target:library"/>
+      <arg line="${env.IKVM_REFS}" />
+      <!-- 
+           100: class not found, likely a ref library is not in path
+           105: class wont compile due to missing ref, likely a ref library is not in path
+           109: class is already available in another ref(xml-apis is in ikvm dlls)
+           111: NoClassDefFoundError, likely a ref library is not in path
+      -->
+      <arg value="-nowarn:100,105,109,111" />
+      <targetfile prefix="-out:" />
+      <srcfile />
+
+      <fileset dir="${ext}" includesfile="${ext.dlls}/ikvm.lib" />
+      <mapper type="glob" from="*.jar" to="*.dll" />
+      
+      <!-- 
+           on the first run, *.dll will return no files and causes error 
+           set this here to prevent the issue 
+      -->
+      <env key="IKVM_REFS" value="-r:${ext.dlls}/*.dll" />
+    </apply>
+  </target>
+
+  <target name="toolkit-dll" depends="toolkit-jar,build-ext-dlls"
+          description="Create a complete toolkit dll(using ikvmc)." >
+
+    <delete verbose="true" failonerror="false">
+      <fileset dir="${localdist}" includes="sd-toolkit*.dll"/>
+    </delete>
+
+    <exec executable="ikvmc" failonerror="true">
+      <arg value="-target:library"/>
+      <arg line="-r:${ext.dlls}/*.dll"/>
+      <arg value="-out:${localdist}/sd-toolkit.${buildNumber}.dll"/>
+      <arg value="-warnaserror"/>
+      <arg value="${localdist}/sd-toolkit.${buildNumber}.jar"/>
+    </exec>
+  </target>
+
+  <!--target name="dist-dll" depends="build-ext-dlls,dist" 
+          description="Build dll for module and dependent jars into dist.">
+
+    <pathconvert property="ikvmc.resources" pathsep=" ">
+      <fileset dir="${distlibdir}">
+        <include name="*.dll"/>
+      </fileset>
+      <mapper type="glob" from="*" to="-r:*" />
+    </pathconvert>
+
+    <apply executable="ikvmc" dest="${distdir}" verbose="true">
+      <arg value="-target:library"/>
+      <arg line="${ikvmc.resources}"/>
+      <targetfile prefix="-out:" />
+      <srcfile />
+      <fileset dir="${distdir}">
+        <include name="${jarfilename}"/>
+      </fileset>
+      <mapper type="glob" from="*.jar" to="*.dll" />
+    </apply>
+  </target-->
+
+</project>
