@@ -11,6 +11,7 @@
   <property name="depsroot" value="${env.CORE_ROOT_FROM_MODULES_ROOT}/deps"/>
   <property name="modulesfile" value="${depsroot}/module-order.txt"/>
   <property name="env.JARS_ROOT_FROM_MODULES_ROOT" value="${env.CORE_ROOT_FROM_MODULES_ROOT}/jars"/>
+  <property name="env.DLLS_ROOT_FROM_MODULES_ROOT" value="${env.CORE_ROOT_FROM_MODULES_ROOT}/dlls"/>
   <property name="modlibname" value="modlib"/>
   <property name="modlib" value="${env.JARS_ROOT_FROM_MODULES_ROOT}/${modlibname}"/>
 
@@ -38,10 +39,13 @@
     </sequential>
   </macrodef>
 
+  <!-- load targets to build dlls with ikvmc -->
+  <import file="${env.CORE_ROOT_FROM_MODULES_ROOT}/antscripts/ikvm.xml"/>
 
   <!-- load common properties -->
   <property name="env.CORE_ROOT" value="${env.CORE_ROOT_FROM_MODULES_ROOT}"/>
   <property name="env.JARS_ROOT" value="${env.JARS_ROOT_FROM_MODULES_ROOT}"/>
+  <property name="env.DLLS_ROOT" value="${env.DLLS_ROOT_FROM_MODULES_ROOT}"/>
   <property name="env.MODULES_ROOT" value="."/>
   <import file="${env.CORE_ROOT_FROM_MODULES_ROOT}/antscripts/common-properties.xml"/>
 

@@ -48,5 +48,9 @@
   <property name="jacoco.html" value="${jacoco}/report" />
   <property name="jacoco.csv" value="${jacoco.html}/report.csv" />
   <property name="jacoco.xml" value="${jacoco.html}/report.xml" />
+  
+  <!-- setup ikvm properties -->
+  <property name="env.DLLS_ROOT" value="${env.CORE_ROOT}/dlls"/>
+  <property name="ext.dlls" value="${env.DLLS_ROOT}/ext"/>
 
 </project>

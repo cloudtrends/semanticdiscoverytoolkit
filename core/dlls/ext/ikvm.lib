@@ -1,0 +1,12 @@
+mail.jar
+commons-cli-1.1.jar
+commons-lang-2.5.jar
+je-3.3.75.jar
+junit-4.5.jar
+lucene-core-3.0.0.jar
+weka-3-6-0.jar
+xercesImpl_2_7_1.jar
+xml-apis_2_7_1.jar
+protobuf-2.4.1.jar
+lucene-highlighter-3.0.0.jar
+xalan-j_2_7_1.jar
