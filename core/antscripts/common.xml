@@ -204,6 +204,7 @@
     <mkdir dir="${modlib}"/>
     <deps
       cpid="module.full.classpath"
+      fcpid="module.filtered.classpath"
       distid="distfiles"
       depby="depending.modules"
       depbuildsid="depending.module.builds"
@@ -241,7 +242,7 @@
   </target>
 
   <target name="print-classpath" depends="depcp">
-    <echo message="CLASSPATH IS: ${toString:module.full.classpath}"/>
+    <echo message="CLASSPATH IS: ${toString:module.filtered.classpath}"/>
   </target>
 
   <target name="clean-dist" depends="clean,dist,update-modlib"/>
