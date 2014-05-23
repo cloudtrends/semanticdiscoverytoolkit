@@ -61,6 +61,7 @@ import org.apache.tools.ant.types.Reference;
 public class DependenciesTask extends Task {
 
   private String cpid;              // (output reference) id for generated classpath (path)
+  private String fcpid;             // (output reference) id for generated filtered classpath (path)
   private String distid;            // (output reference) id for generated dist filelist
   private String depby;             // (output) name for property to hold a space-delimited ordered list of modules that depend on the module.
   private String depbuildsid;       // (output reference) id for depending module build file filelist.
@@ -99,6 +100,13 @@ public class DependenciesTask extends Task {
    */
   public void setCpid(String cpid) {
     this.cpid = cpid;
+  }
+
+  /**
+   * Set (reference) id for generated classpath (path).
+   */
+  public void setFcpid(String fcpid) {
+    this.fcpid = fcpid;
   }
 
   /**
@@ -291,14 +299,16 @@ public class DependenciesTask extends Task {
   public void execute() throws BuildException {
     final Project project = getProject();
 
-    // if cpid, distid, or depby is null, then we won't do their work
-    // if cpid, distid, or depby is an existing reference, then we won't do (repeat) the work
+    // if cpid, fcpid, distid, or depby is null, then we won't do their work
+    // if cpid, fcpid, distid, or depby is an existing reference, then we won't do (repeat) the work
+    // NOTE: setX should be read as "shouldSetX" not "hasSetX"
     final boolean setCpid = (cpid != null) && (project.getReference(cpid) == null);
+    final boolean setFcpid = (fcpid != null) && (project.getReference(fcpid) == null);
     final boolean setDistid = (distid != null) && (project.getReference(distid) == null);
     final boolean setDepby = (depby != null) && (project.getProperty(depby) == null);
     final boolean setDepbuildsid = (depbuildsid != null) && (project.getReference(depbuildsid) == null);
 
-    if (!setCpid && !setDistid && !setDepby) return;  // nothing to do.
+    if (!setCpid && !setFcpid && !setDistid && !setDepby) return;  // nothing to do.
 
     //
     // verify the inputs
@@ -369,6 +379,21 @@ public class DependenciesTask extends Task {
 
       // add the reference to this new path in the project
       project.addReference(cpid, path);
+    }
+
+    //
+    // create path for cpid (if warranted)
+    //
+    if (setFcpid) {
+      final Path path = new Path(project);
+
+      // add this module's classpath
+      builder.addTestRefId(path);
+      builder.addModuleClasspath(path, moduleName, true, true);  // add main module's classpath with filtering
+      builder.addDependentClasspaths(path, moduleName);     // add module's dependencies
+
+      // add the reference to this new path in the project
+      project.addReference(fcpid, path);
     }
 
     //
