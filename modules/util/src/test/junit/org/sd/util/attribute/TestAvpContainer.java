@@ -38,6 +38,18 @@ public class TestAvpContainer extends TestCase {
   // NOTES:
   // - Setup for this test is definition of the MyTestEnum and MyTestClassifier classes.
 
+  public void testClassifyStrongThenWeakType() {
+    final MyTestClassifier classifier = new MyTestClassifier();
+    final AvpContainer<MyTestEnum, String, Object> avpContainer = new AvpContainer<MyTestEnum, String, Object>(classifier);
+
+    AttValPair<MyTestEnum, String, Object> avp = 
+      new AttValPair<MyTestEnum, String, Object>(MyTestEnum.MAKE, "foo");
+    avpContainer.add(avp);
+    String value = avpContainer.get("make").getValue();
+
+    assertEquals("foo", value);
+  }
+
   public void testMyClassifier() {
     // test no attribute
     final MyTestClassifier classifier = new MyTestClassifier();

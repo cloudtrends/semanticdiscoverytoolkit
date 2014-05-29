@@ -165,6 +165,8 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
       }
 
       if (result != null) {
+        if(classifiedAVPs == null)
+          classifiedAVPs = new LinkedHashMap<String, AttValPair<E,V,M>>();
         classifiedAVPs.put(normAtt, result);
       }
     }
