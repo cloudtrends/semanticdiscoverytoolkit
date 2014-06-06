@@ -709,6 +709,9 @@ public class NodeServer extends Thread implements NodeServerMXBean {
 
     public void run() {
       SocketIO socketIO = null;
+      Message message = null;
+      ConnectionContext connectionContext = null;
+
       try {
         // receive message over socket
         socketIO = new SocketIO(socket);
@@ -716,9 +719,9 @@ public class NodeServer extends Thread implements NodeServerMXBean {
         final DataInputStream dataIn = socketIO.getDataInput();
         if (dataOut != null && dataIn != null) {
           // get message, send response, put message into message queue
-          final ConnectionContext connectionContext = new ConnectionContext(socket);
+          connectionContext = new ConnectionContext(socket);
           final Messenger messenger = new Messenger(dataOut, dataIn);
-          final Message message = messenger.receiveMessage(context, connectionContext);  // does both receive and response
+          message = messenger.receiveMessage(context, connectionContext);  // does both receive and response
 
           if (message == null) {
             // count/log "bad" messages
@@ -729,11 +732,6 @@ public class NodeServer extends Thread implements NodeServerMXBean {
             // tally stats
             addStats(messenger.getReceiveTime(), messenger.getResponseGenTime(), messenger.getSendTime()
                      /*,messenger.getNumInBytes(), messenger.getNumOutBytes*/);
-
-            //todo: split up receiving message and sending response so that if the message
-            //      queue is full we can report that in the response to the client.
-            //todo: set an upper-limit queue size and use messageQueue.offer instead of add.
-            messageQueue.add(new MessageBundle(message, connectionContext));
           }
         }
       }
@@ -757,6 +755,14 @@ public class NodeServer extends Thread implements NodeServerMXBean {
           //todo: determine what to do here... failed closing socketIO
           e.printStackTrace(System.err);
         }
+      }
+
+      // Add message to queue for handling
+      if (message != null && connectionContext != null) {
+        //todo: split up receiving message and sending response so that if the message
+        //      queue is full we can report that in the response to the client.
+        //todo: set an upper-limit queue size and use messageQueue.offer instead of add.
+        messageQueue.add(new MessageBundle(message, connectionContext));
       }
     }
   }
