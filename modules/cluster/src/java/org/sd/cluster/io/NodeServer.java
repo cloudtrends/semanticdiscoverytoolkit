@@ -93,7 +93,12 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private AtomicBoolean reported = new AtomicBoolean(true);
 
   private final Object statsMutex = new Object();
+  private final Object socketStatsMutex = new Object();
   private StatsAccumulator totalTimeStats;
+  private StatsAccumulator socketPreResponseStats;    // time spent waiting to be handled
+  private StatsAccumulator socketPostResponseStats;  // time spent closing the socket
+  private StatsAccumulator socketOverheadStats;      // total socket lifetime not spent in responding
+  private StatsAccumulator messageQueuingStats;      // time spent adding message to queue for handling
   private StatsAccumulator receiveTimeStats;
   private StatsAccumulator responseGenTimeStats;
   private StatsAccumulator sendTimeStats;
@@ -124,6 +129,10 @@ public class NodeServer extends Thread implements NodeServerMXBean {
 
     // initialize stats
     this.totalTimeStats = new StatsAccumulator("TotalTime");
+    this.socketPreResponseStats = new StatsAccumulator("SocketPrePresponseTime");
+    this.socketPostResponseStats = new StatsAccumulator("SocketPostResponseTime");
+    this.socketOverheadStats = new StatsAccumulator("SocketOverheadTime");
+    this.messageQueuingStats = new StatsAccumulator("MessageQueueingTime");
     this.receiveTimeStats = new StatsAccumulator("ReceiveTime");
     this.responseGenTimeStats = new StatsAccumulator("ResponseGenTime");
     this.sendTimeStats = new StatsAccumulator("SendTimeStats");
@@ -281,6 +290,10 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     // reset stats
     if (resetStats) {
       this.totalTimeStats.clear();
+      this.socketPreResponseStats.clear();
+      this.socketPostResponseStats.clear();
+      this.socketOverheadStats.clear();
+      this.messageQueuingStats.clear();
       this.receiveTimeStats.clear();
       this.responseGenTimeStats.clear();
       this.sendTimeStats.clear();
@@ -357,6 +370,42 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   public StatsAccumulator getServerTimeStats() {
     return totalTimeStats;
   }
+
+  /**
+   * Get the stats for the time, in millis, between accepting a socket and
+   * beginning to read from it.
+   * <p>
+   * Note that this reflects the time spent waiting in the queue for a
+   * SocketHandler thread.
+   */
+  public StatsAccumulator getSocketPreResponseTime() {
+    return socketPreResponseStats;
+  }
+
+  /**
+   * Get the stats for the time, in millis, between writing to a socket and
+   * closing it.
+   */
+  public StatsAccumulator getSocketPostResponseTime() {
+    return socketPostResponseStats;
+  }
+
+  /**
+   * Get the stats for the time, in millis, between accepting a socket and
+   * closing it, discounted by the time spent reading, processing, and writing.
+   */
+  public StatsAccumulator getSocketOverheadTime() {
+    return socketOverheadStats;
+  }
+
+  /**
+   * Get the stats for the time, in millis, between closing a socket and adding
+   * the received message to the message queue to be asynchronously handled.
+   */
+  public StatsAccumulator getMessageQueuingTime() {
+    return messageQueuingStats;
+  }
+
 
   /**
    * Get the stats for the time, in millis, to receive requests.
@@ -632,11 +681,13 @@ public class NodeServer extends Thread implements NodeServerMXBean {
         return;
       }
 
+      long socketAcceptTime = 0L;
       while (stayAlive.get()) {
 //        System.out.println(nodeName + "-SocketListener -- accepting...");
         try {
           if (accepting.get()) {
             socket = serverSocket.accept();
+            socketAcceptTime = System.currentTimeMillis();
           }
           else {
             Thread.sleep(500);  // pause while we're not accepting connections
@@ -656,10 +707,12 @@ public class NodeServer extends Thread implements NodeServerMXBean {
         catch (InterruptedException ignore) {}
 
         if (socket != null) {
+          final SocketTimingData socketTimingData = new SocketTimingData(socketAcceptTime);
+
           // start a socket thread
           synchronized (socketPoolMutex) {
             try {
-              socketPool.execute(new SocketHandler(socket));
+              socketPool.execute(new SocketHandler(socket, socketTimingData));
             }
             catch (RejectedExecutionException e) {
               ++numDroppedConnections;
@@ -700,14 +753,27 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     }
   }
 
+  private final void addStats(SocketTimingData socketTimingData) {
+    synchronized (socketStatsMutex) {
+      socketPreResponseStats.add(socketTimingData.getSocketPreResponseTime());
+      socketPostResponseStats.add(socketTimingData.getSocketPostResponseTime());
+      socketOverheadStats.add(socketTimingData.getSocketOverheadTime());
+      messageQueuingStats.add(socketTimingData.getMessageQueuingTime());
+    }
+  }
+
   private final class SocketHandler implements Runnable {
     private Socket socket;
+    private SocketTimingData socketTimingData;
 
-    public SocketHandler(Socket socket) {
+    public SocketHandler(Socket socket, SocketTimingData socketTimingData) {
       this.socket = socket;
+      this.socketTimingData = socketTimingData;
     }
 
     public void run() {
+      socketTimingData.setResponseStartTime(System.currentTimeMillis());
+
       SocketIO socketIO = null;
       Message message = null;
       ConnectionContext connectionContext = null;
@@ -722,6 +788,8 @@ public class NodeServer extends Thread implements NodeServerMXBean {
           connectionContext = new ConnectionContext(socket);
           final Messenger messenger = new Messenger(dataOut, dataIn);
           message = messenger.receiveMessage(context, connectionContext);  // does both receive and response
+
+          socketTimingData.setResponseEndTime(System.currentTimeMillis());
 
           if (message == null) {
             // count/log "bad" messages
@@ -757,6 +825,8 @@ public class NodeServer extends Thread implements NodeServerMXBean {
         }
       }
 
+      socketTimingData.setSocketClosedTime(System.currentTimeMillis());
+
       // Add message to queue for handling
       if (message != null && connectionContext != null) {
         //todo: split up receiving message and sending response so that if the message
@@ -764,6 +834,10 @@ public class NodeServer extends Thread implements NodeServerMXBean {
         //todo: set an upper-limit queue size and use messageQueue.offer instead of add.
         messageQueue.add(new MessageBundle(message, connectionContext));
       }
+
+      socketTimingData.setMessageQueuedTime(System.currentTimeMillis());
+
+      addStats(socketTimingData);
     }
   }
 
@@ -799,6 +873,50 @@ public class NodeServer extends Thread implements NodeServerMXBean {
       if (logMessage != null) {
         System.err.println(logMessage);
       }
+    }
+  }
+
+  private final class SocketTimingData {
+    private long socketAcceptTime;
+    private long socketResponseStartTime;
+    private long socketResponseEndTime;
+    private long socketClosedTime;
+    private long messageQueuedTime;
+
+    SocketTimingData(long socketAcceptTime) {
+      this.socketAcceptTime = socketAcceptTime;
+    }
+
+    final void setResponseStartTime(long socketResponseStartTime) {
+      this.socketResponseStartTime = socketResponseStartTime;
+    }
+
+    final void setResponseEndTime(long socketResponseEndTime) {
+      this.socketResponseEndTime = socketResponseEndTime;
+    }
+
+    final void setSocketClosedTime(long socketClosedTime) {
+      this.socketClosedTime = socketClosedTime;
+    }
+
+    final void setMessageQueuedTime(long messageQueuedTime) {
+      this.messageQueuedTime = messageQueuedTime;
+    }
+
+    final long getSocketPreResponseTime() {
+      return socketResponseStartTime - socketAcceptTime;
+    }
+
+    final long getSocketPostResponseTime() {
+      return socketClosedTime - socketResponseEndTime;
+    }
+
+    final long getSocketOverheadTime() {
+      return (socketClosedTime - socketAcceptTime) - (socketResponseEndTime - socketResponseStartTime);
+    }
+
+    final long getMessageQueuingTime() {
+      return messageQueuedTime - socketClosedTime;
     }
   }
 }
