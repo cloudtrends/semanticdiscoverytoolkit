@@ -121,6 +121,33 @@ public interface NodeServerMXBean {
   public StatsAccumulator getServerTimeStats();
 
   /**
+   * Get the stats for the time, in millis, between accepting a socket and
+   * beginning to read from it.
+   * <p>
+   * Note that this reflects the time spent waiting in the queue for a
+   * SocketHandler thread.
+   */
+  public StatsAccumulator getSocketPreResponseTime();
+
+  /**
+   * Get the stats for the time, in millis, between writing to a socket and
+   * closing it.
+   */
+  public StatsAccumulator getSocketPostResponseTime();
+
+  /**
+   * Get the stats for the time, in millis, between accepting a socket and
+   * closing it, discounted by the time spent reading, processing, and writing.
+   */
+  public StatsAccumulator getSocketOverheadTime();
+
+  /**
+   * Get the stats for the time, in millis, between closing a socket and adding
+   * the received message to the message queue to be asynchronously handled.
+   */
+  public StatsAccumulator getMessageQueuingTime();
+
+  /**
    * Get the stats for the time, in millis, to receive requests.
    */
   public StatsAccumulator getReceiveTimeStats();

@@ -88,29 +88,27 @@ public class ClusterNode implements ClusterContext {
 
     final int numNodes = clusterDef.getNumNodes();
 
-    int numThreads = 0;
+    int numSocketThreads = getEnvInt("SOCKET_THREAD_COUNT", 0);
+    int numMessageThreads = getEnvInt("MESSAGE_THREAD_COUNT", 0);
 
-    final String threadCountString = System.getenv("SOCKET_THREAD_COUNT");
-    if (threadCountString != null) {
-      try {
-        numThreads = Integer.parseInt(threadCountString);
-      }
-      catch (NumberFormatException e) {
-        System.err.println(new Date() + " : ClusterNode unable to parse SOCKET_THREAD_COUNT '" + threadCountString + "'. Ignoring.");
-      }
-    }
-
-    if (numThreads == 0) {
+    if (numSocketThreads == 0) {
       // start enough threads to listen from and send connections to either all
       // of the nodes or 150 (arbitrary, but reflective of limits we'd like to put
       // on a single jvm's total thread count) at a time; whichever is more.
-      numThreads = Math.max(150, numNodes);
-//    numThreads = Math.min(50, numNodes);
+      numSocketThreads = Math.max(150, numNodes);
+//TODO: parameterize this!
+    }
+
+    if (numMessageThreads == 0) {
+      // start enough threads to handle (async) message either all
+      // of the nodes or 50 (arbitrary, but reflective of limits we'd like to put
+      // on a single jvm's total thread count) at a time; whichever is more.
+      numMessageThreads = Math.max(50, numNodes);
 //TODO: parameterize this!
     }
 
     //todo: tune the thread parameters.
-    init(config, numThreads, numThreads, numThreads, null);
+    init(config, numSocketThreads, numMessageThreads, numNodes, null);
   }
 
   private static final ClusterDefinition createClusterDefinition(String clusterName, String gateway, String[] machines) throws IOException {
@@ -175,6 +173,21 @@ public class ClusterNode implements ClusterContext {
     this.logVisitor = new ClusterLogVisitor(config, clusterDef, this);
   }
 
+  private final int getEnvInt(String envKey, int defaultValue) {
+    int result = defaultValue;
+    final String valueString = System.getenv(envKey);
+    if (valueString != null) {
+      try {
+        result = Integer.parseInt(valueString);
+      }
+      catch (NumberFormatException e) {
+        System.err.println(new Date() + " : ClusterNode unable to parse '" + envKey +
+                           "' value='" + valueString + "'. Default=" + defaultValue + ".");
+      }
+    }
+    return result;
+  }
+
   /**
    * For JUnit testing only.
    */
@@ -200,6 +213,10 @@ public class ClusterNode implements ClusterContext {
   /** Get the amount of time this node has been up in milliseconds. */
   public long getUpTime() {
     return listener.getUpTime();
+  }
+
+  public NodeServer getNodeServer() {
+    return listener;
   }
 
   /**
