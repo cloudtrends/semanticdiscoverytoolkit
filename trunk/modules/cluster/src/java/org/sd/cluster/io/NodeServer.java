@@ -755,10 +755,16 @@ public class NodeServer extends Thread implements NodeServerMXBean {
 
   private final void addStats(SocketTimingData socketTimingData) {
     synchronized (socketStatsMutex) {
-      socketPreResponseStats.add(socketTimingData.getSocketPreResponseTime());
-      socketPostResponseStats.add(socketTimingData.getSocketPostResponseTime());
-      socketOverheadStats.add(socketTimingData.getSocketOverheadTime());
-      messageQueuingStats.add(socketTimingData.getMessageQueuingTime());
+      doAddStats(socketPreResponseStats, socketTimingData.getSocketPreResponseTime());
+      doAddStats(socketPostResponseStats, socketTimingData.getSocketPostResponseTime());
+      doAddStats(socketOverheadStats, socketTimingData.getSocketOverheadTime());
+      doAddStats(messageQueuingStats, socketTimingData.getMessageQueuingTime());
+    }
+  }
+
+  private final void doAddStats(StatsAccumulator stats, long value) {
+    if (value > 0) {
+      stats.add(value);
     }
   }
 
@@ -904,19 +910,35 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     }
 
     final long getSocketPreResponseTime() {
-      return socketResponseStartTime - socketAcceptTime;
+      long result = -1;
+      if (socketResponseStartTime > 0 && socketAcceptTime > 0) {
+        result = socketResponseStartTime - socketAcceptTime;
+      }
+      return result;
     }
 
     final long getSocketPostResponseTime() {
-      return socketClosedTime - socketResponseEndTime;
+      long result = -1;
+      if (socketClosedTime > 0 && socketResponseEndTime > 0) {
+        result = socketClosedTime - socketResponseEndTime;
+      }
+      return result;
     }
 
     final long getSocketOverheadTime() {
-      return (socketClosedTime - socketAcceptTime) - (socketResponseEndTime - socketResponseStartTime);
+      long result = -1;
+      if (socketClosedTime > 0 && socketAcceptTime > 0 && socketResponseEndTime > 0 && socketResponseStartTime > 0) {
+        result = (socketClosedTime - socketAcceptTime) - (socketResponseEndTime - socketResponseStartTime);
+      }
+      return result;
     }
 
     final long getMessageQueuingTime() {
-      return messageQueuedTime - socketClosedTime;
+      long result = -1;
+      if (messageQueuedTime > 0 && socketClosedTime > 0) {
+        result = messageQueuedTime - socketClosedTime;
+      }
+      return result;
     }
   }
 }
