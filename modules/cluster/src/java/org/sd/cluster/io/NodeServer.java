@@ -25,20 +25,19 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.sd.util.MathUtil;
 import org.sd.util.StatsAccumulator;
@@ -83,6 +82,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private final AtomicBoolean accepting = new AtomicBoolean(true);
   private final AtomicInteger socketThreadId = new AtomicInteger(0);
   private final AtomicInteger messageHandlerThreadId = new AtomicInteger(0);
+  private final AtomicInteger activeSocketCount = new AtomicInteger(0);
 
   private int numSocketThreads;
   private int numMessageHandlerThreads;
@@ -95,10 +95,11 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private final Object statsMutex = new Object();
   private final Object socketStatsMutex = new Object();
   private StatsAccumulator totalTimeStats;
-  private StatsAccumulator socketPreResponseStats;    // time spent waiting to be handled
+  private StatsAccumulator socketPreResponseStats;   // time spent waiting to be handled
   private StatsAccumulator socketPostResponseStats;  // time spent closing the socket
   private StatsAccumulator socketOverheadStats;      // total socket lifetime not spent in responding
   private StatsAccumulator messageQueuingStats;      // time spent adding message to queue for handling
+  private StatsAccumulator socketThreadStats;        // total socket lifetime thru queuing for handling
   private StatsAccumulator receiveTimeStats;
   private StatsAccumulator responseGenTimeStats;
   private StatsAccumulator sendTimeStats;
@@ -133,6 +134,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     this.socketPostResponseStats = new StatsAccumulator("SocketPostResponseTime");
     this.socketOverheadStats = new StatsAccumulator("SocketOverheadTime");
     this.messageQueuingStats = new StatsAccumulator("MessageQueueingTime");
+    this.socketThreadStats = new StatsAccumulator("SocketThreadTime");
     this.receiveTimeStats = new StatsAccumulator("ReceiveTime");
     this.responseGenTimeStats = new StatsAccumulator("ResponseGenTime");
     this.sendTimeStats = new StatsAccumulator("SendTimeStats");
@@ -249,6 +251,13 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   }
 
   /**
+   * Get the number of currently active socket threads.
+   */
+  public int getNumActiveSockets() {
+    return activeSocketCount.get();
+  }
+
+  /**
    * Get the number of message handler threads for this server.
    */
   public int getNumMessageHandlerThreads() {
@@ -294,6 +303,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
       this.socketPostResponseStats.clear();
       this.socketOverheadStats.clear();
       this.messageQueuingStats.clear();
+      this.socketThreadStats.clear();
       this.receiveTimeStats.clear();
       this.responseGenTimeStats.clear();
       this.sendTimeStats.clear();
@@ -406,6 +416,13 @@ public class NodeServer extends Thread implements NodeServerMXBean {
     return messageQueuingStats;
   }
 
+  /**
+   * Get the socket thread time comprised of the total time from accepting
+   * a socket through queing the message for later handling.
+   */
+  public StatsAccumulator getSocketThreadTime() {
+    return socketThreadStats;
+  }
 
   /**
    * Get the stats for the time, in millis, to receive requests.
@@ -708,11 +725,12 @@ public class NodeServer extends Thread implements NodeServerMXBean {
 
         if (socket != null) {
           final SocketTimingData socketTimingData = new SocketTimingData(socketAcceptTime);
+          activeSocketCount.incrementAndGet();
 
           // start a socket thread
           synchronized (socketPoolMutex) {
             try {
-              socketPool.execute(new SocketHandler(socket, socketTimingData));
+              socketPool.execute(new SocketHandler(socket, socketTimingData, activeSocketCount));
             }
             catch (RejectedExecutionException e) {
               ++numDroppedConnections;
@@ -734,9 +752,9 @@ public class NodeServer extends Thread implements NodeServerMXBean {
           }
           socket = null;
         }
-        else {
+//        else {
 //          System.out.println(nodeName + " NO socket!");
-        }
+//        }
       }
     }
   }
@@ -759,6 +777,7 @@ public class NodeServer extends Thread implements NodeServerMXBean {
       doAddStats(socketPostResponseStats, socketTimingData.getSocketPostResponseTime());
       doAddStats(socketOverheadStats, socketTimingData.getSocketOverheadTime());
       doAddStats(messageQueuingStats, socketTimingData.getMessageQueuingTime());
+      doAddStats(socketThreadStats, socketTimingData.getSocketThreadTime());
     }
   }
 
@@ -771,10 +790,12 @@ public class NodeServer extends Thread implements NodeServerMXBean {
   private final class SocketHandler implements Runnable {
     private Socket socket;
     private SocketTimingData socketTimingData;
+    private AtomicInteger activeSocketCount;
 
-    public SocketHandler(Socket socket, SocketTimingData socketTimingData) {
+    public SocketHandler(Socket socket, SocketTimingData socketTimingData, AtomicInteger activeSocketCount) {
       this.socket = socket;
       this.socketTimingData = socketTimingData;
+      this.activeSocketCount = activeSocketCount;
     }
 
     public void run() {
@@ -844,6 +865,8 @@ public class NodeServer extends Thread implements NodeServerMXBean {
       socketTimingData.setMessageQueuedTime(System.currentTimeMillis());
 
       addStats(socketTimingData);
+
+      activeSocketCount.decrementAndGet();
     }
   }
 
@@ -937,6 +960,14 @@ public class NodeServer extends Thread implements NodeServerMXBean {
       long result = -1;
       if (messageQueuedTime > 0 && socketClosedTime > 0) {
         result = messageQueuedTime - socketClosedTime;
+      }
+      return result;
+    }
+
+    final long getSocketThreadTime() {
+      long result = -1;
+      if (messageQueuedTime > 0 && socketAcceptTime > 0) {
+        result = messageQueuedTime - socketAcceptTime;
       }
       return result;
     }
