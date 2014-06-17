@@ -45,6 +45,11 @@ public interface NodeServerMXBean {
   public int getNumSocketThreads();
 
   /**
+   * Get the number of currently active socket threads.
+   */
+  public int getNumActiveSockets();
+
+  /**
    * Get the number of message handler threads for this server.
    */
   public int getNumMessageHandlerThreads();
@@ -146,6 +151,12 @@ public interface NodeServerMXBean {
    * the received message to the message queue to be asynchronously handled.
    */
   public StatsAccumulator getMessageQueuingTime();
+
+  /**
+   * Get the socket thread time comprised of the total time from accepting
+   * a socket through queing the message for later handling.
+   */
+  public StatsAccumulator getSocketThreadTime();
 
   /**
    * Get the stats for the time, in millis, to receive requests.
