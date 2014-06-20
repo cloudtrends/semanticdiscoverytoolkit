@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.channels.SocketChannel;
 import java.util.Date;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -90,12 +91,19 @@ class ClientSocketHandler implements Runnable {
         }
       }
     }
+    catch (SocketException se) {
+      this.ioe = se;
+
+      // Socket was closed (e.g., timed out)
+      System.err.println(new Date() + ": NOTE : ClientSocketHandler socket connection dropped by server=" +
+                         serverAddress.toString());
+    }
     catch (IOException ioe) {
       this.ioe = ioe;
 
       //NOTE: serverAddres.toString() will display hostName for unresolved addresses.
       System.err.println(new Date() + ": ClientSocketHandler communication failed w/server=" +
-                         serverAddress.toString() + "\n" + ioe.toString());
+                         serverAddress.toString());
       ioe.printStackTrace(System.err);
     }
     finally {
