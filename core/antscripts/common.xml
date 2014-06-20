@@ -79,6 +79,7 @@
     -     depcp : Create the module's dependencies classpath (build/.depclasspath)
     -     fullcp : Create the module's full classpath (build/.classpath)
     -     print-classpath : Echo the module's classpath.
+    -     print-classpath-build : Echo the module's classpath (for build).
     -
     - Customization:
     -   Environment variables:
@@ -243,6 +244,10 @@
 
   <target name="print-classpath" depends="depcp">
     <echo message="CLASSPATH IS: ${toString:module.filtered.classpath}"/>
+  </target>
+
+  <target name="print-classpath-build" depends="depcp">
+    <echo message="CLASSPATH IS: ${toString:module.full.classpath}"/>
   </target>
 
   <target name="clean-dist" depends="clean,dist,update-modlib"/>
