@@ -72,8 +72,8 @@ public class RollingStats {
     this.cumulativeStats = new StatsAccumulator("cumulative");
 
     this.numSegments = (int)(0.5 + (double)windowWidth / (double)segmentWidth);
-    this.segmentStats = new StatsAccumulator[numSegments + 1];
-    for (int i = 0; i <= numSegments; ++i) {
+    this.segmentStats = new StatsAccumulator[numSegments];
+    for (int i = 0; i < numSegments; ++i) {
       segmentStats[i] = new StatsAccumulator("segment-" + i);
     }
     this.starttime = System.currentTimeMillis();
@@ -180,7 +180,7 @@ public class RollingStats {
 
   private final void incToCurrentSegment() {
     final long result = System.currentTimeMillis();  // return the reference time
-    final int segNum = (int)(0.5 + (double)((result - starttime) % windowWidth) / (double)segmentWidth);
+    final int segNum = (int)((double)((result - starttime) % windowWidth) / (double)segmentWidth);
     
     final long diff = result - reftime;
     if (segNum != curSegment || diff > segmentWidth /*wrapped around*/) {
