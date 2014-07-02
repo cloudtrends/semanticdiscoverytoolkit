@@ -217,8 +217,8 @@ public class BlockingThreadPool {
    * Get the total number of runnables that have (not necessarily successfully)
    * been run by this pool.
    */
-  public int getNumRun() {
-    return opTimes.getN();
+  public long getNumRun() {
+    return (long)opTimes.getN();
   }
 
   /**

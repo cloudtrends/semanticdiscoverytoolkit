@@ -137,7 +137,7 @@ public class TimingMetrics {
   /**
    * Get the total number of marks (or units marked).
    */
-  public int getTotalMarks() {
+  public long getTotalMarks() {
     return stats.getN();
   }
 

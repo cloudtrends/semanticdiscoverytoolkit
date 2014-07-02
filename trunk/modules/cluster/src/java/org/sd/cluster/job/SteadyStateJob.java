@@ -202,7 +202,7 @@ public abstract class SteadyStateJob extends AbstractJob {
     
     final StatsAccumulator opTimes = workPool.getOperationTimes();
     properties.put("opTimes.runTime", Long.toString((long)(opTimes.getSum() + 0.5)));
-    properties.put("opTimes.n", Integer.toString(opTimes.getN()));
+    properties.put("opTimes.n", Long.toString(opTimes.getN()));
     properties.put("opTimes.ave", Long.toString((long)(opTimes.getMean() + 0.5)));
     properties.put("opTimes.min", Long.toString((long)(opTimes.getMin() + 0.5)));
     properties.put("opTimes.max", Long.toString((long)(opTimes.getMax() + 0.5)));

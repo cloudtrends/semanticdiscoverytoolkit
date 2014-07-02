@@ -168,7 +168,6 @@ public final class TestStatsAccumulator extends TestCase {
     assertEquals(15.0, c1.getMean(), 0.0005);
   }
 
-
   public void testReconstruct() {
     final StatsAccumulator statsAccumulator1 = new StatsAccumulator("testing");
 
@@ -177,7 +176,7 @@ public final class TestStatsAccumulator extends TestCase {
     }
 
     final String label = statsAccumulator1.getLabel();
-    final int n = statsAccumulator1.getN();
+    final long n = statsAccumulator1.getN();
     final double min = statsAccumulator1.getMin();
     final double max = statsAccumulator1.getMax();
     final double mean = statsAccumulator1.getMean();
@@ -193,6 +192,47 @@ public final class TestStatsAccumulator extends TestCase {
     assertEquals(mean, statsAccumulator2.getMean(), 0.05);
     assertEquals(stddev, statsAccumulator2.getStandardDeviation(), 0.05);
   }
+
+  public void testBuildView() {
+    final StatsAccumulator[] stats = new StatsAccumulator[] {
+      new StatsAccumulator("stats1", 100, 5.0, 35.0, 7.5, 15.0),
+      new StatsAccumulator("stats2", 100, 10.0, 100.0, 75.0, 30.0),
+      new StatsAccumulator("stats3", 100, 0.0, 100.0, 50.0, 10.0),
+      new StatsAccumulator("stats4", 100, 0.0, 100.0, 50.0, 0.0),
+    };
+
+
+    //minValue=0.0 maxValue=100.0
+    final String[] expected1 = new String[] {
+      "  5.0   [(  7.5        )      ]                                        35.0",
+      " 10.0      [                    (                 75.0             )] 100.0",
+      "  0.0 [                      (      50.0    )                       ] 100.0",
+      "  0.0 [                           ( 50.0)                           ] 100.0",
+    };
+    for (int i = 0; i < stats.length; ++i) {
+      final StatsAccumulator s = stats[i];
+      final String expected = expected1[i];
+
+      final String view = s.buildView(75, 1, 0.0, 100.0);
+      assertEquals(expected, view);
+    }
+
+    //minValue=min maxValue=max
+    final String[] expected2 = new String[] {
+      " 5.0 [(    7.5                             )                         ] 35.0",
+      " 10.0 [                     (                   75.0               )] 100.0",
+      "  0.0 [                      (      50.0    )                       ] 100.0",
+      "  0.0 [                           ( 50.0)                           ] 100.0",
+    };
+    for (int i = 0; i < stats.length; ++i) {
+      final StatsAccumulator s = stats[i];
+      final String expected = expected2[i];
+
+      final String view = s.buildView(75, 1);
+      assertEquals(expected, view);
+    }
+  }
+
 
   public static Test suite() {
     TestSuite suite = new TestSuite(TestStatsAccumulator.class);

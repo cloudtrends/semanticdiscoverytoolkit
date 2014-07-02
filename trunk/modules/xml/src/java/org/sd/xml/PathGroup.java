@@ -169,7 +169,7 @@ public class PathGroup {
   public double getBulk() {
     double result = 0.0;
 
-    final int total = wordCounts.getN();
+    final long total = wordCounts.getN();
     if (total > 0) {
       result = wordCounts.getMean();
     }
