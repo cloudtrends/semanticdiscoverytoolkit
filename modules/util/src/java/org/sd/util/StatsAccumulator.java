@@ -37,7 +37,7 @@ import java.io.Serializable;
  */
 public class StatsAccumulator implements Serializable {
 
-  private int n;
+  private long n;
   private double sos;
   private double sum;
   private double min;
@@ -65,7 +65,7 @@ public class StatsAccumulator implements Serializable {
    * Construct a statsAccumulator w/the following characteristics.
    */
   @ConstructorProperties({"label", "n", "min", "max", "mean", "standardDeviation"})
-  public StatsAccumulator(String label, int n, double min, double max, double mean, double stddev) {
+  public StatsAccumulator(String label, long n, double min, double max, double mean, double stddev) {
     this.label = label;
     this.n = n;
     this.min = min;
@@ -156,7 +156,7 @@ public class StatsAccumulator implements Serializable {
   /**
    * Get the number of sampled values.
    */
-  public int getN() {
+  public long getN() {
     return n;
   }
 
@@ -221,7 +221,7 @@ public class StatsAccumulator implements Serializable {
    */
   public void write(DataOutput dataOutput) throws IOException {
     dataOutput.writeUTF(label == null ? "" : label);
-    dataOutput.writeInt(n);
+    dataOutput.writeLong(n);
     dataOutput.writeDouble(sum);
     dataOutput.writeDouble(sos);
     dataOutput.writeDouble(min);
@@ -240,7 +240,7 @@ public class StatsAccumulator implements Serializable {
     if (label.length() == 0) {
       label = null;
     }
-    n = dataInput.readInt();
+    n = dataInput.readLong();
     sum = dataInput.readDouble();
     sos = dataInput.readDouble();
     min = dataInput.readDouble();
@@ -343,10 +343,128 @@ public class StatsAccumulator implements Serializable {
              "min", MathUtil.doubleString(min, 1),
              "mean", MathUtil.doubleString(getMean(), 1),
              "sum", MathUtil.doubleString(sum, 1), },
-            {"n", Integer.toString(n),
+            {"n", Long.toString(n),
              "max", MathUtil.doubleString(max, 1),
              "stddev", MathUtil.doubleString(getStandardDeviation(), 1),
              "sos", MathUtil.doubleString(sos, 1), },
           });
+  }
+
+  /**
+   * Build a view of this instance's values with the given width of the form:
+   * <p>
+   * "min [(mean)] max"
+   * <p>
+   * Where:
+   * <ul>
+   * <li>min -- is this instance's minimum value</li>
+   * <li>"[" -- is a marker representing the minimum value on a 1D line plot</li>
+   * <li>"(" -- is a marker representing this instance's mean - stddev value</li>
+   * <li>mean -- is this instance's mean value</li>
+   * <li>")" -- is a marker representing this instance's mean + stddev value</li>
+   * <li>"]" -- is a marker representing this instance's maximum value</li>
+   * <li>max -- is this instance's maximum value</li>
+   * </ul>
+   *
+   * Note that whitespace will be used for visualizing the mean and stddev info
+   * relative to the min/max.
+   *
+   * @param viewWidth  The width in characters of the resulting view string.
+   * @param numDecimalPlaces  The number of decimal places for the min, mean, and max values.
+   */
+  public String buildView(int viewWidth, int numDecimalPlaces) {
+    return buildView(viewWidth, numDecimalPlaces, this.getMin(), this.getMax());
+  }
+
+  /**
+   * Build a view of this instance's values with the given width of the form:
+   * <p>
+   * "min [(mean)] max"
+   * <p>
+   * Where:
+   * <ul>
+   * <li>min -- is this instance's minimum value</li>
+   * <li>"[" -- is a marker representing the minimum value on a 1D line plot</li>
+   * <li>"(" -- is a marker representing this instance's mean - stddev value</li>
+   * <li>mean -- is this instance's mean value</li>
+   * <li>")" -- is a marker representing this instance's mean + stddev value</li>
+   * <li>"]" -- is a marker representing this instance's maximum value</li>
+   * <li>max -- is this instance's maximum value</li>
+   * </ul>
+   *
+   * Note that whitespace will be used for visualizing the mean and stddev info
+   * relative to the min/max.
+   *
+   * @param viewWidth  The width in characters of the resulting view string.
+   * @param numDecimalPlaces  The number of decimal places for the min, mean, and max values.
+   * @param minValue  A reference minimum value for computing the effective width of the
+   *                  min, mean, and max values useful for normalizing view widths across
+   *                  view strings for multiple stats.
+   * @param maxValue  A reference maximum value for computing the effective width of the
+   *                  min, mean, and max values useful for normalizing view widths across
+   *                  view strings for multiple stats.
+   */
+  public String buildView(int viewWidth, int numDecimalPlaces, double minValue, double maxValue) {
+    //  "minValue [(meanValue)] maxValue"
+    final StringBuilder result = new StringBuilder();
+
+    //NOTE: use maxValue (width) + numDecimalPlaces to compute (portion of view) width consumed by embedded values
+    final int maxValueWidth = (int)MathUtil.log10(maxValue) + 1 + ((minValue < 0) ? 1 : 0);
+    final int valWidth = maxValueWidth + numDecimalPlaces + 1; // +1 for decimal point
+    final String valFormatStr = "%" + valWidth + "." + numDecimalPlaces + "f";
+    final int valWidth3 = valWidth * 3;  // min, mean, max
+    viewWidth = Math.max(valWidth3 + 6, viewWidth - valWidth3 + 3);  // count each val as 1
+
+    final int scaleWidth = viewWidth - 4; // exclude "min ", " max" from scaled portion
+
+    final double min = Math.max(this.getMin(), minValue);
+    final double max = Math.min(this.getMax(), maxValue);
+
+    // minValue + " "
+    // minBracketOff = scaleValue(min, scaleWidth)
+    // leftParenOff = scaleValue(Math.max(mean - stddev, min), scaleWidth)
+    // meanValueOff = Math.max(scaleValue(mean, scaleWidth), 1)
+    // rtParenOff = Math.max(scaleValue(Math.min(mean + stddev, max), scaleWidth), 2)
+    // maxBracketOff = scaleValue(max, scaleWidth)
+    // maxValueOff = scaleWidth
+
+    // compute offsets
+    int extraSpace = valWidth + 1;
+    final int meanOffset = scaleValue(getMean(), minValue, maxValue, scaleWidth) + extraSpace;
+    int minOffset = scaleValue(min, minValue, maxValue, scaleWidth) + extraSpace;
+    if (minOffset >= meanOffset) --minOffset;
+    int lpOffset = scaleValue(Math.max(this.getMean() - this.getStandardDeviation(), min), minValue, maxValue, scaleWidth) + extraSpace;
+    if (lpOffset >= meanOffset) --lpOffset;
+    extraSpace += (valWidth - 1);
+    final int maxOffset1 = scaleValue(max, minValue, maxValue, scaleWidth) + extraSpace;
+    int rpOffset = scaleValue(Math.min(this.getMean() + this.getStandardDeviation(), max), minValue, maxValue, scaleWidth) + extraSpace;
+    if (rpOffset >= maxOffset1) --rpOffset;
+    final int maxOffset2 = scaleWidth + extraSpace + 1;
+
+    appendAt(result, String.format(valFormatStr, this.getMin()), 0);
+    appendAt(result, "[", minOffset);
+    appendAt(result, "(", lpOffset);
+    appendAt(result, String.format(valFormatStr, this.getMean()), meanOffset);
+    appendAt(result, ")", rpOffset);
+    appendAt(result, "]", maxOffset1);
+    appendAt(result, String.format(valFormatStr, this.getMax()), maxOffset2);
+
+    return result.toString();
+  }
+
+  private final int scaleValue(double value, double minValue, double maxValue, int width) {
+    return (int)(MathUtil.normalize(value, minValue, maxValue, 0, width - 1));
+  }
+
+  private final void appendAt(StringBuilder result, String toAppend, int atIdx) {
+    final int curIdx = result.length();
+    fillWhite(result, atIdx - curIdx);
+    result.append(toAppend);
+  }
+
+  private final void fillWhite(StringBuilder result, int count) {
+    for (int i = 0; i < count; ++i) {
+      result.append(' ');
+    }
   }
 }

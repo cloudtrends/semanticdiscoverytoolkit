@@ -149,9 +149,9 @@ public class ExtractionGroup {
   public int getSpread() {
     int result = 0;
 
-    final int num = pathIndexStats.getN() - 1;
-    if (num > 0) {
-      result = getTotalSpread() / num;
+    final long num = pathIndexStats.getN() - 1;
+    if (num > 0L) {
+      result = (int)(getTotalSpread() / num);
     }
 
     return result;
@@ -172,7 +172,7 @@ public class ExtractionGroup {
   }
 
   public int size() {
-    return pathIndexStats.getN();
+    return (int)pathIndexStats.getN();
   }
 
   public String getExtractionType() {
