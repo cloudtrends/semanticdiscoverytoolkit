@@ -72,7 +72,8 @@ public class TokenizeTest {
       }
       else {
         if (!expectedPrimaryTokens[numPrimaryTokens].equals(primaryToken.getText())) {
-          System.out.println(name + ": Primary token #" + numPrimaryTokens + " mismatch.");
+          System.out.println(name + ": Primary token #" + numPrimaryTokens + " mismatch. Expected=" +
+                             expectedPrimaryTokens[numPrimaryTokens] + " got=" + primaryToken.getText());
           pass = false;
         }
         if (expectedPrimaryFeatures != null && expectedPrimaryFeatures[numPrimaryTokens] != null) {

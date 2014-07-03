@@ -219,10 +219,13 @@ public class NamedEntityCollector {
         result = wc.getEndDelims().indexOf(',') >= 0;
 
         // end group if last word ends with '.' and is not an abbreviation
-        String wordText = wordPtr.getWordText();
-        if(!result && wc.getEndDelims().indexOf('.') >= 0 &&
-           !StringUtil.isLikelyAbbreviation(wordText))
-          result = true;
+        if (!result && wc.getEndDelims().indexOf('.') >= 0) {
+          //NOTE: isLikelyAbbreviation keys off of '.' in wordText
+          final String wordText = wordPtr.getWordText() + ".";
+          if (!StringUtil.isLikelyAbbreviation(wordText)) {
+            result = true;
+          }
+        }
       }
       return result;
     }
