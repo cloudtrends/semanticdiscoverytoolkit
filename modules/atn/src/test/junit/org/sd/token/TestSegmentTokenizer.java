@@ -133,29 +133,25 @@ public class TestSegmentTokenizer extends TestCase {
     final TokenizeTest tokenizeTest =
       new TokenizeTest("NamedEntities1", tokenizer,
                        new String[] {
-                         "BASS, BUFORD H. Asst",
-                         "Prof", 
+                         "BASS, BUFORD H. Asst. Prof",
                          "of", 
                          "Health", 
                          "and", 
-                         "Physical Education",
-                         "B.S", 
+                         "Physical Education. B.S",
                          "in", 
                          "Ed., M.S", 
                          "in", 
-                         "Ed., Illinois State Normal University",
-                         "BAUCOM, ADRIAN", 
+                         "Ed., Illinois State Normal University. BAUCOM",
+                         "ADRIAN", 
                        },
                        null,
                        // todo: any of the inner segments besides the first dont carry the entity flag in this test path
                        new String[]{
                          NamedEntitySegmentFinder.ENTITY_LABEL,
-                         null, /* this should be a segment */
                          null,
                          NamedEntitySegmentFinder.ENTITY_LABEL,
                          null,
                          NamedEntitySegmentFinder.ENTITY_LABEL,
-                         null, /* this should be a segment */
                          null,
                          NamedEntitySegmentFinder.ENTITY_LABEL,
                          null,
