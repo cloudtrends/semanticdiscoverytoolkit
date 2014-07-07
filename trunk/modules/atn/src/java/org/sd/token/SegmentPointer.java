@@ -89,6 +89,13 @@ public class SegmentPointer implements Serializable {
   }
 
   /**
+   * Determine whether there is input beyond this pointer's end.
+   */
+  public boolean hasNext() {
+    return input.length() > endPtr;
+  }
+
+  /**
    * Get the endPtr, decrementing over symbols if necessary.
    */
   public int getTextEnd() {

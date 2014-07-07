@@ -122,8 +122,9 @@ public class NamedEntityCollector {
 
         if (result && words.size() > 1) {
           // if group's last word ends with ',' and group has more than one word,
+          // and nextWord isn't the last in the input,
           // then don't add to this group
-          if (hasPotentialEnd(lastWord)) {
+          if (hasPotentialEnd(lastWord) && nextWord.hasNext()) {
             result = false;
           }
         }
