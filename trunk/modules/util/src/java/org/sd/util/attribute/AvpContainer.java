@@ -504,7 +504,7 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
       if (strongAVPs == null) strongAVPs = new LinkedHashMap<E, AttValPair<E, V, M>>();
       final AttValPair<E, V, M> curAVP = strongAVPs.get(attType);
 
-      final AttValPair<E, V, M> copyToAdd = new AttValPair<E, V, M>(avp);
+      final AttValPair<E, V, M> copyToAdd = new AttValPair<E, V, M>(avp, false);
       copyToAdd.setContainer(this);
 
       if (curAVP == null) {
@@ -544,7 +544,7 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
       final String normAtt = avp.getOtherType().toLowerCase();
       final AttValPair<E, V, M> curAVP = map.get(normAtt);
 
-      final AttValPair<E, V, M> copyToAdd = new AttValPair<E, V, M>(avp);
+      final AttValPair<E, V, M> copyToAdd = new AttValPair<E, V, M>(avp, false);
       copyToAdd.setContainer(this);
 
       if (curAVP == null) {
@@ -722,7 +722,7 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
             // insert an ambiguous avp for each ambiguous attribute
             if (attribute.isAmbiguous()) {
               for (attribute = attribute.nextAmbiguity(); attribute != null; attribute = attribute.nextAmbiguity()) {
-                final AttValPair<E, V, M> ambAVP = new AttValPair<E, V, M>(avp);
+                final AttValPair<E, V, M> ambAVP = new AttValPair<E, V, M>(avp, true);
                 ambAVP.setAttType(attribute.getAttType());
                 avp.addAmbiguity(ambAVP);
                 avp = ambAVP;
