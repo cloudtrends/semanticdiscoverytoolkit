@@ -76,14 +76,18 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
   /**
    * Copy constructor (shallow).
    * <p>
-   * Note that this creates a copy of just the attribute and not its multi-
-   * value or  ambiguity chains.
+   * Note that this creates a copy of just the attribute and not its ambiguity
+   * chains.
+   * <p>
+   * If makeNewValues, then multiple values will be copied into a new container;
+   * otherwise, the same multiple values container will be shared in the new
+   * instance.
    */
-  public AttValPair(AttValPair<E, V, M> other) {
+  public AttValPair(AttValPair<E, V, M> other, boolean makeNewValues) {
     init();
     this.attType = other.attType;
     this.otherType = other.otherType;
-    this.values = new MultipleValuesContainer<V>(other.values);
+    this.values = makeNewValues ? new MultipleValuesContainer<V>(other.values) : other.values;
     this.metaData = other.metaData;
     this.container = other.container;
   }
@@ -209,12 +213,12 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
     AttValPair<E, V, M> avp = this;
 
     if (result == null) {
-      result = new AttValPair<E, V, M>(this);
+      result = new AttValPair<E, V, M>(this, true);
       avp = avp.nextAmbiguity();
     }
     
     while (avp != null) {
-      result.addAmbiguity(new AttValPair<E, V, M>(avp));
+      result.addAmbiguity(new AttValPair<E, V, M>(avp, false));
       avp = avp.nextAmbiguity();
     }
 
