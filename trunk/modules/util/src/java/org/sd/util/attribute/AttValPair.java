@@ -103,6 +103,10 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
     }
   }
 
+  public AvpContainer<E, V, M> getContainer() {
+    return container;
+  }
+
   public String toString() {
     final StringBuilder result = new StringBuilder();
 

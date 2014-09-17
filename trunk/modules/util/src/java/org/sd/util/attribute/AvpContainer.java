@@ -210,9 +210,20 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
    * ambiguity chain. To add to the end, use "addNext" instead.
    * <p>
    * NOTE: this container stores copies of the submitted avp's.
+   *
+   * @return the added avp.
    */
-  public void add(AttValPair<E, V, M> avp) {
+  public AttValPair<E, V, M> add(AttValPair<E, V, M> avp) {
     doAdd(avp, false, false);
+    return avp;
+  }
+
+  /**
+   * Adopt the avp into this container (by setting avp's container
+   * to be this.).
+   */
+  public void adopt(AttValPair<E, V, M> avp) {
+    avp.setContainer(this);
   }
 
   /**
@@ -222,16 +233,17 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
    * to the front of the ambiguity chain. To add to the end, use "addNext"
    * instead.
    */
-  public void add(String attType, V value) {
-    this.add(new AttValPair<E, V, M>(attType, value));
+  public AttValPair<E, V, M> add(String attType, V value) {
+    return this.add(new AttValPair<E, V, M>(attType, value));
   }
 
-  public void addNext(AttValPair<E, V, M> avp) {
+  public AttValPair<E, V, M> addNext(AttValPair<E, V, M> avp) {
     doAdd(avp, false, true);
+    return avp;
   }
 
-  public void addNext(String attType, V value) {
-    this.addNext(new AttValPair<E, V, M>(attType, value));
+  public AttValPair<E, V, M> addNext(String attType, V value) {
+    return this.addNext(new AttValPair<E, V, M>(attType, value));
   }
 
   /**
