@@ -616,7 +616,7 @@ public abstract class DomNode implements Node {
     if (oldChildNode.getParent() == this) {
       final Tree<XmlLite.Data> oldChildTree = oldChildNode.asTree();
       if (oldChildTree != null) {
-        oldChildTree.prune();
+        oldChildTree.prune(true, true);
         markAsModified();
 
         if (_domChildNodes != null) {

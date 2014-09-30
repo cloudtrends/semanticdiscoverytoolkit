@@ -36,9 +36,7 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
   // AttValPair fields
   private E attType;
   private String otherType;
-  private MultipleValuesContainer<V> values;
-  private M metaData;
-  private AvpContainer<E, V, M> container;
+  private AvpCore<E, V, M> avpCore;
 
   /**
    * Create with a canonical attribute.
@@ -46,9 +44,8 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
   public AttValPair(E attType, V value) {
     init();
     this.attType = attType;
-    this.values = new MultipleValuesContainer<V>(value);
     this.otherType = (attType == null) ? null : attType.toString();
-    this.container = null;
+    this.avpCore = new AvpCore<E, V, M>(value);
   }
 
   /**
@@ -57,9 +54,8 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
   public AttValPair(String otherType, V value) {
     init();
     this.attType = null;
-    this.values = new MultipleValuesContainer<V>(value);
     this.otherType = otherType;
-    this.container = null;
+    this.avpCore = new AvpCore<E, V, M>(value);
   }
 
   /**
@@ -69,8 +65,7 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
     init();
     this.attType = attType;
     this.otherType = otherType;
-    this.values = new MultipleValuesContainer<V>(value);
-    this.container = null;
+    this.avpCore = new AvpCore<E, V, M>(value);
   }
 
   /**
@@ -87,24 +82,22 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
     init();
     this.attType = other.attType;
     this.otherType = other.otherType;
-    this.values = makeNewValues ? new MultipleValuesContainer<V>(other.values) : other.values;
-    this.metaData = other.metaData;
-    this.container = other.container;
+    this.avpCore = makeNewValues ? new AvpCore<E, V, M>(other.avpCore) : other.avpCore;
   }
 
   /** Set this instance's container. Maintained thru AvpContainer. */
   void setContainer(AvpContainer<E, V, M> container) {
-    this.container = container;
+    this.avpCore.setContainer(container);
   }
 
   void clearAllContainers() {
     for (AttValPair<E, V, M> avp = this; avp != null; avp = avp.nextAmbiguity()) {
-      avp.container = null;
+      avp.avpCore.setContainer(null);
     }
   }
 
   public AvpContainer<E, V, M> getContainer() {
-    return container;
+    return avpCore.getContainer();
   }
 
   public String toString() {
@@ -120,14 +113,7 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
       result.append('?');
     }
 
-    if (values != null) {
-      result.append('=').append(values.toString());
-    }
-
-    if (metaData != null) {
-      // add a marker indicating the presence of metadata
-      result.append('+');
-    }
+    avpCore.toString(result);
 
     final AttValPair<E, V, M> nextAmbiguity = nextAmbiguity();
     if (nextAmbiguity != null) {
@@ -141,25 +127,21 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
   private final void init() {
     this.attType = null;
     this.otherType = null;
-    this.values = null;
-    this.metaData = null;
   }
 
   /** Determine whether this instance holds meta-data. */
   public boolean hasMetaData() {
-    return metaData != null;
+    return avpCore.hasMetaData();
   }
 
   /** Get the meta-data associated with this instance. */
   public M getMetaData() {
-    return metaData;
+    return avpCore.getMetaData();
   }
 
   /** Set the meta-data for this instance. */
   public M setMetaData(M metaData) {
-    M result = this.metaData;
-    this.metaData = metaData;
-    return result;
+    return avpCore.setMetaData(metaData);
   }
 
   /** Get the (canonical) attribute type. */
@@ -186,17 +168,12 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
 
   /** Get the value. */
   public V getValue() {
-    return values == null ? null : values.getValue();
+    return avpCore.getValue();
   }
 
   /** Set the value, overwriting any existing value or values. */
   public void setValue(V value) {
-    if (this.values == null) {
-      this.values = new MultipleValuesContainer<V>(value);
-    }
-    else {
-      this.values.setValue(value);
-    }
+    avpCore.setValue(value);
   }
 
   /** Simple typecasting helper auxiliary for getting the next ambiguity. */
@@ -261,6 +238,7 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
    * Override to update this instance's container.
    */
   public void discard() {
+    final AvpContainer<E, V, M> container = avpCore.getContainer();
     if (container != null) {
       container.remove(this);
     }
@@ -271,7 +249,8 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
    * Override to update this instance's container.
    */
   public void resolve() {
-    final AvpContainer<E, V, M> theContainer = this.container;
+    final AvpContainer<E, V, M> container = avpCore.getContainer();
+    final AvpContainer<E, V, M> theContainer = container;
     if (container != null) {
       container.removeAll(this);  //note: this unsets container for this instance
     }
@@ -297,9 +276,9 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
         result = (this.attType == otherAVP.attType);
       }
 
-      // and values must match
+      // and core (values) must match
       if (result) {
-        result = this.values.equals(otherAVP.values);
+        result = this.avpCore.matches(otherAVP.avpCore);
       }
     }
 
@@ -325,39 +304,27 @@ public class AttValPair <E extends Canonical, V, M> extends AbstractAmbiguousEnt
 
   /** Determine whether the current instance has multiple values. */
   public boolean hasMultipleValues() {
-    return values != null && values.hasMultipleValues();
+    return avpCore.hasMultipleValues();
   }
 
   /** Get all of this instance's values. */
   public List<V> getValues() {
-    return values == null ? null : values.getValues();
+    return avpCore.getValues();
   }
 
   /** Get the number of values. */
   public int getValuesCount() {
-    return values == null ? 0 : values.getValuesCount();
+    return avpCore.getValuesCount();
   }
 
   /** Add another value, returning true if added (unique). */
   public boolean addValue(V value) {
-    boolean result = false;
-
-    if (value != null) {
-      if (values == null) {
-        values = new MultipleValuesContainer<V>(value);
-        result = true;
-      }
-      else {
-        result = values.addValue(value);
-      }
-    }
-
-    return result;
+    return avpCore.addValue(value);
   }
 
   /** Remove the given value, returning true if removed (existed). */
   public boolean removeValue(V value) {
-    return (values == null) ? false : values.removeValue(value);
+    return avpCore.removeValue(value);
   }
   
 

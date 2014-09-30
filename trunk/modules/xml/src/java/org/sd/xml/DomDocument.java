@@ -173,7 +173,12 @@ public class DomDocument extends DomNode implements Document {
   }
 
   public Text createTextNode(String data) {
-    return new DomText(new XmlLite.Text(data));
+    final XmlLite.Text text = new XmlLite.Text(data);
+    final Tree<XmlLite.Data> textNode = new Tree<XmlLite.Data>(text);
+    text.setContainer(textNode);
+    final DomText result = (DomText)text.asDomNode();
+    result.setOwnerDocument(this);
+    return result;
   }
 
   public DocumentType getDoctype() {

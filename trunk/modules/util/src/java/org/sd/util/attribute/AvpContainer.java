@@ -20,9 +20,12 @@ package org.sd.util.attribute;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Container for attribute value pairs.
@@ -53,6 +56,9 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
   private Map<String, AttValPair<E, V, M>> unclassifiedAVPs;
   private Map<String, AttValPair<E, V, M>> classifiedAVPs;
   private M metaData;
+
+  // map from enum to all weak names that have mapped to it for tidying up classifiedAVPs
+  private Map<E, Set<String>> classifiedAtts;
 
   //
   // IMPLEMENTATION NOTES:
@@ -85,6 +91,7 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
     this.unclassifiedAVPs = null;
     this.classifiedAVPs = null;
     this.metaData = null;
+    this.classifiedAtts = null;
   }
 
   /**
@@ -152,22 +159,29 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
       // retrieve stored avp's (and their ambiguities)
       while (attribute != null) {
         final E att = attribute.getAttType();
+        addClassifiedAtt(att, normAtt);
 
         final AttValPair<E, V, M> avp = strongAVPs.get(att);
 
-        // create shallow copies with a new ambiguity chain for the result
         if (avp != null) {
-          result = avp.copyAmbiguityChain(result);
+          if (attribute.isAmbiguous()) {
+            // create shallow copies with a new ambiguity chain for the result
+            result = avp.copyAmbiguityChain(result);
+
+            // store in classifiedAVPs
+            if (result != null) {
+              if (classifiedAVPs == null) classifiedAVPs = new LinkedHashMap<String, AttValPair<E,V,M>>();
+              classifiedAVPs.put(normAtt, result);
+            }
+          }
+          else {
+            // no need to replicate into classifiedAVPs when attribute is unambiguous
+            result = avp;
+          }
         }
 
         // inc to next attribute classification ambiguity
         attribute = attribute.nextAmbiguity();
-      }
-
-      if (result != null) {
-        if(classifiedAVPs == null)
-          classifiedAVPs = new LinkedHashMap<String, AttValPair<E,V,M>>();
-        classifiedAVPs.put(normAtt, result);
       }
     }
 
@@ -329,7 +343,7 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
           if (classifiedAVPs != null && classifiedAVPs.size() > 0) {
             AttValPair<E, V, M> avp = strongAVPs.get(attType);
             while (avp != null) {
-              disconnect(classifiedAVPs, avp, true);
+              disconnect(classifiedAVPs, avp, true, getClassifiedAtts(avp.getAttType()));
               avp = avp.nextAmbiguity();
             }
           }
@@ -615,11 +629,11 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
       disconnect(strongAVPs, avp);
 
       // disconnect from classified
-      disconnect(classifiedAVPs, avp, true);
+      disconnect(classifiedAVPs, avp, true, getClassifiedAtts(avp.getAttType()));
     }
     else {
       // disconnect from unclassified
-      disconnect(unclassifiedAVPs, avp, false);
+      disconnect(unclassifiedAVPs, avp, false, null);
     }
 
     avp.setContainer(null);
@@ -657,36 +671,56 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
     return result;
   }
 
-  private final boolean disconnect(Map<String, AttValPair<E, V, M>> map, AttValPair<E, V, M> avp, boolean normalize) {
+  private final boolean disconnect(Map<String, AttValPair<E, V, M>> map, AttValPair<E, V, M> avp, boolean normalize, Set<String> altAtts) {
     boolean result = false;
 
     if (map != null && map.size() > 0 && avp.hasOtherType()) {
-      final String normAtt = normalize ? avp.getOtherType().toLowerCase() : avp.getOtherType();
-      AttValPair<E, V, M> foundAVP = map.get(normAtt);
-      boolean isFirst = true;
-      while (foundAVP != null) {
-        if (matches(avp, foundAVP)) {
-          result = true;
-
-          // remove the first from the ambiguity chain
-          if (isFirst) {
-            final AttValPair<E, V, M> nextAVP = foundAVP.nextAmbiguity();
-            if (nextAVP != null) {
-              map.put(normAtt, nextAVP);
-            }
-            else {
-              // remove when empty
-              map.remove(normAtt);
-            }
+      if (altAtts != null) {
+        for (String normAtt : altAtts) {
+          if (disconnectAux(map, avp, normAtt)) {
+            result = true;
           }
-
-          foundAVP.remove();
-
-          break;
         }
-        isFirst = false;
-        foundAVP = foundAVP.nextAmbiguity();
       }
+      else {
+        final String normAtt = normalize ? avp.getOtherType().toLowerCase() : avp.getOtherType();
+        if (disconnectAux(map, avp, normAtt)) {
+          result = true;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private final boolean disconnectAux(Map<String, AttValPair<E, V, M>> map, AttValPair<E, V, M> avp, String normAtt) {
+    boolean result = false;
+
+    AttValPair<E, V, M> foundAVP = map.get(normAtt);
+
+    boolean isFirst = true;
+    while (foundAVP != null) {
+      if (matches(avp, foundAVP)) {
+        result = true;
+
+        // remove the first from the ambiguity chain
+        if (isFirst) {
+          final AttValPair<E, V, M> nextAVP = foundAVP.nextAmbiguity();
+          if (nextAVP != null) {
+            map.put(normAtt, nextAVP);
+          }
+          else {
+            // remove when empty
+            map.remove(normAtt);
+          }
+        }
+
+        foundAVP.remove();
+
+        break;
+      }
+      isFirst = false;
+      foundAVP = foundAVP.nextAmbiguity();
     }
 
     return result;
@@ -725,17 +759,23 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
 
         if (!avp.isCanonical() && avp.hasOtherType()) {
           // then avp needs to be classified
-          Attribute<E> attribute = classifications.get(avp.getOtherType());
+          final String otherType = avp.getOtherType();
+          final String normAtt = otherType.toLowerCase();
+          Attribute<E> attribute = classifications.get(otherType);
 
           if (attribute != null) {
             // set the classified attType
             avp.setAttType(attribute.getAttType());
+
+            // store in classifiedAtts
+            addClassifiedAtt(attribute.getAttType(), normAtt);
 
             // insert an ambiguous avp for each ambiguous attribute
             if (attribute.isAmbiguous()) {
               for (attribute = attribute.nextAmbiguity(); attribute != null; attribute = attribute.nextAmbiguity()) {
                 final AttValPair<E, V, M> ambAVP = new AttValPair<E, V, M>(avp, true);
                 ambAVP.setAttType(attribute.getAttType());
+                addClassifiedAtt(attribute.getAttType(), normAtt);
                 avp.addAmbiguity(ambAVP);
                 avp = ambAVP;
               }
@@ -766,6 +806,26 @@ public class AvpContainer <E extends Canonical, V, M> extends AbstractAmbiguousE
         }
       }
       avp = avp.nextAmbiguity();
+    }
+
+    return result;
+  }
+
+  private final void addClassifiedAtt(E att, String normAtt) {
+    if (classifiedAtts == null) classifiedAtts = new HashMap<E, Set<String>>();
+    Set<String> normAtts = classifiedAtts.get(att);
+    if (normAtts == null) {
+      normAtts = new HashSet<String>();
+      classifiedAtts.put(att, normAtts);
+    }
+    normAtts.add(normAtt);
+  }
+
+  private final Set<String> getClassifiedAtts(E att) {
+    Set<String> result = null;
+
+    if (att != null && classifiedAtts != null) {
+      result = classifiedAtts.get(att);
     }
 
     return result;
