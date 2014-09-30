@@ -86,28 +86,28 @@ public class TestClusterDefinition extends TestCase {
 
   public void testNameSubstitutionConstructor() throws IOException {
     ClusterDefinition clusterDefinition = null;
-    clusterDefinition = new ClusterDefinition(null, "3m6n.2-4", "gw", new String[]{"foo", "bar", "baz"});
+    clusterDefinition = new ClusterDefinition(null, "3m6n.2-4", "gw", new String[]{"cm1", "cm2", "cm3"});
 
-    String expected = "(gw (foo-2 bar-2 baz-2))";
+    String expected = "(gw (cm1-2 cm2-2 cm3-2))";
     String machineTreeString = clusterDefinition.getMachineTree().toString();
     assertEquals("expecting '" + expected + "', got '" + machineTreeString + "'", expected, machineTreeString);
 
-    clusterDefinition = new ClusterDefinition(null, "3m3n.1-2", "gw", new String[]{"foo", "bar", "baz"});
-    expected = "(gw (foo bar baz))";
+    clusterDefinition = new ClusterDefinition(null, "3m3n.1-2", "gw", new String[]{"cm1", "cm2", "cm3"});
+    expected = "(gw (cm1 cm2 cm3))";
     machineTreeString = clusterDefinition.getMachineTree().toString();
     assertEquals("expecting '" + expected + "', got '" + machineTreeString + "'", expected, machineTreeString);
   }
 
   public void testGetPosition1() throws IOException {
-    final ClusterDefinition clusterDefinition = new ClusterDefinition(null, "3m3n.1-2", "gw", new String[]{"foo", "bar", "baz"});
+    final ClusterDefinition clusterDefinition = new ClusterDefinition(null, "3m3n.1-2", "gw", new String[]{"cm1", "cm2", "cm3"});
 
-    assertEquals(0, clusterDefinition.getGlobalPosition("Foo", 0));
-    assertEquals(1, clusterDefinition.getGlobalPosition("Bar", 0));
-    assertEquals(2, clusterDefinition.getGlobalPosition("Baz", 0));
+    assertEquals(0, clusterDefinition.getGlobalPosition("Cm1", 0));
+    assertEquals(1, clusterDefinition.getGlobalPosition("Cm2", 0));
+    assertEquals(2, clusterDefinition.getGlobalPosition("Cm3", 0));
 
-    assertEquals(0, clusterDefinition.getLocalPosition("Foo", 0));
-    assertEquals(0, clusterDefinition.getLocalPosition("Bar", 0));
-    assertEquals(1, clusterDefinition.getLocalPosition("Baz", 0));
+    assertEquals(0, clusterDefinition.getLocalPosition("Cm1", 0));
+    assertEquals(0, clusterDefinition.getLocalPosition("Cm2", 0));
+    assertEquals(1, clusterDefinition.getLocalPosition("Cm3", 0));
   }
 
   public void testGetPosition2() throws IOException {

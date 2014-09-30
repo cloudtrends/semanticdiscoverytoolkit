@@ -36,7 +36,9 @@ public class TestAvpContainer extends TestCase {
   }
   
   // NOTES:
-  // - Setup for this test is definition of the MyTestEnum and MyTestClassifier classes.
+  // - Setup for this test is definition of the classes:
+  //   - MyTestEnum and MyTestClassifier
+  //   - FamEnum and FamClassifier
 
   public void testClassifyStrongThenWeakType() {
     final MyTestClassifier classifier = new MyTestClassifier();
@@ -217,21 +219,88 @@ public class TestAvpContainer extends TestCase {
     addRecord(avpContainer, record);
 
     // test weak access
-    for (String[] attVal : record) {
-      assertEquals(attVal[1], avpContainer.get(attVal[0]).getValue());
-    }
+    doWeakAccessTest(avpContainer, record);
 
     // test strong access
-    int i = 0;
-    for (MyTestEnum e : expectedEnums) {
-      assertEquals(e.toString(), record[i++][1], avpContainer.get(e).getValue());
-    }
+    doStrongAccessTest(avpContainer, record, expectedEnums);
   }
 
-  private final void addRecord(AvpContainer<MyTestEnum, String, Object> avpContainer, String[][] record) {
+  private final <T extends Canonical> void addRecord(AvpContainer<T, String, Object> avpContainer, String[][] record) {
     for (String[] attVal : record) {
       avpContainer.add(attVal[0], attVal[1]);
     }
+  }
+
+  private final <T extends Canonical> void doWeakAccessTest(AvpContainer<T, String, Object> avpContainer, String[][] record) {
+    // test weak access
+    for (String[] attVal : record) {
+      final AttValPair<T, String, Object> avp = avpContainer.get(attVal[0]);
+      assertNotNull(attVal[1], avp);
+      assertEquals(attVal[1], avp.getValue());
+      assertEquals(attVal[1], avpContainer, avp.getContainer());
+    }
+  }
+
+  private final <T extends Canonical> void doStrongAccessTest(AvpContainer<T, String, Object> avpContainer, String[][] record,
+                                                              T[] expectedEnums) {
+    int i = 0;
+    for (T e : expectedEnums) {
+      final AttValPair<T, String, Object> avp = avpContainer.get(e);
+      assertNotNull(e.toString(), avp);
+      assertEquals(e.toString(), record[i++][1], avp.getValue());
+      assertEquals(e.toString(), avpContainer, avp.getContainer());
+    }
+  }
+
+
+  public void testAmbiguousStrongType1() {
+    // FamEnum.CHILD <-- "child", "children"
+    // add("child")
+    // ensure get("child") exists
+    // ensure get(FamEnum.CHILD) exists
+    // ensure get("children") exists
+    // delete("child")
+    // ensure get("child") is empty
+    // ensure get(FamEnum.CHILD) is empty
+    // ensure get("children") is empty
+
+    final FamClassifier classifier = new FamClassifier();
+    final AvpContainer<FamEnum, String, Object> avpContainer = new AvpContainer<FamEnum, String, Object>(classifier);
+    assertTrue(avpContainer.isEmpty());
+    assertEquals(0, avpContainer.size());
+    assertNull(avpContainer.get((FamEnum)null));
+    assertNull(avpContainer.get((String)null));
+    assertNull(avpContainer.get(FamEnum.CHILD));
+
+    final String[][] record1 = new String[][] {
+      {"father", "tommy sr"},
+      {"child", "tommy jr"},
+    };
+    final String[][] record2 = new String[][] {
+      {"father", "tommy sr"},
+      {"children", "tommy jr"},
+    };
+    final FamEnum[] expectedEnums = new FamEnum[] {
+      FamEnum.FATHER,
+      FamEnum.CHILD,
+    };
+
+    addRecord(avpContainer, record1);
+
+    doStrongAccessTest(avpContainer, record1, expectedEnums);  // get(FamEnum.CHILD)
+    doWeakAccessTest(avpContainer, record1);                   // get("child")
+    doWeakAccessTest(avpContainer, record2);                   // get("children")
+    
+    final AttValPair<FamEnum, String, Object> childAvp = avpContainer.get("child");
+    assertNotNull(childAvp);
+    childAvp.discard();  // NOTE: leads to avpContainer.remove(childAvp)
+
+    // strongs and classifieds for CHILD should all be gone now
+    assertEquals(1, avpContainer.size());
+    assertNull(avpContainer.get(FamEnum.CHILD));
+
+    assertNull(avpContainer.get("child"));
+    assertNull(avpContainer.get("children"));
   }
 
 
