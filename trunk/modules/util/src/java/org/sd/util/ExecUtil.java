@@ -178,10 +178,22 @@ public class ExecUtil {
     return results;
   }
 
+  /**
+   * Executes the command ([0]) and args ([1+]).
+   */
   public static ExecResult executeProcess(String[] commandPlusArgs) {
+    return executeProcess(commandPlusArgs, null);
+  }
+
+  /**
+   * Executes the command ([0]) and args ([1+]) from the given workingDir.
+   */
+  public static ExecResult executeProcess(String[] commandPlusArgs, File workingDir) {
     ExecResult result = null;
     try {
-      final Process process = Runtime.getRuntime().exec(commandPlusArgs);
+      final Process process =
+        workingDir == null ? Runtime.getRuntime().exec(commandPlusArgs) :
+        Runtime.getRuntime().exec(commandPlusArgs, null, workingDir);
       result = getProcessOutput(process);
     } catch (IOException e) {
       //eating this is ok as null result signals a problem.
