@@ -348,6 +348,73 @@ public class Token {
   }
 
   /**
+   * Determine whether this token has a feature as specified by the params.
+   * <p>
+   * If valueToString is null, this will return true if the feature doesn't exist
+   * or if there is a matching feature with a null value.
+   */
+  public boolean hasFeatureValue(String type, Object source, Class featureValueType, String valueToString) {
+    boolean result = false;
+    final List<Feature> features = getFeatures(type, source, featureValueType);
+    if (features != null) {
+      for (Feature feature : features) {
+        final Object value = feature.getValue();
+        if (value != null) {
+          result = value.toString().equals(valueToString);
+        }
+        else {
+          if (valueToString == null) {
+            result = true;
+          }
+        }
+        if (result) break;
+      }
+    }
+    else if (valueToString == null) {
+      result = true;
+    }
+    return result;
+  }
+
+  /**
+   * Determine whether this token has a matching feature value to the other
+   * token for the specified feature.
+   * <p>
+   * If both this and the other token are missing the feature or if this
+   * token and the other have a null value for the feature, this will
+   * return true.
+   */
+  public boolean hasMatchingFeatureValue(Token otherToken, String type, Object source, Class featureValueType) {
+    boolean result = false;
+
+    final List<Feature> myFeatures = getFeatures(type, source, featureValueType);
+    final List<Feature> otherFeatures = otherToken.getFeatures(type, source, featureValueType);
+    if (myFeatures != null && myFeatures.size() > 0) {
+      if (otherFeatures != null && otherFeatures.size() > 0) {
+        for (Feature myFeature : myFeatures) {
+          for (Feature otherFeature : otherFeatures) {
+            final Object myValue = myFeature.getValue();
+            final Object otherValue = otherFeature.getValue();
+            if (myValue == otherValue) {
+              result = true;
+            }
+            else if (myValue != null) {
+              result = myValue.equals(otherValue);
+            }
+            if (result) break;
+          }
+          if (result) break;
+        }
+      }
+    }
+    else {
+      result = otherFeatures == null || otherFeatures.size() == 0;
+    }
+
+    return result;
+  }
+
+  /**
    * Determine whether this token follows a hard break.
    * <p>
    * A token follows a hard break if there is a hard break among the token's

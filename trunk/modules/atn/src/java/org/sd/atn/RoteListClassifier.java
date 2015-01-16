@@ -99,7 +99,7 @@ import org.w3c.dom.NodeList;
        "    <classifiers>\n" +
        "      <classifier>...</classifier>\n" +
        "      ...\n" +
-       "      <feature type='...'>...</feature>\n" +
+       "      <feature name='...' type='interp|parse|string|classpath' when='exists|equals|matches-prev|matches-next'>text-to-equal|feature-name</feature>\n" +
        "    </classifiers>\n" +
        "  </stopwords>\n" +
        "</roteListType>"
@@ -429,7 +429,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     private Map<String, Map<String, String>> term2attributes;
     private RegexDataContainer regexes;
     private List<ClassifierContainer> classifiers;
-    private Map<String, Class> features;
+    private Map<String, FeatureContainer> features;
     private StepTestContainer testContainer;
     private boolean trace;
     private TokenClassifierHelper tokenClassifierHelper;
@@ -512,7 +512,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       return classifiers;
     }
 
-    public Map<String, Class> getFeatures() {
+    public Map<String, FeatureContainer> getFeatures() {
       return features;
     }
 
@@ -614,16 +614,17 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
         }
 
         if (!result && features != null) {
-          for (Map.Entry<String, Class> featureEntry : features.entrySet()) {
-            String feature = featureEntry.getKey();
-            if (TYPED_FEATURE_KEY.equals(feature)) feature = null;
-            final Class type = featureEntry.getValue();
-
-            if (token.getFeatureValue(feature, null, type) != null) {
-              result = true;
-              if (trace) {
-                System.out.println("\tfound '" + feature + "' (value=" + token.getFeatureValue(feature, null, type) + ")");
-              }
+          for (Map.Entry<String, FeatureContainer> featureEntry : features.entrySet()) {
+            final FeatureContainer featureContainer = featureEntry.getValue();
+            result = featureContainer.doClassify(token, atnState);
+            if (result && trace) {
+              final String feature = featureContainer.getFeatureName();
+              System.out.println("\tfound feature '" + feature +
+                                 "' (value=" + token.getFeatureValue(
+                                   featureContainer.getFeatureName(),
+                                   null,
+                                   featureContainer.getType()) +
+                                 ") on token '" + token + "'");
             }
           }
         }
@@ -945,30 +946,12 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
     }
 
     protected final void loadFeature(DomNode featureElement) {
-      String featureName = featureElement.hasAttributes() ? featureElement.getAttributeValue("name", null) : null;
-      if (featureName == null) {
-        featureName = featureElement.getTextContent().trim();
-      }
+      final FeatureContainer featureContainer = new FeatureContainer(featureElement);
+      final String featureKey = featureContainer.getFeatureKey();
 
-      Class type = null;
-      final String typeString = featureElement.getAttributeValue("type", null);
-      if (typeString != null) {
-        if ("interp".equals(typeString)) {
-          type = ParseInterpretation.class;
-        }
-        else if ("parse".equals(typeString)) {
-          featureName = AtnParseBasedTokenizer.SOURCE_PARSE;
-          type = Parse.class;
-        }
-      }
-
-      if (featureName != null && !"".equals(featureName)) {
-        if (this.features == null) this.features = new HashMap<String, Class>();
-        this.features.put(featureName, type);
-      }
-      else if (type != null) {
-        if (this.features == null) this.features = new HashMap<String, Class>();
-        this.features.put(TYPED_FEATURE_KEY, type);
+      if (featureKey != null) {
+        if (this.features == null) this.features = new HashMap<String, FeatureContainer>();
+        this.features.put(featureKey, featureContainer);
       }
 
       if (features != null && features.size() > 0) {
@@ -1531,4 +1514,132 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
       }
     }
   }
+
+  private static final int WHEN_EXISTS = 0;
+  private static final int WHEN_EQUALS = 1;
+  private static final int WHEN_MATCHES_PREV = 2;
+  private static final int WHEN_MATCHES_NEXT = 3;
+
+  protected static final class FeatureContainer {
+
+    private String featureName;
+    private Class type;
+    private int when;
+    private String text;
+
+    public FeatureContainer(DomNode featureElement) {
+      this.featureName = getFeatureName(featureElement);
+      this.type = getType(featureElement); //NOTE: may adjust featureName
+      this.when = getWhen(featureElement);
+      this.text = featureElement.getTextContent().trim();
+    }
+
+    public String getFeatureKey() {
+      return (featureName == null && type != null) ? TYPED_FEATURE_KEY : featureName;
+    }
+
+    public String getFeatureName() {
+      return featureName;
+    }
+
+    public Class getType() {
+      return type;
+    }
+
+    public boolean doClassify(Token token, AtnState atnState) {
+      boolean result = false;
+
+      switch (when) {
+        case WHEN_EQUALS :
+          // true when text equals feature's value (.toString)
+          result = token.hasFeatureValue(featureName, null, type, text);
+          break;
+        case WHEN_MATCHES_PREV :
+          // true when previous state's token's feature value matches this token's feature value
+          final Token prevToken = TokenTest.getPrevToken(token);
+          // assume that if this is the first token that the prev "would" match
+          result = prevToken == null ? true : token.hasMatchingFeatureValue(prevToken, featureName, null, type);
+          break;
+        case WHEN_MATCHES_NEXT :
+          // true when next state's token's feature value matches this token's feature value
+          final Token nextToken = token.getNextToken();
+          // assume that if this is the last token that the next "would" match
+          result = nextToken == null ? true : token.hasMatchingFeatureValue(nextToken, featureName, null, type);
+          break;
+        default : // WHEN_EXISTS
+          // true when feature exists on token
+          if (token.getFeatureValue(featureName, null, type) != null) {
+            result = true;
+          }
+          break;
+      }
+
+      return result;
+    }
+
+    private final String getFeatureName(DomNode featureElement) {
+      String result  = featureElement.hasAttributes() ? featureElement.getAttributeValue("name", null) : null;
+      if (result == null) {
+        result = featureElement.getTextContent().trim();
+        if ("".equals(result)) result = null;
+      }
+      return result;
+    }
+
+    private final Class getType(DomNode featureElement) {
+      Class result = null;
+      final String typeString = featureElement.getAttributeValue("type", null);
+      if (typeString != null && !"".equals(typeString)) {
+        if ("interp".equals(typeString)) {
+          result = ParseInterpretation.class;
+        }
+        else if ("parse".equals(typeString)) {
+          //NOTE: this requires an adjustment the featureName
+          this.featureName = AtnParseBasedTokenizer.SOURCE_PARSE;
+          result = Parse.class;
+        }
+        else if ("string".equals(typeString)) {
+          result = String.class;
+        }
+        else {
+          try {
+            result = Class.forName(typeString);
+          }
+          catch (ClassNotFoundException e) {
+            System.err.println(new Date() +
+                               ": RoteListClassifier bad feature type '" +
+                               typeString + "' IGNORED");
+            result = null;
+          }
+        }
+      }
+      return result;
+    }
+
+    private final int getWhen(DomNode featureElement) {
+      int result = WHEN_EXISTS;
+
+      // exists | equals | matches-prev | matches-next
+
+      String when = featureElement.hasAttributes() ? featureElement.getAttributeValue("when", null) : null;
+      if (when != null && !"".equals(when)) {
+        when = when.toLowerCase();
+        if ("equals".equals(when)) {
+          result = WHEN_EQUALS;
+        }
+        else if (when.startsWith("matches")) {
+          if (when.endsWith("prev")) {
+            result = WHEN_MATCHES_PREV;
+            
+          }
+          else if (when.endsWith("next")) {
+            result = WHEN_MATCHES_NEXT;
+          }
+        }
+      }
+      //else, default to WHEN_EXISTS
+
+      return result;
+    }
+  }  
 }

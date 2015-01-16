@@ -338,7 +338,7 @@ public class TokenTest extends BaseClassifierTest {
   }
 
 
-  private static final Token getPrevToken(Token token) {
+  static final Token getPrevToken(Token token) {
     Token result = null;
 
     if (token.getStartIndex() == 0) return result;  // there is no prev token
