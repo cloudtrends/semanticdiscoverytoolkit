@@ -1457,10 +1457,11 @@ public class AtnState {
     while ((states.size() + skipStates.size() > 0) && !result && (die == null || !die.get())) {
       final AtnState curstate = states.size() > 0 ? states.removeFirst() : skipStates.removeFirst();
 
-      if (stepThruFlag) {
-        if ((stepThruRuleId != null && stepThruRuleId.equals(curstate.getRule().getRuleId())) &&
-            (stepThruRuleStep != null && stepThruRuleStep.equals(curstate.getRuleStep().getCategory())) &&
-            (stepThruText != null && stepThruText.equals(curstate.getInputToken().getText()))) {
+      if (stepThruFlag || traceflow || curstate.getRuleStep().getVerbose()) {
+        if (traceflow || curstate.getRuleStep().getVerbose() ||
+            ((stepThruRuleId != null && stepThruRuleId.equals(curstate.getRule().getRuleId())) &&
+             (stepThruRuleStep != null && stepThruRuleStep.equals(curstate.getRuleStep().getCategory())) &&
+             (stepThruText != null && stepThruText.equals(curstate.getInputToken().getText())))) {
           // set a breakpoint on the following line when using stepThru debugging
           final boolean stopHere = true;
         }
