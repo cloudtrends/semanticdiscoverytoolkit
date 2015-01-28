@@ -74,11 +74,16 @@ public class RegexClassifier extends AbstractAtnStateTokenClassifier {
   private final boolean doClassification(String text, Token token) {
     boolean result = false;
 
-    for (RegexData regexData : regexes) {
-      if (regexData.matches(text, token)) {
-        result = true;
-        break;
+    if (!isEmpty()) {
+      for (RegexData regexData : regexes) {
+        if (regexData.matches(text, token)) {
+          result = true;
+          break;
+        }
       }
+    }
+    else {
+      System.err.println("WARNING: RegexClassifier has no regexes. Probable initialization syntax error.");
     }
 
     return result;
