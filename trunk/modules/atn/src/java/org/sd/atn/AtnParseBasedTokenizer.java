@@ -331,7 +331,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
           // adjust endPos back over breaks
           for (int fallbackEndPos = endPos - 1; fallbackEndPos >= pos; --fallbackEndPos) {
             final Break standardBreak = standardBreaks.get(fallbackEndPos);
-            if (standardBreak != null && standardBreak.breaks()) {
+            if (standardBreak != null && standardBreak.breaks() && standardBreak.getBWidth() > 0) {
               --endPos;
             }
             else break;
