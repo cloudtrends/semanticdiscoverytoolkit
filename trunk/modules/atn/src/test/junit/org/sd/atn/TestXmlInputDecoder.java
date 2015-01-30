@@ -231,21 +231,39 @@ public class TestXmlInputDecoder extends TestCase {
 
       for (int i = 0; i < numTokens; ++i) {
         final XmlInputDecoder.MarkerInfo tokenStart = tokenStarts.get(i);
-        assertEquals(categories[i], tokenStart.getCategory());
+        if (categories != null) {
+          assertEquals(categories[i], tokenStart.getCategory());
+        }
         assertTrue(tokenStart.hasOtherInfo());
         assertEquals(texts[i], p.getText().substring(tokenStart.getPos(), tokenStart.getOtherInfo().getPos()));
 
         // check attributes
         final Map<String, String> tokenAttributes = tokenStart.getAttributes();
-        assertFalse(tokenAttributes.containsKey("_cat"));
-        assertEquals(atts[i].length, tokenAttributes.size());
+        if (tokenAttributes != null) {
+          assertFalse(tokenAttributes.containsKey("_cat"));
+        }
+        if (atts != null && vals != null) {
+          assertEquals(atts[i].length, tokenAttributes.size());
 
-        for (int j = 0; j < atts[i].length; ++j) {
-          assertEquals("Token #" + i + ", att #" + j + " mismatch (" + atts[i][j] + "=" + vals[i][j] + ")",
-                       vals[i][j], tokenAttributes.get(atts[i][j]));
+          for (int j = 0; j < atts[i].length; ++j) {
+            assertEquals("Token #" + i + ", att #" + j + " mismatch (" + atts[i][j] + "=" + vals[i][j] + ")",
+                         vals[i][j], tokenAttributes.get(atts[i][j]));
+          }
         }
       }
     }
+  }
+
+
+  public void testTokenAfterExplicitDelim() throws IOException {
+    final DomNode textNode = XmlFactory.buildDomNode(
+      "<text oneLine=\"true\"><p oneLine=\"true\"><t>Smith</t><b _type=\"soft\" delim=\", \"/><t>John</t></p></text>",
+      false);
+    final XmlInputDecoder decoder = new XmlInputDecoder(textNode.asDomElement());
+    final XmlInputDecoder.Paragraph p = decoder.getParagraphs().get(0);
+
+    //NOTE: defect was that second token came out as "ohn" -- fixed.
+    verifyTokens(p, 2, null, new String[]{"Smith", "John"}, null, null);
   }
 
 

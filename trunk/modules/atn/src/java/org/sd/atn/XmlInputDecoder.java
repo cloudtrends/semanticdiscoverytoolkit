@@ -467,7 +467,7 @@ public class XmlInputDecoder {
       if (markerInfo != null) {
         if (pos2markerInfos == null) pos2markerInfos = new TreeMap<Integer, List<MarkerInfo>>();
         int pos = text.length();  // point to end of string/=next delim pos
-        if (markerInfo.marker == Marker.TOKEN_START && text.length() > 0) ++pos;  //point to first letter of next trimmedText
+        if (markerInfo.marker == Marker.TOKEN_START && !gotDelim && text.length() > 0) ++pos;  //point to first letter of next trimmedText
         addMarkerInfo(pos, markerInfo);
       }
     }
