@@ -55,6 +55,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
   private Map<Integer, TokenInfoContainer<MyTokenInfo>> pos2tokenInfoContainer;
   private IntegerRange _parseSpans;
   private List<TokenInfo> hardBreaks;
+  private boolean retainEndBreaks = true;
 
   public AtnParseBasedTokenizer(InputContext inputContext, StandardTokenizerOptions tokenizerOptions) {
     this(null, null, null, inputContext, tokenizerOptions);
@@ -88,6 +89,13 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
       final ParseInputContext parseInput = (ParseInputContext)inputContext;
       addOtherTokenInfos(parseInput.getTokenInfos());
       this.hardBreaks = parseInput.getHardBreaks();
+    }
+  }
+
+  public void setRetainEndBreaks(boolean retainEndBreaks) {
+    if (retainEndBreaks != this.retainEndBreaks) {
+      this.retainEndBreaks = retainEndBreaks;
+      this.reset();
     }
   }
 
@@ -272,6 +280,8 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     // get the ranges covered by parses
     final IntegerRange parseSpans = getParseSpans();
 
+    final Map<Integer, Break> standardBreaks = retainEndBreaks ? super.createBreaks() : null;
+
     // turn boundaries between parses into hard breaks; within parse alternatives as soft breaks; clearing other breaks
     for (Map.Entry<Integer, TokenInfoContainer<MyTokenInfo>> mapEntry : pos2tokenInfoContainer.entrySet()) {
       int pos = mapEntry.getKey();
@@ -286,6 +296,18 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
       final int tokenInfoListIndexMax = tic.getTokenInfoList().size() - 1;
       int lastEndPos = -1;
       for (Integer endPos : tic.getTokenInfoList().keySet()) {
+
+        if (standardBreaks != null) {
+          // adjust endPos back over breaks
+          for (int fallbackEndPos = endPos - 1; fallbackEndPos >= pos; --fallbackEndPos) {
+            final Break standardBreak = standardBreaks.get(fallbackEndPos);
+            if (standardBreak != null && standardBreak.breaks()) {
+              --endPos;
+            }
+            else break;
+          }
+        }
+
         if (tokenInfoListIndex >= tokenInfoListIndexMax) {
           lastEndPos = endPos;
           break;
