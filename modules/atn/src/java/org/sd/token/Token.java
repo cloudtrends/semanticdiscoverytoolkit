@@ -308,14 +308,25 @@ public class Token {
    * Convenience method for getting the feature.
    */
   public Feature getFeature(String type, Object source) {
-    return getFeature(type, source, null);
+    return getFeature(type, source, null, false);
+  }
+
+  /**
+   * Convenience method for getting the feature.
+   */
+  public Feature getFeature(String type, Object source, boolean broaden) {
+    return getFeature(type, source, null, broaden);
   }
 
   /**
    * Convenience method for getting the feature's value.
    */
   public Object getFeatureValue(String type, Object source, Class featureValueType) {
-    Feature feature = getFeature(type, source, featureValueType);
+    return getFeatureValue(type, source, featureValueType, false);
+  }
+
+  public Object getFeatureValue(String type, Object source, Class featureValueType, boolean broaden) {
+    Feature feature = getFeature(type, source, featureValueType, broaden);
     return feature == null ? null : feature.getValue();
   }
 
@@ -323,11 +334,34 @@ public class Token {
    * Convenience method for getting the feature.
    */
   public Feature getFeature(String type, Object source, Class featureValueType) {
+    return getFeature(type, source, featureValueType, false);
+  }
+
+  /**
+   * Convenience method for getting the feature.
+   */
+  public Feature getFeature(String type, Object source, Class featureValueType, boolean broaden) {
     Feature result = null;
+    FeatureConstraint constraint = null;
 
     if (this.features != null) {
-      final FeatureConstraint constraint = FeatureConstraint.getInstance(type, source, featureValueType);
+      constraint = FeatureConstraint.getInstance(type, source, featureValueType);
       result = features.getFirst(constraint);
+    }
+
+    if (result == null && broaden) {
+      // find the feature on a broader version of the token
+      for (Token broaderToken = tokenizer.broadenStart(this);
+           broaderToken != null;
+           broaderToken = tokenizer.broadenStart(broaderToken)) {
+        if (broaderToken.hasFeatures()) {
+          if (constraint == null) {
+            constraint = FeatureConstraint.getInstance(type, source, featureValueType);
+          }
+          result = broaderToken.getFeatures().getFirst(constraint);
+          if (result != null) break;
+        }
+      }
     }
 
     return result;

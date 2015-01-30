@@ -77,6 +77,12 @@ public interface Tokenizer {
   public Token revise(Token token);
 
   /**
+   * Broaden the token's start position to an already established token with
+   * the same end but an earlier start, if possible.
+   */
+  public Token broadenStart(Token token);
+
+  /**
    * Get the next token after the given token if possible.
    *
    * @returns The next token or null.
