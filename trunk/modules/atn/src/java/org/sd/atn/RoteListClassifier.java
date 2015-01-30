@@ -1429,7 +1429,7 @@ public class RoteListClassifier extends AbstractAtnStateTokenClassifier {
 
       // check for a token feature that matches the category
       if (!result) {
-        final Feature feature = token.getFeature(classifierName, null);
+        final Feature feature = token.getFeature(classifierName, null, true); //todo: parameterize "broaden"?
         result = (feature != null);
 
         if (result && trace) {

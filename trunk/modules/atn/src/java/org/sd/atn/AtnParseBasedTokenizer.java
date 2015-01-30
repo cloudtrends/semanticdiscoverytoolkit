@@ -53,7 +53,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
   
   public static final String SOURCE_PARSE = "_sourceParse";
 
-  private Map<Integer, TokenInfoContainer<MyTokenInfo>> pos2tokenInfoContainer;
+  private TreeMap<Integer, TokenInfoContainer<MyTokenInfo>> pos2tokenInfoContainer;
   private IntegerRange _parseSpans;
   private List<TokenInfo> hardBreaks;
   private boolean retainEndBreaks = true;
@@ -98,6 +98,33 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
       this.retainEndBreaks = retainEndBreaks;
       this.reset();
     }
+  }
+
+  /**
+   * Broaden the token's start position to an already established token with
+   * the same end but an earlier start, if possible.
+   * <p>
+   * NOTE: For the AtnParseBasedTokenizer, this finds broader tokens resulting
+   *       from a prior parse.
+   */
+  @Override
+  public Token broadenStart(Token token) {
+    Token result = null;
+
+    for (Map.Entry<Integer, TokenInfoContainer<MyTokenInfo>> priorEntry = pos2tokenInfoContainer.floorEntry(token.getStartIndex() - 1);
+         priorEntry != null;
+         priorEntry = pos2tokenInfoContainer.floorEntry(priorEntry.getKey() - 1)) {
+      final TokenInfoContainer<MyTokenInfo> priorInfoContainer = priorEntry.getValue();
+      if (priorInfoContainer.getTokenInfoList().containsKey(token.getEndIndex())) {
+        result = buildToken(priorEntry.getKey(), token.getEndIndex());
+        if (result != null) {
+          addTokenFeatures(result);
+          break;
+        }
+      }
+    }
+
+    return result;
   }
 
   public final void add(List<AtnParseResult> parseResults) {
@@ -457,6 +484,30 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
 
     public TokenInfo getWrappedTokenInfo() {
       return wrappedTokenInfo;
+    }
+
+    @Override
+    public void setTokenStart(int tokenStart) {
+      if (wrappedTokenInfo != null) {
+        wrappedTokenInfo.setTokenStart(tokenStart);
+      }
+      super.setTokenStart(tokenStart);
+    }
+
+    @Override
+    public void setTokenEnd(int tokenEnd) {
+      if (wrappedTokenInfo != null) {
+        wrappedTokenInfo.setTokenEnd(tokenEnd);
+      }
+      super.setTokenEnd(tokenEnd);
+    }
+
+    @Override
+    public void setCategory(String category) {
+      if (wrappedTokenInfo != null) {
+        wrappedTokenInfo.setCategory(category);
+      }
+      super.setCategory(category);
     }
 
     public void addTokenFeatures(Token token, Object source) {

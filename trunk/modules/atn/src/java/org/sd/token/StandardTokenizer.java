@@ -550,6 +550,18 @@ public class StandardTokenizer implements Tokenizer {
     return result;
   }
 
+  /**
+   * Broaden the token's start position to an already established token with
+   * the same end but an earlier start, if possible.
+   * <p>
+   * NOTE: For the StandardTokenizer, this is not a relevant operation and
+   *       null will always be returned.
+   */
+  public Token broadenStart(Token token) {
+    // NOTE: not relevant for the standard tokenizer.
+    return null;
+  }
+
   public Token getNextToken(Token token) {
     int startPosition = findEndBreakForward(token.getEndIndex(), false);
     if (startPosition < 0) startPosition = token.getEndIndex();
