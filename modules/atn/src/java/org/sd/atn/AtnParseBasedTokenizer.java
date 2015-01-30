@@ -20,6 +20,7 @@ package org.sd.atn;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -286,6 +287,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
     for (Map.Entry<Integer, TokenInfoContainer<MyTokenInfo>> mapEntry : pos2tokenInfoContainer.entrySet()) {
       int pos = mapEntry.getKey();
       final TokenInfoContainer<MyTokenInfo> tic = mapEntry.getValue();
+      Map<Integer, Integer> ticEndAdjustments = null;
 
       // Set LHS break as Hard (or soft if contained w/in another parse)
       final boolean isHard = !parseSpans.includes(pos);
@@ -297,6 +299,7 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
       int lastEndPos = -1;
       for (Integer endPos : tic.getTokenInfoList().keySet()) {
 
+        final Integer origEndPos = endPos;
         if (standardBreaks != null) {
           // adjust endPos back over breaks
           for (int fallbackEndPos = endPos - 1; fallbackEndPos >= pos; --fallbackEndPos) {
@@ -306,6 +309,11 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
             }
             else break;
           }
+        }
+
+        if (!origEndPos.equals(endPos)) {
+          if (ticEndAdjustments == null) ticEndAdjustments = new HashMap<Integer, Integer>();
+          ticEndAdjustments.put(origEndPos, endPos);
         }
 
         if (tokenInfoListIndex >= tokenInfoListIndexMax) {
@@ -323,6 +331,12 @@ public class AtnParseBasedTokenizer extends StandardTokenizer {
       // Set RHS break as Hard (or soft if contained w/in another parse)
       doClearBreaks(result, pos + 1, lastEndPos, tokenEnds);
       setBreak(result, lastEndPos, false, !parseSpans.includes(lastEndPos));
+
+      if (ticEndAdjustments != null) {
+        for (Map.Entry<Integer, Integer> entry : ticEndAdjustments.entrySet()) {
+          tic.adjustEnd(entry.getKey(), entry.getValue());
+        }
+      }
     }
 
     return result;

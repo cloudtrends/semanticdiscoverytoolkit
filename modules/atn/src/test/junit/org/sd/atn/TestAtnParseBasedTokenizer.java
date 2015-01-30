@@ -38,8 +38,8 @@ public class TestAtnParseBasedTokenizer extends TestCase {
   }
   
 
-  public void testRetainEndBreaks() {
-    StandardTokenizerOptions defaultOptions = StandardTokenizerFactory.DEFAULT_OPTIONS;
+  public void testRetainEndBreaks1() {
+    final StandardTokenizerOptions defaultOptions = StandardTokenizerFactory.DEFAULT_OPTIONS;
     final XmlInputDecoder xmlInputDecoder = new XmlInputDecoder("<text oneLine=\"true\"><p oneLine=\"true\"><t>\"Smith\",</t><t>\"John\"!</t></p></text>", true);
     final XmlParseInputContext inputContext = new XmlParseInputContext(xmlInputDecoder.getParagraphs().get(0), 0);
 
@@ -62,6 +62,34 @@ public class TestAtnParseBasedTokenizer extends TestCase {
                        null, null);
 
     assertTrue(tokenizeTestDoRetain.runTest());
+  }
+
+  public void testRetainEndBreaks2() {
+    final StandardTokenizerOptions defaultOptions = StandardTokenizerFactory.DEFAULT_OPTIONS;
+    final XmlInputDecoder xmlInputDecoder = new XmlInputDecoder("<text oneLine=\"true\"><p oneLine=\"true\"><t abc=\"xyz\">Smith*</t><t>John</t></p></text>", true);
+    final XmlParseInputContext inputContext = new XmlParseInputContext(xmlInputDecoder.getParagraphs().get(0), 0);
+
+    final AtnParseBasedTokenizer tokenizer = new AtnParseBasedTokenizer(inputContext, defaultOptions);
+    tokenizer.setRetainEndBreaks(false);
+
+    final TokenizeTest tokenizeTestNoRetain =
+      new TokenizeTest("DontRetainEndBreaks", tokenizer,
+                       new String[] { "Smith*", "John" },
+                       null, null);
+
+    assertTrue(tokenizeTestNoRetain.runTest());
+    assertTrue(tokenizer.getToken(0).hasFeatureValue("abc", null, null, "xyz"));
+
+
+    tokenizer.setRetainEndBreaks(true);
+
+    final TokenizeTest tokenizeTestDoRetain =
+      new TokenizeTest("DoRetainEndBreaks", tokenizer,
+                       new String[] { "Smith", "John" },
+                       null, null);
+
+    assertTrue(tokenizeTestDoRetain.runTest());
+    assertTrue(tokenizer.getToken(0).hasFeatureValue("abc", null, null, "xyz"));
   }
 
 

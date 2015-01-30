@@ -63,4 +63,15 @@ public class TokenInfoContainer<T extends TokenInfo> {
   public List<T> getAll(int endPos) {
     return tokenInfoList.get(endPos);
   }
+
+  public void adjustEnd(int curEnd, int updatedEnd) {
+    final List<T> tokenInfos = tokenInfoList.get(curEnd);
+    if (tokenInfos != null) {
+      for (T tokenInfo : tokenInfos) {
+        tokenInfo.setTokenEnd(updatedEnd);
+      }
+      tokenInfoList.remove(curEnd);
+      tokenInfoList.put(updatedEnd, tokenInfos);
+    }
+  }
 }
