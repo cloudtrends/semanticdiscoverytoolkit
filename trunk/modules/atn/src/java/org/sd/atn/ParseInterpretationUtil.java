@@ -62,8 +62,10 @@ public class ParseInterpretationUtil {
         }
         else {
           final CategorizedToken lastToken = AtnStateUtil.getCategorizedToken(lastLeaf);
-          final Token newToken = firstToken.token.getTokenizer().buildToken(firstToken.token.getStartIndex(), lastToken.token.getEndIndex());
-          result = new CategorizedToken(newToken, parseTreeNode.getData());
+          if (lastToken != null) {
+            final Token newToken = firstToken.token.getTokenizer().buildToken(firstToken.token.getStartIndex(), lastToken.token.getEndIndex());
+            result = new CategorizedToken(newToken, parseTreeNode.getData());
+          }
         }
       }
       
