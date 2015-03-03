@@ -651,7 +651,8 @@ public class StandardTokenizer implements Tokenizer {
   public Token buildToken(int startPosition, int endPosition) {
     Token result = null;
 
-    if (startPosition >= 0 && endPosition <= text.length()) {
+    if (startPosition >= 0) {
+      endPosition = Math.min(endPosition, text.length());
       result = buildToken(startPosition, endPosition, options.getRevisionStrategy(),
                           0, -1, computeWordCount(startPosition, endPosition),
                           computeBreakCount(startPosition, endPosition));
