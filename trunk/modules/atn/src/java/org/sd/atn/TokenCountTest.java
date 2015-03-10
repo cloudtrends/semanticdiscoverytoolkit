@@ -75,7 +75,9 @@ public class TokenCountTest extends BaseClassifierTest {
     int curValue = numTokens;
 
     if (countWords) {
-      curValue = token.getTokenizer().computeWordCount(refToken, curState.getInputToken());
+      //curValue = token.getTokenizer().computeWordCount(refToken, token/*curState.getInputToken()*/);
+      final String text = token.getTokenizer().getText();
+      curValue = countWords(text, refToken.getStartIndex(), token.getEndIndex());
     }
 
     result = range.includes(curValue);
@@ -85,6 +87,22 @@ public class TokenCountTest extends BaseClassifierTest {
                          (countWords ? " numWords" : " numTokens") +
                          "=" + curValue + "; range=" + range +
                          " result=" + result);
+    }
+
+    return result;
+  }
+
+  private final int countWords(String text, int startIdx, int endIdx) {
+    int result = 1;
+
+    startIdx = Math.max(0, startIdx);
+    endIdx = Math.min(text.length() - 1, endIdx);
+
+    char lastC = (char)0;
+    for (int idx = startIdx; idx <= endIdx; ++idx) {
+      final char c = text.charAt(idx);
+      if (c == ' ' && lastC != ' ') ++result;
+      lastC = c;
     }
 
     return result;
