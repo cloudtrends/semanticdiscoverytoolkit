@@ -204,8 +204,19 @@ public class CapitalizedWordClassifier extends RoteListClassifier {
       }
 
       // check exclude proper case
-      if (result && excludeProperCase && len >= 2 && Character.isLowerCase(tokenText.charAt(1))) {
-        result = false;
+      if (result && excludeProperCase && len >= 2) {
+        // e.g., check "m" if looking at "Smith" -vs- "SMITH"
+        char c = tokenText.charAt(1);
+
+        if (c == '\'' && len >= 4) {
+          // e.g., check "a" if looking at something like "O'Malley" -vs- "O'MALLEY"
+          c = tokenText.charAt(3);
+        }
+
+        if (Character.isLowerCase(tokenText.charAt(1))) {
+          // is propercase; to be excluded
+          result = false;
+        }
       }
 
       // check singleLetter
